@@ -3,6 +3,7 @@ import { Cloud, Satellite, Shield, Home } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import WeatherVerification from './WeatherVerification';
 import PropertyIntelligence from './PropertyIntelligence';
+import DolDiscovery from './DolDiscovery';
 
 const PropertyHub = () => {
   const [activeTab, setActiveTab] = useState('weather');
@@ -27,6 +28,18 @@ const PropertyHub = () => {
 
         {/* Tabs */}
         <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('discovery')}
+            className={`px-4 py-2 rounded-lg text-sm font-mono uppercase flex items-center gap-1.5 transition-all ${
+              activeTab === 'discovery'
+                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
+                : 'text-zinc-400 border border-zinc-700/30 hover:text-zinc-200 hover:border-zinc-600/50'
+            }`}
+            data-testid="tab-discovery"
+          >
+            <Home className="w-4 h-4" />
+            DOL Discovery
+          </button>
           <button
             onClick={() => setActiveTab('weather')}
             className={`px-4 py-2 rounded-lg text-sm font-mono uppercase flex items-center gap-1.5 transition-all ${
@@ -56,6 +69,7 @@ const PropertyHub = () => {
 
       {/* Content */}
       <div>
+        {activeTab === 'discovery' && <DolDiscovery embedded={true} />}
         {activeTab === 'weather' && <WeatherVerification embedded={true} />}
         {activeTab === 'intel' && <PropertyIntelligence embedded={true} />}
       </div>
