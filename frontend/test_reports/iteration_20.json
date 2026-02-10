@@ -1,0 +1,95 @@
+{
+  "summary": "Voice Assistant Console feature testing complete. All 27 backend API tests passed (100%). Frontend UI verified with all 4 tabs working correctly: Overview (stats cards), Scripts (editable text areas with variable hints), Behavior & Guardrails (mode selection, LLM slider, toggles, guardrail badges), and Review Calls (call history with empty state).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_voice_assistant_console.py",
+    "/app/test_reports/pytest/voice_assistant_console_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All Voice Assistant API endpoints properly protected with authentication (returns 403 for unauthorized requests)",
+    "Frontend correctly uses 'eden_token' localStorage key for authentication",
+    "data-testid='voice-assistant-console' and data-testid='assistant-toggle' properly implemented for testing",
+    "Empty states handled gracefully for calls and recent calls sections",
+    "Variable placeholders in scripts use proper {variable_name} format",
+    "Guardrails include appropriate forbidden topics for claims handling (legal advice, settlement amounts, etc.)",
+    "Escalation keywords properly configured (lawyer, sue, complaint, supervisor, emergency, urgent)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_voice_assistant_console.py"
+  ],
+  "success_rate": {
+    "backend": "100% (27/27 tests passed)",
+    "frontend": "100% (All 4 tabs verified, toggle working)"
+  },
+  "test_credentials": {
+    "email": "test@eden.com",
+    "password": "password"
+  },
+  "seed_data_creation": "None - used default config data from API",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Voice Assistant Console fully functional at /voice-assistant route. All 4 tabs working: Overview (stats), Scripts (editable), Behavior & Guardrails (mode/toggles/badges), Review Calls (empty state). Master ON/OFF toggle works. Backend APIs: /api/voice-assistant/config, /scripts, /guardrails, /stats/today, /calls all return proper data.",
+  "features_tested": {
+    "GET /api/voice-assistant/config": {
+      "status": "PASS",
+      "details": "Returns config with mode, enabled, business_hours, behavior_flags, llm_aggressiveness"
+    },
+    "POST /api/voice-assistant/config/toggle": {
+      "status": "PASS",
+      "details": "Toggle ON/OFF works, state persists correctly"
+    },
+    "GET /api/voice-assistant/scripts": {
+      "status": "PASS",
+      "details": "Returns all scripts with variable placeholders"
+    },
+    "PUT /api/voice-assistant/scripts": {
+      "status": "PASS",
+      "details": "Script updates work, creates new version"
+    },
+    "GET /api/voice-assistant/guardrails": {
+      "status": "PASS",
+      "details": "Returns forbidden_topics and escalation_triggers"
+    },
+    "GET /api/voice-assistant/stats/today": {
+      "status": "PASS",
+      "details": "Returns today_calls, today_matched, today_flagged, recent_calls"
+    },
+    "GET /api/voice-assistant/calls": {
+      "status": "PASS",
+      "details": "Returns paginated call list with proper structure"
+    },
+    "Overview Tab UI": {
+      "status": "PASS",
+      "details": "4 stats cards visible (Today's Calls, Matched to Claims, Flagged for Review, Mode)"
+    },
+    "Scripts Tab UI": {
+      "status": "PASS",
+      "details": "5 editable script areas with variable hints, Save Scripts button"
+    },
+    "Behavior & Guardrails Tab UI": {
+      "status": "PASS",
+      "details": "Mode selection, LLM slider, behavior toggles, forbidden topics badges, escalation keywords badges"
+    },
+    "Review Calls Tab UI": {
+      "status": "PASS",
+      "details": "Call History table with empty state (no calls yet)"
+    },
+    "Master Toggle": {
+      "status": "PASS",
+      "details": "ON/OFF toggle in header works, updates config via API"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  }
+}

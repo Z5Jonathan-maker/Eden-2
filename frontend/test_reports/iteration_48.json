@@ -1,0 +1,85 @@
+{
+  "summary": "Comprehensive functional testing of Operation Eden tactical claims platform. Verified all buttons and interactive elements work. Backend passed 12/13 tests (92%), Frontend passed 21/21 tests (100%). Found one backend bug: claim update with status change fails due to missing notify_status_change function import.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "PUT /api/claims/{claim_id}",
+        "issue": "Claim update fails when status changes - ImportError: cannot import name 'notify_status_change' from 'routes.notifications'. The function is called in routes/claims.py:53-54 but doesn't exist in routes/notifications.py",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "WebSocket notifications",
+        "issue": "WebSocket connection fails (1006 error), falls back to polling which works. Not blocking functionality."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Edit Claim with status change",
+        "issue": "Backend returns 520 error when saving claim with status change, but no error shown to user. UI should show error toast.",
+        "affected_selectors": ["[data-testid='edit-claim-btn']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_functional_flows.py",
+    "/app/test_reports/pytest/functional_flows_results.xml"
+  ],
+  "action_items": [
+    "FIX CRITICAL: Add missing notify_status_change function to backend/routes/notifications.py - The function is called at claims.py:53-54 but doesn't exist",
+    "Optional: Add error toast in frontend when claim update fails (ClaimDetails.jsx)"
+  ],
+  "critical_code_review_comments": [
+    "Missing function notify_status_change in routes/notifications.py - function imported but never defined",
+    "WebSocket notification connection failing - fallback to polling works but should investigate root cause"
+  ],
+  "updated_files": ["/app/backend/tests/test_functional_flows.py"],
+  "success_rate": {
+    "backend": "92% (12/13 tests passed)",
+    "frontend": "100% (21/21 tests passed)"
+  },
+  "test_credentials": {
+    "email": "test@eden.com",
+    "password": "password"
+  },
+  "seed_data_creation": "Created test claims via API: TEST-*, TEST-MIN-*, TEST-UPD-* prefixed claims",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All UI buttons work correctly. The only issue is backend claim update when status changes. The fix is simple: add the missing notify_status_change async function to routes/notifications.py. Example signature: async def notify_status_change(claim_id, claim_number, old_status, new_status, changer_name)",
+  "rca_of_the_issue": {
+    "issue": "Claim update with status change fails with 520 error",
+    "root_cause": "In routes/claims.py lines 52-54, the _notify_status_change helper function tries to import notify_status_change from routes.notifications, but this function doesn't exist. The notifications.py file only has notify_claim_created and notify_claim_assigned functions (lines 289 and 311).",
+    "reproduction_steps": [
+      "1. Login as test@eden.com",
+      "2. Navigate to /claims and open any claim",
+      "3. Click EDIT MISSION button",
+      "4. Change the status field and click SAVE CHANGES",
+      "5. Backend returns 520 error with ImportError message"
+    ],
+    "suggested_fix": "Add async def notify_status_change(claim_id, claim_number, old_status, new_status, changer_name) function to routes/notifications.py similar to existing notify_claim_created function",
+    "files_to_modify": ["backend/routes/notifications.py"]
+  },
+  "features_tested": {
+    "login_flow": "PASS - test@eden.com/password login redirects to /dashboard",
+    "dashboard": "PASS - Stats load, stat cards clickable, New Mission button works",
+    "create_claim": "PASS - Form accepts minimal fields (client_name, address), creates claim successfully",
+    "claim_detail": "PASS - Loads claim data, Edit Mission button opens modal, Back to Garden works",
+    "edit_modal": "PARTIAL - Modal opens with dark theme but save fails when status changed",
+    "claims_list": "PASS - All filter buttons work (All, New, In Progress, Under Review, Completed)",
+    "battle_pass": "PASS - Loads tier grid, tabs switch correctly (Progress/Missions/Leaderboard)",
+    "eve_ai": "PASS - Chat page loads, input field works, send button visible",
+    "contracts": "PASS - Page loads, Create Contract button opens modal",
+    "harvest": "PASS - Map loads, tabs switch (Map/Ranks/Compete/Badges)",
+    "sidebar_navigation": "PASS - All nav links work correctly",
+    "logout": "PASS - Disconnect button logs out and redirects to login"
+  },
+  "mocked_apis": {
+    "battle_pass": "Data is hardcoded in backend",
+    "eve_ai": "Requires OpenAI key for actual AI responses"
+  }
+}
