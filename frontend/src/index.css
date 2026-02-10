@@ -1,0 +1,2017 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   GLOBAL DARK TACTICAL THEME ENFORCEMENT
+   Overrides ALL light-gray/white Tailwind classes
+   so EVERY component automatically gets dark theme.
+   No page-specific fixes needed.
+   ============================================ */
+@layer utilities {
+  /* === BACKGROUND OVERRIDES === */
+  .bg-white       { background-color: hsl(240 6% 10%) !important; }
+  .bg-gray-50     { background-color: hsl(240 5% 8%) !important; }
+  .bg-gray-100    { background-color: hsl(240 5% 10%) !important; }
+  .bg-gray-200    { background-color: hsl(240 4% 14%) !important; }
+  .bg-gray-800    { background-color: hsl(240 4% 16%) !important; }
+
+  /* === TEXT COLOR OVERRIDES === */
+  .text-gray-900  { color: hsl(0 0% 98%) !important; }
+  .text-gray-800  { color: hsl(0 0% 93%) !important; }
+  .text-gray-700  { color: hsl(240 4% 75%) !important; }
+  .text-gray-600  { color: hsl(240 4% 65%) !important; }
+  .text-gray-500  { color: hsl(240 4% 55%) !important; }
+  .text-gray-400  { color: hsl(240 4% 46%) !important; }
+  .text-gray-300  { color: hsl(240 4% 55%) !important; }
+
+  /* === BORDER OVERRIDES === */
+  .border-gray-100 { border-color: hsl(240 4% 16% / 0.5) !important; }
+  .border-gray-200 { border-color: hsl(240 4% 20% / 0.5) !important; }
+  .border-gray-300 { border-color: hsl(240 4% 26% / 0.5) !important; }
+
+  /* === HOVER STATE OVERRIDES === */
+  .hover\:bg-gray-50:hover  { background-color: hsl(240 4% 14%) !important; }
+  .hover\:bg-gray-100:hover { background-color: hsl(240 4% 16%) !important; }
+  .hover\:bg-gray-200:hover { background-color: hsl(240 4% 18%) !important; }
+
+  /* === RING / FOCUS OVERRIDES === */
+  .ring-gray-300  { --tw-ring-color: hsl(240 4% 26% / 0.3) !important; }
+  .focus\:ring-gray-300:focus { --tw-ring-color: hsl(24 95% 48% / 0.3) !important; }
+
+  /* === DIVIDE OVERRIDES === */
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(240 4% 20% / 0.5) !important; }
+
+  /* === PLACEHOLDER OVERRIDES === */
+  .placeholder-gray-400::placeholder { color: hsl(240 4% 40%) !important; }
+  .placeholder-gray-500::placeholder { color: hsl(240 4% 40%) !important; }
+
+  /* === LIGHT SEMANTIC BACKGROUNDS (blue/green/red/orange-50 etc) === */
+  .bg-blue-50     { background-color: hsl(217 91% 60% / 0.1) !important; }
+  .bg-green-50    { background-color: hsl(142 71% 45% / 0.1) !important; }
+  .bg-red-50      { background-color: hsl(0 84% 60% / 0.1) !important; }
+  .bg-orange-50   { background-color: hsl(24 95% 48% / 0.1) !important; }
+  .bg-yellow-50   { background-color: hsl(48 96% 53% / 0.1) !important; }
+  .bg-purple-50   { background-color: hsl(271 81% 56% / 0.1) !important; }
+  .bg-indigo-50   { background-color: hsl(234 89% 60% / 0.1) !important; }
+  .bg-amber-50    { background-color: hsl(38 92% 50% / 0.1) !important; }
+  .bg-emerald-50  { background-color: hsl(152 76% 46% / 0.1) !important; }
+  .bg-teal-50     { background-color: hsl(173 80% 40% / 0.1) !important; }
+  .bg-cyan-50     { background-color: hsl(188 94% 43% / 0.1) !important; }
+  .bg-rose-50     { background-color: hsl(356 100% 66% / 0.1) !important; }
+
+  /* === LIGHT SEMANTIC BORDERS === */
+  .border-blue-200    { border-color: hsl(217 91% 60% / 0.3) !important; }
+  .border-green-200   { border-color: hsl(142 71% 45% / 0.3) !important; }
+  .border-red-200     { border-color: hsl(0 84% 60% / 0.3) !important; }
+  .border-orange-200  { border-color: hsl(24 95% 48% / 0.3) !important; }
+  .border-yellow-200  { border-color: hsl(48 96% 53% / 0.3) !important; }
+  .border-purple-200  { border-color: hsl(271 81% 56% / 0.3) !important; }
+  .border-indigo-200  { border-color: hsl(234 89% 60% / 0.3) !important; }
+
+  /* === LIGHT TEXT FOR SEMANTIC CONTEXTS === */
+  .text-blue-900   { color: hsl(217 91% 70%) !important; }
+  .text-blue-800   { color: hsl(217 91% 70%) !important; }
+  .text-blue-700   { color: hsl(217 91% 65%) !important; }
+  .text-green-900  { color: hsl(142 71% 55%) !important; }
+  .text-green-800  { color: hsl(142 71% 55%) !important; }
+  .text-green-700  { color: hsl(142 71% 55%) !important; }
+  .text-red-700    { color: hsl(0 84% 65%) !important; }
+  .text-red-800    { color: hsl(0 84% 65%) !important; }
+  .text-orange-700 { color: hsl(24 95% 58%) !important; }
+  .text-orange-800 { color: hsl(24 95% 58%) !important; }
+  .text-purple-700 { color: hsl(271 81% 65%) !important; }
+  .text-purple-800 { color: hsl(271 81% 65%) !important; }
+  .text-indigo-700 { color: hsl(234 89% 68%) !important; }
+  .text-indigo-900 { color: hsl(234 89% 68%) !important; }
+  .text-yellow-700 { color: hsl(48 96% 58%) !important; }
+  .text-yellow-800 { color: hsl(48 96% 58%) !important; }
+  .text-amber-700  { color: hsl(38 92% 55%) !important; }
+
+  /* === HOVER LIGHT BACKGROUNDS === */
+  .hover\:bg-orange-50:hover  { background-color: hsl(24 95% 48% / 0.15) !important; }
+  .hover\:bg-blue-50:hover    { background-color: hsl(217 91% 60% / 0.15) !important; }
+  .hover\:bg-green-50:hover   { background-color: hsl(142 71% 45% / 0.15) !important; }
+  .hover\:bg-red-50:hover     { background-color: hsl(0 84% 60% / 0.15) !important; }
+  .hover\:bg-purple-50:hover  { background-color: hsl(271 81% 56% / 0.15) !important; }
+}
+
+/* Google Fonts - Eden Tactical Ops Design System */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+/* ============================================
+   EDEN TACTICAL OPS - GAMING UI SYSTEM
+   AAA Video Game Inspired Design
+   Call of Duty / Fortnite Aesthetics
+   ============================================ */
+
+@layer base {
+  :root {
+    /* ========== TACTICAL OPS THEME ========== */
+    --tactical-bg: 240 6% 4%;                   /* #09090B */
+    --tactical-card: 240 6% 10%;                /* #18181B */
+    --tactical-surface: 240 4% 16%;             /* #27272A */
+    --tactical-border: 0 0% 100% / 0.1;         /* White 10% */
+    
+    /* Text Colors */
+    --tactical-text: 0 0% 98%;                  /* #FAFAFA */
+    --tactical-text-secondary: 240 4% 65%;      /* #A1A1AA */
+    --tactical-text-muted: 240 4% 32%;          /* #52525B */
+    
+    /* Brand Colors */
+    --tactical-primary: 24 95% 48%;             /* #EA580C Orange */
+    --tactical-primary-glow: 24 95% 48% / 0.5;  /* Orange glow */
+    --tactical-secondary: 217 91% 60%;          /* #3B82F6 Blue */
+    --tactical-accent: 142 71% 45%;             /* #22C55E Green */
+    
+    /* Rarity System (Fortnite-style) */
+    --rarity-common: 215 20% 65%;               /* #94A3B8 Gray */
+    --rarity-uncommon: 142 71% 45%;             /* #22C55E Green */
+    --rarity-rare: 217 91% 60%;                 /* #3B82F6 Blue */
+    --rarity-epic: 271 81% 56%;                 /* #A855F7 Purple */
+    --rarity-legendary: 48 96% 53%;             /* #EAB308 Gold */
+    --rarity-mythic: 0 84% 60%;                 /* #EF4444 Red */
+    
+    /* ========== LEGACY EDEN BRAND ========== */
+    --eden-brand-primary: 24 95% 48%;
+    --eden-brand-primary-hover: 21 90% 41%;
+    --eden-brand-primary-light: 34 100% 91%;
+    --eden-brand-primary-muted: 27 96% 83%;
+    
+    /* ========== SEMANTIC COLORS ========== */
+    --eden-success: 142 71% 45%;
+    --eden-success-light: 149 80% 90%;
+    --eden-warning: 48 96% 53%;
+    --eden-warning-light: 48 96% 89%;
+    --eden-error: 0 84% 60%;
+    --eden-error-light: 0 93% 94%;
+    --eden-info: 217 91% 60%;
+    --eden-info-light: 214 95% 93%;
+    
+    /* ========== DARK TACTICAL THEME (DEFAULT) ========== */
+    --background: 240 6% 6%;                    /* zinc-950 */
+    --background-secondary: 240 5% 10%;         /* zinc-900 */
+    --background-tertiary: 240 4% 14%;          /* zinc-800 */
+    --foreground: 0 0% 98%;                     /* zinc-50 */
+    
+    --card: 240 6% 10%;                         /* zinc-900 */
+    --card-foreground: 0 0% 98%;                /* zinc-50 */
+    --card-hover: 240 4% 14%;                   /* zinc-800 */
+    
+    --popover: 240 6% 10%;                      /* zinc-900 */
+    --popover-foreground: 0 0% 98%;             /* zinc-50 */
+    
+    --primary: 24 95% 48%;                      /* Orange-600 */
+    --primary-foreground: 0 0% 98%;             /* White */
+    
+    --secondary: 240 4% 16%;                    /* zinc-800 */
+    --secondary-foreground: 0 0% 80%;           /* zinc-300 */
+    
+    --muted: 240 4% 16%;                        /* zinc-800 */
+    --muted-foreground: 240 4% 46%;             /* zinc-500 */
+    
+    --accent: 24 80% 20%;                       /* dark orange accent */
+    --accent-foreground: 24 95% 53%;            /* Orange-500 */
+    
+    --destructive: 0 84% 60%;                   /* Red-500 */
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 4% 16%;                       /* zinc-800 */
+    --border-hover: 240 4% 20%;                 /* zinc-700 */
+    --input: 240 4% 16%;                        /* zinc-800 */
+    --ring: 24 95% 48%;                         /* Orange-600 */
+    
+    /* Text colors */
+    --text-primary: 0 0% 98%;                   /* zinc-50 */
+    --text-secondary: 240 4% 70%;               /* zinc-400 */
+    --text-muted: 240 4% 46%;                   /* zinc-500 */
+    
+    /* Chart colors */
+    --chart-1: 24 95% 48%;                     /* Orange */
+    --chart-2: 160 84% 39%;                    /* Green */
+    --chart-3: 217 91% 60%;                    /* Blue */
+    --chart-4: 38 92% 50%;                     /* Amber */
+    --chart-5: 262 83% 58%;                    /* Purple */
+    
+    /* Radius */
+    --radius: 0.5rem;
+  }
+
+  /* ========== DARK THEME ========== */
+  .dark {
+    --background: 224 71% 3%;                  /* Gray-950 #030712 */
+    --background-secondary: 220 13% 9%;        /* Gray-900 #111827 */
+    --background-tertiary: 217 19% 16%;        /* Gray-800 #1F2937 */
+    --foreground: 210 20% 98%;                 /* Gray-50 #F9FAFB */
+    
+    --card: 220 13% 9%;                        /* Gray-900 */
+    --card-foreground: 210 20% 98%;            /* Gray-50 */
+    --card-hover: 217 19% 16%;                 /* Gray-800 */
+    
+    --popover: 220 13% 9%;                     /* Gray-900 */
+    --popover-foreground: 210 20% 98%;
+    
+    --primary: 24 95% 53%;                     /* Orange-500 - slightly brighter for dark */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 217 19% 16%;                  /* Gray-800 */
+    --secondary-foreground: 210 20% 98%;       /* Gray-50 */
+    
+    --muted: 217 19% 16%;                      /* Gray-800 */
+    --muted-foreground: 218 11% 62%;           /* Gray-400 */
+    
+    --accent: 217 19% 16%;                     /* Gray-800 */
+    --accent-foreground: 24 95% 53%;           /* Orange-500 */
+    
+    --destructive: 0 62% 50%;                  /* Red adjusted for dark */
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 217 19% 23%;                     /* Gray-700 */
+    --border-hover: 215 14% 34%;               /* Gray-600 */
+    --input: 217 19% 23%;                      /* Gray-700 */
+    --ring: 24 95% 53%;                        /* Orange-500 */
+    
+    /* Text colors - Dark theme */
+    --text-primary: 210 20% 98%;               /* Gray-50 */
+    --text-secondary: 216 12% 84%;             /* Gray-300 */
+    --text-muted: 218 11% 45%;                 /* Gray-500 */
+    
+    /* Chart colors - Dark theme (brighter) */
+    --chart-1: 24 100% 60%;                    /* Orange */
+    --chart-2: 160 84% 50%;                    /* Green */
+    --chart-3: 217 91% 65%;                    /* Blue */
+    --chart-4: 38 92% 55%;                     /* Amber */
+    --chart-5: 262 83% 65%;                    /* Purple */
+  }
+}
+
+/* ========== BASE STYLES ========== */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  /* Prevent flash of wrong theme */
+  html {
+    background-color: hsl(var(--background));
+  }
+  
+  /* Selection colors */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+  
+  /* Scrollbar styling for dark mode */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .dark ::-webkit-scrollbar-track {
+    background: hsl(var(--background-secondary));
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border-hover));
+  }
+}
+
+/* ========== UTILITY CLASSES ========== */
+@layer utilities {
+  /* Eden brand utilities */
+  .bg-eden-primary {
+    background-color: hsl(var(--eden-brand-primary));
+  }
+  
+  .bg-eden-primary-hover:hover {
+    background-color: hsl(var(--eden-brand-primary-hover));
+  }
+  
+  .text-eden-primary {
+    color: hsl(var(--eden-brand-primary));
+  }
+  
+  .border-eden-primary {
+    border-color: hsl(var(--eden-brand-primary));
+  }
+  
+  /* Surface utilities */
+  .surface {
+    @apply bg-card text-card-foreground;
+  }
+  
+  .surface-secondary {
+    background-color: hsl(var(--background-secondary));
+  }
+  
+  .surface-tertiary {
+    background-color: hsl(var(--background-tertiary));
+  }
+  
+  /* Text utilities */
+  .text-primary-color {
+    color: hsl(var(--text-primary));
+  }
+  
+  .text-secondary-color {
+    color: hsl(var(--text-secondary));
+  }
+  
+  .text-muted-color {
+    color: hsl(var(--text-muted));
+  }
+  
+  /* Semantic status utilities */
+  .status-success {
+    @apply bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20;
+  }
+  
+  .status-warning {
+    @apply bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20;
+  }
+  
+  .status-error {
+    @apply bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20;
+  }
+  
+  .status-info {
+    @apply bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20;
+  }
+}
+
+/* ========== COMPONENT OVERRIDES ========== */
+@layer components {
+  /* Eden primary button */
+  .btn-eden-primary {
+    @apply bg-orange-600 hover:bg-orange-700 text-white font-medium;
+    @apply transition-colors duration-200;
+    @apply focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+    @apply dark:bg-orange-500 dark:hover:bg-orange-600;
+    @apply dark:focus:ring-offset-gray-900;
+  }
+  
+  /* Eden secondary button */
+  .btn-eden-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium;
+    @apply transition-colors duration-200;
+    @apply dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200;
+  }
+  
+  /* Eden outline button */
+  .btn-eden-outline {
+    @apply border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium;
+    @apply transition-colors duration-200;
+    @apply dark:border-gray-600 dark:hover:bg-gray-800 dark:text-gray-200;
+  }
+  
+  /* Eden card */
+  .eden-card {
+    @apply bg-white border border-gray-200 rounded-xl;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+    @apply transition-colors duration-200;
+  }
+  
+  .eden-card-hover {
+    @apply eden-card hover:border-gray-300 hover:shadow-md;
+    @apply dark:hover:border-gray-600;
+  }
+  
+  /* Eden input */
+  .eden-input {
+    @apply bg-white border border-gray-300 rounded-lg px-4 py-2;
+    @apply text-gray-900 placeholder-gray-500;
+    @apply focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+    @apply dark:placeholder-gray-400 dark:focus:border-orange-400;
+    @apply transition-colors duration-200;
+  }
+  
+  /* Eden badge */
+  .eden-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply bg-orange-100 text-orange-600;
+    @apply dark:bg-orange-500/20 dark:text-orange-400;
+  }
+  
+  /* Eden section header */
+  .eden-section-header {
+    @apply text-gray-900 dark:text-white font-semibold;
+  }
+  
+  .eden-section-subheader {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+}
+
+/* ========== LEAFLET/MAP STYLES ========== */
+.enzy-pin {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.enzy-pin > div,
+.enzy-pin-inner {
+  cursor: pointer !important;
+  transition: transform 0.15s ease;
+}
+
+.enzy-pin:hover > div,
+.enzy-pin:hover .enzy-pin-inner {
+  transform: scale(1.1);
+}
+
+.user-beacon {
+  pointer-events: none !important;
+}
+
+@keyframes selectedPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 4px 20px rgba(249,115,22,0.6); }
+}
+
+@keyframes userPulse {
+  0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+  70% { box-shadow: 0 0 0 15px rgba(59,130,246,0); }
+  100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+/* ========== LANDING PAGE ANIMATIONS ========== */
+/* Floating animation for icons */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes icon-shine {
+  0% { filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5)) brightness(1); }
+  50% { filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5)) brightness(1.2); }
+  100% { filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5)) brightness(1); }
+}
+
+/* NEW: Spinning animation */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* NEW: Bounce animation */
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* NEW: Glow breathing animation */
+@keyframes glow-breathe {
+  0%, 100% { 
+    filter: drop-shadow(0 0 10px rgba(234, 88, 12, 0.3));
+  }
+  50% { 
+    filter: drop-shadow(0 0 25px rgba(234, 88, 12, 0.7)) drop-shadow(0 0 50px rgba(234, 88, 12, 0.4));
+  }
+}
+
+/* NEW: Scale pulse */
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* NEW: Shimmer effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* NEW: Fade in from left */
+@keyframes fade-in-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* NEW: Fade in from right */
+@keyframes fade-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* NEW: Zoom in */
+@keyframes zoom-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* NEW: Wiggle */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* NEW: Ring pulse for badges */
+@keyframes ring-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.6); }
+  70% { box-shadow: 0 0 0 15px rgba(234, 88, 12, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-icon-shine {
+  animation: icon-shine 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+.animate-glow-breathe {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-fade-in-left {
+  animation: fade-in-left 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-right {
+  animation: fade-in-right 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-zoom-in {
+  animation: zoom-in 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 2s ease-out infinite;
+}
+
+/* Badge icon animation classes */
+.badge-icon {
+  filter: drop-shadow(0 4px 15px rgba(0,0,0,0.4));
+  transition: all 0.3s ease;
+}
+
+.badge-icon:hover {
+  filter: drop-shadow(0 8px 25px rgba(234, 88, 12, 0.5));
+  transform: scale(1.1);
+}
+
+.badge-icon-glow {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
+.badge-icon-spin {
+  animation: spin-slow 10s linear infinite;
+}
+
+.badge-icon-bounce {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+/* Text glow effect */
+.text-glow-orange {
+  text-shadow: 0 0 30px rgba(234, 88, 12, 0.5), 0 0 60px rgba(234, 88, 12, 0.3);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.5), 0 0 60px rgba(59, 130, 246, 0.3);
+}
+
+/* Radial gradient background utility */
+.bg-gradient-radial {
+  background: radial-gradient(circle at center, var(--tw-gradient-stops));
+}
+
+.leaflet-marker-icon {
+  z-index: 900 !important;
+}
+
+.leaflet-marker-icon.enzy-pin {
+  z-index: 950 !important;
+}
+
+/* ========== DEBUG WRAPPER FIX ========== */
+[data-debug-wrapper="true"] {
+  display: contents !important;
+}
+
+/* ========== SHADCN COMPONENT OVERRIDES ========== */
+/* Ensure all shadcn components respect theme */
+.dark .border-input {
+  border-color: hsl(var(--input));
+}
+
+/* Fix table header in dark mode */
+.dark thead th {
+  @apply bg-gray-800/50;
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+  }
+}
+
+/* ============================================
+   ENZY-STYLE HARVEST MODULE STYLES
+   Premium Gamified "Athletic Luxury" Theme
+   ============================================ */
+
+/* Typography */
+.harvest-display {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply text-4xl md:text-5xl font-extrabold tracking-tight leading-tight;
+}
+
+.harvest-h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply text-3xl font-bold tracking-tight;
+}
+
+.harvest-h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply text-2xl font-bold tracking-tight;
+}
+
+.harvest-h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply text-xl font-semibold tracking-tight;
+}
+
+.harvest-body {
+  font-family: 'Inter', sans-serif;
+  @apply text-base font-normal leading-relaxed;
+}
+
+.harvest-caption {
+  font-family: 'Inter', sans-serif;
+  @apply text-sm font-medium text-slate-500 uppercase tracking-wider;
+}
+
+/* Cards - Enzy Style */
+.harvest-card {
+  @apply bg-white border border-slate-100 rounded-2xl p-5;
+  @apply transition-all duration-200 ease-out;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.harvest-card:hover {
+  @apply border-orange-200;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+.harvest-card-interactive {
+  @apply cursor-pointer;
+}
+
+.harvest-card-interactive:hover {
+  @apply ring-2 ring-orange-500/10;
+}
+
+.harvest-card-glass {
+  @apply backdrop-blur-xl bg-white/90 border border-white/20;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+/* Buttons - Enzy Style */
+.harvest-btn-primary {
+  @apply bg-orange-600 text-white font-semibold px-6 py-3 rounded-full;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:bg-orange-700 active:scale-95;
+  box-shadow: 0 4px 14px -3px rgba(234, 88, 12, 0.4);
+}
+
+.harvest-btn-secondary {
+  @apply bg-slate-100 text-slate-900 font-medium px-5 py-2.5 rounded-full;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:bg-slate-200 active:scale-95;
+}
+
+.harvest-btn-ghost {
+  @apply text-slate-600 px-4 py-2 rounded-lg;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:bg-slate-50 hover:text-slate-900;
+}
+
+/* Badges - Enzy Gamification Style */
+.harvest-badge-gamification {
+  @apply flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
+  @apply bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-100 text-orange-700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.harvest-badge-rank-1 {
+  @apply bg-gradient-to-r from-amber-100 to-yellow-100 border-amber-300 text-amber-800;
+}
+
+.harvest-badge-rank-2 {
+  @apply bg-gradient-to-r from-slate-100 to-gray-100 border-slate-300 text-slate-700;
+}
+
+.harvest-badge-rank-3 {
+  @apply bg-gradient-to-r from-orange-100 to-amber-100 border-orange-300 text-orange-800;
+}
+
+/* Bottom Navigation - Mobile First */
+.harvest-bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl;
+  @apply border-t border-slate-100;
+  z-index: 9999 !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.harvest-nav-item {
+  @apply flex flex-col items-center justify-center gap-0.5 px-2 py-2;
+  @apply transition-all duration-200 ease-out;
+  @apply text-slate-400;
+  min-width: 64px;
+}
+
+.harvest-nav-item-active {
+  @apply text-orange-600;
+}
+
+.harvest-nav-item-active .harvest-nav-icon {
+  @apply text-orange-600 scale-110;
+}
+
+.harvest-nav-icon {
+  @apply w-6 h-6 transition-transform duration-200;
+}
+
+.harvest-nav-label {
+  @apply text-xs font-medium;
+}
+
+/* Progress Ring Animation */
+.harvest-progress-ring {
+  transition: stroke-dashoffset 0.7s ease-out;
+}
+
+/* Podium Styles */
+.harvest-podium {
+  @apply flex items-end justify-center gap-2 py-6;
+}
+
+.harvest-podium-step {
+  @apply flex flex-col items-center;
+}
+
+.harvest-podium-avatar {
+  @apply w-16 h-16 rounded-full border-4 border-white shadow-lg mb-2;
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.harvest-podium-pillar {
+  @apply rounded-t-lg flex items-center justify-center font-bold text-white;
+  @apply transition-all duration-300 ease-out;
+}
+
+.harvest-podium-1st {
+  @apply bg-gradient-to-t from-amber-500 to-yellow-400;
+  height: 100px;
+  width: 80px;
+}
+
+.harvest-podium-2nd {
+  @apply bg-gradient-to-t from-slate-400 to-slate-300;
+  height: 70px;
+  width: 72px;
+}
+
+.harvest-podium-3rd {
+  @apply bg-gradient-to-t from-orange-600 to-orange-500;
+  height: 50px;
+  width: 72px;
+}
+
+/* Streak Flame Animation */
+@keyframes flameFlicker {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  25% { transform: scale(1.05) rotate(2deg); }
+  50% { transform: scale(1.1) rotate(-1deg); }
+  75% { transform: scale(1.05) rotate(1deg); }
+}
+
+.harvest-flame {
+  animation: flameFlicker 1.5s ease-in-out infinite;
+}
+
+/* Challenge Card States */
+.harvest-challenge-locked {
+  @apply bg-slate-50 border-slate-200 opacity-60;
+}
+
+.harvest-challenge-active {
+  @apply bg-white border-orange-200;
+}
+
+.harvest-challenge-completed {
+  @apply bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/30;
+}
+
+.harvest-challenge-claimed {
+  @apply bg-purple-50 border-purple-200 opacity-75;
+}
+
+/* Confetti Animation */
+@keyframes confettiFall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.harvest-confetti {
+  animation: confettiFall 3s ease-out forwards;
+}
+
+/* Staggered Entrance Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.harvest-animate-in {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.harvest-animate-in-delay-1 { animation-delay: 0.1s; }
+.harvest-animate-in-delay-2 { animation-delay: 0.2s; }
+.harvest-animate-in-delay-3 { animation-delay: 0.3s; }
+.harvest-animate-in-delay-4 { animation-delay: 0.4s; }
+
+/* Mobile Content Padding for Bottom Nav */
+.harvest-content {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* Glass Morphism Effects */
+.harvest-glass {
+  @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+/* Metric Cards */
+.harvest-metric {
+  @apply text-center p-4 rounded-2xl transition-all duration-200;
+}
+
+.harvest-metric-value {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply text-3xl font-bold;
+}
+
+.harvest-metric-label {
+  @apply text-xs text-slate-500 uppercase tracking-wide mt-1;
+}
+
+
+/* ============================================
+   AAA GAME-QUALITY UI POLISH
+   Premium micro-interactions and effects
+   ============================================ */
+
+/* Enhanced Focus States - Accessible and Visually Premium */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Smooth Page Transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
+/* Premium Hover Effects for Interactive Cards */
+.interactive-card {
+  @apply transition-all duration-300 ease-out;
+  transform: translateY(0);
+}
+
+.interactive-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
+}
+
+.interactive-card:active {
+  transform: translateY(-2px);
+  transition-duration: 100ms;
+}
+
+/* Shimmer Loading Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-loading {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--background)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Premium Button Press Effect */
+.btn-press {
+  @apply transition-all duration-150;
+  transform: scale(1);
+}
+
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Glow Effect for Success States */
+@keyframes successGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.success-glow {
+  animation: successGlow 2s ease-in-out infinite;
+}
+
+/* Premium Number Counter Animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-count {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+/* Staggered List Animation */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.05s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.15s; }
+.stagger-item:nth-child(4) { animation-delay: 0.2s; }
+.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(6) { animation-delay: 0.3s; }
+.stagger-item:nth-child(7) { animation-delay: 0.35s; }
+.stagger-item:nth-child(8) { animation-delay: 0.4s; }
+
+/* Smooth Skeleton Pulse */
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+/* Premium Input Focus Ring */
+input:focus, textarea:focus, select:focus {
+  @apply ring-2 ring-primary/20 border-primary;
+  transition: all 0.2s ease;
+}
+
+/* Tooltip Arrow Enhancement */
+.tooltip-arrow {
+  @apply absolute w-2 h-2 bg-inherit rotate-45;
+}
+
+/* Badge Pill with Icon Alignment */
+.badge-pill {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+}
+
+.badge-pill svg {
+  @apply w-3.5 h-3.5;
+}
+
+/* Status Indicator Dot */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-pulse {
+  @apply relative;
+}
+
+.status-dot-pulse::after {
+  content: '';
+  @apply absolute inset-0 rounded-full;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Premium Table Row Hover */
+tr.table-row-interactive {
+  @apply transition-colors duration-150;
+}
+
+tr.table-row-interactive:hover {
+  @apply bg-muted/50;
+}
+
+/* Notification Badge Bounce */
+@keyframes notificationBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.notification-badge {
+  animation: notificationBounce 0.5s ease-out;
+}
+
+/* Mobile Touch Feedback */
+@media (hover: none) and (pointer: coarse) {
+  .touch-feedback:active {
+    @apply bg-muted/50;
+    transition: background-color 0.1s ease;
+  }
+}
+
+/* Smooth Modal Backdrop */
+.modal-backdrop {
+  @apply bg-black/50 backdrop-blur-sm;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Premium Progress Bar */
+.progress-bar-animated {
+  @apply bg-primary rounded-full;
+  transition: width 0.5s ease-out;
+}
+
+.progress-bar-shine {
+  @apply relative overflow-hidden;
+}
+
+.progress-bar-shine::after {
+  content: '';
+  @apply absolute inset-0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Avatar Ring Effect */
+.avatar-ring {
+  @apply ring-2 ring-background shadow-lg;
+}
+
+.avatar-ring-primary {
+  @apply ring-primary;
+}
+
+/* Floating Action Button Shadow */
+.fab-shadow {
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1),
+    0 10px 20px -5px rgba(234, 88, 12, 0.3);
+}
+
+.fab-shadow:hover {
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1),
+    0 20px 30px -10px rgba(234, 88, 12, 0.4);
+}
+
+/* Improved Scrollbar for Light Theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Hide scrollbar but keep functionality for specific elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive Text Truncation */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Premium Empty State */
+.empty-state {
+  @apply flex flex-col items-center justify-center py-12 px-6 text-center;
+}
+
+.empty-state-icon {
+  @apply w-16 h-16 mb-4 text-muted-foreground/50;
+}
+
+.empty-state-title {
+  @apply text-lg font-semibold text-foreground mb-2;
+}
+
+.empty-state-description {
+  @apply text-sm text-muted-foreground max-w-sm;
+}
+
+/* Keyboard Navigation Highlight */
+[data-focus-visible-added] {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+/* ============================================
+   EDEN TACTICAL OPS - GAMING UI SYSTEM
+   High-End AAA Game Aesthetics
+   ============================================ */
+
+/* Tactical Fonts */
+.font-tactical {
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+}
+
+.font-mono-tactical {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Text Glow Effects */
+.text-glow {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+.text-glow-sm {
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+}
+
+.text-glow-orange {
+  text-shadow: 0 0 10px rgba(234, 88, 12, 0.7), 0 0 20px rgba(234, 88, 12, 0.5), 0 0 30px rgba(234, 88, 12, 0.3);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.7), 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.7), 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+/* Glitch Effect */
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+@keyframes glitchText {
+  0%, 100% { text-shadow: -2px 0 #ea580c, 2px 0 #3b82f6; }
+  25% { text-shadow: 2px 0 #ea580c, -2px 0 #3b82f6; }
+  50% { text-shadow: -2px 0 #3b82f6, 2px 0 #ea580c; }
+  75% { text-shadow: 2px 0 #3b82f6, -2px 0 #ea580c; }
+}
+
+.glitch-text {
+  animation: glitchText 0.3s infinite;
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.2s infinite;
+}
+
+/* Scanline Effect */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Tactical Card Styles */
+.card-tactical {
+  @apply bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-lg;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.card-tactical-hover:hover {
+  @apply border-orange-500/50;
+  box-shadow: 
+    0 0 0 1px rgba(234, 88, 12, 0.2),
+    0 4px 24px rgba(234, 88, 12, 0.15),
+    0 0 40px rgba(234, 88, 12, 0.1);
+}
+
+/* Tactical Border Accent */
+.border-tactical {
+  border-image: linear-gradient(135deg, #ea580c, #3b82f6) 1;
+}
+
+.border-tactical-glow {
+  @apply border-2 border-orange-500/50;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.3), inset 0 0 10px rgba(234, 88, 12, 0.1);
+}
+
+/* HUD Corner Brackets */
+.hud-corners {
+  position: relative;
+}
+
+.hud-corners::before,
+.hud-corners::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: rgba(234, 88, 12, 0.7);
+  border-style: solid;
+  border-width: 0;
+}
+
+.hud-corners::before {
+  top: 0;
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.hud-corners::after {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* Animated Gradient Background */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.bg-tactical-gradient {
+  background: linear-gradient(135deg, #09090b 0%, #18181b 50%, #0c0c0f 100%);
+}
+
+.bg-tactical-animated {
+  background: linear-gradient(-45deg, #09090b, #1a1a2e, #16213e, #09090b);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* Tactical Button Styles */
+.btn-tactical {
+  @apply relative overflow-hidden font-tactical font-semibold uppercase tracking-wider;
+  @apply bg-gradient-to-r from-orange-600 to-orange-500 text-white;
+  @apply border border-orange-400/30 rounded;
+  @apply transition-all duration-300;
+  box-shadow: 0 4px 20px rgba(234, 88, 12, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.btn-tactical:hover {
+  box-shadow: 0 6px 30px rgba(234, 88, 12, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-tactical:active {
+  transform: translateY(0);
+}
+
+.btn-tactical::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-tactical:hover::before {
+  left: 100%;
+}
+
+/* Tactical Input Styles */
+.input-tactical {
+  @apply bg-zinc-900/80 border border-zinc-600/50 rounded;
+  @apply text-zinc-100 placeholder:text-zinc-500;
+  @apply focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/20;
+  @apply transition-all duration-200;
+}
+
+.input-tactical:focus {
+  box-shadow: 0 0 20px rgba(234, 88, 12, 0.15);
+}
+
+/* Status Indicator Pulse */
+@keyframes tacticalPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50% { opacity: 0.8; box-shadow: 0 0 0 8px transparent; }
+}
+
+.pulse-tactical {
+  animation: tacticalPulse 2s infinite;
+}
+
+/* Rarity Badge Styles (Fortnite-inspired) */
+.badge-common {
+  @apply bg-zinc-600/30 text-zinc-300 border border-zinc-500/30;
+}
+
+.badge-uncommon {
+  @apply bg-green-600/20 text-green-400 border border-green-500/30;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+.badge-rare {
+  @apply bg-blue-600/20 text-blue-400 border border-blue-500/30;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.badge-epic {
+  @apply bg-purple-600/20 text-purple-400 border border-purple-500/30;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.badge-legendary {
+  @apply bg-yellow-600/20 text-yellow-400 border border-yellow-500/30;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+}
+
+.badge-mythic {
+  @apply bg-red-600/20 text-red-400 border border-red-500/30;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  animation: tacticalPulse 2s infinite;
+}
+
+/* Stat Counter Animation */
+@keyframes countGlow {
+  0%, 100% { text-shadow: 0 0 5px currentColor; }
+  50% { text-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+
+.stat-glow {
+  animation: countGlow 3s ease-in-out infinite;
+}
+
+/* Progress Bar - Tactical Style */
+.progress-tactical {
+  @apply h-2 bg-zinc-800 rounded-full overflow-hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.progress-tactical-fill {
+  @apply h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.5);
+  transition: width 0.5s ease-out;
+}
+
+/* XP/Level Bar */
+.xp-bar {
+  @apply relative h-3 bg-zinc-800/80 rounded-full overflow-hidden border border-zinc-700/50;
+}
+
+.xp-bar-fill {
+  @apply h-full bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-500;
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Navigation Item - Active State */
+.nav-tactical-active {
+  @apply bg-gradient-to-r from-orange-600/20 to-transparent border-l-2 border-orange-500;
+  box-shadow: inset 3px 0 15px rgba(234, 88, 12, 0.1);
+}
+
+/* Grid Pattern Overlay */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Tactical Divider */
+.divider-tactical {
+  @apply h-px bg-gradient-to-r from-transparent via-zinc-600 to-transparent;
+}
+
+/* Loading Spinner - Tactical */
+@keyframes tacticalSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner-tactical {
+  @apply w-8 h-8 border-2 border-zinc-700 border-t-orange-500 rounded-full;
+  animation: tacticalSpin 1s linear infinite;
+}
+
+/* Notification Dot */
+.notification-tactical {
+  @apply absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  animation: tacticalPulse 2s infinite;
+}
+
+/* Glass Card Effect */
+.glass-tactical {
+  @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover Reveal Line */
+.hover-line {
+  @apply relative overflow-hidden;
+}
+
+.hover-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #ea580c, #f97316);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.hover-line:hover::after {
+  transform: translateX(0);
+}
+
+/* Tactical Theme Variables for Components */
+.theme-tactical {
+  --background: 240 6% 4%;
+  --foreground: 0 0% 98%;
+  --card: 240 6% 10%;
+  --card-foreground: 0 0% 98%;
+  --primary: 24 95% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 4% 65%;
+  --border: 0 0% 100% / 0.1;
+  --input: 240 4% 16%;
+  --ring: 24 95% 48%;
+}
+
+/* ============================================
+   ENHANCED ANIMATIONS & SHADOW SYSTEM
+   Deep 3D effects, micro-interactions, glow renders
+   ============================================ */
+
+/* === FADE ANIMATIONS === */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-bottom {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.4s ease-out forwards;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.4s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.4s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out forwards;
+}
+
+/* === STAGGER CHILDREN ANIMATIONS === */
+.stagger-children > * {
+  opacity: 0;
+  animation: slide-in-bottom 0.4s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
+
+/* === CARD SHADOW SYSTEM === */
+.shadow-tactical {
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.shadow-tactical-hover {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.shadow-tactical-hover:hover {
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(234, 88, 12, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.shadow-glow-orange {
+  box-shadow:
+    0 4px 15px rgba(234, 88, 12, 0.15),
+    0 1px 4px rgba(234, 88, 12, 0.1),
+    inset 0 0 0 1px rgba(234, 88, 12, 0.05);
+}
+
+.shadow-glow-blue {
+  box-shadow:
+    0 4px 15px rgba(59, 130, 246, 0.15),
+    0 1px 4px rgba(59, 130, 246, 0.1);
+}
+
+.shadow-glow-green {
+  box-shadow:
+    0 4px 15px rgba(34, 197, 94, 0.15),
+    0 1px 4px rgba(34, 197, 94, 0.1);
+}
+
+.shadow-glow-purple {
+  box-shadow:
+    0 4px 15px rgba(168, 85, 247, 0.15),
+    0 1px 4px rgba(168, 85, 247, 0.1);
+}
+
+/* === HOVER LIFT EFFECTS === */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.hover-lift-sm {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift-sm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* === GLOW ANIMATIONS === */
+@keyframes glow-pulse-orange {
+  0%, 100% { box-shadow: 0 0 5px rgba(234, 88, 12, 0.2), 0 0 15px rgba(234, 88, 12, 0.1); }
+  50% { box-shadow: 0 0 12px rgba(234, 88, 12, 0.4), 0 0 30px rgba(234, 88, 12, 0.2); }
+}
+
+@keyframes glow-pulse-blue {
+  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2), 0 0 15px rgba(59, 130, 246, 0.1); }
+  50% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2); }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(234, 88, 12, 0.2); }
+  50% { border-color: rgba(234, 88, 12, 0.5); }
+}
+
+.animate-glow-pulse-orange {
+  animation: glow-pulse-orange 3s ease-in-out infinite;
+}
+
+.animate-glow-pulse-blue {
+  animation: glow-pulse-blue 3s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+/* === BUTTON PRESS EFFECTS === */
+.btn-press-effect {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-press-effect:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* === ICON 3D DROP SHADOW === */
+.icon-3d-shadow {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.icon-3d-shadow:hover {
+  filter: drop-shadow(0 6px 12px rgba(234, 88, 12, 0.3)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  transform: scale(1.08);
+}
+
+/* === PAGE ENTRANCE ANIMATION === */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.35s ease-out forwards;
+}
+
+/* === CARD TACTICAL ENHANCEMENTS === */
+.card-tactical {
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+
+.card-tactical:hover {
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(234, 88, 12, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* === GRADIENT TEXT EFFECT === */
+.text-gradient-orange {
+  background: linear-gradient(135deg, #f97316, #ea580c, #c2410c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* === NOISE TEXTURE OVERLAY === */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* === SCAN LINE EFFECT === */
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scan-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 50%, rgba(234, 88, 12, 0.02) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* === COUNTER ANIMATION === */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count-up {
+  animation: count-up 0.5s ease-out forwards;
+}
+
+/* === SKELETON ENHANCED === */
+@keyframes skeleton-glow {
+  0%, 100% { background-position: -200% center; }
+  50% { background-position: 200% center; }
+}
+
+.skeleton-tactical {
+  background: linear-gradient(90deg, rgba(39, 39, 42, 0.5) 25%, rgba(63, 63, 70, 0.3) 50%, rgba(39, 39, 42, 0.5) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-glow 2s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+
+/* ============================================
+   MOBILE RESPONSIVE FIXES
+   Prevent text overflow, fix button sizing,
+   ensure touch-friendly interactions
+   ============================================ */
+
+/* Global text overflow prevention */
+h1, h2, h3, h4, h5, h6, p, span, a, td, th, label {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Prevent horizontal scroll on mobile */
+body, #root, .App {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 640px) {
+  /* Full-width buttons on small screens */
+  .btn-tactical {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Stack action buttons vertically on mobile */
+  .flex-wrap {
+    gap: 0.5rem !important;
+  }
+  
+  /* Prevent cards from overflowing */
+  .card-tactical {
+    overflow: hidden;
+  }
+  
+  /* Fix table overflow */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure modal doesn't overflow screen */
+  .fixed.inset-0 > div {
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+  
+  /* Font size adjustments for readability */
+  .font-tactical {
+    letter-spacing: 0.02em;
+  }
+  
+  /* Touch-friendly minimum tap targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+  
+  /* Fix stat cards text size on small screens */
+  .text-4xl {
+    font-size: 1.75rem;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Smooth scrolling for the entire app */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fix input zoom on iOS (font-size < 16px causes zoom) */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+

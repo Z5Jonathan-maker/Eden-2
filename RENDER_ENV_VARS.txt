@@ -1,0 +1,6 @@
+MONGO_URL=mongodb+srv://z5jonathan_db_user:Hipposro12!@cluster0.h3qhd0n.mongodb.net/?appName=Cluster0
+DB_NAME=eden_claims
+JWT_SECRET_KEY=783O9-fmdQoe4fmngqdk1J_VbFisC3aP8i1w-qNnVpk
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+CORS_ORIGINS=http://localhost:3000
