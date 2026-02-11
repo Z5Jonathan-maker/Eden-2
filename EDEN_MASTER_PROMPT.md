@@ -110,3 +110,131 @@ When asked to audit, prioritize in this order unless directed otherwise:
    - Execution notes
 
 If there is a conflict between convenience and operational safety, choose operational safety.
+
+---
+
+## 4) EDEN — Super Cleanup & Stabilization Prompt
+
+*(Non-Destructive · Operator-Safe · Post-Governance)*
+
+You are operating under:
+1. Care Claims — Advanced Master Prompt
+2. EDEN — Master Execution Prompt
+
+All non-negotiables apply.
+
+This prompt is **not** for refactors, redesigns, migrations, or architectural changes.
+
+### Primary objective
+Perform a non-destructive cleanup pass on Eden that:
+- Improves reliability
+- Improves maintainability
+- Reduces ambiguity
+- Reduces silent failure risk
+
+Without:
+- Changing behavior
+- Changing data shape
+- Changing user flows
+- Introducing abstractions
+- Rewriting working code
+
+If a change risks behavior, do **not** make it. Flag it instead.
+
+### Allowed cleanup actions (only these)
+You may:
+- Remove dead, unused, or unreachable code (only if provably unused)
+- Remove commented-out blocks that will never be reactivated
+- Fix:
+  - Misleading variable names
+  - Misleading comments
+  - Incorrect docstrings
+- Normalize:
+  - Logging messages
+  - Error messages
+  - TODO/FIXME notes
+- Improve:
+  - Error handling clarity
+  - Explicit failure states
+  - Defensive checks
+- Add:
+  - Comments explaining why something exists
+  - Guardrails that prevent silent failures
+- Consolidate:
+  - Duplicate comments (not duplicate logic)
+  - Repeated error messages into constants (only with zero behavior change)
+
+### Strictly disallowed actions
+- No refactors
+- No file reorganization
+- No renaming public methods, routes, or models
+- No changing function signatures
+- No changing async/sync behavior
+- No dependency changes
+- No performance "optimizations"
+- No formatting-only churn
+- No "while we're here" changes
+
+If tempted to do any of the above, stop.
+
+### Cleanup mental model
+For every proposed cleanup, ask:
+1. Does this reduce confusion for the next engineer?
+2. Does this reduce the chance of a silent failure?
+3. Does this preserve 100% of existing behavior?
+4. Can this be undone easily if needed?
+
+If all four are not a clear "yes", do not proceed.
+
+### Execution rules
+- Make changes incrementally
+- Group changes by file
+- After each file:
+  - State what changed
+  - State explicitly what did not change
+- If uncertainty exists:
+  - Preserve existing behavior
+  - Add a comment instead of changing logic
+
+### Required output format
+For each cleanup batch, respond with:
+
+1) Summary
+- What was cleaned
+- Why it mattered
+- Risk level (Low / None)
+
+2) File-by-file changes
+For each file:
+- What was removed
+- What was clarified
+- What guardrails were added
+
+3) Explicit non-changes
+- List things intentionally not touched and why
+
+4) Flagged items (if any)
+- List anything that looks fragile
+- List anything that might deserve future attention
+- List anything that requires approval before changing
+
+### Default behavior when in doubt
+If unsure:
+- Do nothing
+- Add a comment
+- Flag it for review
+
+Never guess.
+Never assume.
+Never "improve" behavior.
+
+### Final command
+This cleanup exists to make Eden:
+- Calmer to work in
+- Safer to extend later
+- Easier to debug under pressure
+
+If the diff feels boring and obvious, you did it right.
+If the diff feels impressive, you went too far.
+
+Proceed with restraint.
