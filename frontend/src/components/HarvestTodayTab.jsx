@@ -22,8 +22,9 @@ import {
   CheckCircle2, ChevronRight, TrendingUp, Award, Crown, Users,
   Sun, CloudSun, Sparkles
 } from 'lucide-react';
+import { resolveApiBase } from '../lib/api';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = resolveApiBase();
 
 // Enzy-Style Progress Ring Component - Tactical Theme
 const ProgressRing = ({ progress, size = 180, strokeWidth = 14, children }) => {
@@ -205,6 +206,97 @@ const CompetitionCard = ({ competition }) => {
   );
 };
 
+// Incentives Releases Panel
+const IncentivesPanel = ({ data }) => {
+  const { loading, error, season, phase, drops } = data || {};
+  const featured = (drops || []).find((d) => d.featured) || (drops || [])[0];
+  const progress = Math.min(featured?.progress_percent || 0, 100);
+  const isEligible = featured?.eligible;
+  const missing = featured?.missing || [];
+
+  return (
+    <div className="card-tactical border border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-zinc-900/60 to-zinc-900/60 harvest-animate-in harvest-animate-in-delay-3 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Gift className="w-5 h-5 text-orange-400" />
+          <h3 className="font-tactical font-bold text-white uppercase tracking-wide">Incentives Releases</h3>
+        </div>
+        {season?.name && (
+          <span className="px-2 py-1 rounded bg-zinc-800/50 border border-zinc-700/30 text-zinc-300 font-mono text-xs">
+            {phase ? phase.toUpperCase() : 'SEASON'} · {season.name}
+          </span>
+        )}
+      </div>
+
+      {loading && (
+        <div className="text-sm text-zinc-500 font-mono">Loading incentives...</div>
+      )}
+
+      {!loading && error && (
+        <div className="text-sm text-orange-300 font-mono">{error}</div>
+      )}
+
+      {!loading && !error && !featured && (
+        <div className="text-center py-6">
+          <div className="w-14 h-14 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-3 border border-zinc-700/30">
+            <Sparkles className="w-7 h-7 text-zinc-600" />
+          </div>
+          <p className="font-tactical font-semibold text-zinc-300">No Active Drops</p>
+          <p className="text-sm text-zinc-500 font-mono mt-1">Check back for the next release.</p>
+        </div>
+      )}
+
+      {!loading && !error && featured && (
+        <>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-xl bg-zinc-800/60 border border-zinc-700/40 overflow-hidden flex items-center justify-center">
+              {featured.image_url ? (
+                <img src={featured.image_url} alt={featured.name} className="w-full h-full object-cover" />
+              ) : (
+                <Gift className="w-7 h-7 text-orange-400" />
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="font-tactical font-semibold text-white">{featured.name}</p>
+                <span className={`px-2 py-1 rounded text-xs font-mono border ${isEligible ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-zinc-800/60 text-zinc-300 border-zinc-700/40'}`}>
+                  {isEligible ? 'UNLOCKED' : 'LOCKED'}
+                </span>
+              </div>
+              <p className="text-sm text-zinc-500 font-mono">{featured.description}</p>
+              {featured.next_target && !isEligible && (
+                <p className="text-sm text-orange-400 font-tactical mt-1 flex items-center gap-1">
+                  <Target className="w-4 h-4" />
+                  {featured.next_target}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex justify-between text-sm mb-1.5">
+              <span className="text-zinc-500 font-mono">Progress</span>
+              <span className="font-tactical font-bold text-orange-400">{progress.toFixed(0)}%</span>
+            </div>
+            <Progress value={progress} className="h-2 bg-zinc-800/50" />
+          </div>
+
+          {missing.length > 0 && (
+            <div className="mt-3 space-y-1 text-xs text-zinc-500 font-mono">
+              {missing.slice(0, 2).map((req, idx) => (
+                <div key={`${req.type}-${idx}`} className="flex items-center justify-between">
+                  <span>{req.detail}</span>
+                  <span>{req.current} / {req.target}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 // Challenge Card Component - Tactical Theme
 const ChallengeCard = ({ challenge, onClaim }) => {
   const progress = Math.min((challenge.current_progress / challenge.requirement_value) * 100, 100);
@@ -283,6 +375,13 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [rewardProgress, setRewardProgress] = useState(null);
   const [activeCompetitions, setActiveCompetitions] = useState([]);
+  const [incentives, setIncentives] = useState({
+    loading: true,
+    error: null,
+    season: null,
+    phase: null,
+    drops: []
+  });
   
   const token = localStorage.getItem('eden_token');
   
@@ -293,13 +392,15 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [todayRes, streakRes, challengesRes, campaignsRes, rewardsRes, competitionsRes] = await Promise.all([
+      const [todayRes, streakRes, challengesRes, campaignsRes, rewardsRes, competitionsRes, incentivesActiveRes, incentivesProgressRes] = await Promise.all([
         fetch(`${API_URL}/api/harvest/v2/today`, { headers }),
         fetch(`${API_URL}/api/harvest/streak`, { headers }),
         fetch(`${API_URL}/api/harvest/challenges`, { headers }),
         fetch(`${API_URL}/api/harvest/campaigns`, { headers }),
         fetch(`${API_URL}/api/harvest/progress/rewards`, { headers }),
-        fetch(`${API_URL}/api/incentives/me/dashboard`, { headers })
+        fetch(`${API_URL}/api/incentives/me/dashboard`, { headers }),
+        fetch(`${API_URL}/api/harvest/incentives/active`, { headers }),
+        fetch(`${API_URL}/api/harvest/incentives/progress`, { headers })
       ]);
       
       // Use the v2/today endpoint as primary source for daily stats
@@ -348,8 +449,38 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
         const data = await competitionsRes.json();
         setActiveCompetitions(data.active_competitions || []);
       }
+
+      // Incentives Releases (Harvest drops)
+      let incentivesError = null;
+      let incentivesSeason = null;
+      let incentivesPhase = null;
+      let incentivesDrops = [];
+
+      if (incentivesProgressRes.ok) {
+        const data = await incentivesProgressRes.json();
+        incentivesSeason = data.season || null;
+        incentivesPhase = data.phase || null;
+        incentivesDrops = data.drops_progress || [];
+      } else {
+        incentivesError = 'Incentives progress unavailable';
+      }
+
+      if (incentivesActiveRes.ok) {
+        const data = await incentivesActiveRes.json();
+        incentivesSeason = data.season || incentivesSeason;
+        incentivesPhase = data.phase || incentivesPhase;
+      }
+
+      setIncentives({
+        loading: false,
+        error: incentivesError,
+        season: incentivesSeason,
+        phase: incentivesPhase,
+        drops: incentivesDrops
+      });
     } catch (err) {
       console.error('Failed to fetch today data:', err);
+      setIncentives(prev => ({ ...prev, loading: false, error: 'Incentives fetch failed' }));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -471,6 +602,9 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
             ))}
           </div>
         )}
+
+        {/* Incentives Releases */}
+        <IncentivesPanel data={incentives} />
         
         {/* Mission of the Day */}
         {campaigns.length > 0 && (
