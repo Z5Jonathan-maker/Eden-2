@@ -12,7 +12,7 @@
  */
 (function () {
   window.__EDEN_CONFIG__ = window.__EDEN_CONFIG__ || {};
-  // Empty string = same origin (relative /api/* requests)
-  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "";
+  // Do not force BACKEND_URL to empty by default.
+  // If unset, frontend falls back to build-time env vars (REACT_APP_BACKEND_URL/REACT_APP_API_URL).
+  // Set window.__EDEN_CONFIG__.BACKEND_URL explicitly only when you want a runtime override.
 })();
-

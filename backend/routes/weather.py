@@ -8,12 +8,18 @@ Proprietary Weather & Date of Loss Verification System
 import os
 import uuid
 import httpx
-import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from dependencies import db, get_current_active_user
+from services.weather_engine import (
+    summarize_station_quality,
+    aggregate_station_evidence,
+    build_wind_candidates,
+    build_hail_candidates,
+    parse_timestamp,
+)
 
 router = APIRouter(prefix="/api/weather", tags=["weather"])
 
@@ -29,6 +35,7 @@ NWS_HEADERS = {
 
 # ASOS/METAR via Iowa State University (free, comprehensive historical data)
 IOWA_METAR_BASE = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
+IOWA_LSR_BASE = "https://mesonet.agron.iastate.edu/geojson/lsr.py"
 
 
 # ============ MODELS ============
@@ -89,6 +96,13 @@ class DateOfLossVerification(BaseModel):
     geographic_match: bool = False
     temporal_match: bool = False
     narrative_match: bool = False
+
+    # Defensibility metrics
+    weather_qc_score: Optional[float] = None
+    weighted_peak_wind_mph: Optional[float] = None
+    confidence_low_mph: Optional[float] = None
+    confidence_high_mph: Optional[float] = None
+    evidence_trace: Optional[Dict[str, Any]] = None
     
     # Citation-ready output
     citation_text: Optional[str] = None
@@ -114,52 +128,18 @@ class WeatherSearchRequest(BaseModel):
     event_type: Optional[str] = None  # wind, hail, hurricane, tornado
 
 
-class DolDiscoverRequest(BaseModel):
-    """Discover & rank candidate dates of loss (DOL) for a property."""
+class CandidateDiscoverRequest(BaseModel):
     address: str
     city: str
     state: str
     zip_code: str
-    peril_mode: str = Field(default="wind", description="wind|hail")
-    window_days: int = Field(default=365, ge=1, le=3650)
-    # Advanced (optional)
-    start_date: Optional[str] = Field(default=None, description="YYYY-MM-DD")
-    end_date: Optional[str] = Field(default=None, description="YYYY-MM-DD")
-    min_wind_mph: float = Field(default=30.0, ge=0)
-    max_distance_miles: float = Field(default=50.0, ge=1)
-
-
-class DolStationUsed(BaseModel):
-    station_id: str
-    station_name: str
-    distance_miles: float
-
-
-class DolCandidate(BaseModel):
-    candidate_date: str  # YYYY-MM-DD
-    peak_window_start: Optional[str] = None
-    peak_window_end: Optional[str] = None
-    confidence: str
-    explanation: str
-    denial_rebuttal_bullets: List[str] = []
-
-    # Wind fields
-    max_gust_mph: Optional[float] = None
-    sustained_mph: Optional[float] = None
-    stations_used: List[DolStationUsed] = []
-
-    # Hail fields (corroboration only)
-    hail_reports: Optional[int] = None
-    max_hail_in: Optional[float] = None
-    min_report_distance_miles: Optional[float] = None
-
-
-class DolDiscoverResponse(BaseModel):
-    location: Dict[str, Any]
-    peril_mode: str
-    analysis_start_date: str
-    analysis_end_date: str
-    candidates: List[DolCandidate]
+    start_date: str  # YYYY-MM-DD
+    end_date: str  # YYYY-MM-DD
+    event_type: str = "wind"  # wind | hail
+    max_distance_miles: float = 25.0
+    min_wind_mph: float = 30.0
+    top_n: int = 5
+    claim_id: Optional[str] = None
 
 
 class StationData(BaseModel):
@@ -414,96 +394,6 @@ async def get_metar_data(station_id: str, start_date: str, end_date: str) -> Lis
     return observations
 
 
-def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Great-circle distance in miles (no external deps)."""
-    from math import radians, sin, cos, asin, sqrt
-    r = 3958.7613  # Earth radius in miles
-    dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
-    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
-    return 2 * r * asin(sqrt(a))
-
-
-async def fetch_lsr_events_iem(lat: float, lon: float, start_date: str, end_date: str, radius_miles: float = 25.0) -> List[Dict]:
-    """Fetch NWS Local Storm Reports (LSR) via IEM GeoJSON feed.
-
-    Notes:
-    - LSRs are corroboration (spotter/official reports), not instrument readings.
-    - We use a bbox around the point to avoid heavy queries.
-    """
-    # Rough bbox conversion: 1 deg lat ~ 69 miles; lon scale by cos(lat)
-    from math import cos, radians
-    dlat = radius_miles / 69.0
-    dlon = radius_miles / (69.0 * max(cos(radians(lat)), 0.2))
-
-    west = lon - dlon
-    east = lon + dlon
-    south = lat - dlat
-    north = lat + dlat
-
-    params = {
-        "west": west,
-        "east": east,
-        "south": south,
-        "north": north,
-        "sts": start_date,
-        "ets": end_date,
-        "fmt": "geojson",
-    }
-
-    url = "https://mesonet.agron.iastate.edu/geojson/lsr.py"
-    events: List[Dict] = []
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(url, params=params)
-            if resp.status_code != 200:
-                return []
-            data = resp.json()
-            for feat in data.get("features", []) or []:
-                props = feat.get("properties", {}) or {}
-                geom = feat.get("geometry", {}) or {}
-                coords = geom.get("coordinates") or []
-                if len(coords) < 2:
-                    continue
-                ev_lon, ev_lat = coords[0], coords[1]
-                dist = _haversine_miles(lat, lon, ev_lat, ev_lon)
-                if dist > radius_miles:
-                    continue
-
-                # IEM LSR type can be in 'type' field (e.g. HAIL, TSTM WND DMG...) depending on feed
-                lsr_type = (props.get("type") or props.get("event") or "").strip().upper()
-                magnitude = props.get("magnitude")
-                try:
-                    magnitude = float(magnitude) if magnitude not in (None, "") else None
-                except (ValueError, TypeError):
-                    magnitude = None
-
-                # Timestamp fields vary; attempt common keys
-                ts = props.get("valid") or props.get("timestamp") or props.get("date") or props.get("utc")
-                if ts and isinstance(ts, str) and "T" in ts:
-                    # Normalize to ISO (already often is)
-                    ts_iso = ts
-                else:
-                    ts_iso = None
-
-                kind = "hail" if "HAIL" in lsr_type else "lsr"
-                events.append({
-                    "event_kind": kind,
-                    "lsr_type": lsr_type,
-                    "timestamp": ts_iso,
-                    "latitude": ev_lat,
-                    "longitude": ev_lon,
-                    "distance_miles": round(dist, 1),
-                    "magnitude": magnitude,
-                    "source": "NWS LSR (IEM)",
-                    "raw": props,
-                })
-    except Exception:
-        return []
-
-    return events
-
-
 async def get_nws_alerts_history(lat: float, lng: float, start_date: str, end_date: str) -> List[Dict]:
     """Get historical NWS alerts for location"""
     alerts = []
@@ -540,7 +430,91 @@ async def get_nws_alerts_history(lat: float, lng: float, start_date: str, end_da
     return alerts
 
 
-def analyze_wind_events(observations: List[Dict], threshold_mph: float = 30.0) -> List[Dict]:
+def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    from math import radians, sin, cos, asin, sqrt
+
+    radius = 3958.7613
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return 2 * radius * asin(sqrt(a))
+
+
+async def fetch_lsr_reports(
+    lat: float,
+    lng: float,
+    start_date: str,
+    end_date: str,
+    radius_miles: float = 25.0,
+) -> List[Dict]:
+    from math import cos, radians
+
+    dlat = radius_miles / 69.0
+    dlon = radius_miles / (69.0 * max(cos(radians(lat)), 0.2))
+
+    params = {
+        "west": lng - dlon,
+        "east": lng + dlon,
+        "south": lat - dlat,
+        "north": lat + dlat,
+        "sts": start_date,
+        "ets": end_date,
+        "fmt": "geojson",
+    }
+
+    reports: List[Dict] = []
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(IOWA_LSR_BASE, params=params)
+            if resp.status_code != 200:
+                return reports
+            data = resp.json()
+            for feat in data.get("features", []) or []:
+                props = feat.get("properties", {}) or {}
+                geom = feat.get("geometry", {}) or {}
+                coords = geom.get("coordinates") or []
+                if len(coords) < 2:
+                    continue
+
+                ev_lon, ev_lat = float(coords[0]), float(coords[1])
+                distance = _haversine_miles(lat, lng, ev_lat, ev_lon)
+                if distance > radius_miles:
+                    continue
+
+                lsr_type = (props.get("type") or props.get("event") or "").strip().upper()
+                magnitude = props.get("magnitude")
+                try:
+                    magnitude = float(magnitude) if magnitude not in (None, "") else None
+                except (TypeError, ValueError):
+                    magnitude = None
+
+                timestamp = (
+                    props.get("valid")
+                    or props.get("timestamp")
+                    or props.get("utc")
+                    or props.get("date")
+                )
+
+                reports.append(
+                    {
+                        "timestamp": timestamp,
+                        "lsr_type": lsr_type,
+                        "distance_miles": round(distance, 2),
+                        "magnitude": magnitude,
+                        "source": "NWS LSR (IEM)",
+                        "latitude": ev_lat,
+                        "longitude": ev_lon,
+                        "raw": props,
+                    }
+                )
+    except Exception as e:
+        print(f"LSR fetch error: {e}")
+        return reports
+
+    return reports
+
+
+def analyze_wind_events(observations: List[Dict], threshold_mph: float = 25.0) -> List[Dict]:
     """Analyze observations for significant wind events"""
     events = []
     
@@ -586,13 +560,27 @@ def generate_citation(verification: Dict) -> str:
                 f"Issued: {timestamp}, "
                 f"Source: National Weather Service"
             )
+        elif source_type == "nws_lsr_hail":
+            citations.append(
+                f"[{i}] NWS Local Storm Report (Hail), "
+                f"Observation: {timestamp}, "
+                f"Distance: {source.get('distance_miles', 'n/a')} miles, "
+                f"Source: Iowa Environmental Mesonet / NWS LSR Archive"
+            )
     
     if citations:
+        qc_score = verification.get("weather_qc_score")
+        weighted_wind = verification.get("weighted_peak_wind_mph")
+        low_band = verification.get("confidence_low_mph")
+        high_band = verification.get("confidence_high_mph")
         header = (
             f"Weather Verification for {verification.get('address', 'Property')}, "
             f"{verification.get('city', '')}, {verification.get('state', '')} {verification.get('zip_code', '')}\n"
             f"Analysis Period: {verification.get('analysis_start_date')} to {verification.get('analysis_end_date')}\n"
-            f"Verified Date of Loss: {verification.get('verified_dol', 'Under Review')}\n\n"
+            f"Verified Date of Loss: {verification.get('verified_dol', 'Under Review')}\n"
+            f"QC Score: {qc_score if qc_score is not None else 'n/a'}\n"
+            f"Weighted Wind (mph): {weighted_wind if weighted_wind is not None else 'n/a'} "
+            f"[{low_band if low_band is not None else 'n/a'} - {high_band if high_band is not None else 'n/a'}]\n\n"
             "Primary Sources:\n"
         )
         return header + "\n".join(citations)
@@ -601,269 +589,6 @@ def generate_citation(verification: Dict) -> str:
 
 
 # ============ API ENDPOINTS ============
-
-@router.post("/verify")
-async def verify_weather_window(request: WeatherSearchRequest, current_user: dict = Depends(get_current_active_user)):
-    """Additive endpoint used by Property Intel: returns defensible wind/hail signals for a date window.
-
-    This does NOT declare a date of loss; it summarizes evidence.
-    """
-    # Geocode
-    coords = await geocode_address(request.address, request.city, request.state, request.zip_code)
-    lat, lng = coords.get("latitude"), coords.get("longitude")
-    if lat is None or lng is None:
-        raise HTTPException(status_code=400, detail="Unable to geocode address")
-
-    # Stations: reuse existing helper (returns sorted by approximate distance)
-    stations = await get_nearby_stations(lat, lng)
-    # Keep it light: use the nearest 3
-    stations = sorted(stations, key=lambda s: s.get("distance_miles", 999))[:3]
-
-    # Fetch obs concurrently
-    async def _fetch_station(st):
-        sid = st.get("station_id")
-        if not sid:
-            return []
-        return await get_metar_data(sid, request.start_date, request.end_date)
-
-    obs_lists = await asyncio.gather(*[_fetch_station(s) for s in stations], return_exceptions=True)
-    all_obs: List[Dict] = []
-    for item in obs_lists:
-        if isinstance(item, Exception):
-            continue
-        all_obs.extend(item)
-
-    wind_events = analyze_wind_events(all_obs, threshold_mph=30.0)
-
-    # Hail corroboration via LSR
-    lsr_events = await fetch_lsr_events_iem(lat, lng, request.start_date, request.end_date, radius_miles=25.0)
-    hail_events = [e for e in lsr_events if e.get("event_kind") == "hail"]
-
-    return {
-        "location": {
-            "address": request.address,
-            "city": request.city,
-            "state": request.state,
-            "zip_code": request.zip_code,
-            "latitude": lat,
-            "longitude": lng,
-        },
-        "start_date": request.start_date,
-        "end_date": request.end_date,
-        "stations": stations,
-        "wind_events": wind_events,
-        "hail_events": hail_events,
-        "raw_observation_count": len(all_obs),
-    }
-
-
-@router.post("/dol/discover", response_model=DolDiscoverResponse)
-async def discover_dol_candidates(request: DolDiscoverRequest, current_user: dict = Depends(get_current_active_user)):
-    """Discover and rank candidate DOLs for wind or hail.
-
-    - Wind: primary evidence from METAR/ASOS/AWOS station observations.
-    - Hail: corroboration from NWS LSRs (IEM feed). We do not claim instrument hail size.
-    """
-    coords = await geocode_address(request.address, request.city, request.state, request.zip_code)
-    lat, lng = coords.get("latitude"), coords.get("longitude")
-    if lat is None or lng is None:
-        raise HTTPException(status_code=400, detail="Unable to geocode address")
-
-    # Resolve analysis window
-    if request.start_date and request.end_date:
-        start_date = request.start_date
-        end_date = request.end_date
-    else:
-        end_dt = datetime.now(timezone.utc).date()
-        start_dt = end_dt - timedelta(days=int(request.window_days))
-        start_date = start_dt.isoformat()
-        end_date = end_dt.isoformat()
-
-    peril = (request.peril_mode or "wind").strip().lower()
-    if peril not in ("wind", "hail"):
-        raise HTTPException(status_code=400, detail="peril_mode must be 'wind' or 'hail'")
-
-    # Stations
-    stations = await get_nearby_stations(lat, lng)
-    stations = sorted(stations, key=lambda s: s.get("distance_miles", 999))
-    stations = [s for s in stations if (s.get("distance_miles") or 999) <= request.max_distance_miles][:4]
-
-    candidates: List[Dict[str, Any]] = []
-
-    if peril == "wind":
-        async def _fetch_station(st):
-            sid = st.get("station_id")
-            if not sid:
-                return st, []
-            return st, await get_metar_data(sid, start_date, end_date)
-
-        station_obs = await asyncio.gather(*[_fetch_station(s) for s in stations], return_exceptions=False)
-
-        # Aggregate per day
-        per_day: Dict[str, Dict[str, Any]] = {}
-        for st, obs in station_obs:
-            for row in obs:
-                ts = row.get("timestamp")
-                if not ts:
-                    continue
-                day = ts.split("T")[0]
-                max_wind = max(
-                    row.get("wind_gust_mph") or 0,
-                    row.get("peak_wind_gust_mph") or 0,
-                    row.get("wind_speed_mph") or 0,
-                )
-                if max_wind < request.min_wind_mph:
-                    continue
-                bucket = per_day.setdefault(day, {
-                    "candidate_date": day,
-                    "max_gust_mph": 0.0,
-                    "sustained_mph": 0.0,
-                    "stations": {},
-                    "peak_window_start": None,
-                    "peak_window_end": None,
-                })
-                bucket["max_gust_mph"] = max(bucket["max_gust_mph"], float(max_wind))
-                bucket["sustained_mph"] = max(bucket["sustained_mph"], float(row.get("wind_speed_mph") or 0))
-                sid = st.get("station_id")
-                if sid:
-                    bucket["stations"][sid] = {
-                        "station_id": sid,
-                        "station_name": st.get("station_name") or "",
-                        "distance_miles": st.get("distance_miles") or 0,
-                    }
-
-                # Track a tight peak window (first/last qualifying obs)
-                if bucket["peak_window_start"] is None or (ts and ts < bucket["peak_window_start"]):
-                    bucket["peak_window_start"] = ts
-                if bucket["peak_window_end"] is None or (ts and ts > bucket["peak_window_end"]):
-                    bucket["peak_window_end"] = ts
-
-        # Rank (explainable): gust + multi-station + closeness
-        ranked = []
-        for day, b in per_day.items():
-            stations_used = list(b["stations"].values())
-            stations_used.sort(key=lambda s: s.get("distance_miles", 999))
-            closest = stations_used[0]["distance_miles"] if stations_used else 999
-            multi = len(stations_used)
-            gust = b["max_gust_mph"]
-
-            # Simple confidence tiers (non-breaking strings)
-            if gust >= 58 and multi >= 2:
-                conf = "high"
-            elif gust >= 40 and multi >= 2:
-                conf = "medium"
-            elif gust >= 58:
-                conf = "medium"
-            else:
-                conf = "low"
-
-            explanation = (
-                f"Station observations show winds peaking around {round(gust)} mph near the property on {day}. "
-                f"Nearest station used is ~{round(closest, 1)} miles away; {multi} station(s) corroborate the signal. "
-                "This is based on certified METAR/ASOS observations (ground truth)."
-            )
-
-            denial_bullets = [
-                "Ground-truth station observations are present for the location window (not speculation).",
-                "Multiple stations and proximity reduce 'station too far' arguments.",
-                "Peak window is bounded by actual observation timestamps (tight, reviewable timeline).",
-            ]
-
-            ranked.append({
-                **b,
-                "confidence": conf,
-                "explanation": explanation,
-                "denial_rebuttal_bullets": denial_bullets,
-                "stations_used": stations_used,
-                "score": float(gust) + (10.0 * max(multi - 1, 0)) - (0.2 * float(closest)),
-            })
-
-        ranked.sort(key=lambda x: x.get("score", 0), reverse=True)
-        for item in ranked[:25]:
-            item.pop("score", None)
-            candidates.append(item)
-
-    else:  # hail
-        lsr_events = await fetch_lsr_events_iem(lat, lng, start_date, end_date, radius_miles=min(request.max_distance_miles, 50.0))
-        hail = [e for e in lsr_events if e.get("event_kind") == "hail"]
-        per_day: Dict[str, Dict[str, Any]] = {}
-        for e in hail:
-            ts = e.get("timestamp")
-            if not ts:
-                continue
-            day = ts.split("T")[0]
-            bucket = per_day.setdefault(day, {
-                "candidate_date": day,
-                "hail_reports": 0,
-                "max_hail_in": None,
-                "min_report_distance_miles": None,
-                "peak_window_start": None,
-                "peak_window_end": None,
-            })
-            bucket["hail_reports"] += 1
-            mag = e.get("magnitude")
-            if mag is not None:
-                bucket["max_hail_in"] = max(bucket["max_hail_in"] or 0, float(mag))
-            dist = e.get("distance_miles")
-            if dist is not None:
-                bucket["min_report_distance_miles"] = min(bucket["min_report_distance_miles"] or 999, float(dist))
-            if bucket["peak_window_start"] is None or (ts and ts < bucket["peak_window_start"]):
-                bucket["peak_window_start"] = ts
-            if bucket["peak_window_end"] is None or (ts and ts > bucket["peak_window_end"]):
-                bucket["peak_window_end"] = ts
-
-        ranked = []
-        for day, b in per_day.items():
-            reports = b.get("hail_reports") or 0
-            closest = b.get("min_report_distance_miles") or 999
-            size = b.get("max_hail_in") or 0
-
-            if reports >= 2 and closest <= 10:
-                conf = "medium"
-            elif reports >= 1 and closest <= 10:
-                conf = "low"
-            else:
-                conf = "low"
-
-            explanation = (
-                f"NWS Local Storm Reports indicate hail activity near the property on {day}. "
-                f"Closest report is ~{round(closest, 1)} miles away with {reports} report(s) in the window. "
-                "LSR hail is corroboration from official/spotter reporting and should be paired with station/radar context."
-            )
-
-            denial_bullets = [
-                "Official/spotter hail reporting exists near the property (not a generic storm claim).",
-                "Proximity and report count can be shown to rebut 'no hail in area' assertions.",
-                "Timing window is anchored to report timestamps for reviewable chronology.",
-            ]
-
-            ranked.append({
-                **b,
-                "confidence": conf,
-                "explanation": explanation,
-                "denial_rebuttal_bullets": denial_bullets,
-                "score": (2.0 * reports) + (1.5 * float(size)) - (0.15 * float(closest)),
-            })
-
-        ranked.sort(key=lambda x: x.get("score", 0), reverse=True)
-        for item in ranked[:25]:
-            item.pop("score", None)
-            candidates.append(item)
-
-    return {
-        "location": {
-            "address": request.address,
-            "city": request.city,
-            "state": request.state,
-            "zip_code": request.zip_code,
-            "latitude": lat,
-            "longitude": lng,
-        },
-        "peril_mode": peril,
-        "analysis_start_date": start_date,
-        "analysis_end_date": end_date,
-        "candidates": candidates,
-    }
 
 @router.post("/verify-dol")
 async def verify_date_of_loss(
@@ -874,6 +599,10 @@ async def verify_date_of_loss(
     Verify Date of Loss using authoritative weather sources.
     This is the main endpoint for the DOL verification system.
     """
+    event_type = (request.event_type or "wind").strip().lower()
+    if event_type not in {"wind", "hail"}:
+        event_type = "wind"
+
     # Step 1: Geocode the address
     geo = await geocode_address(
         request.address, 
@@ -906,9 +635,15 @@ async def verify_date_of_loss(
     all_observations = []
     primary_sources = []
     stations_used = []
+    station_observations: Dict[str, List[Dict[str, Any]]] = {}
+    station_metadata: Dict[str, Dict[str, Any]] = {}
     
     for station in stations[:3]:  # Use top 3 closest stations
         station_id = station["station_id"]
+        station_metadata[station_id] = {
+            "station_name": station.get("station_name"),
+            "distance_miles": station.get("distance_miles"),
+        }
         observations = await get_metar_data(
             station_id,
             request.start_date,
@@ -918,15 +653,21 @@ async def verify_date_of_loss(
         if observations:
             all_observations.extend(observations)
             stations_used.append(station_id)
+            station_observations[station_id] = observations
             
-            # Find max winds for this station (including peak gusts)
-            max_wind = max(
-                max(
+            # Find peak observation for this station (carrier-defensible timestamp)
+            peak_obs = max(
+                observations,
+                key=lambda obs: max(
                     obs.get("wind_gust_mph") or 0,
                     obs.get("wind_speed_mph") or 0,
-                    obs.get("peak_wind_gust_mph") or 0
-                )
-                for obs in observations
+                    obs.get("peak_wind_gust_mph") or 0,
+                ),
+            )
+            max_wind = max(
+                peak_obs.get("wind_gust_mph") or 0,
+                peak_obs.get("wind_speed_mph") or 0,
+                peak_obs.get("peak_wind_gust_mph") or 0,
             )
             
             if max_wind > 0:
@@ -938,50 +679,99 @@ async def verify_date_of_loss(
                     "agency": "NWS/FAA",
                     "max_wind_mph": max_wind,
                     "observation_count": len(observations),
-                    "timestamp": request.start_date
+                    "timestamp": peak_obs.get("timestamp"),
                 })
+
+    station_quality = []
+    for station in stations[:3]:
+        station_id = station["station_id"]
+        station_quality.append(
+            summarize_station_quality(station, station_observations.get(station_id, []))
+        )
+    station_aggregate = aggregate_station_evidence(station_quality)
+    station_weight_map = {
+        row["station_id"]: row.get("weight", 0.0)
+        for row in station_aggregate.get("trace", {}).get("usable", [])
+    }
+    wind_candidates = build_wind_candidates(
+        station_observations=station_observations,
+        station_metadata=station_metadata,
+        station_weight_map=station_weight_map,
+        min_wind_mph=30.0,
+    )
+
+    hail_candidates: List[Dict[str, Any]] = []
+    if event_type == "hail":
+        lsr_reports = await fetch_lsr_reports(
+            lat=lat,
+            lng=lng,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            radius_miles=25.0,
+        )
+        hail_candidates = build_hail_candidates(lsr_reports, max_distance_miles=25.0)
     
     # Step 5: Analyze for significant weather events (lowered threshold to 20mph for initial detection)
-    # Defensibility default: only treat >= 30 mph as an "event"; retain all raw observations.
-    wind_events = analyze_wind_events(all_observations, threshold_mph=30.0)
+    wind_events = analyze_wind_events(all_observations, threshold_mph=20.0)
     
     # Step 6: Determine verified DOL and confidence
     verified_dol = None
     confidence = "unverified"
     event_summary = None
     
-    if wind_events:
+    if event_type == "hail" and hail_candidates:
+        top_hail = hail_candidates[0]
+        verified_dol = top_hail.get("candidate_date")
+        confidence = top_hail.get("confidence", "low")
+        event_summary = (
+            f"Hail signal detected on {verified_dol}. "
+            f"Reports: {top_hail.get('report_count', 0)}. "
+            f"Max hail: {top_hail.get('max_hail_inches', 0):.2f} in. "
+            f"Closest report: {top_hail.get('min_distance_miles', 0):.2f} miles."
+        )
+
+        primary_sources.extend(
+            [
+                {
+                    "source_type": "nws_lsr_hail",
+                    "station_id": "NWS-LSR",
+                    "station_name": "NWS Local Storm Report",
+                    "distance_miles": report.get("distance_miles"),
+                    "agency": "NWS",
+                    "max_wind_mph": None,
+                    "observation_count": 1,
+                    "timestamp": report.get("timestamp"),
+                    "magnitude": report.get("magnitude"),
+                    "lsr_type": report.get("lsr_type"),
+                }
+                for report in top_hail.get("source_reports", [])[:3]
+            ]
+        )
+    elif wind_events:
         # Sort by severity and timestamp
         wind_events.sort(key=lambda x: (-x.get("max_wind_mph", 0), x.get("timestamp", "")))
         most_severe = wind_events[0]
         
         # Extract date from timestamp
         if most_severe.get("timestamp"):
-            try:
-                # Handle different timestamp formats
-                ts = most_severe["timestamp"]
-                if " " in ts:
-                    # Format: "2025-01-15 12:53"
-                    event_dt = datetime.strptime(ts.split("+")[0].strip(), "%Y-%m-%d %H:%M")
-                else:
-                    event_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                verified_dol = event_dt.strftime("%Y-%m-%d")
-            except Exception as e:
-                print(f"Date parsing error: {e}")
-                verified_dol = request.start_date
+            event_dt = parse_timestamp(most_severe["timestamp"])
+            verified_dol = event_dt.strftime("%Y-%m-%d") if event_dt else request.start_date
         
         # Determine confidence based on source overlap and wind speed
         source_count = len(primary_sources)
         max_wind = most_severe.get("max_wind_mph", 0)
+        weighted_wind = station_aggregate.get("weighted_peak_wind_mph", 0)
+        qc_score = station_aggregate.get("overall_qc_score", 0)
+        effective_wind = max(max_wind, weighted_wind)
         
         # Adjusted confidence thresholds for more realistic results
-        if source_count >= 2 and max_wind >= 58:
+        if source_count >= 2 and effective_wind >= 58 and qc_score >= 0.7:
             confidence = "confirmed"
-        elif source_count >= 2 and max_wind >= 40:
+        elif source_count >= 2 and effective_wind >= 40 and qc_score >= 0.6:
             confidence = "high"
-        elif source_count >= 1 and max_wind >= 30:
+        elif source_count >= 1 and effective_wind >= 30 and qc_score >= 0.45:
             confidence = "medium"
-        elif max_wind >= 20:
+        elif effective_wind >= 20:
             confidence = "low"
         else:
             confidence = "unverified"
@@ -990,6 +780,7 @@ async def verify_date_of_loss(
         event_summary = (
             f"Weather event detected on {verified_dol}. "
             f"Maximum recorded wind: {max_wind:.1f} mph ({severity_desc}). "
+            f"Weighted station wind: {weighted_wind:.1f} mph. "
             f"Data from {source_count} authoritative station(s): {', '.join(stations_used)}. "
             f"Total observations analyzed: {len(all_observations)}."
         )
@@ -1013,14 +804,19 @@ async def verify_date_of_loss(
         analysis_end_date=request.end_date,
         verified_dol=verified_dol,
         dol_confidence=confidence,
-        event_type=request.event_type or "wind",
+        event_type=event_type,
         primary_sources=primary_sources,
         weather_stations_used=stations_used,
         sources_overlapping=len(primary_sources),
         geographic_match=True,
         temporal_match=bool(verified_dol),
         event_summary=event_summary,
-        created_by=current_user.get("email", "")
+        created_by=current_user.get("email", ""),
+        weather_qc_score=station_aggregate.get("overall_qc_score"),
+        weighted_peak_wind_mph=station_aggregate.get("weighted_peak_wind_mph"),
+        confidence_low_mph=station_aggregate.get("confidence_low_mph"),
+        confidence_high_mph=station_aggregate.get("confidence_high_mph"),
+        evidence_trace=station_aggregate.get("trace"),
     )
     
     # Generate citation
@@ -1054,14 +850,118 @@ async def verify_date_of_loss(
         "verified_dol": verified_dol,
         "confidence": confidence,
         "event_summary": event_summary,
+        "event_type": event_type,
         "primary_sources": primary_sources,
         "stations_used": stations_used,
+        "candidate_dates": {
+            "wind": wind_candidates[:5],
+            "hail": hail_candidates[:5],
+        },
         "citation": verification.citation_text,
+        "analysis": {
+            "weather_qc_score": verification.weather_qc_score,
+            "weighted_peak_wind_mph": verification.weighted_peak_wind_mph,
+            "confidence_low_mph": verification.confidence_low_mph,
+            "confidence_high_mph": verification.confidence_high_mph,
+            "station_count_usable": station_aggregate.get("supporting_station_count", 0),
+            "station_count_total": len(station_quality),
+        },
+        "evidence_trace": verification.evidence_trace,
         "location": {
             "latitude": lat,
             "longitude": lng,
             "county": verification.county
         }
+    }
+
+
+@router.post("/dol/candidates")
+async def discover_dol_candidates(
+    request: CandidateDiscoverRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    event_type = (request.event_type or "wind").strip().lower()
+    if event_type not in {"wind", "hail"}:
+        raise HTTPException(status_code=400, detail="event_type must be 'wind' or 'hail'")
+
+    geo = await geocode_address(request.address, request.city, request.state, request.zip_code)
+    if not geo.get("latitude"):
+        raise HTTPException(status_code=400, detail="Unable to geocode address")
+
+    lat = geo["latitude"]
+    lng = geo["longitude"]
+
+    stations = await get_nearby_stations(lat, lng)
+    stations = sorted(stations, key=lambda s: s.get("distance_miles", 999))[:4]
+
+    station_observations: Dict[str, List[Dict[str, Any]]] = {}
+    station_metadata: Dict[str, Dict[str, Any]] = {}
+    for station in stations:
+        station_id = station.get("station_id")
+        if not station_id:
+            continue
+        station_metadata[station_id] = {
+            "station_name": station.get("station_name"),
+            "distance_miles": station.get("distance_miles"),
+        }
+        station_observations[station_id] = await get_metar_data(
+            station_id,
+            request.start_date,
+            request.end_date,
+        )
+
+    station_quality = [
+        summarize_station_quality(station, station_observations.get(station.get("station_id"), []))
+        for station in stations
+    ]
+    station_aggregate = aggregate_station_evidence(station_quality)
+    station_weight_map = {
+        row["station_id"]: row.get("weight", 0.0)
+        for row in station_aggregate.get("trace", {}).get("usable", [])
+    }
+
+    wind_candidates = build_wind_candidates(
+        station_observations=station_observations,
+        station_metadata=station_metadata,
+        station_weight_map=station_weight_map,
+        min_wind_mph=max(20.0, request.min_wind_mph),
+    )
+
+    lsr_reports = await fetch_lsr_reports(
+        lat=lat,
+        lng=lng,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        radius_miles=max(5.0, request.max_distance_miles),
+    )
+    hail_candidates = build_hail_candidates(
+        hail_reports=lsr_reports,
+        max_distance_miles=max(5.0, request.max_distance_miles),
+    )
+
+    selected_candidates = wind_candidates if event_type == "wind" else hail_candidates
+
+    return {
+        "event_type": event_type,
+        "location": {
+            "address": request.address,
+            "city": request.city,
+            "state": request.state,
+            "zip_code": request.zip_code,
+            "latitude": lat,
+            "longitude": lng,
+        },
+        "analysis_window": {
+            "start_date": request.start_date,
+            "end_date": request.end_date,
+        },
+        "candidates": selected_candidates[: max(1, min(20, request.top_n))],
+        "supporting_signals": {
+            "wind_candidate_count": len(wind_candidates),
+            "hail_candidate_count": len(hail_candidates),
+            "weather_qc_score": station_aggregate.get("overall_qc_score"),
+            "weighted_peak_wind_mph": station_aggregate.get("weighted_peak_wind_mph"),
+        },
     }
 
 

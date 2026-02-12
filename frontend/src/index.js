@@ -3,39 +3,32 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 
-// ============ ENVIRONMENT VALIDATION ============
-// Fail fast if critical environment variables are missing
-const requiredEnvVars = {
-  'REACT_APP_BACKEND_URL': 'Backend API URL (e.g., http://localhost:8000)'
-};
+// ============ API CONFIG VALIDATION ============
+// Accept either build-time env vars or runtime eden-config.js.
+const hasBuildTimeApiUrl = !!(process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL);
+const hasRuntimeApiConfig =
+  typeof window !== "undefined" &&
+  window.__EDEN_CONFIG__ &&
+  Object.prototype.hasOwnProperty.call(window.__EDEN_CONFIG__, "BACKEND_URL");
 
-const missingVars = Object.entries(requiredEnvVars)
-  .filter(([key]) => !process.env[key])
-  .map(([key, description]) => `${key}: ${description}`);
-
-if (missingVars.length > 0) {
-  const errorMessage = `\n=== ENVIRONMENT CONFIGURATION ERROR ===\n\nMissing required environment variables:\n${missingVars.join('\n')}\n\nPlease create a .env file in the frontend root directory with these variables.\nSee .env.example for a template.\n\n========================================\n`;
-  console.error(errorMessage);
-  document.body.innerHTML = `
-    <div style="font-family: monospace; background: #1a1a1a; color: #ff6b6b; padding: 20px; margin: 20px;">
-      <h2>❌ Configuration Error</h2>
-      <pre>${errorMessage}</pre>
-    </div>
-  `;
-  throw new Error(errorMessage);
+if (!hasBuildTimeApiUrl && !hasRuntimeApiConfig) {
+  console.warn(
+    "No API URL configured. Set REACT_APP_BACKEND_URL/REACT_APP_API_URL or define BACKEND_URL in public/eden-config.js."
+  );
 }
 
 // Force light mode - single source of truth
 // Remove any dark mode artifacts before React loads
-document.documentElement.classList.remove('dark', 'theme-dark');
-document.body.classList.remove('dark', 'theme-dark');
-document.documentElement.style.colorScheme = 'light';
-localStorage.removeItem('eden_theme');
-localStorage.removeItem('theme');
+document.documentElement.classList.remove("dark", "theme-dark");
+document.body.classList.remove("dark", "theme-dark");
+document.documentElement.style.colorScheme = "light";
+localStorage.removeItem("eden_theme");
+localStorage.removeItem("theme");
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+

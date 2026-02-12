@@ -6,16 +6,14 @@
  * - Base URL from env
  */
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL;
+import { resolveBackendUrl } from "./config";
+
+const API_URL = resolveBackendUrl();
 
 // Fail-fast helper (used by login + critical calls)
 export const assertApiUrl = () => {
-  if (!API_URL) {
-    throw new Error(
-      "Missing API base URL. Set REACT_APP_BACKEND_URL (preferred) or REACT_APP_API_URL to your backend, then rebuild/redeploy."
-    );
-  }
-  return API_URL;
+  // Empty string means same-origin requests.
+  return resolveBackendUrl();
 };
 
 const getToken = () => localStorage.getItem('eden_token');
