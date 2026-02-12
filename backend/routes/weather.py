@@ -7,6 +7,7 @@ Proprietary Weather & Date of Loss Verification System
 """
 import os
 import uuid
+import asyncio
 import httpx
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
@@ -152,37 +153,181 @@ class StationData(BaseModel):
 
 # ============ HELPER FUNCTIONS ============
 
-async def geocode_address(address: str, city: str, state: str, zip_code: str) -> Dict:
-    """Get lat/lng for an address using NWS points API"""
-    # For now, use a simple geocoding approach via NWS
-    # In production, you'd use a proper geocoding service
-    full_address = f"{address}, {city}, {state} {zip_code}"
-    
-    # Try to get coordinates from Census geocoder (free)
-    census_url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
-    params = {
-        "address": full_address,
-        "benchmark": "Public_AR_Current",
-        "format": "json"
+def _address_variants(raw_address: str) -> List[str]:
+    clean = " ".join((raw_address or "").split()).strip()
+    if not clean:
+        return []
+
+    variants: List[str] = [clean]
+    directional_map = {
+        "NORTHWEST": "NW",
+        "NORTHEAST": "NE",
+        "SOUTHWEST": "SW",
+        "SOUTHEAST": "SE",
+        "NORTH": "N",
+        "SOUTH": "S",
+        "EAST": "E",
+        "WEST": "W",
     }
-    
+
+    upper = clean.upper()
+    for long_form, short_form in directional_map.items():
+        if long_form in upper:
+            upper = upper.replace(long_form, short_form)
+    abbreviated = " ".join(upper.split()).title()
+    if abbreviated and abbreviated not in variants:
+        variants.append(abbreviated)
+
+    without_commas = clean.replace(",", " ").strip()
+    if without_commas and without_commas not in variants:
+        variants.append(without_commas)
+
+    return variants
+
+
+async def geocode_address(address: str, city: str, state: str, zip_code: str) -> Dict:
+    """Resolve lat/lng for an address with resilient fallbacks."""
+    state_code = (state or "").strip().upper()
+    clean_address = (address or "").strip()
+    clean_city = (city or "").strip()
+    clean_zip = (zip_code or "").strip()
+    address_variants = _address_variants(clean_address)
+
+    query_candidates: List[str] = []
+    structured_candidates: List[Dict[str, str]] = []
+
+    def add_query(query: str):
+        formatted = " ".join(query.split()).strip(", ")
+        if formatted and formatted not in query_candidates:
+            query_candidates.append(formatted)
+
+    def add_structured(street_value: str, city_value: str, zip_value: str):
+        street = " ".join((street_value or "").split()).strip()
+        if not street:
+            return
+        payload = {
+            "street": street,
+            "city": " ".join((city_value or "").split()).strip(),
+            "state": state_code,
+            "zip": " ".join((zip_value or "").split()).strip(),
+        }
+        if payload not in structured_candidates:
+            structured_candidates.append(payload)
+
+    for street_variant in address_variants:
+        add_query(f"{street_variant}, {clean_city}, {state_code} {clean_zip}")
+        add_query(f"{street_variant}, {state_code} {clean_zip}")
+        add_query(f"{street_variant}, {clean_city}, {state_code}")
+        add_query(f"{street_variant}, {clean_zip}")
+        add_query(f"{street_variant}, {state_code}")
+        add_structured(street_variant, clean_city, clean_zip)
+        add_structured(street_variant, "", clean_zip)
+        add_structured(street_variant, clean_city, "")
+
+    if clean_zip:
+        add_query(f"{clean_zip}, {state_code}")
+        add_query(clean_zip)
+
+    census_line_url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+    census_structured_url = "https://geocoding.geo.census.gov/geocoder/locations/address"
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(census_url, params=params)
-            if response.status_code == 200:
+            for structured in structured_candidates:
+                params = {
+                    "street": structured.get("street", ""),
+                    "city": structured.get("city", ""),
+                    "state": structured.get("state", ""),
+                    "zip": structured.get("zip", ""),
+                    "benchmark": "Public_AR_Current",
+                    "format": "json",
+                }
+                response = await client.get(census_structured_url, params=params)
+                if response.status_code != 200:
+                    continue
                 data = response.json()
                 matches = data.get("result", {}).get("addressMatches", [])
-                if matches:
-                    coords = matches[0].get("coordinates", {})
-                    return {
-                        "latitude": coords.get("y"),
-                        "longitude": coords.get("x"),
-                        "matched_address": matches[0].get("matchedAddress")
-                    }
+                if not matches:
+                    continue
+                coords = matches[0].get("coordinates", {})
+                lat = coords.get("y")
+                lng = coords.get("x")
+                if lat is None or lng is None:
+                    continue
+                return {
+                    "latitude": lat,
+                    "longitude": lng,
+                    "matched_address": matches[0].get("matchedAddress"),
+                    "geocoder": "census_structured",
+                    "precision": "address",
+                }
+
+            for query in query_candidates:
+                params = {
+                    "address": query,
+                    "benchmark": "Public_AR_Current",
+                    "format": "json",
+                }
+                response = await client.get(census_line_url, params=params)
+                if response.status_code != 200:
+                    continue
+                data = response.json()
+                matches = data.get("result", {}).get("addressMatches", [])
+                if not matches:
+                    continue
+                coords = matches[0].get("coordinates", {})
+                lat = coords.get("y")
+                lng = coords.get("x")
+                if lat is None or lng is None:
+                    continue
+                return {
+                    "latitude": lat,
+                    "longitude": lng,
+                    "matched_address": matches[0].get("matchedAddress"),
+                    "geocoder": "census",
+                    "precision": "address",
+                }
     except Exception as e:
-        print(f"Geocoding error: {e}")
-    
-    return {"latitude": None, "longitude": None}
+        print(f"Census geocoding error: {e}")
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=20.0,
+            headers={"User-Agent": "EdenClaims/1.0 (ops@edenclaims.com)"},
+        ) as client:
+            for query in query_candidates:
+                response = await client.get(
+                    "https://nominatim.openstreetmap.org/search",
+                    params={
+                        "q": query,
+                        "format": "jsonv2",
+                        "limit": 1,
+                        "countrycodes": "us",
+                    },
+                )
+                if response.status_code != 200:
+                    continue
+                payload = response.json()
+                if not payload:
+                    continue
+                lat = payload[0].get("lat")
+                lng = payload[0].get("lon")
+                if lat is None or lng is None:
+                    continue
+                geocode_precision = "address"
+                if clean_zip and query.strip() in {clean_zip, f"{clean_zip}, {state_code}".strip(", ")}:
+                    geocode_precision = "postal_code"
+                return {
+                    "latitude": float(lat),
+                    "longitude": float(lng),
+                    "matched_address": payload[0].get("display_name"),
+                    "geocoder": "nominatim",
+                    "precision": geocode_precision,
+                }
+    except Exception as e:
+        print(f"Nominatim geocoding error: {e}")
+
+    return {"latitude": None, "longitude": None, "precision": "none"}
 
 
 async def get_nws_point_data(lat: float, lng: float) -> Dict:
@@ -392,6 +537,38 @@ async def get_metar_data(station_id: str, start_date: str, end_date: str) -> Lis
         print(f"METAR data error: {e}")
     
     return observations
+
+
+async def fetch_station_observation_bundle(
+    stations: List[Dict[str, Any]],
+    start_date: str,
+    end_date: str,
+    max_stations: int = 3,
+    per_station_timeout_s: float = 35.0,
+) -> List[Dict[str, Any]]:
+    """
+    Fetch station observations in parallel with per-station timeout.
+    This prevents long sequential waits that can trigger upstream 503/502.
+    """
+    selected_stations = [station for station in stations if station.get("station_id")][:max_stations]
+    if not selected_stations:
+        return []
+
+    async def _fetch(station: Dict[str, Any]) -> Dict[str, Any]:
+        station_id = station.get("station_id")
+        if not station_id:
+            return {"station": station, "station_id": None, "observations": []}
+        try:
+            observations = await asyncio.wait_for(
+                get_metar_data(station_id, start_date, end_date),
+                timeout=per_station_timeout_s,
+            )
+            return {"station": station, "station_id": station_id, "observations": observations}
+        except Exception as exc:
+            print(f"Station fetch timeout/error for {station_id}: {exc}")
+            return {"station": station, "station_id": station_id, "observations": []}
+
+    return await asyncio.gather(*[_fetch(station) for station in selected_stations])
 
 
 async def get_nws_alerts_history(lat: float, lng: float, start_date: str, end_date: str) -> List[Dict]:
@@ -631,60 +808,71 @@ async def verify_date_of_loss(
             detail="No weather stations found near this location."
         )
     
-    # Step 4: Gather METAR/ASOS data from multiple stations
+    # Step 4: Gather METAR/ASOS data from multiple stations (parallelized for reliability)
     all_observations = []
     primary_sources = []
     stations_used = []
     station_observations: Dict[str, List[Dict[str, Any]]] = {}
     station_metadata: Dict[str, Dict[str, Any]] = {}
-    
-    for station in stations[:3]:  # Use top 3 closest stations
-        station_id = station["station_id"]
+    selected_stations = stations[:3]
+
+    station_batches = await fetch_station_observation_bundle(
+        selected_stations,
+        request.start_date,
+        request.end_date,
+        max_stations=3,
+        per_station_timeout_s=35.0,
+    )
+
+    for batch in station_batches:
+        station = batch.get("station") or {}
+        station_id = batch.get("station_id")
+        observations = batch.get("observations") or []
+        if not station_id:
+            continue
         station_metadata[station_id] = {
             "station_name": station.get("station_name"),
             "distance_miles": station.get("distance_miles"),
         }
-        observations = await get_metar_data(
-            station_id,
-            request.start_date,
-            request.end_date
+        if not observations:
+            continue
+
+        all_observations.extend(observations)
+        stations_used.append(station_id)
+        station_observations[station_id] = observations
+
+        # Find peak observation for this station (carrier-defensible timestamp)
+        peak_obs = max(
+            observations,
+            key=lambda obs: max(
+                obs.get("wind_gust_mph") or 0,
+                obs.get("wind_speed_mph") or 0,
+                obs.get("peak_wind_gust_mph") or 0,
+            ),
         )
-        
-        if observations:
-            all_observations.extend(observations)
-            stations_used.append(station_id)
-            station_observations[station_id] = observations
-            
-            # Find peak observation for this station (carrier-defensible timestamp)
-            peak_obs = max(
-                observations,
-                key=lambda obs: max(
-                    obs.get("wind_gust_mph") or 0,
-                    obs.get("wind_speed_mph") or 0,
-                    obs.get("peak_wind_gust_mph") or 0,
-                ),
-            )
-            max_wind = max(
-                peak_obs.get("wind_gust_mph") or 0,
-                peak_obs.get("wind_speed_mph") or 0,
-                peak_obs.get("peak_wind_gust_mph") or 0,
-            )
-            
-            if max_wind > 0:
-                primary_sources.append({
-                    "source_type": "asos_metar",
-                    "station_id": station_id,
-                    "station_name": station["station_name"],
-                    "distance_miles": station["distance_miles"],
-                    "agency": "NWS/FAA",
-                    "max_wind_mph": max_wind,
-                    "observation_count": len(observations),
-                    "timestamp": peak_obs.get("timestamp"),
-                })
+        max_wind = max(
+            peak_obs.get("wind_gust_mph") or 0,
+            peak_obs.get("wind_speed_mph") or 0,
+            peak_obs.get("peak_wind_gust_mph") or 0,
+        )
+
+        if max_wind > 0:
+            primary_sources.append({
+                "source_type": "asos_metar",
+                "station_id": station_id,
+                "station_name": station.get("station_name"),
+                "distance_miles": station.get("distance_miles"),
+                "agency": "NWS/FAA",
+                "max_wind_mph": max_wind,
+                "observation_count": len(observations),
+                "timestamp": peak_obs.get("timestamp"),
+            })
 
     station_quality = []
-    for station in stations[:3]:
-        station_id = station["station_id"]
+    for station in selected_stations:
+        station_id = station.get("station_id")
+        if not station_id:
+            continue
         station_quality.append(
             summarize_station_quality(station, station_observations.get(station_id, []))
         )
@@ -870,7 +1058,9 @@ async def verify_date_of_loss(
         "location": {
             "latitude": lat,
             "longitude": lng,
-            "county": verification.county
+            "county": verification.county,
+            "geocoder": geo.get("geocoder"),
+            "precision": geo.get("precision", "address"),
         }
     }
 
@@ -893,22 +1083,28 @@ async def discover_dol_candidates(
 
     stations = await get_nearby_stations(lat, lng)
     stations = sorted(stations, key=lambda s: s.get("distance_miles", 999))[:4]
-
     station_observations: Dict[str, List[Dict[str, Any]]] = {}
     station_metadata: Dict[str, Dict[str, Any]] = {}
-    for station in stations:
-        station_id = station.get("station_id")
+
+    station_batches = await fetch_station_observation_bundle(
+        stations,
+        request.start_date,
+        request.end_date,
+        max_stations=3,
+        per_station_timeout_s=35.0,
+    )
+
+    for batch in station_batches:
+        station = batch.get("station") or {}
+        station_id = batch.get("station_id")
+        observations = batch.get("observations") or []
         if not station_id:
             continue
         station_metadata[station_id] = {
             "station_name": station.get("station_name"),
             "distance_miles": station.get("distance_miles"),
         }
-        station_observations[station_id] = await get_metar_data(
-            station_id,
-            request.start_date,
-            request.end_date,
-        )
+        station_observations[station_id] = observations
 
     station_quality = [
         summarize_station_quality(station, station_observations.get(station.get("station_id"), []))
@@ -950,6 +1146,8 @@ async def discover_dol_candidates(
             "zip_code": request.zip_code,
             "latitude": lat,
             "longitude": lng,
+            "geocoder": geo.get("geocoder"),
+            "precision": geo.get("precision", "address"),
         },
         "analysis_window": {
             "start_date": request.start_date,
