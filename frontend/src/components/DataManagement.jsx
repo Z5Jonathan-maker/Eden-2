@@ -2,8 +2,7 @@ import React from 'react';
 import { Download, Upload, FileSpreadsheet, FileJson, Database } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, API_URL } from '@/lib/api';
 const IMPORT_MAPPING_PRESETS_KEY = 'eden_data_import_mapping_presets_v1';
 const IMPORT_MAPPING_PREFERRED_PRESET_KEY = 'eden_data_import_preferred_preset_v1';
 const IMPORT_MAPPING_PRESET_LOCK_KEY = 'eden_data_import_preset_lock_v1';
@@ -230,10 +229,6 @@ function DataManagement() {
     [lastImportPreview, importDiagnostics, lastImportSummary]
   );
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
   React.useEffect(function () {
     try {
       var raw = localStorage.getItem(IMPORT_MAPPING_PRESETS_KEY);
@@ -262,7 +257,7 @@ function DataManagement() {
     } catch (_err) {}
   }
 
-  const probeLegacyImportCapabilities = React.useCallback(function probeLegacyImportCapabilities() {
+  const probeLegacyImportCapabilities = React.useCallback(async function probeLegacyImportCapabilities() {
     var probeCsv = ['claim_number,client_name,property_address'].join('\n');
     var probeBlob = new Blob([probeCsv], { type: 'text/csv;charset=utf-8;' });
     var probeFile = new File([probeBlob], 'eden_capability_probe.csv', { type: 'text/csv' });
@@ -272,60 +267,52 @@ function DataManagement() {
     formData.append('duplicate_strategy', 'auto_renumber');
     formData.append('dry_run', 'true');
 
-    return fetch(API_URL + '/api/data/import/claims', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + getToken() },
-      body: formData,
-    })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (data) {
-        if (!data || data.success !== true) {
-          throw new Error(extractErrorDetail(data) || 'Capability probe failed');
-        }
-        var enhanced = hasEnhancedImportResponseShape(data);
-        setBackendSupportsDuplicateStrategy(enhanced);
-        setAvailableDuplicateStrategies(
-          enhanced ? ['skip', 'auto_renumber', 'update_blank_fields'] : ['skip']
-        );
-        setDuplicateStrategy(function (currentStrategy) {
-          if (!enhanced) return 'skip';
-          return ['skip', 'auto_renumber', 'update_blank_fields'].includes(currentStrategy)
-            ? currentStrategy
-            : 'skip';
-        });
-        setImportCapabilities({
-          success: true,
-          legacy_probe: true,
-          supports_duplicate_strategy: enhanced,
-          duplicate_strategies: enhanced
-            ? ['skip', 'auto_renumber', 'update_blank_fields']
-            : ['skip'],
-          accepted_extensions: ['.csv', '.xlsx', '.xls'],
-        });
-        setImportCapabilitiesError(
-          'Capabilities endpoint unavailable: using probe-based compatibility mode.'
-        );
-      })
-      .catch(function () {
-        setBackendSupportsDuplicateStrategy(false);
-        setAvailableDuplicateStrategies(['skip']);
-        setDuplicateStrategy('skip');
-        setImportCapabilities({
-          success: true,
-          legacy_probe: true,
-          supports_duplicate_strategy: false,
-          duplicate_strategies: ['skip'],
-          accepted_extensions: ['.csv', '.xlsx', '.xls'],
-        });
-        setImportCapabilitiesError(
-          'Capabilities endpoint unavailable: running in safe legacy mode.'
-        );
-      })
-      .finally(function () {
-        setImportCapabilitiesLoading(false);
+    try {
+      const res = await apiPost('/api/data/import/claims', formData, { isFormData: true });
+      if (!res.ok || !res.data || res.data.success !== true) {
+        throw new Error(extractErrorDetail(res.data) || 'Capability probe failed');
+      }
+      const data = res.data;
+      var enhanced = hasEnhancedImportResponseShape(data);
+      setBackendSupportsDuplicateStrategy(enhanced);
+      setAvailableDuplicateStrategies(
+        enhanced ? ['skip', 'auto_renumber', 'update_blank_fields'] : ['skip']
+      );
+      setDuplicateStrategy(function (currentStrategy) {
+        if (!enhanced) return 'skip';
+        return ['skip', 'auto_renumber', 'update_blank_fields'].includes(currentStrategy)
+          ? currentStrategy
+          : 'skip';
       });
+      setImportCapabilities({
+        success: true,
+        legacy_probe: true,
+        supports_duplicate_strategy: enhanced,
+        duplicate_strategies: enhanced
+          ? ['skip', 'auto_renumber', 'update_blank_fields']
+          : ['skip'],
+        accepted_extensions: ['.csv', '.xlsx', '.xls'],
+      });
+      setImportCapabilitiesError(
+        'Capabilities endpoint unavailable: using probe-based compatibility mode.'
+      );
+    } catch (err) {
+      setBackendSupportsDuplicateStrategy(false);
+      setAvailableDuplicateStrategies(['skip']);
+      setDuplicateStrategy('skip');
+      setImportCapabilities({
+        success: true,
+        legacy_probe: true,
+        supports_duplicate_strategy: false,
+        duplicate_strategies: ['skip'],
+        accepted_extensions: ['.csv', '.xlsx', '.xls'],
+      });
+      setImportCapabilitiesError(
+        'Capabilities endpoint unavailable: running in safe legacy mode.'
+      );
+    } finally {
+      setImportCapabilitiesLoading(false);
+    }
   }, []);
 
   function scorePresetForHeaders(preset, detectedHeaders) {
@@ -367,19 +354,16 @@ function DataManagement() {
     return { preset: best, score: bestScore };
   }
 
-  const fetchStats = React.useCallback(function fetchStats() {
+  const fetchStats = React.useCallback(async function fetchStats() {
     setLoading(true);
-    fetch(API_URL + '/api/data/stats', { headers: { Authorization: 'Bearer ' + getToken() } })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (data) {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(function () {
-        setLoading(false);
-      });
+    try {
+      const res = await apiGet('/api/data/stats');
+      if (res.ok) setStats(res.data);
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   React.useEffect(
@@ -391,31 +375,31 @@ function DataManagement() {
 
   React.useEffect(
     function () {
-      setImportCapabilitiesLoading(true);
-      setImportCapabilitiesError('');
-      fetch(API_URL + '/api/data/import/claims/capabilities', {
-        headers: { Authorization: 'Bearer ' + getToken() },
-      })
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (data) {
-          if (!data || data.success !== true) return;
-          setImportCapabilities(data);
-          if (Array.isArray(data.duplicate_strategies) && data.duplicate_strategies.length > 0) {
-            setAvailableDuplicateStrategies(data.duplicate_strategies);
+      const fetchCapabilities = async function () {
+        setImportCapabilitiesLoading(true);
+        setImportCapabilitiesError('');
+        try {
+          const res = await apiGet('/api/data/import/claims/capabilities');
+          if (!res.ok || !res.data || res.data.success !== true) {
+            probeLegacyImportCapabilities();
+            return;
+          }
+          setImportCapabilities(res.data);
+          if (Array.isArray(res.data.duplicate_strategies) && res.data.duplicate_strategies.length > 0) {
+            setAvailableDuplicateStrategies(res.data.duplicate_strategies);
             setDuplicateStrategy(function (currentStrategy) {
-              return data.duplicate_strategies.includes(currentStrategy)
+              return res.data.duplicate_strategies.includes(currentStrategy)
                 ? currentStrategy
-                : data.duplicate_strategies[0];
+                : res.data.duplicate_strategies[0];
             });
           }
-          setBackendSupportsDuplicateStrategy(data.supports_duplicate_strategy === true);
+          setBackendSupportsDuplicateStrategy(res.data.supports_duplicate_strategy === true);
           setImportCapabilitiesLoading(false);
-        })
-        .catch(function () {
+        } catch (err) {
           probeLegacyImportCapabilities();
-        });
+        }
+      };
+      fetchCapabilities();
     },
     [probeLegacyImportCapabilities]
   );
@@ -563,40 +547,32 @@ function DataManagement() {
     );
   }
 
-  function runDryRunRequest(file, mappingOverride) {
+  async function runDryRunRequest(file, mappingOverride) {
     var formData = new FormData();
     formData.append('file', file);
     formData.append('import_mapping', JSON.stringify(mappingOverride || importColumnMapping || {}));
     formData.append('duplicate_strategy', duplicateStrategy);
     formData.append('dry_run', 'true');
-    return fetch(API_URL + '/api/data/import/claims', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + getToken() },
-      body: formData,
-    }).then(function (res) {
-      return res.json();
-    });
+    const res = await apiPost('/api/data/import/claims', formData);
+    return res.data;
   }
 
-  function handleImport(e) {
+  async function handleImport(e) {
     var file = e.target.files[0];
     if (!file) return;
     var previewFormData = new FormData();
     previewFormData.append('file', file);
-    fetch(API_URL + '/api/data/import/claims/preview', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + getToken() },
-      body: previewFormData,
-    })
-      .then(function (res) {
-        if (!res.ok) {
-          if (res.status === 404 || res.status === 405 || res.status === 501) {
-            return { __legacyFallback: true };
-          }
-        }
-        return res.json();
-      })
-      .then(async function (preview) {
+
+    try {
+      const res = await apiPost('/api/data/import/claims/preview', previewFormData);
+      var preview = res.data;
+
+      if (!res.ok) {
+        // Legacy fallback for 404/405/501
+        preview = { __legacyFallback: true };
+      }
+
+      {
         if (preview && preview.__legacyFallback) {
           setLastImportPreview(null);
           setImportColumnMapping({});
@@ -672,15 +648,14 @@ function DataManagement() {
           toast.error('Compatibility check failed');
         }
         return null;
-      })
-      .catch(function () {
-        toast.info('Preview failed. Falling back to direct import mode.');
-        runLegacyDirectImport(file);
-      })
-      .finally(function () {});
+      }
+    } catch (err) {
+      toast.info('Preview failed. Falling back to direct import mode.');
+      runLegacyDirectImport(file);
+    }
   }
 
-  function handleApplyRemapAndImport() {
+  async function handleApplyRemapAndImport() {
     if (!fileInputRef.current || !fileInputRef.current.files || !fileInputRef.current.files[0]) {
       toast.error('Select a file first');
       return;
@@ -691,15 +666,10 @@ function DataManagement() {
     formData.append('import_mapping', JSON.stringify(importColumnMapping || {}));
     formData.append('duplicate_strategy', duplicateStrategy);
     formData.append('dry_run', 'false');
-    fetch(API_URL + '/api/data/import/claims', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + getToken() },
-      body: formData,
-    })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (data) {
+
+    try {
+      const res = await apiPost('/api/data/import/claims', formData);
+      const data = res.data;
         if (!data || data.success !== true) {
           toast.error(data && data.detail ? data.detail : 'Import failed');
           return;
@@ -728,10 +698,9 @@ function DataManagement() {
         }
         toast.success('Import completed with remapped columns');
         fetchStats();
-      })
-      .catch(function () {
-        toast.error('Import failed');
-      });
+    } catch (err) {
+      toast.error('Import failed');
+    }
   }
 
   function handleDryRunWithMapping() {
