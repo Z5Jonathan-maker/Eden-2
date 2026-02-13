@@ -10,8 +10,7 @@ import {
   Thermometer, CloudRain, Droplets, CloudLightning, Snowflake,
   Eye, ChevronDown, ChevronUp, ExternalLink, Zap, Target
 } from 'lucide-react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, API_URL } from '@/lib/api';
 
 // Event type configuration - Drodat style
 const EVENT_CONFIG = {
@@ -109,17 +108,14 @@ const WeatherVerification = ({ embedded = false }) => {
   // Load history on mount
   const fetchHistory = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/weather/history?days=30`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiGet('/api/weather/history?days=30');
       if (res.ok) {
-        const data = await res.json();
-        setHistory(data.verifications || []);
+        setHistory(res.data.verifications || []);
       }
     } catch (err) {
       console.error('Error fetching history:', err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchHistory();

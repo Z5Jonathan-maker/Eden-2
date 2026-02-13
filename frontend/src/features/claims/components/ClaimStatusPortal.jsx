@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle, Circle, Clock, FileText, Phone, Mail, MapPin, Calendar } from 'lucide-react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { api } from '@/lib/api';
 
 // Claim stages with descriptions
 const STAGES = [
@@ -22,7 +21,7 @@ const ClaimStatusPortal = () => {
   const fetchClaimStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/api/client-status/claim/${claimId}/public`);
+      const res = await api(`/api/client-status/claim/${claimId}/public`);
 
       if (!res.ok) {
         if (res.status === 404) {
@@ -33,8 +32,7 @@ const ClaimStatusPortal = () => {
         return;
       }
 
-      const data = await res.json();
-      setClaim(data);
+      setClaim(res.data);
     } catch (err) {
       setError('Unable to connect. Please try again.');
     } finally {

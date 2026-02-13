@@ -7,9 +7,9 @@ import LeaderboardTab from './LeaderboardTab';
 import { leaderboardSeed, missionsSeed, tiers } from './mockData';
 import { BattlePassState, LeaderboardEntry, Mission } from './types';
 import './AnimationStyles.css';
+import { apiGet, API_URL } from '@/lib/api';
 
 type TabKey = 'progress' | 'missions' | 'leaderboard';
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
 const STORAGE_KEY = 'eden_battle_pass_state_v3';
 
 const initialState: BattlePassState = {
@@ -98,20 +98,18 @@ const BattlePassPage: React.FC = () => {
 
   useEffect(() => {
     let alive = true;
-    const token = localStorage.getItem('eden_token');
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
     const hydrate = async () => {
       try {
         if (!API_URL) return;
         const [progressRes, missionsRes, leaderboardRes] = await Promise.all([
-          fetch(`${API_URL}/api/battle-pass/progress`, { headers }),
-          fetch(`${API_URL}/api/battle-pass/missions`, { headers }),
-          fetch(`${API_URL}/api/battle-pass/leaderboard?limit=20`, { headers }),
+          apiGet('/api/battle-pass/progress'),
+          apiGet('/api/battle-pass/missions'),
+          apiGet('/api/battle-pass/leaderboard?limit=20'),
         ]);
 
         if (alive && progressRes.ok) {
-          const data = await progressRes.json();
+          const data = progressRes.data;
           const remoteXp = Number(data.current_xp || 0);
           const remoteLevel = Number(data.current_tier || getLevelFromXp(remoteXp));
           setState((prev) => ({
@@ -131,7 +129,7 @@ const BattlePassPage: React.FC = () => {
         }
 
         if (alive && missionsRes.ok) {
-          const data = await missionsRes.json();
+          const data = missionsRes.data;
           const merged: Mission[] = [
             ...(Array.isArray(data.daily_missions)
               ? data.daily_missions.map((m: any) => mapRemoteMission(m, 'daily'))
@@ -145,7 +143,7 @@ const BattlePassPage: React.FC = () => {
         }
 
         if (alive && leaderboardRes.ok) {
-          const data = await leaderboardRes.json();
+          const data = leaderboardRes.data;
           const remoteRows = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
           if (remoteRows.length) {
             setLeaderboard(

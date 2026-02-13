@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Loader2, Search, X } from 'lucide-react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
-const getToken = () => localStorage.getItem('eden_token') || '';
+import { apiGet } from '@/lib/api';
 
 interface ClaimRecord {
   id: string;
@@ -29,16 +27,15 @@ const ClaimSelector: React.FC<Props> = ({ selectedClaimId, onSelect }) => {
   useEffect(() => {
     const fetchClaims = async () => {
       setLoading(true);
-      const headers = { Authorization: `Bearer ${getToken()}` };
       try {
         const endpoints = [
-          `${API_URL}/api/claims/?include_archived=false&limit=200`,
-          `${API_URL}/api/claims/`,
+          '/api/claims/?include_archived=false&limit=200',
+          '/api/claims/',
         ];
         for (const endpoint of endpoints) {
-          const res = await fetch(endpoint, { headers });
+          const res = await apiGet(endpoint);
           if (!res.ok) continue;
-          const data = await res.json();
+          const data = res.data;
           const rows = Array.isArray(data) ? data : data?.claims || [];
           if (rows.length > 0 || endpoint.includes('/api/claims/')) {
             setClaims(rows);
