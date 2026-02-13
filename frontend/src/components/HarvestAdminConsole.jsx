@@ -77,26 +77,23 @@ const StatusBadge = ({ status }) => {
 // ============================================
 // CAMPAIGNS TAB
 // ============================================
-const CampaignsTab = ({ token, onRefresh }) => {
+const CampaignsTab = ({ onRefresh }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/campaigns?include_past=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiGet('/api/harvest/campaigns?include_past=true');
       if (res.ok) {
-        // data now in res.data
-        setCampaigns(data.campaigns || []);
+        setCampaigns(res.data.campaigns || []);
       }
     } catch (err) {
       console.error('Failed to fetch campaigns:', err);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchCampaigns();
@@ -106,10 +103,7 @@ const CampaignsTab = ({ token, onRefresh }) => {
     if (!window.confirm('Are you sure you want to end this campaign?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/harvest/campaigns/${campaignId}/end`, {
-        
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiPost(`/api/harvest/campaigns/${campaignId}/end`, {});
       if (res.ok) {
         fetchCampaigns();
       }
@@ -218,7 +212,6 @@ const CampaignsTab = ({ token, onRefresh }) => {
       {/* Create Campaign Modal */}
       {showCreate && (
         <CreateCampaignModal
-          token={token}
           onClose={() => setShowCreate(false)}
           onSuccess={() => {
             setShowCreate(false);
@@ -231,7 +224,7 @@ const CampaignsTab = ({ token, onRefresh }) => {
 };
 
 // Create Campaign Modal
-const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
+const CreateCampaignModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -249,17 +242,10 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/harvest/campaigns`, {
-        
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify({
-          ...formData,
-          start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date).toISOString(),
-        }),
+      const res = await apiPost('/api/harvest/campaigns', {
+        ...formData,
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date).toISOString(),
       });
 
       if (res.ok) {
@@ -397,19 +383,16 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
 // ============================================
 // TEMPLATES TAB
 // ============================================
-const TemplatesTab = ({ token }) => {
+const TemplatesTab = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/harvest/campaigns/templates/list`, {
-          headers: { Authorization: `Bearer ${token}` },
-        
-      if (res.ok) {
-          // data now in res.data
-          setTemplates(data.templates || []);
+        const res = await apiGet('/api/harvest/campaigns/templates/list');
+        if (res.ok) {
+          setTemplates(res.data.templates || []);
         }
       } catch (err) {
         console.error('Failed to fetch templates:', err);
@@ -418,7 +401,7 @@ const TemplatesTab = ({ token }) => {
       }
     };
     fetchTemplates();
-  }, [token]);
+  }, []);
 
   const applyTemplate = async (templateId) => {
     const name = window.prompt('Enter campaign name:');
@@ -426,12 +409,9 @@ const TemplatesTab = ({ token }) => {
 
     try {
       const startDate = new Date().toISOString();
-      const res = await fetch(
-        `${API_URL}/api/harvest/campaigns/from-template/${templateId}?name=${encodeURIComponent(name)}&start_date=${startDate}`,
-        {
-          
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const res = await apiPost(
+        `/api/harvest/campaigns/from-template/${templateId}?name=${encodeURIComponent(name)}&start_date=${startDate}`,
+        {}
       );
       if (res.ok) {
         alert('Campaign created successfully!');
@@ -491,26 +471,23 @@ const TemplatesTab = ({ token }) => {
 // ============================================
 // REWARDS TAB
 // ============================================
-const RewardsTab = ({ token }) => {
+const RewardsTab = () => {
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
   const fetchRewards = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/rewards?is_active=false`, {
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiGet('/api/harvest/rewards?is_active=false');
       if (res.ok) {
-        // data now in res.data
-        setRewards(data.rewards || []);
+        setRewards(res.data.rewards || []);
       }
     } catch (err) {
       console.error('Failed to fetch rewards:', err);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRewards();
@@ -520,10 +497,7 @@ const RewardsTab = ({ token }) => {
     if (!window.confirm('Archive this reward?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/harvest/rewards/${rewardId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiDelete(`/api/harvest/rewards/${rewardId}`);
       if (res.ok) {
         fetchRewards();
       }
@@ -620,7 +594,6 @@ const RewardsTab = ({ token }) => {
       {/* Create Reward Modal */}
       {showCreate && (
         <CreateRewardModal
-          token={token}
           onClose={() => setShowCreate(false)}
           onSuccess={() => {
             setShowCreate(false);
@@ -633,7 +606,7 @@ const RewardsTab = ({ token }) => {
 };
 
 // Create Reward Modal
-const CreateRewardModal = ({ token, onClose, onSuccess }) => {
+const CreateRewardModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -649,14 +622,7 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/harvest/rewards`, {
-        
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = await apiPost('/api/harvest/rewards', formData);
 
       if (res.ok) {
         onSuccess();
@@ -786,7 +752,7 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
 // ============================================
 // REDEMPTIONS TAB
 // ============================================
-const RedemptionsTab = ({ token }) => {
+const RedemptionsTab = () => {
   const [redemptions, setRedemptions] = useState([]);
   const [counts, setCounts] = useState({ pending: 0, approved: 0, fulfilled: 0 });
   const [loading, setLoading] = useState(true);
@@ -794,23 +760,19 @@ const RedemptionsTab = ({ token }) => {
 
   const fetchRedemptions = useCallback(async () => {
     try {
-      const res = await fetch(
-        `${API_URL}/api/harvest/redemptions${filter !== 'all' ? `?status=${filter}` : ''}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const res = await apiGet(
+        `/api/harvest/redemptions${filter !== 'all' ? `?status=${filter}` : ''}`
       );
       if (res.ok) {
-        // data now in res.data
-        setRedemptions(data.redemptions || []);
-        setCounts(data.counts || {});
+        setRedemptions(res.data.redemptions || []);
+        setCounts(res.data.counts || {});
       }
     } catch (err) {
       console.error('Failed to fetch redemptions:', err);
     } finally {
       setLoading(false);
     }
-  }, [token, filter]);
+  }, [filter]);
 
   useEffect(() => {
     fetchRedemptions();
@@ -818,14 +780,7 @@ const RedemptionsTab = ({ token }) => {
 
   const processRedemption = async (redemptionId, action, notes = null) => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/redemptions/${redemptionId}`, {
-        method: 'PATCH',
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify({ action, notes }),
-      
+      const res = await apiPut(`/api/harvest/redemptions/${redemptionId}`, { action, notes });
       if (res.ok) {
         fetchRedemptions();
       }
@@ -954,7 +909,7 @@ const RedemptionsTab = ({ token }) => {
 // ============================================
 // TERRITORIES TAB
 // ============================================
-const TerritoriesTab = ({ token }) => {
+const TerritoriesTab = () => {
   const [territories, setTerritories] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -963,33 +918,27 @@ const TerritoriesTab = ({ token }) => {
 
   const fetchTerritories = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/territories/?include_inactive=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiGet('/api/harvest/territories/?include_inactive=true');
       if (res.ok) {
-        // data now in res.data
-        setTerritories(data.territories || []);
+        setTerritories(res.data.territories || []);
       }
     } catch (err) {
       console.error('Failed to fetch territories:', err);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiGet('/api/admin/users');
       if (res.ok) {
-        // data now in res.data
-        setUsers(data.users || data || []);
+        setUsers(res.data.users || res.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchTerritories();
@@ -1000,10 +949,7 @@ const TerritoriesTab = ({ token }) => {
     if (!window.confirm('Are you sure you want to deactivate this territory?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      
+      const res = await apiDelete(`/api/harvest/territories/${territoryId}`);
       if (res.ok) {
         fetchTerritories();
       }
@@ -1014,14 +960,9 @@ const TerritoriesTab = ({ token }) => {
 
   const assignUser = async (territoryId, userId) => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}/assign`, {
-        
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify({ user_id: userId }),
-      
+      const res = await apiPost(`/api/harvest/territories/${territoryId}/assign`, {
+        user_id: userId,
+      });
       if (res.ok) {
         fetchTerritories();
       }
@@ -1032,12 +973,8 @@ const TerritoriesTab = ({ token }) => {
 
   const unassignUser = async (territoryId, userId) => {
     try {
-      const res = await fetch(
-        `${API_URL}/api/harvest/territories/${territoryId}/assign/${userId}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const res = await apiDelete(
+        `/api/harvest/territories/${territoryId}/assign/${userId}`
       );
       if (res.ok) {
         fetchTerritories();
@@ -1179,7 +1116,6 @@ const TerritoriesTab = ({ token }) => {
       {/* Create Territory Modal */}
       {showCreate && (
         <CreateTerritoryModal
-          token={token}
           onClose={() => setShowCreate(false)}
           onSuccess={() => {
             setShowCreate(false);
@@ -1193,7 +1129,6 @@ const TerritoriesTab = ({ token }) => {
         <AssignUsersModal
           territory={selectedTerritory}
           users={users}
-          token={token}
           onClose={() => setSelectedTerritory(null)}
           onAssign={(userId) => assignUser(selectedTerritory.id, userId)}
           onUnassign={(userId) => unassignUser(selectedTerritory.id, userId)}
@@ -1204,7 +1139,7 @@ const TerritoriesTab = ({ token }) => {
 };
 
 // Create Territory Modal
-const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
+const CreateTerritoryModal = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -1219,28 +1154,20 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
 
     try {
       // For now, create with empty polygon - can be drawn on map later
-      const res = await fetch(`${API_URL}/api/harvest/territories/`, {
-        
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify({
-          ...formData,
-          polygon: [
-            { lat: 27.95, lng: -82.46 },
-            { lat: 27.96, lng: -82.46 },
-            { lat: 27.96, lng: -82.45 },
-            { lat: 27.95, lng: -82.45 },
-          ],
-        }),
+      const res = await apiPost('/api/harvest/territories/', {
+        ...formData,
+        polygon: [
+          { lat: 27.95, lng: -82.46 },
+          { lat: 27.96, lng: -82.46 },
+          { lat: 27.96, lng: -82.45 },
+          { lat: 27.95, lng: -82.45 },
+        ],
       });
 
       if (res.ok) {
         onSuccess();
       } else {
-        const err = res.data;
-        alert(err.detail || 'Failed to create territory');
+        alert(res.error?.detail || 'Failed to create territory');
       }
     } catch (err) {
       console.error('Failed to create territory:', err);
@@ -1332,7 +1259,7 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
 };
 
 // Assign Users Modal
-const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassign }) => {
+const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) => {
   const assignedIds = (territory.assignments || territory.assigned_users || []).map(
     (a) => a.user_id
   );
@@ -1420,7 +1347,7 @@ const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassi
 // ============================================
 // SETTINGS TAB (Dispositions & Daily Goals)
 // ============================================
-const SettingsTab = ({ token }) => {
+const SettingsTab = () => {
   const [dispositions, setDispositions] = useState([]);
   const [dailyGoals, setDailyGoals] = useState({
     doors_knocked: 40,
@@ -1433,23 +1360,17 @@ const SettingsTab = ({ token }) => {
   const fetchSettings = useCallback(async () => {
     try {
       const [dispRes, goalsRes] = await Promise.all([
-        fetch(`${API_URL}/api/harvest/v2/dispositions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/api/harvest/v2/daily-goals`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        apiGet('/api/harvest/v2/dispositions'),
+        apiGet('/api/harvest/v2/daily-goals'),
       ]);
 
       if (dispRes.ok) {
-        const data = await dispRes.json();
-        setDispositions(data.dispositions || []);
+        setDispositions(dispRes.data.dispositions || []);
       }
 
       if (goalsRes.ok) {
-        const data = await goalsRes.json();
         setDailyGoals(
-          data.goals || { doors_knocked: 40, appointments_set: 3, signed_contracts: 1 }
+          goalsRes.data.goals || { doors_knocked: 40, appointments_set: 3, signed_contracts: 1 }
         );
       }
     } catch (err) {
@@ -1457,7 +1378,7 @@ const SettingsTab = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
@@ -1466,14 +1387,7 @@ const SettingsTab = ({ token }) => {
   const saveGoals = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/harvest/v2/daily-goals`, {
-        method: 'PUT',
-        
-          Authorization: `Bearer ${token}`,
-          
-        },
-        body: JSON.stringify(dailyGoals),
-      });
+      const res = await apiPut('/api/harvest/v2/daily-goals', dailyGoals);
 
       if (res.ok) {
         alert('Daily goals updated!');
@@ -1661,12 +1575,12 @@ const HarvestAdminConsole = () => {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6" key={refreshKey}>
-        {activeTab === 'campaigns' && <CampaignsTab token={token} onRefresh={handleRefresh} />}
-        {activeTab === 'templates' && <TemplatesTab token={token} />}
-        {activeTab === 'territories' && <TerritoriesTab token={token} />}
-        {activeTab === 'rewards' && <RewardsTab token={token} />}
-        {activeTab === 'redemptions' && <RedemptionsTab token={token} />}
-        {activeTab === 'settings' && <SettingsTab token={token} />}
+        {activeTab === 'campaigns' && <CampaignsTab onRefresh={handleRefresh} />}
+        {activeTab === 'templates' && <TemplatesTab />}
+        {activeTab === 'territories' && <TerritoriesTab />}
+        {activeTab === 'rewards' && <RewardsTab />}
+        {activeTab === 'redemptions' && <RedemptionsTab />}
+        {activeTab === 'settings' && <SettingsTab />}
       </div>
     </div>
   );
