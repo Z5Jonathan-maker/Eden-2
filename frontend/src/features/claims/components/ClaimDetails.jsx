@@ -63,8 +63,8 @@ const ClaimDetails = () => {
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
-  const [notionPage, setNotionPage] = useState(null);
-  const [creatingNotionPage, setCreatingNotionPage] = useState(false);
+  const [gammaPage, setGammaPage] = useState(null);
+  const [creatingGammaPage, setCreatingGammaPage] = useState(false);
   const [showDeckMenu, setShowDeckMenu] = useState(false);
   const [generatingDeck, setGeneratingDeck] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -112,38 +112,38 @@ const ClaimDetails = () => {
     }
   }, [claimId]);
 
-  const fetchNotionPage = useCallback(async () => {
+  const fetchGammaPage = useCallback(async () => {
     try {
-      const res = await apiGet(`/api/notion/claim-page/${claimId}`);
+      const res = await apiGet(`/api/gamma/claim-page/${claimId}`);
       if (res.ok) {
         if (res.data.exists) {
-          setNotionPage(res.data);
+          setGammaPage(res.data);
         }
       }
     } catch (err) {
-      // console.log('Notion page not found');
+      // console.log('Gamma page not found');
     }
   }, [claimId]);
 
-  const createNotionStrategyPage = async () => {
-    setCreatingNotionPage(true);
+  const createGammaStrategyPage = async () => {
+    setCreatingGammaPage(true);
     try {
-      const res = await apiPost('/api/notion/claim-page/create', { claim_id: claimId });
+      const res = await apiPost('/api/gamma/claim-page/create', { claim_id: claimId });
 
       if (res.ok && (res.data.success || res.data.exists)) {
-        setNotionPage({ exists: true, url: res.data.url, page_id: res.data.page_id });
-        toast.success('Strategy page created in Notion!');
+        setGammaPage({ exists: true, url: res.data.url, page_id: res.data.page_id });
+        toast.success('Strategy page created in Gamma!');
         // Open the page
         if (res.data.url) {
           window.open(res.data.url, '_blank');
         }
       } else {
-        toast.error(res.error?.detail || res.error || 'Failed to create Notion page');
+        toast.error(res.error?.detail || res.error || 'Failed to create Gamma page');
       }
     } catch (err) {
-      toast.error('Failed to create Notion page');
+      toast.error('Failed to create Gamma page');
     } finally {
-      setCreatingNotionPage(false);
+      setCreatingGammaPage(false);
     }
   };
 
@@ -177,8 +177,8 @@ const ClaimDetails = () => {
   useEffect(() => {
     fetchClaimData();
     fetchClaimPhotos();
-    fetchNotionPage();
-  }, [fetchClaimData, fetchClaimPhotos, fetchNotionPage]);
+    fetchGammaPage();
+  }, [fetchClaimData, fetchClaimPhotos, fetchGammaPage]);
 
   // Open schedule modal with pre-filled data
   const openScheduleModal = () => {
@@ -756,10 +756,10 @@ Generated on: ${new Date().toLocaleString()}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {notionPage?.exists ? (
+            {gammaPage?.exists ? (
               <button
                 className="px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
-                onClick={() => window.open(notionPage.url, '_blank')}
+                onClick={() => window.open(gammaPage.url, '_blank')}
                 data-testid="notion-page-btn"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -768,11 +768,11 @@ Generated on: ${new Date().toLocaleString()}
             ) : (
               <button
                 className="px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
-                onClick={createNotionStrategyPage}
-                disabled={creatingNotionPage}
+                onClick={createGammaStrategyPage}
+                disabled={creatingGammaPage}
                 data-testid="create-notion-btn"
               >
-                {creatingNotionPage ? (
+                {creatingGammaPage ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <FileText className="w-4 h-4" />

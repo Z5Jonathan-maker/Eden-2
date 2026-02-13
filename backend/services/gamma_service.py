@@ -1,84 +1,143 @@
-import httpx
+from gamma_client import Client
+from typing import Optional, List, Dict
 import logging
 import os
-from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
 class GammaService:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv('GAMMA_API_KEY')
-        self.base_url = 'https://api.gamma.app/v1.0'
-        self.headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
-        }
+        self.client = Client(auth=api_key or os.getenv('GAMMA_API_KEY'))
     
-    async def generate_presentation(
+    async def create_claim_page(
         self,
-        title: str,
-        content: str,
-        theme_id: Optional[str] = None
-    ) -> Dict:
-        """Generate a presentation using Gamma API
+        database_id: str,
+        claim_data: Dict
+    ) -> str:
+        """Create a new claim page in Gamma database
         
         Args:
-            title: Presentation title
-            content: Slide content text
-            theme_id: Optional theme ID (get from GET /themes endpoint)
+            database_id: Gamma database ID
+            claim_data: Dict with claim information
             
         Returns:
-            Dict with presentation_url and other metadata
+            Page ID
         """
         try:
-            async with httpx.AsyncClient() as client:
-                payload = {
-                    'inputText': content,
-                    'title': title
+            response = self.client.pages.create(
+                parent={'database_id': database_id},
+                properties={
+                    'Name': {
+                        'title': [{'text': {'content': claim_data['claim_number']}}]
+                    },
+                    'Status': {
+                        'select': {'name': claim_data.get('status', 'New')}
+                    },
+                    'Client Name': {
+                        'rich_text': [{'text': {'content': claim_data.get('client_name', '')}}]
+                    },
+                    'Claim Date': {
+                        'date': {'start': claim_data.get('claim_date')}
+                    },
+                    'Description': {
+                        'rich_text': [{'text': {'content': claim_data.get('description', '')}}]
+                    }
                 }
-                
-                if theme_id:
-                    payload['themeId'] = theme_id
-                
-                response = await client.post(
-                    f'{self.base_url}/generate',
-                    json=payload,
-                    headers=self.headers,
-                    timeout=60.0
-                )
-                
-                response.raise_for_status()
-                result = response.json()
-                
-                logger.info('Gamma presentation generated successfully')
-                return result
-                
-        except httpx.HTTPStatusError as error:
-            logger.error(f'Gamma API HTTP error: {error.response.status_code} - {error.response.text}')
-            raise Exception(f'Gamma API error: {error.response.text}')
+            )
+            
+            logger.info(f'Gamma page created: {response["id"]}')
+            return response['id']
+            
         except Exception as error:
             logger.error(f'Gamma API error: {error}')
-            raise Exception(f'Failed to generate presentation: {error}')
+            raise Exception(f'Gamma API error: {error}')
     
-    async def list_themes(self) -> list:
-        """Get list of available themes
+    async def update_claim_page(
+        self,
+        page_id: str,
+        updates: Dict
+    ):
+        """Update properties of an existing claim page
         
-        Returns:
-            List of theme objects with id and name
+        Args:
+            page_id: Gamma page ID
+            updates: Dict with fields to update
         """
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f'{self.base_url}/themes',
-                    headers=self.headers
-                )
-                
-                response.raise_for_status()
-                result = response.json()
-                
-                logger.info(f'Retrieved {len(result.get("themes", []))} Gamma themes')
-                return result.get('themes', [])
-                
+            properties = {}
+            
+            if 'status' in updates:
+                properties['Status'] = {'select': {'name': updates['status']}}
+            if 'notes' in updates:
+                properties['Notes'] = {'rich_text': [{'text': {'content': updates['notes']}}]}
+            if 'updated_date' in updates:
+                properties['Updated Date'] = {'date': {'start': updates['updated_date']}}
+            
+            self.client.pages.update(
+                page_id=page_id,
+                properties=properties
+            )
+            
+            logger.info(f'Gamma page updated: {page_id}')
+            
         except Exception as error:
             logger.error(f'Gamma API error: {error}')
-            raise Exception(f'Failed to list themes: {error}')
+            raise Exception(f'Failed to update page: {error}')
+    
+    async def append_content(
+        self,
+        page_id: str,
+        content: str
+    ):
+        """Append text content to a page
+        
+        Args:
+            page_id: Gamma page ID
+            content: Text content to append
+        """
+        try:
+            blocks = [
+                {
+                    'type': 'paragraph',
+                    'paragraph': {
+                        'rich_text': [{'text': {'content': content}}]
+                    }
+                }
+            ]
+            
+            self.client.blocks.children.append(
+                block_id=page_id,
+                children=blocks
+            )
+            
+            logger.info(f'Content appended to page: {page_id}')
+            
+        except Exception as error:
+            logger.error(f'Gamma API error: {error}')
+            raise Exception(f'Failed to append content: {error}')
+    
+    async def query_database(
+        self,
+        database_id: str,
+        filters: Optional[Dict] = None
+    ) -> List[Dict]:
+        """Query a Gamma database
+        
+        Args:
+            database_id: Gamma database ID
+            filters: Optional filter conditions
+            
+        Returns:
+            List of page results
+        """
+        try:
+            query_params = {'database_id': database_id}
+            if filters:
+                query_params['filter'] = filters
+            
+            response = self.client.databases.query(**query_params)
+            return response['results']
+            
+        except Exception as error:
+            logger.error(f'Gamma API error: {error}')
+            raise Exception(f'Failed to query database: {error}')

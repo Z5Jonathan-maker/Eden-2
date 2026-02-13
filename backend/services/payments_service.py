@@ -56,7 +56,7 @@ SUBSCRIPTION_PACKAGES = {
             "Everything in Professional",
             "Dedicated account manager",
             "SignNow e-signatures",
-            "Notion & Gamma integrations",
+            "Gamma integrations",
             "API access",
             "SLA guarantee",
             "Custom training",

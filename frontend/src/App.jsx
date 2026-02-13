@@ -45,7 +45,7 @@ const ClaimStatusPortal = lazy(() => import('./features/claims/components/ClaimS
 const VoiceAssistantConsole = lazy(() => import('./components/VoiceAssistantConsole'));
 const HarvestAdminConsole = lazy(() => import('./components/HarvestAdminConsole'));
 const IncentivesAdminConsole = lazy(() => import('./components/IncentivesAdminConsole'));
-const NotionIntegration = lazy(() => import('./components/NotionIntegration'));
+const GammaIntegration = lazy(() => import('./components/GammaIntegration'));
 const PropertyHub = lazy(() => import('./components/PropertyHub'));
 const IndustryExperts = lazy(() => import('./components/IndustryExperts'));
 const FloridaLaws = lazy(() => import('./components/FloridaLaws'));
@@ -220,7 +220,7 @@ function AppRoutes() {
           <Route path="settings/integrations" element={<IntegrationsPage />} />
           <Route path="settings/integrations/callback" element={<IntegrationsPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
-          <Route path="notion" element={<NotionIntegration />} />
+          <Route path="gamma" element={<GammaIntegration />} />
           <Route path="voice-assistant" element={<VoiceAssistantConsole />} />
           <Route path="harvest-admin" element={<HarvestAdminConsole />} />
           <Route path="incentives-admin" element={<IncentivesAdminConsole />} />

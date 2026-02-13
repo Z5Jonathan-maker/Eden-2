@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
 import { apiGet, apiPost } from '@/lib/api';
 
-const NotionIntegration = () => {
+const GammaIntegration = () => {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [databases, setDatabases] = useState([]);
@@ -22,7 +22,7 @@ const NotionIntegration = () => {
 
   const fetchDatabases = useCallback(async () => {
     try {
-      const res = await apiGet('/api/notion/databases');
+      const res = await apiGet('/api/gamma/databases');
       if (res.ok) {
         setDatabases(res.data.databases || []);
       }
@@ -33,7 +33,7 @@ const NotionIntegration = () => {
 
   const fetchPages = useCallback(async () => {
     try {
-      const res = await apiGet('/api/notion/pages');
+      const res = await apiGet('/api/gamma/pages');
       if (res.ok) {
         setPages(res.data.pages || []);
       }
@@ -45,7 +45,7 @@ const NotionIntegration = () => {
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiGet('/api/notion/status');
+      const res = await apiGet('/api/gamma/status');
 
       if (res.ok) {
         setStatus(res.data);
@@ -55,8 +55,8 @@ const NotionIntegration = () => {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch Notion status:', err);
-      toast.error('Failed to connect to Notion');
+      console.error('Failed to fetch Gamma status:', err);
+      toast.error('Failed to connect to Gamma');
     } finally {
       setLoading(false);
     }
@@ -74,13 +74,13 @@ const NotionIntegration = () => {
 
     setCreating(true);
     try {
-      const res = await apiPost('/api/notion/databases/create', {
+      const res = await apiPost('/api/gamma/databases/create', {
         parent_page_id: selectedParent,
         title: 'Eden Claims'
       });
 
       if (res.ok) {
-        toast.success('Claims database created in Notion!');
+        toast.success('Claims database created in Gamma!');
         await fetchDatabases();
         setSelectedDatabase(res.data.database_id);
       } else {
@@ -101,10 +101,10 @@ const NotionIntegration = () => {
 
     setSyncing(true);
     try {
-      const res = await apiPost(`/api/notion/sync/all?database_id=${selectedDatabase}`, {});
+      const res = await apiPost(`/api/gamma/sync/all?database_id=${selectedDatabase}`, {});
 
       if (res.ok) {
-        toast.success(`Synced ${res.data.synced} claims to Notion!`);
+        toast.success(`Synced ${res.data.synced} claims to Gamma!`);
         if (res.data.failed > 0) {
           toast.warning(`${res.data.failed} claims failed to sync`);
         }
@@ -132,12 +132,15 @@ const NotionIntegration = () => {
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-2">
           <svg className="w-10 h-10" viewBox="0 0 100 100">
-            <path d="M6.017 4.313l55.333 -4.087c6.797 -0.583 8.543 -0.19 12.817 2.917l17.663 12.443c2.913 2.14 3.883 2.723 3.883 5.053v68.243c0 4.277 -1.553 6.807 -6.99 7.193L24.467 99.967c-4.08 0.193 -6.023 -0.39 -8.16 -3.113L3.3 79.94c-2.333 -3.113 -3.3 -5.443 -3.3 -8.167V11.113c0 -3.497 1.553 -6.413 6.017 -6.8z" fill="#fff"/>
-            <path fillRule="evenodd" clipRule="evenodd" d="M61.35 0.227l-55.333 4.087C1.553 4.7 0 7.617 0 11.113v60.66c0 2.723 0.967 5.053 3.3 8.167l13.007 16.913c2.137 2.723 4.08 3.307 8.16 3.113l64.257 -3.89c5.433 -0.387 6.99 -2.917 6.99 -7.193V20.64c0 -2.21 -0.873 -2.847 -3.443 -4.733L74.167 3.143c-4.273 -3.107 -6.02 -3.5 -12.817 -2.917z" fill="#000"/>
+            <circle cx="50" cy="50" r="45" fill="#FF6B00"/>
+            <path d="M30 65 L40 45 L50 65 L60 45 L70 65" stroke="#fff" strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="40" cy="45" r="4" fill="#fff"/>
+            <circle cx="50" cy="65" r="4" fill="#fff"/>
+            <circle cx="60" cy="45" r="4" fill="#fff"/>
           </svg>
           <div>
-            <h1 className="text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">NOTION INTEGRATION</h1>
-            <p className="text-gray-600">Sync your claims data to Notion databases</p>
+            <h1 className="text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">GAMMA INTEGRATION</h1>
+            <p className="text-gray-600">Sync your claims data to Gamma presentations</p>
           </div>
         </div>
       </div>
@@ -158,7 +161,7 @@ const NotionIntegration = () => {
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-800">Connected to Notion</span>
+                <span className="font-medium text-green-800">Connected to Gamma</span>
               </div>
               <div className="text-sm text-green-700 space-y-1">
                 <p><strong>Bot Name:</strong> {status.bot_name}</p>
@@ -172,7 +175,7 @@ const NotionIntegration = () => {
                 <span className="font-medium text-red-800">Not Connected</span>
               </div>
               <p className="text-sm text-red-700">
-                {status?.message || 'Notion integration token not configured'}
+                {status?.message || 'Gamma integration token not configured'}
               </p>
             </div>
           )}
@@ -195,7 +198,7 @@ const NotionIntegration = () => {
                       The integration doesn't have access to any pages yet. To use this integration:
                     </p>
                     <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
-                      <li>Open any page in Notion where you want to store claims</li>
+                      <li>Open any page in Gamma where you want to store claims</li>
                       <li>Click the <strong>"..."</strong> menu in the top right</li>
                       <li>Click <strong>"Connections"</strong> → <strong>"Connect to"</strong></li>
                       <li>Search for <strong>"Eden Claims"</strong> and select it</li>
@@ -250,7 +253,7 @@ const NotionIntegration = () => {
                           onClick={(e) => e.stopPropagation()}
                           className="text-xs text-orange-600 hover:underline mt-2 inline-flex items-center gap-1"
                         >
-                          Open in Notion <ExternalLink className="w-3 h-3" />
+                          Open in Gamma <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                     </div>
@@ -277,7 +280,7 @@ const NotionIntegration = () => {
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Sync All Claims to Notion
+                        Sync All Claims to Gamma
                       </>
                     )}
                   </Button>
@@ -295,7 +298,7 @@ const NotionIntegration = () => {
                   Create Claims Database
                 </CardTitle>
                 <CardDescription className="dark:text-gray-600">
-                  Create a new database in Notion with all the right fields for claims
+                  Create a new database in Gamma with all the right fields for claims
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -381,4 +384,4 @@ const NotionIntegration = () => {
   );
 };
 
-export default NotionIntegration;
+export default GammaIntegration;

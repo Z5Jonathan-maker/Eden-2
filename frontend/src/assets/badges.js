@@ -60,7 +60,7 @@ export const NAV_ICONS = {
   new_mission: '/icons/new_mission.png',
   weather: '/icons/weather.png',
   supplement: '/icons/documents.png',
-  notion: '/icons/documents.png',
+  gamma: '/icons/documents.png',
   course: '/icons/university.png',
   article: '/icons/doctrine.png',
   client_portal: '/icons/my_card.png',

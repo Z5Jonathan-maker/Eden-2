@@ -24,7 +24,7 @@ from services.ai_routing_policy import (
 # Get the Emergent LLM key
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 
-# FIRM CONTEXT - Static knowledge base (Notion DISABLED)
+# FIRM CONTEXT - Static knowledge base (Gamma DISABLED)
 FIRM_CONTEXT = """
 Eden Claims Platform Knowledge Base:
 
@@ -1102,7 +1102,7 @@ async def chat_with_eve(
             if detected_claim_context:
                 claim_context_str = format_claim_context_for_prompt(detected_claim_context)
         
-        # Use static FIRM_CONTEXT (Notion DISABLED)
+        # Use static FIRM_CONTEXT (Gamma DISABLED)
         firm_context = f"\n\n--- FIRM KNOWLEDGE BASE ---\n{FIRM_CONTEXT}\n--- END KNOWLEDGE BASE ---\n\n"
         
         # Get relevant expert insights from knowledge base

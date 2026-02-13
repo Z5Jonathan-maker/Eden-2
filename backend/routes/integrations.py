@@ -9,7 +9,7 @@ import uuid
 
 from services.gmail_service import GmailService
 from services.drive_service import DriveService
-from services.notion_service import NotionService
+from services.gamma_service import GammaService
 from services.gamma_service import GammaService
 from services.signnow_service import SignNowService
 from services.encryption_service import encryption
@@ -34,14 +34,14 @@ class DriveUploadRequest(BaseModel):
     folder_name: str
     user_id: str
 
-class NotionClaimRequest(BaseModel):
+class GammaClaimRequest(BaseModel):
     claim_number: str
     client_name: str
     claim_date: str
     description: str
     status: str = "New"
 
-class NotionUpdateRequest(BaseModel):
+class GammaUpdateRequest(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
 
@@ -304,17 +304,17 @@ async def upload_to_drive(
         logger.error(f"Error uploading file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Notion Routes
-@router.post("/notion/create-claim")
-async def create_notion_claim(request: NotionClaimRequest):
-    """Create a new claim page in Notion"""
+# Gamma Routes
+@router.post("/gamma/create-claim")
+async def create_notion_claim(request: GammaClaimRequest):
+    """Create a new claim page in Gamma"""
     try:
-        database_id = os.getenv('NOTION_DATABASE_ID')
+        database_id = os.getenv('GAMMA_DATABASE_ID')
         if not database_id:
-            raise HTTPException(status_code=500, detail="Notion database ID not configured")
+            raise HTTPException(status_code=500, detail="Gamma database ID not configured")
         
-        notion_service = NotionService()
-        page_id = await notion_service.create_claim_page(
+        gamma_service = GammaService()
+        page_id = await gamma_service.create_claim_page(
             database_id=database_id,
             claim_data=request.dict()
         )
@@ -322,14 +322,14 @@ async def create_notion_claim(request: NotionClaimRequest):
         return {"page_id": page_id, "status": "created"}
         
     except Exception as e:
-        logger.error(f"Error creating Notion claim: {e}")
+        logger.error(f"Error creating Gamma claim: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/notion/update-claim/{page_id}")
-async def update_notion_claim(page_id: str, request: NotionUpdateRequest):
-    """Update an existing claim page in Notion"""
+@router.put("/gamma/update-claim/{page_id}")
+async def update_notion_claim(page_id: str, request: GammaUpdateRequest):
+    """Update an existing claim page in Gamma"""
     try:
-        notion_service = NotionService()
+        gamma_service = GammaService()
         
         updates = {}
         if request.status:
@@ -338,20 +338,20 @@ async def update_notion_claim(page_id: str, request: NotionUpdateRequest):
             updates['notes'] = request.notes
         updates['updated_date'] = datetime.now().isoformat()
         
-        await notion_service.update_claim_page(page_id, updates)
+        await gamma_service.update_claim_page(page_id, updates)
         
         return {"status": "updated"}
         
     except Exception as e:
-        logger.error(f"Error updating Notion claim: {e}")
+        logger.error(f"Error updating Gamma claim: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/notion/append-content/{page_id}")
+@router.post("/gamma/append-content/{page_id}")
 async def append_notion_content(page_id: str, content: str = Form(...)):
-    """Append content to a Notion page"""
+    """Append content to a Gamma page"""
     try:
-        notion_service = NotionService()
-        await notion_service.append_content(page_id, content)
+        gamma_service = GammaService()
+        await gamma_service.append_content(page_id, content)
         
         return {"status": "appended"}
         

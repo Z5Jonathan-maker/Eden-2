@@ -18,8 +18,8 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 SIGNNOW_CLIENT_ID = os.environ.get("SIGNNOW_CLIENT_ID", "")
 SIGNNOW_CLIENT_SECRET = os.environ.get("SIGNNOW_CLIENT_SECRET", "")
-NOTION_CLIENT_ID = os.environ.get("NOTION_CLIENT_ID", "")
-NOTION_CLIENT_SECRET = os.environ.get("NOTION_CLIENT_SECRET", "")
+GAMMA_CLIENT_ID = os.environ.get("GAMMA_CLIENT_ID", "")
+GAMMA_CLIENT_SECRET = os.environ.get("GAMMA_CLIENT_SECRET", "")
 
 # Get base URL from environment
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8001")
@@ -46,7 +46,7 @@ async def get_all_oauth_status(current_user: dict = Depends(get_current_active_u
     """Get connection status for all OAuth providers"""
     user_id = current_user.get("id")
     
-    providers = ["google", "signnow", "notion"]
+    providers = ["google", "signnow", "gamma"]
     statuses = {}
     
     for provider in providers:
@@ -74,7 +74,7 @@ async def get_all_oauth_status(current_user: dict = Depends(get_current_active_u
     config_status = {
         "google": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
         "signnow": bool(SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET),
-        "notion": bool(NOTION_CLIENT_ID and NOTION_CLIENT_SECRET)
+        "gamma": bool(GAMMA_CLIENT_ID and GAMMA_CLIENT_SECRET)
     }
     
     return {"statuses": statuses, "configured": config_status}
@@ -276,19 +276,19 @@ async def signnow_oauth_callback(code: str, state: str):
     
     return RedirectResponse(url="/settings?oauth=signnow&status=success")
 
-# ============ NOTION OAUTH ============
+# ============ GAMMA OAUTH ============
 
 @router.get("/notion/connect")
 async def notion_oauth_connect(current_user: dict = Depends(get_current_active_user)):
     """Initiate Notion OAuth flow"""
-    if not NOTION_CLIENT_ID:
+    if not GAMMA_CLIENT_ID:
         raise HTTPException(status_code=400, detail="Notion OAuth not configured. Please contact administrator.")
     
     state = str(uuid.uuid4())
     await db.oauth_states.insert_one({
         "state": state,
         "user_id": current_user.get("id"),
-        "provider": "notion",
+        "provider": "gamma",
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     
@@ -296,7 +296,7 @@ async def notion_oauth_connect(current_user: dict = Depends(get_current_active_u
     
     auth_url = (
         f"https://api.notion.com/v1/oauth/authorize?"
-        f"client_id={NOTION_CLIENT_ID}&"
+        f"client_id={GAMMA_CLIENT_ID}&"
         f"redirect_uri={redirect_uri}&"
         f"response_type=code&"
         f"owner=user&"
@@ -308,7 +308,7 @@ async def notion_oauth_connect(current_user: dict = Depends(get_current_active_u
 @router.get("/notion/callback")
 async def notion_oauth_callback(code: str, state: str):
     """Handle Notion OAuth callback"""
-    state_doc = await db.oauth_states.find_one({"state": state, "provider": "notion"})
+    state_doc = await db.oauth_states.find_one({"state": state, "provider": "gamma"})
     if not state_doc:
         raise HTTPException(status_code=400, detail="Invalid state parameter")
     
@@ -318,7 +318,7 @@ async def notion_oauth_callback(code: str, state: str):
     redirect_uri = f"{BASE_URL}/api/oauth/notion/callback"
     
     import base64
-    credentials = base64.b64encode(f"{NOTION_CLIENT_ID}:{NOTION_CLIENT_SECRET}".encode()).decode()
+    credentials = base64.b64encode(f"{GAMMA_CLIENT_ID}:{GAMMA_CLIENT_SECRET}".encode()).decode()
     
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -340,10 +340,10 @@ async def notion_oauth_callback(code: str, state: str):
         tokens = token_response.json()
     
     await db.oauth_tokens.update_one(
-        {"user_id": user_id, "provider": "notion"},
+        {"user_id": user_id, "provider": "gamma"},
         {"$set": {
             "user_id": user_id,
-            "provider": "notion",
+            "provider": "gamma",
             "access_token": tokens.get("access_token"),
             "workspace_id": tokens.get("workspace_id"),
             "workspace_name": tokens.get("workspace_name"),

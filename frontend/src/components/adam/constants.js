@@ -16,7 +16,7 @@ export const TEST_SUITES = {
   ],
   integrations: [
     { id: 'openai-ready', name: 'OpenAI/LLM Service', test: 'openai' },
-    { id: 'notion-ready', name: 'Notion Service', test: 'notion' },
+    { id: 'gamma-ready', name: 'Gamma Service', test: 'gamma' },
     { id: 'signnow-ready', name: 'SignNow Service', test: 'signnow' },
     { id: 'stripe-ready', name: 'Stripe Service', test: 'stripe' },
   ],

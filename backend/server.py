@@ -264,7 +264,7 @@ async def debug_info(current_user: dict = Depends(require_admin_user)):
             "regrid_enabled": bool(os.environ.get("REGRID_API_TOKEN")),
             "oauth_google": bool(os.environ.get("GOOGLE_CLIENT_ID")),
             "oauth_signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID")),
-            "oauth_notion": bool(os.environ.get("NOTION_CLIENT_ID"))
+            "oauth_gamma": bool(os.environ.get("GAMMA_CLIENT_ID"))
         }
     }
 
