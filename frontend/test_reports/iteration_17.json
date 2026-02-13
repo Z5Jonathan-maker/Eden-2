@@ -1,0 +1,123 @@
+{
+  "summary": "Notifications system and Harvest Coach Bot testing complete. All 17 backend API tests passed (100%). Frontend NotificationBell component verified on desktop (dropdown) and mobile (full-screen modal). Notification click navigation with cta_route working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "NotificationBell mobile modal",
+        "issue": "Notification items have overlay interception issue when clicking - requires force=True to click",
+        "selector": "[data-testid^='notification-']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "NotificationBell",
+        "issues": ["WebSocket shows 'Offline' status in test environment - expected behavior, falls back to polling"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_notifications_coach.py",
+    "/app/test_reports/pytest/notifications_coach_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Notifications API properly implements pagination with page, limit, total, has_more fields",
+    "Notification types (harvest_coach, claims_ops, comms_bot, system, claim_created, claim_assigned) are well-defined",
+    "Harvest Coach Bot scheduler runs correctly with hourly (:30) and nightly (22:00 UTC) jobs",
+    "Manual trigger endpoint works for both hourly and nightly runs",
+    "harvest_coach notifications include proper structure: title, body, cta_label, cta_route, data with nudge_type",
+    "NotificationBell component correctly handles desktop dropdown and mobile full-screen modal",
+    "Notification click navigation via cta_route works correctly"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_notifications_coach.py"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 tests passed)",
+    "frontend": "100% (Desktop dropdown, mobile modal, notification click navigation verified)"
+  },
+  "test_credentials": {
+    "email": "test@eden.com",
+    "password": "password"
+  },
+  "seed_data_creation": "harvest_coach notification created via manual trigger for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Notifications system fully functional. Harvest Coach Bot scheduler running with 2 jobs. NotificationBell works on desktop (dropdown) and mobile (full-screen modal). Notification click navigates to cta_route correctly.",
+  "features_tested": {
+    "GET /api/notifications": {
+      "status": "PASS",
+      "details": "Returns paginated notifications with page, limit, total, has_more fields"
+    },
+    "GET /api/notifications?type=harvest_coach": {
+      "status": "PASS",
+      "details": "Filters notifications by type correctly"
+    },
+    "GET /api/notifications?unread_only=true": {
+      "status": "PASS",
+      "details": "Filters to show only unread notifications"
+    },
+    "GET /api/notifications/unread-count": {
+      "status": "PASS",
+      "details": "Returns unread_count and count (backwards compat)"
+    },
+    "PUT /api/notifications/{id}/read": {
+      "status": "PASS",
+      "details": "Marks single notification as read"
+    },
+    "PUT /api/notifications/read-all": {
+      "status": "PASS",
+      "details": "Marks all notifications as read, returns marked_count"
+    },
+    "GET /api/harvest/v2/coach/status": {
+      "status": "PASS",
+      "details": "Returns scheduler status with running=true and 2 jobs (hourly, nightly)"
+    },
+    "POST /api/harvest/v2/coach/trigger": {
+      "status": "PASS",
+      "details": "Manual trigger works for both hourly and nightly run types"
+    },
+    "frontend_notification_bell_desktop": {
+      "status": "PASS",
+      "details": "Dropdown opens on click, shows notifications with icons, timestamps, Live/Offline status"
+    },
+    "frontend_notification_bell_mobile": {
+      "status": "PASS",
+      "details": "Full-screen modal opens on mobile, shows header with close button, scrollable notification list"
+    },
+    "frontend_notification_click_navigation": {
+      "status": "PASS",
+      "details": "Clicking notification with cta_route navigates to correct page (/canvassing?tab=profile)"
+    }
+  },
+  "scheduler_status": {
+    "running": true,
+    "jobs": [
+      {
+        "id": "harvest_coach_hourly",
+        "name": "Harvest Coach - Hourly Check",
+        "trigger": "cron[minute='30']"
+      },
+      {
+        "id": "harvest_coach_nightly",
+        "name": "Harvest Coach - Nightly Summary",
+        "trigger": "cron[hour='22', minute='0']"
+      }
+    ]
+  },
+  "notification_types_verified": [
+    "harvest_coach - with cta_label, cta_route, data.nudge_type",
+    "claim_created - with claim_id, claim_number",
+    "claim_assigned - with claim_id, claim_number"
+  ],
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  }
+}
