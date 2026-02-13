@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSentryUser, clearSentryUser } from '../lib/sentry';
+import { apiGet, apiPost } from '../lib/api';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
 
@@ -29,14 +30,11 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/auth/me`, {
-          credentials: 'include', // Include httpOnly cookies
-        });
+        const response = await apiGet('/api/auth/me');
 
         if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setSentryUser(userData); // Track user in Sentry
+          setUser(response.data);
+          setSentryUser(response.data); // Track user in Sentry
         } else {
           // Not authenticated or session expired
           setUser(null);
@@ -56,40 +54,22 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!API_URL) throw new Error(missingApiUrlMessage);
 
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include httpOnly cookies in request/response
-        body: JSON.stringify({ email, password }),
-      });
-
-      // Read response body
-      let data;
-      let responseText = '';
-      try {
-        responseText = await response.text();
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (parseError) {
-        console.error('[Auth] Response parse error:', parseError, 'Text:', responseText);
-        data = { detail: `Invalid response format: ${responseText.substring(0, 100)}` };
-      }
+      const response = await apiPost('/api/auth/login', { email, password });
 
       if (!response.ok) {
-        const errorMessage = data.detail || data.message || 'Login failed';
+        const errorMessage = response.error?.detail || response.error || 'Login failed';
         throw new Error(errorMessage);
       }
 
       // Validate user data (token is now in httpOnly cookie, not in response)
-      if (!data.user) {
-        console.error('[Auth] Missing user in response:', data);
+      if (!response.data.user) {
+        console.error('[Auth] Missing user in response:', response.data);
         throw new Error('Server returned invalid user format');
       }
 
       // Store user data in state (no token storage needed - it's in httpOnly cookie)
-      setUser(data.user);
-      setSentryUser(data.user); // Track user in Sentry
+      setUser(response.data.user);
+      setSentryUser(response.data.user); // Track user in Sentry
 
       return { success: true };
     } catch (error) {
@@ -102,33 +82,15 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!API_URL) throw new Error(missingApiUrlMessage);
 
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include httpOnly cookies
-        body: JSON.stringify({
-          email,
-          password,
-          full_name: fullName,
-          role,
-        }),
+      const response = await apiPost('/api/auth/register', {
+        email,
+        password,
+        full_name: fullName,
+        role,
       });
 
-      // Read response body
-      let data;
-      let responseText = '';
-      try {
-        responseText = await response.text();
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (parseError) {
-        console.error('[Auth] Register response parse error:', parseError, 'Text:', responseText);
-        data = { detail: `Invalid response format: ${responseText.substring(0, 100)}` };
-      }
-
       if (!response.ok) {
-        throw new Error(data.detail || data.message || 'Registration failed');
+        throw new Error(response.error?.detail || response.error || 'Registration failed');
       }
 
       // Auto login after registration
@@ -143,10 +105,7 @@ export const AuthProvider = ({ children }) => {
     try {
       if (API_URL) {
         // Call backend to clear httpOnly cookie
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          credentials: 'include', // Include cookies to identify session
-        });
+        await apiPost('/api/auth/logout', {});
       }
     } catch (error) {
       console.error('[Auth] Logout request failed:', error);

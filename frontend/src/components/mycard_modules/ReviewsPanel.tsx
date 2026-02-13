@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, MessageSquare, Star } from "lucide-react";
-import { API_URL } from "../../lib/api";
+import { API_URL, apiGet } from "../../lib/api";
 import { GoogleReviewsResponse } from "./types";
 
 const SORT_OPTIONS = [
@@ -34,15 +34,13 @@ const ReviewsPanel: React.FC = () => {
         if (!API_URL) {
           throw new Error("Missing backend URL. Configure REACT_APP_BACKEND_URL and redeploy.");
         }
-        const res = await fetch(`${API_URL}/api/mycard/google-reviews?sort=${sort}`, {
+        const res = await apiGet(`/api/mycard/google-reviews?sort=${sort}`, {
           signal: controller.signal,
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || "Unable to load Google reviews");
+          throw new Error(res.error || "Unable to load Google reviews");
         }
-        const data = (await res.json()) as GoogleReviewsResponse;
-        if (mounted) setPayload(data);
+        if (mounted) setPayload(res.data as GoogleReviewsResponse);
       } catch (err: any) {
         if (mounted && err.name !== "AbortError") {
           setError(err.message || "Failed to load reviews");
