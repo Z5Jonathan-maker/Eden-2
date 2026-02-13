@@ -4,8 +4,7 @@ import { Card, CardContent } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
 import { ArrowLeft, User, Calendar, Tag, AlertCircle } from 'lucide-react';
-
-var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet } from '@/lib/api';
 
 function ArticleDetail() {
   var params = useParams();
@@ -14,26 +13,19 @@ function ArticleDetail() {
   var [article, setArticle] = useState(null);
   var [loading, setLoading] = useState(true);
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
   const fetchArticle = useCallback(
-    function fetchArticle() {
+    async function fetchArticle() {
       setLoading(true);
-      fetch(API_URL + '/api/university/articles/' + articleId, {
-        headers: { Authorization: 'Bearer ' + getToken() },
-      })
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (data) {
-          setArticle(data);
-          setLoading(false);
-        })
-        .catch(function () {
-          setLoading(false);
-        });
+      try {
+        const res = await apiGet('/api/university/articles/' + articleId);
+        if (res.ok) {
+          setArticle(res.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch article:', error);
+      } finally {
+        setLoading(false);
+      }
     },
     [articleId]
   );

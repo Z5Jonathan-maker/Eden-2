@@ -15,8 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
-
-var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 function CourseDetail() {
   var params = useParams();
@@ -29,20 +28,13 @@ function CourseDetail() {
   var [quizResult, setQuizResult] = useState(null);
   var [loading, setLoading] = useState(true);
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
   const fetchCourse = useCallback(
-    function fetchCourse() {
+    async function fetchCourse() {
       setLoading(true);
-      fetch(API_URL + '/api/university/courses/' + courseId, {
-        headers: { Authorization: 'Bearer ' + getToken() },
-      })
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (data) {
+      try {
+        const res = await apiGet('/api/university/courses/' + courseId);
+        if (res.ok) {
+          const data = res.data;
           setCourse(data);
           if (data.lessons && data.lessons.length > 0) {
             setActiveLesson(data.lessons[0]);
@@ -50,11 +42,12 @@ function CourseDetail() {
           if (data.quiz) {
             setQuizAnswers(new Array(data.quiz.length).fill(-1));
           }
-          setLoading(false);
-        })
-        .catch(function () {
-          setLoading(false);
-        });
+        }
+      } catch (error) {
+        console.error('Failed to fetch course:', error);
+      } finally {
+        setLoading(false);
+      }
     },
     [courseId]
   );
@@ -66,35 +59,31 @@ function CourseDetail() {
     [fetchCourse]
   );
 
-  function markLessonComplete(lessonId) {
-    fetch(API_URL + '/api/university/progress/lesson', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + getToken(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ course_id: courseId, lesson_id: lessonId }),
-    }).then(function () {
+  async function markLessonComplete(lessonId) {
+    try {
+      await apiPost('/api/university/progress/lesson', {
+        course_id: courseId,
+        lesson_id: lessonId,
+      });
       fetchCourse();
-    });
+    } catch (error) {
+      console.error('Failed to mark lesson complete:', error);
+    }
   }
 
-  function submitQuiz() {
-    fetch(API_URL + '/api/university/quiz/submit', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + getToken(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ course_id: courseId, answers: quizAnswers }),
-    })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (result) {
-        setQuizResult(result);
-        fetchCourse();
+  async function submitQuiz() {
+    try {
+      const res = await apiPost('/api/university/quiz/submit', {
+        course_id: courseId,
+        answers: quizAnswers,
       });
+      if (res.ok) {
+        setQuizResult(res.data);
+        fetchCourse();
+      }
+    } catch (error) {
+      console.error('Failed to submit quiz:', error);
+    }
   }
 
   function isLessonComplete(lessonId) {
