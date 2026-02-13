@@ -16,8 +16,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 const ClientEducationHub = () => {
   const [loading, setLoading] = useState(true);
@@ -32,41 +31,30 @@ const ClientEducationHub = () => {
   const [questionForm, setQuestionForm] = useState({ question: '', category: 'general' });
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
 
-  const token = localStorage.getItem('eden_token');
-
   const fetchData = useCallback(async () => {
     try {
-      // Get categories
-      const catRes = await fetch(`${API_URL}/api/client-education/categories`);
-      const catData = await catRes.json();
-      setCategories(catData.categories || []);
+      // Get categories, articles, and glossary (public endpoints)
+      const [catRes, artRes, glossRes] = await Promise.all([
+        apiGet('/api/client-education/categories'),
+        apiGet('/api/client-education/articles'),
+        apiGet('/api/client-education/glossary'),
+      ]);
 
-      // Get all articles
-      const artRes = await fetch(`${API_URL}/api/client-education/articles`);
-      const artData = await artRes.json();
-      setArticles(artData.articles || []);
+      if (catRes.ok) setCategories(catRes.data.categories || []);
+      if (artRes.ok) setArticles(artRes.data.articles || []);
+      if (glossRes.ok) setGlossary(glossRes.data.terms || []);
 
-      // Get glossary
-      const glossRes = await fetch(`${API_URL}/api/client-education/glossary`);
-      const glossData = await glossRes.json();
-      setGlossary(glossData.terms || []);
-
-      // Get my questions if logged in
-      if (token) {
-        const qRes = await fetch(`${API_URL}/api/client-education/questions/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (qRes.ok) {
-          const qData = await qRes.json();
-          setMyQuestions(qData.questions || []);
-        }
+      // Get my questions if logged in (auth endpoint)
+      const qRes = await apiGet('/api/client-education/questions/my');
+      if (qRes.ok) {
+        setMyQuestions(qRes.data.questions || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -81,10 +69,7 @@ const ClientEducationHub = () => {
       params.append('question', questionForm.question);
       params.append('category', questionForm.category);
 
-      const res = await fetch(`${API_URL}/api/client-education/questions?${params.toString()}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiPost(`/api/client-education/questions?${params.toString()}`, {});
 
       if (res.ok) {
         setShowAskQuestion(false);

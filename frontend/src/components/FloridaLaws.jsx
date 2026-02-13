@@ -34,8 +34,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 const FloridaLaws = () => {
   // Static data state
@@ -57,11 +56,8 @@ const FloridaLaws = () => {
 
   const fetchOverview = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/florida-laws`);
-      if (res.ok) {
-        const data = await res.json();
-        setOverview(data);
-      }
+      const res = await apiGet('/api/knowledge-base/florida-laws');
+      if (res.ok) setOverview(res.data);
     } catch (err) {
       console.error('Failed to fetch overview:', err);
     }
@@ -69,11 +65,8 @@ const FloridaLaws = () => {
 
   const fetchDbStatutes = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/statutes/?limit=100`);
-      if (res.ok) {
-        const data = await res.json();
-        setDbStatutes(data.statutes || []);
-      }
+      const res = await apiGet('/api/statutes/?limit=100');
+      if (res.ok) setDbStatutes(res.data.statutes || []);
     } catch (err) {
       console.error('Failed to fetch DB statutes:', err);
     }
@@ -81,11 +74,8 @@ const FloridaLaws = () => {
 
   const fetchDbStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/statutes/status`);
-      if (res.ok) {
-        const data = await res.json();
-        setDbStatus(data);
-      }
+      const res = await apiGet('/api/statutes/status');
+      if (res.ok) setDbStatus(res.data);
     } catch (err) {
       console.error('Failed to fetch DB status:', err);
     }
@@ -93,11 +83,8 @@ const FloridaLaws = () => {
 
   const fetchUpdates = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/florida-laws/updates`);
-      if (res.ok) {
-        const data = await res.json();
-        setUpdates(data.updates || []);
-      }
+      const res = await apiGet('/api/knowledge-base/florida-laws/updates');
+      if (res.ok) setUpdates(res.data.updates || []);
     } catch (err) {
       console.error('Failed to fetch updates:', err);
     }
@@ -115,10 +102,9 @@ const FloridaLaws = () => {
 
   const fetchStatuteDetail = async (sectionNumber) => {
     try {
-      const res = await fetch(`${API_URL}/api/statutes/section/${sectionNumber}`);
+      const res = await apiGet(`/api/statutes/section/${sectionNumber}`);
       if (res.ok) {
-        const data = await res.json();
-        setSelectedStatute(data);
+        setSelectedStatute(res.data);
       } else {
         toast.error(`Could not load Sec. ${sectionNumber}`);
       }
@@ -135,12 +121,9 @@ const FloridaLaws = () => {
     }
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/statutes/search?q=${encodeURIComponent(searchQuery)}`
-      );
+      const res = await apiGet(`/api/statutes/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.results);
+        setSearchResults(res.data.results);
       }
     } catch (err) {
       console.error('Search failed:', err);
@@ -151,7 +134,7 @@ const FloridaLaws = () => {
   const triggerFullScrape = async () => {
     setScraping(true);
     try {
-      const res = await fetch(`${API_URL}/api/statutes/scrape?year=2025`, { method: 'POST' });
+      const res = await apiPost('/api/statutes/scrape?year=2025', {});
       if (res.ok) {
         toast.success('Scraping started! This runs in background.');
         // Poll for updates
