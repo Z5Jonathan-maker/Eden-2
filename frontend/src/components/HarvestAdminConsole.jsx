@@ -42,6 +42,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -85,9 +86,9 @@ const CampaignsTab = ({ token, onRefresh }) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns?include_past=true`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
-        const data = await res.json();
+        // data now in res.data
         setCampaigns(data.campaigns || []);
       }
     } catch (err) {
@@ -106,9 +107,9 @@ const CampaignsTab = ({ token, onRefresh }) => {
 
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns/${campaignId}/end`, {
-        method: 'POST',
+        
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
         fetchCampaigns();
       }
@@ -249,10 +250,10 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
 
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns`, {
-        method: 'POST',
-        headers: {
+        
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify({
           ...formData,
@@ -405,9 +406,9 @@ const TemplatesTab = ({ token }) => {
       try {
         const res = await fetch(`${API_URL}/api/harvest/campaigns/templates/list`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        
+      if (res.ok) {
+          // data now in res.data
           setTemplates(data.templates || []);
         }
       } catch (err) {
@@ -428,7 +429,7 @@ const TemplatesTab = ({ token }) => {
       const res = await fetch(
         `${API_URL}/api/harvest/campaigns/from-template/${templateId}?name=${encodeURIComponent(name)}&start_date=${startDate}`,
         {
-          method: 'POST',
+          
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -499,9 +500,9 @@ const RewardsTab = ({ token }) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/rewards?is_active=false`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
-        const data = await res.json();
+        // data now in res.data
         setRewards(data.rewards || []);
       }
     } catch (err) {
@@ -522,7 +523,7 @@ const RewardsTab = ({ token }) => {
       const res = await fetch(`${API_URL}/api/harvest/rewards/${rewardId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
         fetchRewards();
       }
@@ -649,10 +650,10 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
 
     try {
       const res = await fetch(`${API_URL}/api/harvest/rewards`, {
-        method: 'POST',
-        headers: {
+        
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify(formData),
       });
@@ -800,7 +801,7 @@ const RedemptionsTab = ({ token }) => {
         }
       );
       if (res.ok) {
-        const data = await res.json();
+        // data now in res.data
         setRedemptions(data.redemptions || []);
         setCounts(data.counts || {});
       }
@@ -819,12 +820,12 @@ const RedemptionsTab = ({ token }) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/redemptions/${redemptionId}`, {
         method: 'PATCH',
-        headers: {
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify({ action, notes }),
-      });
+      
       if (res.ok) {
         fetchRedemptions();
       }
@@ -964,9 +965,9 @@ const TerritoriesTab = ({ token }) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/territories/?include_inactive=true`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
-        const data = await res.json();
+        // data now in res.data
         setTerritories(data.territories || []);
       }
     } catch (err) {
@@ -980,9 +981,9 @@ const TerritoriesTab = ({ token }) => {
     try {
       const res = await fetch(`${API_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
-        const data = await res.json();
+        // data now in res.data
         setUsers(data.users || data || []);
       }
     } catch (err) {
@@ -1002,7 +1003,7 @@ const TerritoriesTab = ({ token }) => {
       const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
-      });
+      
       if (res.ok) {
         fetchTerritories();
       }
@@ -1014,13 +1015,13 @@ const TerritoriesTab = ({ token }) => {
   const assignUser = async (territoryId, userId) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}/assign`, {
-        method: 'POST',
-        headers: {
+        
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify({ user_id: userId }),
-      });
+      
       if (res.ok) {
         fetchTerritories();
       }
@@ -1219,10 +1220,10 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
     try {
       // For now, create with empty polygon - can be drawn on map later
       const res = await fetch(`${API_URL}/api/harvest/territories/`, {
-        method: 'POST',
-        headers: {
+        
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify({
           ...formData,
@@ -1238,7 +1239,7 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
       if (res.ok) {
         onSuccess();
       } else {
-        const err = await res.json();
+        const err = res.data;
         alert(err.detail || 'Failed to create territory');
       }
     } catch (err) {
@@ -1467,9 +1468,9 @@ const SettingsTab = ({ token }) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/v2/daily-goals`, {
         method: 'PUT',
-        headers: {
+        
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          
         },
         body: JSON.stringify(dailyGoals),
       });
