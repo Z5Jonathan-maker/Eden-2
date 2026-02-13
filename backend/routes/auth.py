@@ -66,12 +66,14 @@ async def login(credentials: UserLogin, response: Response):
 
         # Set httpOnly cookie (7 days expiry to match token)
         max_age = 60 * 60 * 24 * 7  # 7 days in seconds
+        is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
         response.set_cookie(
             key="eden_token",
             value=access_token,
             httponly=True,
-            secure=os.environ.get("ENVIRONMENT", "development").lower() == "production",  # HTTPS only in production
-            samesite="lax",  # Prevents CSRF while allowing normal navigation
+            secure=is_production,  # HTTPS only in production
+            samesite="none" if is_production else "lax",  # "none" for cross-domain (Vercel↔Render), "lax" for local dev
             max_age=max_age,
             path="/"
         )
@@ -103,13 +105,15 @@ async def get_current_user_info(current_user: dict = Depends(get_current_active_
 @router.post("/logout")
 async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
     """Logout user and clear httpOnly cookie"""
+    is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
     # Clear the httpOnly cookie
     response.delete_cookie(
         key="eden_token",
         path="/",
         httponly=True,
-        secure=os.environ.get("ENVIRONMENT", "development").lower() == "production",
-        samesite="lax"
+        secure=is_production,
+        samesite="none" if is_production else "lax"
     )
     logger.info(f"User logged out: {current_user.get('email', 'unknown')}")
     return {"message": "Successfully logged out"}
