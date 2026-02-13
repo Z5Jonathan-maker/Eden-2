@@ -44,9 +44,6 @@ import { FEATURE_ICONS } from '../../../assets/badges';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
-// Helper to get auth token for image URLs
-const getToken = () => localStorage.getItem('eden_token') || '';
-
 const ClaimDetails = () => {
   const { claimId } = useParams();
   const navigate = useNavigate();
@@ -1856,7 +1853,7 @@ Generated on: ${new Date().toLocaleString()}
                       data-testid={`photo-${photo.id}`}
                     >
                       <img
-                        src={`${API_URL}/api/inspections/photos/${photo.id}/image?token=${getToken()}`}
+                        src={`${API_URL}/api/inspections/photos/${photo.id}/image`}
                         alt={photo.room || 'Inspection photo'}
                         className="w-full h-full object-cover"
                       />
@@ -2110,7 +2107,7 @@ Generated on: ${new Date().toLocaleString()}
               {/* Image */}
               <div className="relative bg-black flex items-center justify-center min-h-[300px] max-h-[70vh]">
                 <img
-                  src={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image?token=${getToken()}`}
+                  src={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image`}
                   alt={selectedPhoto.room || 'Inspection photo'}
                   className="max-w-full max-h-[70vh] object-contain"
                 />
@@ -2134,7 +2131,7 @@ Generated on: ${new Date().toLocaleString()}
                   </div>
                   <Button variant="outline" size="sm" asChild>
                     <a
-                      href={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image?token=${getToken()}`}
+                      href={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image`}
                       download={`photo-${selectedPhoto.id}.jpg`}
                       target="_blank"
                       rel="noopener noreferrer"

@@ -74,7 +74,6 @@ const PropertyIntelligence = ({ embedded = false }) => {
   const [mapCenter, setMapCenter] = useState(null);
   const [pinWasAdjusted, setPinWasAdjusted] = useState(false);
 
-  const token = localStorage.getItem('eden_token');
   const selectedRelease = useMemo(() => imageryReleases[selectedImageDate] || null, [imageryReleases, selectedImageDate]);
 
   const getResponseErrorDetail = async (response, fallbackMessage) => {
@@ -339,10 +338,6 @@ const PropertyIntelligence = ({ embedded = false }) => {
     setError(null);
 
     try {
-      if (!token) {
-        throw new Error('Session expired. Please sign in again.');
-      }
-
       const endDate = new Date().toISOString().split('T')[0];
       const makeStartDate = (daysBack) => new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

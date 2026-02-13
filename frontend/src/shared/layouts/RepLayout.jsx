@@ -1,6 +1,6 @@
 /**
  * RepLayout - Mobile-first layout for sales reps
- * 
+ *
  * Enzy-inspired player UI with:
  * - Top nav showing rank and points
  * - Bottom navigation for quick actions
@@ -8,12 +8,11 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { 
+import {
   Home, Map, Trophy, User, ChevronRight,
   Flame, Star, Target, Zap
 } from 'lucide-react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
+import { apiGet } from '@/lib/api';
 
 const RepLayout = () => {
   const location = useLocation();
@@ -26,21 +25,15 @@ const RepLayout = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const token = localStorage.getItem('eden_token');
-      if (!token) return;
-
       try {
         // Fetch today's stats
-        const res = await fetch(`${API_URL}/api/harvest/v2/today`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
+        const res = await apiGet('/api/harvest/v2/today');
+
         if (res.ok) {
-          const data = await res.json();
           setStats({
-            points: data.total_points || 0,
+            points: res.data.total_points || 0,
             rank: null, // Would come from leaderboard
-            streak: data.streak_days || 0
+            streak: res.data.streak_days || 0
           });
         }
       } catch (err) {

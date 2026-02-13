@@ -1517,8 +1517,6 @@ const HarvestAdminConsole = () => {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const token = localStorage.getItem('eden_token');
-
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1);
   };

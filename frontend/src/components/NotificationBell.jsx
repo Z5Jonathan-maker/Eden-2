@@ -47,14 +47,18 @@ const NotificationBell = () => {
   }, []);
 
   // Connect to WebSocket
+  // Note: WebSocket can't use httpOnly cookies, so we rely on polling fallback
   const connectWebSocket = useCallback(() => {
-    const token = localStorage.getItem('eden_token');
-    if (!token) return undefined;
+    // WebSocket auth with httpOnly cookies is not supported
+    // Fall back to polling which works with httpOnly cookies
+    startPolling();
+    return undefined;
 
+    /* WebSocket connection disabled - httpOnly cookies don't work with WebSocket URLs
     const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
     try {
-      const ws = new WebSocket(`${wsUrl}/ws/notifications?token=${token}`);
+      const ws = new WebSocket(`${wsUrl}/ws/notifications`);
 
       const connectionTimeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.OPEN) {

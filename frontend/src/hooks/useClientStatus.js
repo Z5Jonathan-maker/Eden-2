@@ -2,8 +2,7 @@
  * useClientStatus Hook - Client status and Eve-generated updates
  */
 import { useState, useCallback } from 'react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, apiPatch } from '@/lib/api';
 
 // Stage definitions for progress bar
 export const CLAIM_STAGES = [
@@ -21,37 +20,25 @@ export const useClientStatus = (claimId) => {
   const [generatingUpdate, setGeneratingUpdate] = useState(false);
   const [generatedUpdate, setGeneratedUpdate] = useState(null);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('eden_token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  };
-
   /**
    * Fetch client-friendly status for a claim
    */
   const fetchStatus = useCallback(async () => {
     if (!claimId) return null;
-    
+
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/client-status/claim/${claimId}`, {
-        headers: getAuthHeaders()
-      });
+      const res = await apiGet(`/api/client-status/claim/${claimId}`);
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to fetch status');
+        throw new Error(res.error?.detail || res.error || 'Failed to fetch status');
       }
 
-      const data = await res.json();
-      setStatus(data);
+      setStatus(res.data);
       setLoading(false);
-      return data;
+      return res.data;
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -64,30 +51,24 @@ export const useClientStatus = (claimId) => {
    */
   const generateUpdate = useCallback(async (tone = 'encouraging') => {
     if (!claimId) return null;
-    
+
     setGeneratingUpdate(true);
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/client-status/claim/${claimId}/update`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ tone })
-      });
+      const res = await apiPost(`/api/client-status/claim/${claimId}/update`, { tone });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to generate update');
+        throw new Error(res.error?.detail || res.error || 'Failed to generate update');
       }
 
-      const data = await res.json();
-      setGeneratedUpdate(data);
+      setGeneratedUpdate(res.data);
       setGeneratingUpdate(false);
-      
+
       // Refresh status after generating update
       await fetchStatus();
-      
-      return data;
+
+      return res.data;
     } catch (err) {
       setError(err.message);
       setGeneratingUpdate(false);
@@ -102,17 +83,13 @@ export const useClientStatus = (claimId) => {
     if (!claimId) return null;
 
     try {
-      const res = await fetch(`${API_URL}/api/gamma/client-update-deck/${claimId}`, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      });
+      const res = await apiPost(`/api/gamma/client-update-deck/${claimId}`, {});
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to create deck');
+        throw new Error(res.error?.detail || res.error || 'Failed to create deck');
       }
 
-      return res.json();
+      return res.data;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -126,22 +103,16 @@ export const useClientStatus = (claimId) => {
     if (!claimId) return null;
 
     try {
-      const res = await fetch(`${API_URL}/api/client-status/claim/${claimId}/stage?stage=${newStage}`, {
-        method: 'PATCH',
-        headers: getAuthHeaders()
-      });
+      const res = await apiPatch(`/api/client-status/claim/${claimId}/stage?stage=${newStage}`, {});
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to update stage');
+        throw new Error(res.error?.detail || res.error || 'Failed to update stage');
       }
 
-      const data = await res.json();
-      
       // Refresh status after stage update
       await fetchStatus();
-      
-      return data;
+
+      return res.data;
     } catch (err) {
       setError(err.message);
       throw err;
