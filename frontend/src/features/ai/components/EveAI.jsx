@@ -21,8 +21,7 @@ import {
 } from 'lucide-react';
 import { FEATURE_ICONS, PAGE_ICONS } from '../../../assets/badges';
 import { toast } from 'sonner';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, apiDelete, API_URL } from '../../../lib/api';
 
 const EveAI = () => {
   const [messages, setMessages] = useState([
@@ -79,16 +78,10 @@ const EveAI = () => {
   const fetchClaims = async (search = '') => {
     try {
       setLoadingClaims(true);
-      const token = localStorage.getItem('eden_token');
       const params = search ? `?search=${encodeURIComponent(search)}` : '';
-      const response = await fetch(`${API_URL}/api/ai/claims-for-context${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet(`/api/ai/claims-for-context${params}`);
       if (response.ok) {
-        const data = await response.json();
-        setAvailableClaims(data.claims || []);
+        setAvailableClaims(response.data.claims || []);
       }
     } catch (error) {
       console.error('Failed to fetch claims:', error);
@@ -99,15 +92,9 @@ const EveAI = () => {
 
   const linkClaim = async (claim) => {
     try {
-      const token = localStorage.getItem('eden_token');
-      const response = await fetch(`${API_URL}/api/ai/claim-context/${claim.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet(`/api/ai/claim-context/${claim.id}`);
       if (response.ok) {
-        const fullContext = await response.json();
-        setLinkedClaim(fullContext);
+        setLinkedClaim(response.data);
         setShowClaimSelector(false);
         setClaimSearch('');
 
@@ -116,7 +103,7 @@ const EveAI = () => {
           ...prev,
           {
             role: 'assistant',
-            content: `📋 **Claim #${fullContext.claim_number} linked**\n\nClient: ${fullContext.client_name}\nStatus: ${fullContext.status}\nCarrier: ${fullContext.carrier || 'N/A'}\n\nI now have full access to this claim's details, notes, and documents. Ask me anything about it!`,
+            content: `📋 **Claim #${response.data.claim_number} linked**\n\nClient: ${response.data.client_name}\nStatus: ${response.data.status}\nCarrier: ${response.data.carrier || 'N/A'}\n\nI now have full access to this claim's details, notes, and documents. Ask me anything about it!`,
           },
         ]);
       }
@@ -143,7 +130,6 @@ const EveAI = () => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const token = localStorage.getItem('eden_token');
 
     try {
       const uploadedFiles = [];
@@ -175,21 +161,14 @@ const EveAI = () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${API_URL}/api/ai/upload-document`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
+        const response = await apiPost('/api/ai/upload-document', formData);
 
         if (response.ok) {
-          const data = await response.json();
           uploadedFiles.push({
-            id: data.document_id || Date.now(),
+            id: response.data.document_id || Date.now(),
             name: file.name,
             type: file.type,
-            extracted_text: data.extracted_text || null,
+            extracted_text: response.data.extracted_text || null,
             size: file.size,
           });
         } else {
@@ -232,17 +211,9 @@ const EveAI = () => {
 
   const fetchSessions = async () => {
     try {
-      const token = localStorage.getItem('eden_token');
-      if (!token) return; // Don't fetch if not logged in
-
-      const response = await fetch(`${API_URL}/api/ai/sessions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet('/api/ai/sessions');
       if (response.ok) {
-        const data = await response.json();
-        setSessions(data.sessions || []);
+        setSessions(response.data.sessions || []);
       }
     } catch (error) {
       // Silently fail - sessions will load when user interacts
@@ -252,14 +223,8 @@ const EveAI = () => {
 
   const loadSession = async (sid) => {
     try {
-      const token = localStorage.getItem('eden_token');
-      const response = await fetch(`${API_URL}/api/ai/sessions/${sid}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet(`/api/ai/sessions/${sid}`);
       if (response.ok) {
-        const data = await response.json();
         setSessionId(sid);
         // Add welcome message at the beginning
         setMessages([
@@ -268,7 +233,7 @@ const EveAI = () => {
             content:
               "Hello! I'm Eve, your AI property intelligence assistant powered by GPT-4o. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims. How can I assist you today?",
           },
-          ...(data.messages || []),
+          ...(response.data.messages || []),
         ]);
         setShowSessions(false);
       }
@@ -280,13 +245,7 @@ const EveAI = () => {
   const deleteSession = async (sid, e) => {
     e.stopPropagation();
     try {
-      const token = localStorage.getItem('eden_token');
-      await fetch(`${API_URL}/api/ai/sessions/${sid}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await apiDelete(`/api/ai/sessions/${sid}`);
       fetchSessions();
       if (sessionId === sid) {
         startNewSession();
@@ -358,11 +317,6 @@ const EveAI = () => {
     setIsAnalyzing(true);
 
     try {
-      const token = localStorage.getItem('eden_token');
-      if (!token) {
-        throw new Error('Please log in to use Agent Eve');
-      }
-
       // Build request with claim context and documents if available
       const requestBody = {
         message: userMessage,
@@ -379,28 +333,13 @@ const EveAI = () => {
         requestBody.document_names = uploadedDocs.map((d) => d.name);
       }
 
-      const response = await fetch(`${API_URL}/api/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      // Read response text first to avoid stream already read issues
-      const responseText = await response.text();
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        throw new Error('Invalid response from server');
-      }
+      const response = await apiPost('/api/ai/chat', requestBody);
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to get response');
+        throw new Error(response.error?.detail || response.error || 'Failed to get response');
       }
+
+      const data = response.data;
 
       // Update session ID if this is a new session
       if (!sessionId && data.session_id) {
