@@ -6,6 +6,7 @@ Courses, lessons, articles, quizzes, progress tracking, and certificates.
 '''
 
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
 
