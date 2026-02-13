@@ -4,8 +4,8 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  User, Mail, Phone, Share2, Star, Briefcase, Copy, 
+import {
+  User, Mail, Phone, Share2, Star, Briefcase, Copy,
   ExternalLink, MessageCircle, Loader2, Globe, CheckCircle,
   Target, Medal, QrCode, Shield
 } from 'lucide-react';
@@ -15,8 +15,7 @@ import { Textarea } from '../shared/ui/textarea';
 import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import { APP_LOGO } from '../assets/badges';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { api, apiPost } from '@/lib/api';
 const IMAGE_BASE = import.meta.env.REACT_APP_IMAGE_BASE_URL || '/images';
 
 // Premium Card Template Backgrounds
@@ -63,13 +62,12 @@ const PublicCard = () => {
 
   const fetchCard = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/mycard/public/${slug}`);
+      const res = await api(`/api/mycard/public/${slug}`);
       if (res.ok) {
-        const data = await res.json();
-        setCard(data.card);
-        setQrCode(data.qr_code);
-        setReviews(data.reviews || []);
-        setAvgRating(data.average_rating || 0);
+        setCard(res.data.card);
+        setQrCode(res.data.qr_code);
+        setReviews(res.data.reviews || []);
+        setAvgRating(res.data.average_rating || 0);
       } else {
         toast.error('Business card not found');
       }
@@ -86,9 +84,7 @@ const PublicCard = () => {
 
   const trackClick = async (type) => {
     try {
-      await fetch(`${API_URL}/api/mycard/track-click/${slug}?click_type=${type}`, {
-        method: 'POST'
-      });
+      await apiPost(`/api/mycard/track-click/${slug}?click_type=${type}`, {});
     } catch (err) {
       console.error('Failed to track click:', err);
     }
@@ -108,7 +104,7 @@ const PublicCard = () => {
           text: card.tagline || `Connect with ${card.full_name}`,
           url: window.location.href
         });
-        fetch(`${API_URL}/api/mycard/track-share/${slug}`, { method: 'POST' });
+        apiPost(`/api/mycard/track-share/${slug}`, {});
       } catch (err) {
         if (err.name !== 'AbortError') copyShareLink();
       }
@@ -130,11 +126,9 @@ const PublicCard = () => {
         rating: reviewForm.rating.toString(),
         comment: reviewForm.comment
       });
-      
-      const res = await fetch(`${API_URL}/api/mycard/reviews/${slug}?${params}`, {
-        method: 'POST'
-      });
-      
+
+      const res = await apiPost(`/api/mycard/reviews/${slug}?${params}`, {});
+
       if (res.ok) {
         toast.success('Review submitted!');
         setShowReviewForm(false);
