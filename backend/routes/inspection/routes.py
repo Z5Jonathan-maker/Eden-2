@@ -5,6 +5,7 @@ Competitive with CompanyCam features
 import os
 import uuid
 import json
+import re
 from datetime import datetime, timezone
 from typing import Optional, List
 from pathlib import Path

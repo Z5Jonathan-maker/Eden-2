@@ -5,9 +5,13 @@ Request/response models for AI chat, copilot, and context features.
 """
 
 import os
+import re
+import uuid
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from dependencies import db
+from fastapi import HTTPException
 
 class ChatMessage(BaseModel):
     role: str  # 'user' or 'assistant'

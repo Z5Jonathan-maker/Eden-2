@@ -10,8 +10,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
+import logging
 
 from dependencies import db, get_current_active_user
+
+logger = logging.getLogger(__name__)
 from .models import (
     QuizQuestion, Lesson, Course, Article,
     UserProgress, Certificate, QuizSubmission, LessonComplete

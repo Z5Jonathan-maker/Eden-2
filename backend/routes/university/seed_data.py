@@ -6,8 +6,11 @@ This data can be regenerated, updated, or loaded from external sources.
 '''
 
 from datetime import datetime, timezone
+import logging
 from dependencies import db
 from .models import Course, Lesson, Article, QuizQuestion
+
+logger = logging.getLogger(__name__)
 
 async def seed_university_data():
     """Seed Care Claims University courses - homeowner-focused, leverage-based claims education"""
