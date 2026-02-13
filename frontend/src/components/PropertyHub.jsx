@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Cloud, Satellite, Shield, Home } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
-import WeatherVerification from './WeatherVerification';
+import WeatherVerification from '../features/weather/components/WeatherVerification';
 import PropertyIntelligence from './PropertyIntelligence';
 import DolDiscovery from './DolDiscovery';
 

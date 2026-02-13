@@ -130,6 +130,7 @@ const NotificationBell = () => {
       startPolling();
       return undefined;
     }
+    */
   }, [startPolling, stopPolling]);
 
   useEffect(() => {
