@@ -16,8 +16,8 @@ import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { APP_LOGO } from '../assets/badges';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
-const IMAGE_BASE = process.env.REACT_APP_IMAGE_BASE_URL || '/images';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+const IMAGE_BASE = import.meta.env.REACT_APP_IMAGE_BASE_URL || '/images';
 
 // Premium Card Template Backgrounds
 const CARD_TEMPLATES = {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -731,7 +731,7 @@ const Harvest = () => {
       if (data.points_earned > 0) {
         toast.success(`${STATUSES[status]?.label} +${data.points_earned} pts`, {
           duration: 1200,
-          icon: 'ðŸŽ¯',
+          icon: '🎯',
         });
       } else {
         toast.success(`${STATUSES[status]?.label}`, { duration: 800 });
@@ -1255,14 +1255,14 @@ const Harvest = () => {
           <div>
             <h1 className="text-white font-tactical font-bold text-base sm:text-lg">HARVEST</h1>
             <p className="text-zinc-500 font-mono text-[10px] sm:text-xs">
-              {pins.length} doors â€¢ {stats?.by_disposition?.signed || 0} signed
+              {pins.length} doors • {stats?.by_disposition?.signed || 0} signed
             </p>
           </div>
         </div>
 
         {/* Status Indicators */}
         <div className="flex items-center gap-2">
-          {process.env.NODE_ENV !== 'production' && (
+          {import.meta.env.NODE_ENV !== 'production' && (
             <Badge className="bg-cyan-500/10 text-cyan-300 border-cyan-500/30 text-[10px]">
               Lat {knockMetrics.avgMs}ms p95 {knockMetrics.p95Ms}ms ok {knockMetrics.successRate}%
             </Badge>

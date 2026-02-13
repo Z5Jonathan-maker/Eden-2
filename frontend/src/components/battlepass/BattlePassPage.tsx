@@ -9,7 +9,7 @@ import { BattlePassState, LeaderboardEntry, Mission } from './types';
 import './AnimationStyles.css';
 
 type TabKey = 'progress' | 'missions' | 'leaderboard';
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
 const STORAGE_KEY = 'eden_battle_pass_state_v3';
 
 const initialState: BattlePassState = {

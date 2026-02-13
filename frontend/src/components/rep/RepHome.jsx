@@ -18,7 +18,7 @@ import {
   MapPin, Calendar, TrendingUp, Award, Zap
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
 
 const RepHome = () => {
   const navigate = useNavigate();

@@ -68,7 +68,7 @@ import {
 import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // ============================================
 // COMPETITIONS TAB

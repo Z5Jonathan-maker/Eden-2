@@ -6,7 +6,7 @@
  * - Base URL from env
  */
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
 
 // Fail-fast helper (used by login + critical calls)
 export const assertApiUrl = () => {

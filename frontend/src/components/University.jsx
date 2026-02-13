@@ -17,7 +17,7 @@ import CertificatesTab from './university/CertificatesTab';
 import FirmContentTab from './university/FirmContentTab';
 import CreateContentModal from './university/CreateContentModal';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 function University() {
   const { user } = useAuth();

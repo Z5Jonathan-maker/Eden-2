@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle, Circle, Clock, FileText, Phone, Mail, MapPin, Calendar } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // Claim stages with descriptions
 const STAGES = [

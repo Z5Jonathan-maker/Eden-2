@@ -22,7 +22,7 @@ import {
 import { FEATURE_ICONS, PAGE_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const EveAI = () => {
   const [messages, setMessages] = useState([

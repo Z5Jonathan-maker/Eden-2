@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ArrowLeft, User, Calendar, Tag, AlertCircle } from 'lucide-react';
 
-var API_URL = process.env.REACT_APP_BACKEND_URL;
+var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 function ArticleDetail() {
   var params = useParams();

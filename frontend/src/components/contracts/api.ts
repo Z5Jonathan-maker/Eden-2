@@ -6,8 +6,8 @@ import {
   CreateContractPayload,
 } from './types';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-const SIGNNOW_TEMPLATE_ID = process.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
+const SIGNNOW_TEMPLATE_ID = import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
 
 function getToken(): string {
   return localStorage.getItem('eden_token') || '';

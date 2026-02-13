@@ -16,7 +16,7 @@ import { NAV_ICONS } from '../assets/badges';
 import ClaimSelector from './documents/ClaimSelector';
 import ApiService from '../services/ApiService';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const getToken = () => localStorage.getItem('eden_token');
 
 const Documents = () => {

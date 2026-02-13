@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { FEATURE_ICONS } from '../assets/badges';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // ============================================
 // ENZY-STYLE LEADERBOARD TAB

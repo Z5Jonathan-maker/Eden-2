@@ -11,7 +11,7 @@ import {
   Eye, ChevronDown, ChevronUp, ExternalLink, Zap, Target
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // Event type configuration - Drodat style
 const EVENT_CONFIG = {

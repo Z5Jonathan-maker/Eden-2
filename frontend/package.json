@@ -64,8 +64,11 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "cross-env CI=false craco build",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start:cra": "craco start",
+    "build:cra": "cross-env CI=false craco build",
     "test": "craco test",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",

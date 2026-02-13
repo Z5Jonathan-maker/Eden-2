@@ -75,7 +75,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
         claimId: selectedClaim.id,
         name: contractName,
         type: 'PA Agreement',
-        templateId: process.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement',
+        templateId: import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement',
         fields,
       });
     } finally {

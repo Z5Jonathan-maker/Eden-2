@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const ClientEducationHub = () => {
   const [loading, setLoading] = useState(true);

@@ -8,7 +8,7 @@ import {
 import { Button } from './ui/button';
 import ApiService from '../services/ApiService';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const NotificationBell = () => {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
 
 const missingApiUrlMessage = "Missing API base URL. Set REACT_APP_BACKEND_URL (preferred) or REACT_APP_API_URL to your backend, then rebuild/redeploy.";
 

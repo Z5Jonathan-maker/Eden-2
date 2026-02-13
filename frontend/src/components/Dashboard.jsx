@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { getTierBadge, UI_ICONS, PAGE_ICONS } from '../assets/badges';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const Dashboard = () => {
   const navigate = useNavigate();

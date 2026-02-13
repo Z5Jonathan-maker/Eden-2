@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-const API_URL = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
-const BUILD_VERSION = process.env.REACT_APP_CONFIG_VERSION || '';
+const API_URL = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const BUILD_VERSION = import.meta.env.REACT_APP_CONFIG_VERSION || '';
 
 const OpsConfigBanner = () => {
   const [manifestVersion, setManifestVersion] = useState('');

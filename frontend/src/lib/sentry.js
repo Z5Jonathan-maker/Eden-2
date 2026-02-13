@@ -8,8 +8,8 @@ import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 
 // Only initialize Sentry in production
-const SENTRY_DSN = process.env.REACT_APP_SENTRY_DSN;
-const ENVIRONMENT = process.env.REACT_APP_ENVIRONMENT || process.env.NODE_ENV;
+const SENTRY_DSN = import.meta.env.REACT_APP_SENTRY_DSN;
+const ENVIRONMENT = import.meta.env.REACT_APP_ENVIRONMENT || import.meta.env.NODE_ENV;
 
 export function initSentry() {
   // Skip initialization if no DSN or in development
@@ -37,7 +37,7 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0, // 100% when errors occur
 
     // Release tracking
-    release: process.env.REACT_APP_VERSION || 'unknown',
+    release: import.meta.env.REACT_APP_VERSION || 'unknown',
 
     // Ignore common non-critical errors
     ignoreErrors: [

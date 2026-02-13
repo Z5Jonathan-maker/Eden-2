@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
@@ -22,7 +22,7 @@ import IntegrationCard from './settings/IntegrationCard';
 import StatusBadge from './settings/StatusBadge';
 import './settings/settings.css';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const DEFAULT_OAUTH_STATUS = {
   google: { connected: false, user_email: null, scopes: [] },

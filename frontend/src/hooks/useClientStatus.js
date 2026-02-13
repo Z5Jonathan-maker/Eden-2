@@ -3,7 +3,7 @@
  */
 import { useState, useCallback } from 'react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // Stage definitions for progress bar
 export const CLAIM_STAGES = [

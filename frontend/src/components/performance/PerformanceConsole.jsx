@@ -20,7 +20,7 @@ import {
 import HarvestAdminConsole from '../HarvestAdminConsole';
 import IncentivesAdminConsole from '../IncentivesAdminConsole';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const SMS_AUDIT_PRESETS_KEY = 'eden_sms_audit_presets_v1';
 const SMS_AUDIT_THRESHOLDS_KEY = 'eden_sms_audit_thresholds_v1';
 const DEFAULT_SMS_AUDIT_PRESETS = [

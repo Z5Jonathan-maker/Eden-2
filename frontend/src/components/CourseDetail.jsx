@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 
-var API_URL = process.env.REACT_APP_BACKEND_URL;
+var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 function CourseDetail() {
   var params = useParams();

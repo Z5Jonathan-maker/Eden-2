@@ -8,7 +8,7 @@ const QUEUE_KEY = 'eden_offline_queue';
 
 class RequestQueue {
   constructor() {
-    this.isEnabled = process.env.REACT_APP_ENABLE_OFFLINE_QUEUE === 'true';
+    this.isEnabled = import.meta.env.REACT_APP_ENABLE_OFFLINE_QUEUE === 'true';
     // Only access localStorage if enabled to avoid side effects
     this.queue = this.isEnabled ? this.loadQueue() : [];
     this.isProcessing = false;

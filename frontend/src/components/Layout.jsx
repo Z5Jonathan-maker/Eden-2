@@ -8,7 +8,7 @@ import NotificationBell from './NotificationBell';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
 import { APP_LOGO, NAV_ICONS } from '../assets/badges';
 
-var API_URL = process.env.REACT_APP_BACKEND_URL;
+var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
 
 // 3D Icon component with glow and animation

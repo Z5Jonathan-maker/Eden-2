@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = import.meta.env.REACT_APP_BACKEND_URL;
 
 // Format currency
 const formatCurrency = (amount) => {

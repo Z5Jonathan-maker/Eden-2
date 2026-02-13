@@ -11,7 +11,7 @@ import {
 import { NAV_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
 
-var API_URL = process.env.REACT_APP_BACKEND_URL;
+var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 var STATUS_COLORS = {
   draft: 'bg-gray-500',

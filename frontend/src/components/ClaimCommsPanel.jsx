@@ -30,7 +30,7 @@ import {
 import { toast } from 'sonner';
 import ApiService from '../services/ApiService';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const COMMS_PREFS_KEY = 'eden_comms_followup_prefs';
 
 // Status badge colors

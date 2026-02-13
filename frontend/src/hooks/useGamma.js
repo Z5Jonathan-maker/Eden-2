@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 // Audience types for different presentations
 export const GAMMA_AUDIENCES = {

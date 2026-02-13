@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Loader2, Search, X } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
 const getToken = () => localStorage.getItem('eden_token') || '';
 
 interface ClaimRecord {

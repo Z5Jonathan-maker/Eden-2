@@ -3,7 +3,7 @@ import { Download, Upload, FileSpreadsheet, FileJson, Database } from 'lucide-re
 import { NAV_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const IMPORT_MAPPING_PRESETS_KEY = 'eden_data_import_mapping_presets_v1';
 const IMPORT_MAPPING_PREFERRED_PRESET_KEY = 'eden_data_import_preferred_preset_v1';
 const IMPORT_MAPPING_PRESET_LOCK_KEY = 'eden_data_import_preset_lock_v1';
