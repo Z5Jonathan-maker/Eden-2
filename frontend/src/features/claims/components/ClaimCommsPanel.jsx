@@ -28,7 +28,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiPost, API_URL } from '@/lib/api';
+import { apiGet, apiPost, API_URL } from '@/lib/api';
 const COMMS_PREFS_KEY = 'eden_comms_followup_prefs';
 
 // Status badge colors
@@ -112,56 +112,44 @@ const ClaimCommsPanel = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('eden_token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/claims/${claimId}/messages`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await apiGet(`/api/claims/${claimId}/messages`);
 
       if (res.ok) {
-        const data = await res.json();
-        setMessages(data.messages || []);
+        setMessages(res.data.messages || []);
       }
     } catch (err) {
       console.error('Failed to fetch messages:', err);
     } finally {
       setLoading(false);
     }
-  }, [claimId, getAuthHeaders]);
+  }, [claimId]);
 
   const fetchTemplates = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/sms/templates`, { headers: getAuthHeaders() });
+      const res = await apiGet('/api/sms/templates');
 
       if (res.ok) {
-        const data = await res.json();
-        setTemplates(data.templates || []);
+        setTemplates(res.data.templates || []);
       }
     } catch (err) {
       console.error('Failed to fetch templates:', err);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   const fetchSmsStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/sms/status`, { headers: getAuthHeaders() });
+      const res = await apiGet('/api/sms/status');
 
       if (res.ok) {
-        const data = await res.json();
-        setSmsStatus(data);
+        setSmsStatus(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch SMS status:', err);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   // Fetch messages on mount and periodically
   useEffect(() => {
@@ -197,14 +185,10 @@ const ClaimCommsPanel = ({
           `Message preview: "${preview}${preview.length >= 120 ? '...' : ''}"`,
         ].join('\n');
 
-        const res = await fetch(`${API_URL}/api/claims/${claimId}/notes`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            claim_id: claimId,
-            content: noteContent,
-            tags: ['follow-up', 'comms'],
-          }),
+        const res = await apiPost(`/api/claims/${claimId}/notes`, {
+          claim_id: claimId,
+          content: noteContent,
+          tags: ['follow-up', 'comms'],
         });
 
         if (res.ok) {
@@ -216,22 +200,18 @@ const ClaimCommsPanel = ({
         toast.warning('SMS sent, but follow-up note was not created');
       }
     },
-    [buildFollowupDate, claimId, clientName, followupWindow, getAuthHeaders]
+    [buildFollowupDate, claimId, clientName, followupWindow]
   );
 
   const requestAiSmsConfirmToken = useCallback(async () => {
-    const res = await fetch(`${API_URL}/api/claims/${claimId}/messages/sms/confirm-token`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    });
+    const res = await apiPost(`/api/claims/${claimId}/messages/sms/confirm-token`, {});
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      throw new Error(error?.detail || 'Unable to issue confirmation token for AI-generated SMS');
+      throw new Error(res.error?.detail || res.error || 'Unable to issue confirmation token for AI-generated SMS');
     }
 
-    return res.json();
-  }, [claimId, getAuthHeaders]);
+    return res.data;
+  }, [claimId]);
 
   const sendSMSMessage = useCallback(
     async (bodyText, phoneText, options = {}) => {
@@ -262,28 +242,23 @@ const ClaimCommsPanel = ({
           confirmationToken = tokenResult?.confirmation_token || null;
         }
 
-        const res = await fetch(`${API_URL}/api/claims/${claimId}/messages/sms/send`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            to: phoneText.startsWith('+') ? phoneText : `+1${phoneText.replace(/\D/g, '')}`,
-            body: bodyText,
-            ai_generated: aiGenerated,
-            confirmation_token: confirmationToken,
-            risk_acknowledged: aiGenerated ? riskAcknowledged : null,
-            risk_level: commsCopilot?.risk_level || null,
-            risk_flags: Array.isArray(commsCopilot?.risk_flags) ? commsCopilot.risk_flags : [],
-            thread_intent: commsCopilot?.thread_intent || null,
-          }),
+        const res = await apiPost(`/api/claims/${claimId}/messages/sms/send`, {
+          to: phoneText.startsWith('+') ? phoneText : `+1${phoneText.replace(/\D/g, '')}`,
+          body: bodyText,
+          ai_generated: aiGenerated,
+          confirmation_token: confirmationToken,
+          risk_acknowledged: aiGenerated ? riskAcknowledged : null,
+          risk_level: commsCopilot?.risk_level || null,
+          risk_flags: Array.isArray(commsCopilot?.risk_flags) ? commsCopilot.risk_flags : [],
+          thread_intent: commsCopilot?.thread_intent || null,
         });
 
         if (res.ok) {
-          const data = await res.json();
           // Add to messages list immediately
           setMessages((prev) => [
             ...prev,
             {
-              ...data,
+              ...res.data,
               direction: 'outbound',
               channel: 'sms',
               created_by_name: 'You',
@@ -296,8 +271,7 @@ const ClaimCommsPanel = ({
             await createFollowupClaimNote(bodyText);
           }
         } else {
-          const error = await res.json();
-          const detail = error?.detail;
+          const detail = res.error?.detail || res.error;
           if (detail && typeof detail === 'object') {
             const message = detail.message || 'Failed to send SMS';
             const missing = Array.isArray(detail.missing_fields)
@@ -320,7 +294,6 @@ const ClaimCommsPanel = ({
       commsCopilot,
       createFollowupClaimNote,
       createFollowupNote,
-      getAuthHeaders,
       requestAiSmsConfirmToken,
       riskAcknowledged,
     ]
@@ -380,30 +353,22 @@ const ClaimCommsPanel = ({
   const handleGenerateAIDraft = async () => {
     try {
       setGeneratingDraft(true);
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/ai/task`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+
+      const res = await apiPost('/api/ai/task', {
+        task: 'draft_communication',
+        claim_id: claimId,
+        payload: {
+          audience: 'client',
+          channel: 'sms',
+          intent: draftIntent,
+          tone: draftTone,
         },
-        body: JSON.stringify({
-          task: 'draft_communication',
-          claim_id: claimId,
-          payload: {
-            audience: 'client',
-            channel: 'sms',
-            intent: draftIntent,
-            tone: draftTone,
-          },
-        }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to generate draft');
+        throw new Error(res.error?.detail || res.error || 'Failed to generate draft');
       }
-      setSmsBody(data.output?.body || data.body || '');
+      setSmsBody(res.data.output?.body || res.data.body || '');
       setSmsBodyIsAIDraft(true);
       toast.success('AI draft generated');
     } catch (err) {
@@ -451,35 +416,27 @@ const ClaimCommsPanel = ({
 
     try {
       setSummarizingThread(true);
-      const token = localStorage.getItem('eden_token');
+
       const payloadMessages = messages.slice(-20).map((m) => ({
         direction: m.direction,
         body: m.body,
         created_at: m.created_at,
       }));
 
-      const res = await fetch(`${API_URL}/api/ai/task`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await apiPost('/api/ai/task', {
+        task: 'summarize_communication_thread',
+        claim_id: claimId,
+        payload: {
+          channel: 'sms',
+          audience: 'internal_operator',
+          messages: payloadMessages,
         },
-        body: JSON.stringify({
-          task: 'summarize_communication_thread',
-          claim_id: claimId,
-          payload: {
-            channel: 'sms',
-            audience: 'internal_operator',
-            messages: payloadMessages,
-          },
-        }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to summarize thread');
+        throw new Error(res.error?.detail || res.error || 'Failed to summarize thread');
       }
-      const summary = data.output?.summary || data.output?.body || data.summary || data.body || '';
+      const summary = res.data.output?.summary || res.data.output?.body || res.data.summary || res.data.body || '';
       if (!summary.trim()) {
         throw new Error('Empty AI summary');
       }
@@ -497,35 +454,27 @@ const ClaimCommsPanel = ({
   const handleSuggestFollowup = async () => {
     try {
       setGeneratingFollowupSuggestion(true);
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/ai/task`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+
+      const res = await apiPost('/api/ai/task', {
+        task: 'suggest_follow_up_sms',
+        claim_id: claimId,
+        payload: {
+          audience: 'client',
+          channel: 'sms',
+          tone: draftTone,
+          intent: draftIntent,
+          summary_context: threadSummary || buildLocalThreadSummary(),
         },
-        body: JSON.stringify({
-          task: 'suggest_follow_up_sms',
-          claim_id: claimId,
-          payload: {
-            audience: 'client',
-            channel: 'sms',
-            tone: draftTone,
-            intent: draftIntent,
-            summary_context: threadSummary || buildLocalThreadSummary(),
-          },
-        }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to suggest follow-up');
+        throw new Error(res.error?.detail || res.error || 'Failed to suggest follow-up');
       }
       const suggestion =
-        data.output?.body ||
-        data.output?.suggested_message ||
-        data.body ||
-        data.suggested_message ||
+        res.data.output?.body ||
+        res.data.output?.suggested_message ||
+        res.data.body ||
+        res.data.suggested_message ||
         '';
       if (!suggestion.trim()) {
         throw new Error('Empty AI follow-up suggestion');
