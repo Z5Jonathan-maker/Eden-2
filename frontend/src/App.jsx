@@ -9,7 +9,7 @@ import ApiConnectivityToast from './components/ApiConnectivityToast';
 
 // Core (eagerly loaded)
 import LandingPage from './components/LandingPage';
-import Layout from './components/Layout';
+import Layout from './shared/layouts/Layout';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -17,18 +17,18 @@ import InstallPrompt from './components/InstallPrompt';
 import InstallGuide from './components/InstallGuide';
 
 // Lazy-loaded heavy components
-const ClaimsList = lazy(() => import('./components/ClaimsList'));
-const ClaimDetails = lazy(() => import('./components/ClaimDetails'));
+const ClaimsList = lazy(() => import('./features/claims/components/ClaimsList'));
+const ClaimDetails = lazy(() => import('./features/claims/components/ClaimDetails'));
 const NewClaim = lazy(() => import('./components/NewClaim'));
 const InspectionsEnhanced = lazy(() => import('./components/InspectionsEnhanced'));
 const InspectionsNew = lazy(() => import('./components/InspectionsNew'));
-const Documents = lazy(() => import('./components/Documents'));
-const EveAI = lazy(() => import('./components/EveAI'));
-const Contracts = lazy(() => import('./components/Contracts'));
+const Documents = lazy(() => import('./features/documents/components/DocumentsPage'));
+const EveAI = lazy(() => import('./features/ai/components/EveAI'));
+const Contracts = lazy(() => import('./features/contracts/components/ContractsPage'));
 const Settings = lazy(() => import('./components/Settings'));
 const Adam = lazy(() => import('./components/Adam'));
 const ClientPortal = lazy(() => import('./components/ClientPortal'));
-const ClientClaimDetails = lazy(() => import('./components/ClientClaimDetails'));
+const ClientClaimDetails = lazy(() => import('./features/claims/components/ClientClaimDetails'));
 const DataManagement = lazy(() => import('./components/DataManagement'));
 const University = lazy(() => import('./components/University'));
 const CourseDetail = lazy(() => import('./components/CourseDetail'));
@@ -41,7 +41,7 @@ const HarvestPage = lazy(() => import('./components/HarvestPage'));
 const SalesEnablement = lazy(() => import('./components/SalesEnablement'));
 const InteractiveVisionBoard = lazy(() => import('./components/InteractiveVisionBoard'));
 const ClientEducationHub = lazy(() => import('./components/ClientEducationHub'));
-const ClaimStatusPortal = lazy(() => import('./components/ClaimStatusPortal'));
+const ClaimStatusPortal = lazy(() => import('./features/claims/components/ClaimStatusPortal'));
 const VoiceAssistantConsole = lazy(() => import('./components/VoiceAssistantConsole'));
 const HarvestAdminConsole = lazy(() => import('./components/HarvestAdminConsole'));
 const IncentivesAdminConsole = lazy(() => import('./components/IncentivesAdminConsole'));
@@ -49,13 +49,13 @@ const NotionIntegration = lazy(() => import('./components/NotionIntegration'));
 const PropertyHub = lazy(() => import('./components/PropertyHub'));
 const IndustryExperts = lazy(() => import('./components/IndustryExperts'));
 const FloridaLaws = lazy(() => import('./components/FloridaLaws'));
-const BattlePass = lazy(() => import('./components/BattlePass'));
+const BattlePass = lazy(() => import('./features/incentives/components/BattlePass'));
 const MyCard = lazy(() => import('./components/MyCard'));
 const PublicCard = lazy(() => import('./components/PublicCard'));
 const CommCenterChat = lazy(() => import('./components/CommCenterChat'));
 const CommCenterThread = lazy(() => import('./components/CommCenterThread'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
-const RepLayout = lazy(() => import('./components/layouts/RepLayout'));
+const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
 const RepHome = lazy(() => import('./components/rep/RepHome'));
 const PerformanceConsole = lazy(() => import('./components/performance/PerformanceConsole'));
 

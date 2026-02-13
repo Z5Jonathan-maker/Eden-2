@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Card, CardContent } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { ArrowLeft, User, Calendar, Tag, AlertCircle } from 'lucide-react';
 
 var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
