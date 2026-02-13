@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-
-const API_URL = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+import { apiGet } from '@/lib/api';
 const BUILD_VERSION = import.meta.env.REACT_APP_CONFIG_VERSION || '';
 
 const OpsConfigBanner = () => {
@@ -11,10 +10,9 @@ const OpsConfigBanner = () => {
   useEffect(() => {
     const fetchManifest = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/ops/manifest`);
-        const data = await res.json();
-        if (data?.config_version) {
-          setManifestVersion(data.config_version);
+        const res = await apiGet('/api/ops/manifest');
+        if (res.ok && res.data?.config_version) {
+          setManifestVersion(res.data.config_version);
           setError('');
         }
       } catch (err) {
