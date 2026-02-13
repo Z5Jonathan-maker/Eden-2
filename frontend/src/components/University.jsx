@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import UniversityHeader from './university/UniversityHeader';
 import StatsBanner from './university/StatsBanner';
 import TabNavigation from './university/TabNavigation';
@@ -58,40 +59,39 @@ function University() {
     is_published: false
   });
 
-  const getToken = useCallback(() => localStorage.getItem('eden_token'), []);
   const canEdit = user && (user.role === 'admin' || user.role === 'manager');
 
   // API Functions
   const fetchCompanySettings = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/settings/company`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      const name = data.company_name || 'Your Firm';
-      const uniName = data.university_name || `${name} University`;
-      setCompanyName(name);
-      setUniversityName(uniName);
-      setEditedName(uniName);
+      const res = await apiGet('/api/settings/company');
+      if (res.ok) {
+        const name = res.data.company_name || 'Your Firm';
+        const uniName = res.data.university_name || `${name} University`;
+        setCompanyName(name);
+        setUniversityName(uniName);
+        setEditedName(uniName);
+      } else {
+        setCompanyName('Your Firm');
+        setUniversityName('Your Firm University');
+        setEditedName('Your Firm University');
+      }
     } catch {
       setCompanyName('Your Firm');
       setUniversityName('Your Firm University');
       setEditedName('Your Firm University');
     }
-  }, [getToken]);
+  }, []);
 
   const saveUniversityName = async () => {
     try {
-      await fetch(`${API_URL}/api/settings/company`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ university_name: editedName })
-      });
-      setUniversityName(editedName);
-      setIsEditingName(false);
+      const res = await apiPut('/api/settings/company', { university_name: editedName });
+      if (res.ok) {
+        setUniversityName(editedName);
+        setIsEditingName(false);
+      } else {
+        alert('Failed to save university name');
+      }
     } catch {
       alert('Failed to save university name');
     }
@@ -99,41 +99,30 @@ function University() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const headers = { 'Authorization': `Bearer ${getToken()}` };
-    
+
     try {
       const [coursesRes, articlesRes, statsRes, certsRes] = await Promise.all([
-        fetch(`${API_URL}/api/university/courses`, { headers }),
-        fetch(`${API_URL}/api/university/articles`, { headers }),
-        fetch(`${API_URL}/api/university/stats`, { headers }),
-        fetch(`${API_URL}/api/university/certificates`, { headers })
+        apiGet('/api/university/courses'),
+        apiGet('/api/university/articles'),
+        apiGet('/api/university/stats'),
+        apiGet('/api/university/certificates')
       ]);
 
-      const [coursesData, articlesData, statsData, certsData] = await Promise.all([
-        coursesRes.json(),
-        articlesRes.json(),
-        statsRes.json(),
-        certsRes.json()
-      ]);
-
-      setCourses(coursesData || []);
-      setArticles(articlesData || []);
-      setStats(statsData);
-      setCertificates(certsData || []);
+      setCourses(coursesRes.ok ? (coursesRes.data || []) : []);
+      setArticles(articlesRes.ok ? (articlesRes.data || []) : []);
+      setStats(statsRes.ok ? statsRes.data : null);
+      setCertificates(certsRes.ok ? (certsRes.data || []) : []);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   const fetchVideoSources = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/university/video-sources`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      setVideoSources(data);
+      const res = await apiGet('/api/university/video-sources');
+      if (res.ok) setVideoSources(res.data);
     } catch {
       // Silently fail
     }
@@ -141,15 +130,12 @@ function University() {
 
   const fetchCustomContent = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/university/custom/all`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      setCustomContent(data);
+      const res = await apiGet('/api/university/custom/all');
+      if (res.ok) setCustomContent(res.data);
     } catch (err) {
       console.error('Failed to fetch custom content:', err);
     }
-  }, [getToken]);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
@@ -196,28 +182,16 @@ function University() {
     }
 
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+      const res = await apiPost(endpoint, body);
 
       if (!res.ok) throw new Error('Failed to create');
-      const data = await res.json();
 
       // Attach files to the created content
       await Promise.all(attachedFiles.map(file => {
         const formData = new FormData();
-        formData.append('content_id', data.id);
+        formData.append('content_id', res.data.id);
         formData.append('content_type', createType);
-        return fetch(`${API_URL}/api/uploads/file/${file.id}/attach`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${getToken()}` },
-          body: formData
-        });
+        return apiPut(`/api/uploads/file/${file.id}/attach`, formData);
       }));
 
       resetCreateModal();
@@ -240,10 +214,7 @@ function University() {
     };
 
     try {
-      const res = await fetch(`${API_URL}${endpoints[type]}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
+      const res = await apiDelete(endpoints[type]);
       if (!res.ok) throw new Error('Failed to delete');
       fetchCustomContent();
       fetchData();
@@ -260,14 +231,7 @@ function University() {
     };
 
     try {
-      const res = await fetch(`${API_URL}${endpoints[type]}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ...item, is_published: !item.is_published })
-      });
+      const res = await apiPut(endpoints[type], { ...item, is_published: !item.is_published });
       if (!res.ok) throw new Error('Failed to update');
       fetchCustomContent();
       fetchData();
@@ -291,20 +255,15 @@ function University() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`${API_URL}/api/uploads/file`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-        body: formData
-      });
+      const res = await apiPost('/api/uploads/file', formData);
 
       if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
 
       setAttachedFiles(prev => [...prev, {
-        id: data.id,
-        filename: data.original_name,
-        size: data.size,
-        url: API_URL + data.url
+        id: res.data.id,
+        filename: res.data.original_name,
+        size: res.data.size,
+        url: API_URL + res.data.url
       }]);
     } catch (err) {
       alert('Error uploading file: ' + err.message);
@@ -317,11 +276,8 @@ function University() {
   const removeAttachedFile = async (index) => {
     const file = attachedFiles[index];
     try {
-      await fetch(`${API_URL}/api/uploads/file/${file.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+      const res = await apiDelete(`/api/uploads/file/${file.id}`);
+      if (res.ok) setAttachedFiles(prev => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error('Error removing file:', err);
     }
