@@ -67,6 +67,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -74,7 +75,7 @@ const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 // COMPETITIONS TAB
 // ============================================
 
-const CompetitionsTab = ({ token }) => {
+const CompetitionsTab = () => {
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -85,41 +86,33 @@ const CompetitionsTab = ({ token }) => {
   const [creating, setCreating] = useState(false);
 
   const fetchCompetitions = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/competitions?include_past=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/competitions?include_past=true');
       if (!res.ok) {
-        console.error('Failed to fetch competitions: Status', res.status);
+        console.error('Failed to fetch competitions: Status', res.ok);
         setLoading(false);
         return;
       }
-      const data = await res.json();
-      setCompetitions(data.competitions || []);
+      setCompetitions(res.data.competitions || []);
     } catch (err) {
       console.error('Failed to fetch competitions:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   const fetchTemplates = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/incentives/templates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/templates');
       if (!res.ok) {
-        console.error('Failed to fetch templates: Status', res.status);
+        console.error('Failed to fetch templates: Status', res.ok);
         return;
       }
-      const data = await res.json();
-      setTemplates(data.templates || []);
+      setTemplates(res.data.templates || []);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchCompetitions();
@@ -132,17 +125,10 @@ const CompetitionsTab = ({ token }) => {
 
     setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/competitions/from-template`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          template_id: selectedTemplate,
-          name: newCompName,
-          start_date: new Date(newCompStartDate).toISOString(),
-        }),
+      const res = await apiPost('/api/incentives/competitions/from-template', {
+        template_id: selectedTemplate,
+        name: newCompName,
+        start_date: new Date(newCompStartDate).toISOString(),
       });
 
       if (res.ok) {
@@ -160,10 +146,7 @@ const CompetitionsTab = ({ token }) => {
 
   const handleStartCompetition = async (compId) => {
     try {
-      await fetch(`${API_URL}/api/incentives/competitions/${compId}/start`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiPost(`/api/incentives/competitions/${compId}/start`, {});
       fetchCompetitions();
     } catch (err) {
       console.error('Failed to start competition:', err);
@@ -177,10 +160,7 @@ const CompetitionsTab = ({ token }) => {
       return;
 
     try {
-      await fetch(`${API_URL}/api/incentives/competitions/${compId}/end`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiPost(`/api/incentives/competitions/${compId}/end`, {});
       fetchCompetitions();
     } catch (err) {
       console.error('Failed to end competition:', err);
@@ -405,7 +385,7 @@ const CompetitionsTab = ({ token }) => {
 // TEMPLATES TAB - With Rules Builder
 // ============================================
 
-const TemplatesTab = ({ token }) => {
+const TemplatesTab = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -526,64 +506,48 @@ const TemplatesTab = ({ token }) => {
   }, [token]);
 
   const fetchMetrics = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/incentives/metrics`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/metrics');
       if (res.ok) {
-        const data = await res.json();
-        setMetrics(data.metrics || []);
+        setMetrics(res.data.metrics || []);
       }
     } catch (err) {
       console.error('Failed to fetch metrics:', err);
     }
-  }, [token]);
+  }, []);
 
   const fetchRewards = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/incentives/rewards?active_only=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/rewards?active_only=true');
       if (res.ok) {
-        const data = await res.json();
-        setRewards(data.rewards || []);
+        setRewards(res.data.rewards || []);
       }
     } catch (err) {
       console.error('Failed to fetch rewards:', err);
     }
-  }, [token]);
+  }, []);
 
   const fetchBadges = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/incentives/badges/definitions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/badges/definitions');
       if (res.ok) {
-        const data = await res.json();
-        setBadges(data.badges || []);
+        setBadges(res.data.badges || []);
       }
     } catch (err) {
       console.error('Failed to fetch badges:', err);
     }
-  }, [token]);
+  }, []);
 
   const fetchSeasons = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/incentives/seasons`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/seasons');
       if (res.ok) {
-        const data = await res.json();
-        setSeasons(data.seasons || []);
+        setSeasons(res.data.seasons || []);
       }
     } catch (err) {
       console.error('Failed to fetch seasons:', err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchTemplates();
@@ -639,17 +603,9 @@ const TemplatesTab = ({ token }) => {
         auto_start: compFormData.auto_start,
       };
 
-      const res = await fetch(`${API_URL}/api/incentives/competitions/from-template`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await apiPost('/api/incentives/competitions/from-template', payload);
 
       if (res.ok) {
-        const data = await res.json();
         toast.success(`Competition "${compFormData.name}" created successfully!`);
         setShowUseDialog(false);
         setUsingTemplate(null);
@@ -658,8 +614,7 @@ const TemplatesTab = ({ token }) => {
         // Increment template usage count
         fetchTemplates();
       } else {
-        const error = await res.json();
-        toast.error(error.detail || 'Failed to create competition');
+        toast.error(res.error || 'Failed to create competition');
       }
     } catch (err) {
       toast.error('Error creating competition');
@@ -675,19 +630,9 @@ const TemplatesTab = ({ token }) => {
 
     setSaving(true);
     try {
-      const method = editingTemplate ? 'PUT' : 'POST';
-      const url = editingTemplate
-        ? `${API_URL}/api/incentives/templates/${editingTemplate.id}`
-        : `${API_URL}/api/incentives/templates`;
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = editingTemplate
+        ? await apiPut(`/api/incentives/templates/${editingTemplate.id}`, formData)
+        : await apiPost('/api/incentives/templates', formData);
 
       if (res.ok) {
         toast.success(editingTemplate ? 'Template updated' : 'Template created');
@@ -708,10 +653,7 @@ const TemplatesTab = ({ token }) => {
     if (!window.confirm('Are you sure you want to delete this template?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/incentives/templates/${templateId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(`/api/incentives/templates/${templateId}`);
 
       if (res.ok) {
         toast.success('Template deleted');
@@ -1550,7 +1492,7 @@ const TemplatesTab = ({ token }) => {
 // SEASONS TAB
 // ============================================
 
-const SeasonsTab = ({ token }) => {
+const SeasonsTab = () => {
   const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -1574,21 +1516,17 @@ const SeasonsTab = ({ token }) => {
   const [formData, setFormData] = useState(defaultSeason);
 
   const fetchSeasons = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/seasons`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/seasons');
       if (res.ok) {
-        const data = await res.json();
-        setSeasons(data.seasons || []);
+        setSeasons(res.data.seasons || []);
       }
     } catch (err) {
       console.error('Failed to fetch seasons:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchSeasons();
@@ -1602,25 +1540,15 @@ const SeasonsTab = ({ token }) => {
 
     setSaving(true);
     try {
-      const method = editingSeason ? 'PUT' : 'POST';
-      const url = editingSeason
-        ? `${API_URL}/api/incentives/seasons/${editingSeason.id}`
-        : `${API_URL}/api/incentives/seasons`;
-
       const payload = {
         ...formData,
         start_date: new Date(formData.start_date).toISOString(),
         end_date: new Date(formData.end_date).toISOString(),
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = editingSeason
+        ? await apiPut(`/api/incentives/seasons/${editingSeason.id}`, payload)
+        : await apiPost('/api/incentives/seasons', payload);
 
       if (res.ok) {
         toast.success(editingSeason ? 'Season updated' : 'Season created');
@@ -1646,10 +1574,7 @@ const SeasonsTab = ({ token }) => {
       return;
 
     try {
-      const res = await fetch(`${API_URL}/api/incentives/seasons/${seasonId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(`/api/incentives/seasons/${seasonId}`);
 
       if (res.ok) {
         toast.success('Season deleted');
@@ -2076,29 +2001,25 @@ const SeasonsTab = ({ token }) => {
 // METRICS TAB
 // ============================================
 
-const MetricsTab = ({ token }) => {
+const MetricsTab = () => {
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/metrics`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/metrics');
       if (!res.ok) {
-        console.error('Failed to fetch metrics: Status', res.status);
+        console.error('Failed to fetch metrics: Status', res.ok);
         setLoading(false);
         return;
       }
-      const data = await res.json();
-      setMetrics(data.metrics || []);
+      setMetrics(res.data.metrics || []);
     } catch (err) {
       console.error('Failed to fetch metrics:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchMetrics();
@@ -2162,7 +2083,7 @@ const MetricsTab = ({ token }) => {
 // BADGES TAB - Full CRUD with Artwork
 // ============================================
 
-const BadgesTab = ({ token }) => {
+const BadgesTab = () => {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -2206,21 +2127,17 @@ const BadgesTab = ({ token }) => {
   };
 
   const fetchBadges = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/badges/definitions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/badges/definitions');
       if (res.ok) {
-        const data = await res.json();
-        setBadges(data.badges || []);
+        setBadges(res.data.badges || []);
       }
     } catch (err) {
       console.error('Failed to fetch badges:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchBadges();
@@ -2234,19 +2151,9 @@ const BadgesTab = ({ token }) => {
 
     setSaving(true);
     try {
-      const method = editingBadge ? 'PUT' : 'POST';
-      const url = editingBadge
-        ? `${API_URL}/api/incentives/badges/${editingBadge.id}`
-        : `${API_URL}/api/incentives/badges`;
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = editingBadge
+        ? await apiPut(`/api/incentives/badges/${editingBadge.id}`, formData)
+        : await apiPost('/api/incentives/badges', formData);
 
       if (res.ok) {
         toast.success(editingBadge ? 'Badge updated' : 'Badge created');
@@ -2267,10 +2174,7 @@ const BadgesTab = ({ token }) => {
     if (!window.confirm('Are you sure you want to delete this badge?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/incentives/badges/${badgeId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(`/api/incentives/badges/${badgeId}`);
 
       if (res.ok) {
         toast.success('Badge deleted');
@@ -2552,7 +2456,7 @@ const BadgesTab = ({ token }) => {
 // REWARDS TAB - Full CRUD with Artwork
 // ============================================
 
-const RewardsTab = ({ token }) => {
+const RewardsTab = () => {
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -2587,21 +2491,17 @@ const RewardsTab = ({ token }) => {
   ];
 
   const fetchRewards = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/rewards`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/rewards');
       if (res.ok) {
-        const data = await res.json();
-        setRewards(data.rewards || []);
+        setRewards(res.data.rewards || []);
       }
     } catch (err) {
       console.error('Failed to fetch rewards:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRewards();
@@ -2615,19 +2515,9 @@ const RewardsTab = ({ token }) => {
 
     setSaving(true);
     try {
-      const method = editingReward ? 'PUT' : 'POST';
-      const url = editingReward
-        ? `${API_URL}/api/incentives/rewards/${editingReward.id}`
-        : `${API_URL}/api/incentives/rewards`;
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const res = editingReward
+        ? await apiPut(`/api/incentives/rewards/${editingReward.id}`, formData)
+        : await apiPost('/api/incentives/rewards', formData);
 
       if (res.ok) {
         toast.success(editingReward ? 'Reward updated' : 'Reward created');
@@ -2648,10 +2538,7 @@ const RewardsTab = ({ token }) => {
     if (!window.confirm('Are you sure you want to delete this reward?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/incentives/rewards/${rewardId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(`/api/incentives/rewards/${rewardId}`);
 
       if (res.ok) {
         toast.success('Reward deleted');
@@ -3002,7 +2889,6 @@ const RewardsTab = ({ token }) => {
 
 const IncentivesAdminConsole = () => {
   const [activeTab, setActiveTab] = useState('competitions');
-  const token = localStorage.getItem('eden_token');
 
   return (
     <div className="min-h-screen page-enter" data-testid="incentives-admin-console">
@@ -3082,22 +2968,22 @@ const IncentivesAdminConsole = () => {
           </TabsList>
 
           <TabsContent value="competitions">
-            <CompetitionsTab token={token} />
+            <CompetitionsTab />
           </TabsContent>
           <TabsContent value="templates">
-            <TemplatesTab token={token} />
+            <TemplatesTab />
           </TabsContent>
           <TabsContent value="seasons">
-            <SeasonsTab token={token} />
+            <SeasonsTab />
           </TabsContent>
           <TabsContent value="badges">
-            <BadgesTab token={token} />
+            <BadgesTab />
           </TabsContent>
           <TabsContent value="rewards">
-            <RewardsTab token={token} />
+            <RewardsTab />
           </TabsContent>
           <TabsContent value="metrics">
-            <MetricsTab token={token} />
+            <MetricsTab />
           </TabsContent>
         </Tabs>
       </div>
