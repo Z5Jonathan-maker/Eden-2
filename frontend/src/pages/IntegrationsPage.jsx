@@ -18,7 +18,7 @@ import {
   Check, X, Loader2, ExternalLink, RefreshCw,
   Settings, Link2, Unlink, ChevronRight
 } from 'lucide-react';
-import { api, API_URL } from '../lib/api';
+import { apiGet, apiDelete, API_URL } from '../lib/api';
 
 const IntegrationCard = ({ 
   name, 
@@ -131,13 +131,10 @@ const IntegrationsPage = () => {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/integrations/status`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
+      const res = await apiGet('/api/integrations/status');
+
       if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
+        setStatus(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch integrations status:', err);
@@ -154,20 +151,18 @@ const IntegrationsPage = () => {
   // Handle Google Connect
   const handleGoogleConnect = async () => {
     setActionLoading(prev => ({ ...prev, google: true }));
-    
+
     try {
       // Get auth URL from backend
       const redirectUri = `${window.location.origin}/settings/integrations/callback`;
-      
-      const res = await fetch(
-        `${API_URL}/api/integrations/google/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}&scopes=calendar,drive`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
+
+      const res = await apiGet(
+        `/api/integrations/google/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}&scopes=calendar,drive`
       );
-      
+
       if (res.ok) {
-        const data = await res.json();
         // Redirect to OAuth URL
-        window.location.href = data.auth_url;
+        window.location.href = res.data.auth_url;
       } else {
         toast.error('Failed to get auth URL');
       }
@@ -182,13 +177,10 @@ const IntegrationsPage = () => {
   // Handle Disconnect
   const handleDisconnect = async (provider) => {
     setActionLoading(prev => ({ ...prev, [provider]: true }));
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/integrations/disconnect/${provider}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
+      const res = await apiDelete(`/api/integrations/disconnect/${provider}`);
+
       if (res.ok) {
         toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`);
         fetchStatus();
