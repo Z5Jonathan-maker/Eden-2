@@ -16,19 +16,38 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('eden_token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const storedToken = localStorage.getItem('eden_token');
-    const storedUser = localStorage.getItem('eden_user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Check if user is already logged in by calling /api/auth/me
+    // The httpOnly cookie will be sent automatically
+    const checkAuth = async () => {
+      try {
+        if (!API_URL) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          credentials: 'include', // Include httpOnly cookies
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Not authenticated or session expired
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('[Auth] Failed to check authentication:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {
@@ -40,6 +59,7 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include httpOnly cookies in request/response
         body: JSON.stringify({ email, password }),
       });
 
@@ -58,24 +78,16 @@ export const AuthProvider = ({ children }) => {
         const errorMessage = data.detail || data.message || 'Login failed';
         throw new Error(errorMessage);
       }
-      
-      // Validate required fields
-      if (!data.access_token) {
-        console.error('[Auth] Missing access_token in response:', data);
-        throw new Error('Server returned invalid token format');
-      }
-      
+
+      // Validate user data (token is now in httpOnly cookie, not in response)
       if (!data.user) {
         console.error('[Auth] Missing user in response:', data);
         throw new Error('Server returned invalid user format');
       }
-      
-      localStorage.setItem('eden_token', data.access_token);
-      localStorage.setItem('eden_user', JSON.stringify(data.user));
-      
-      setToken(data.access_token);
+
+      // Store user data in state (no token storage needed - it's in httpOnly cookie)
       setUser(data.user);
-      
+
       return { success: true };
     } catch (error) {
       console.error('[Auth] Login failed:', error.message);
@@ -92,6 +104,7 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include httpOnly cookies
         body: JSON.stringify({
           email,
           password,
@@ -123,26 +136,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('eden_token');
-    localStorage.removeItem('eden_user');
-    setToken(null);
-    setUser(null);
-  };
-
-  const getAuthHeaders = () => {
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  const logout = async () => {
+    try {
+      if (API_URL) {
+        // Call backend to clear httpOnly cookie
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include', // Include cookies to identify session
+        });
+      }
+    } catch (error) {
+      console.error('[Auth] Logout request failed:', error);
+      // Continue with local logout even if backend call fails
+    } finally {
+      // Clear local state
+      setUser(null);
+    }
   };
 
   const value = {
     user,
-    token,
     loading,
-    isAuthenticated: !!token,
+    isAuthenticated: !!user,
     login,
     register,
     logout,
-    getAuthHeaders,
   };
 
   return (

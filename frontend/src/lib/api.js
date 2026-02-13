@@ -1,6 +1,6 @@
 /**
  * Centralized API client for Eden
- * - Handles auth headers automatically
+ * - Uses httpOnly cookies for authentication (secure against XSS)
  * - Consistent error handling
  * - Simple in-memory caching
  * - Base URL from env
@@ -18,10 +18,7 @@ export const assertApiUrl = () => {
   return API_URL;
 };
 
-const getToken = () => localStorage.getItem('eden_token');
-
 const defaultHeaders = () => ({
-  'Authorization': `Bearer ${getToken()}`,
   'Content-Type': 'application/json',
 });
 
@@ -52,19 +49,29 @@ export async function api(endpoint, options = {}) {
   const baseUrl = assertApiUrl();
   const url = `${baseUrl}${endpoint}`;
   const method = options.method || 'GET';
+  const cacheOption = options.cache;
+  const { cache: _cache, ...restOptions } = options;
   
   // Check cache for GET requests
-  if (method === 'GET' && options.cache !== false) {
+  if (method === 'GET' && cacheOption !== false) {
     const cached = getCached(url);
     if (cached) return { ok: true, data: cached, cached: true };
   }
   
   const config = {
     method,
-    headers: options.formData ? { 'Authorization': `Bearer ${getToken()}` } : defaultHeaders(),
-    ...options,
+    headers: options.formData ? {} : defaultHeaders(),
+    credentials: 'include', // Always include httpOnly cookies
+    ...restOptions,
   };
-  
+
+  // Normalize legacy `cache: false` usage to valid Fetch semantics.
+  if (cacheOption === false) {
+    config.cache = 'no-store';
+  } else if (typeof cacheOption === 'string') {
+    config.cache = cacheOption;
+  }
+
   // Don't stringify FormData
   if (options.body && !(options.body instanceof FormData)) {
     config.body = JSON.stringify(options.body);
@@ -83,7 +90,7 @@ export async function api(endpoint, options = {}) {
     const data = text ? JSON.parse(text) : null;
     
     // Cache successful GET responses
-    if (method === 'GET' && options.cache !== false) {
+    if (method === 'GET' && cacheOption !== false) {
       setCache(url, data);
     }
     
@@ -119,4 +126,4 @@ export const clearCache = (pattern) => {
   }
 };
 
-export { API_URL, getToken };
+export { API_URL };

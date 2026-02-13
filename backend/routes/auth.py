@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Response
+from fastapi.responses import JSONResponse
 from models import UserCreate, UserLogin, User, Token
 from auth import get_password_hash, verify_password, create_access_token
-from dependencies import db, get_current_active_user
+from dependencies import db, get_current_active_user, require_role
 from datetime import datetime, timezone
 import uuid
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +42,9 @@ async def register(user_data: UserCreate):
         logger.error(f"Registration error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/login", response_model=Token)
-async def login(credentials: UserLogin):
-    """Login user and return JWT token"""
+@router.post("/login")
+async def login(credentials: UserLogin, response: Response):
+    """Login user and set httpOnly cookie with JWT token"""
     try:
         # Find user
         user = await db.users.find_one({"email": credentials.email})
@@ -51,31 +53,47 @@ async def login(credentials: UserLogin):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
-        
+
         # Verify password
         if not verify_password(credentials.password, user["password"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
-        
+
         # Create token
         access_token = create_access_token(data={"sub": user["id"]})
-        
-        user_obj = User(**{k: v for k, v in user.items() if k != "password"})
-        
-        logger.info(f"User logged in: {user_obj.email}")
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            user=user_obj
+
+        # Set httpOnly cookie (7 days expiry to match token)
+        max_age = 60 * 60 * 24 * 7  # 7 days in seconds
+        response.set_cookie(
+            key="eden_token",
+            value=access_token,
+            httponly=True,
+            secure=os.environ.get("ENVIRONMENT", "development").lower() == "production",  # HTTPS only in production
+            samesite="lax",  # Prevents CSRF while allowing normal navigation
+            max_age=max_age,
+            path="/"
         )
-        
+
+        user_obj = User(**{k: v for k, v in user.items() if k != "password"})
+
+        logger.info(f"User logged in: {user_obj.email}")
+
+        # Return user data without token in body (for security)
+        # Note: keeping access_token in response for backwards compatibility during transition
+        # Remove access_token from response once frontend is updated
+        return {
+            "access_token": access_token,  # TEMPORARY: for backwards compatibility
+            "token_type": "bearer",
+            "user": user_obj.model_dump()
+        }
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Login failed")
 
 @router.get("/me", response_model=User)
 async def get_current_user_info(current_user: dict = Depends(get_current_active_user)):
@@ -83,12 +101,24 @@ async def get_current_user_info(current_user: dict = Depends(get_current_active_
     return User(**{k: v for k, v in current_user.items() if k != "password"})
 
 @router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_active_user)):
-    """Logout user (client-side token removal)"""
+async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
+    """Logout user and clear httpOnly cookie"""
+    # Clear the httpOnly cookie
+    response.delete_cookie(
+        key="eden_token",
+        path="/",
+        httponly=True,
+        secure=os.environ.get("ENVIRONMENT", "development").lower() == "production",
+        samesite="lax"
+    )
+    logger.info(f"User logged out: {current_user.get('email', 'unknown')}")
     return {"message": "Successfully logged out"}
 @router.post("/seed-test-users")
-async def seed_test_users():
+async def seed_test_users(current_user: dict = Depends(require_role(["admin"]))):
     """Seed test users for development/testing (creates test@eden.com and others)"""
+    if os.environ.get("ENVIRONMENT", "development").lower() == "production":
+        raise HTTPException(status_code=403, detail="Test user seeding is disabled in production")
+
     try:
         test_users = [
             {

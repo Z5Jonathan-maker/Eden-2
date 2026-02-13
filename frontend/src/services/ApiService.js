@@ -1,15 +1,9 @@
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 class ApiService {
-  static getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
   static getHeaders() {
-    const token = this.getToken();
     return {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
 
@@ -17,6 +11,7 @@ class ApiService {
     const url = `${API_URL}${endpoint}`;
     const config = {
       ...options,
+      credentials: 'include', // Include httpOnly cookies
       headers: {
         ...this.getHeaders(),
         ...options.headers,
@@ -24,11 +19,9 @@ class ApiService {
     };
 
     const response = await fetch(url, config);
-    
+
     if (response.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('eden_token');
-      localStorage.removeItem('eden_user');
+      // Token expired or invalid (httpOnly cookie)
       window.location.href = '/login';
       throw new Error('Session expired. Please login again.');
     }
@@ -56,6 +49,27 @@ class ApiService {
 
   static async getClaim(claimId) {
     return this.request(`/api/claims/${claimId}`);
+  }
+
+  static async getFloridaClaimReadiness(claimId) {
+    return this.request(`/api/claims/${claimId}/florida-readiness`);
+  }
+
+  static async getDemandPackageManifest(claimId) {
+    return this.request(`/api/claims/${claimId}/demand-package-manifest`);
+  }
+
+  static async getClaimCopilotActions(claimId) {
+    return this.request(`/api/ai/claims/${claimId}/copilot-next-actions`, {
+      method: 'POST',
+    });
+  }
+
+  static async getClaimCommsCopilot(claimId, payload = {}) {
+    return this.request(`/api/ai/claims/${claimId}/comms-copilot`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   static async createClaim(claimData) {

@@ -1,10 +1,11 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from auth import decode_access_token
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pathlib import Path
 from models import ROLES, has_permission, get_role_level
+from typing import Optional
 import os
 
 # Load environment variables
@@ -23,31 +24,54 @@ async def get_db():
     """Dependency to get database instance"""
     return db
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+async def get_current_user(
+    request: Request,
+    eden_token: Optional[str] = Cookie(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    """
+    Extract JWT token from httpOnly cookie or Authorization header.
+    Priority: Cookie > Authorization header (for backwards compatibility).
+    """
+    token = None
+
+    # Try to get token from cookie first (primary method)
+    if eden_token:
+        token = eden_token
+    # Fall back to Authorization header (for API clients and backwards compatibility)
+    elif credentials:
+        token = credentials.credentials
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_access_token(token)
-    
+
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
         )
-    
+
     user = await db.users.find_one({"id": user_id})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
-    
+
     return user
 
 async def get_current_active_user(current_user: dict = Depends(get_current_user)):
