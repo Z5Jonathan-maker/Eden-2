@@ -52,10 +52,6 @@ export default defineConfig({
           ],
           'vendor-map': ['leaflet', 'react-leaflet'],
           'vendor-utils': ['framer-motion', 'clsx', 'class-variance-authority'],
-
-          // Feature chunks (lazy loaded)
-          claims: ['src/components/ClaimDetails.jsx', 'src/components/ClaimsList.jsx'],
-          harvest: ['src/components/Harvest.jsx', 'src/components/HarvestMap.jsx'],
         },
       },
     },
