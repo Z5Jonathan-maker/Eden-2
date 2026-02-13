@@ -58,7 +58,7 @@ from routes.bots import router as bots_router
 from routes.twilio_voice import router as twilio_voice_router
 from routes.voice_assistant_console import router as voice_assistant_console_router
 from routes.harvest_rewards_campaigns import router as harvest_rewards_campaigns_router
-from routes.incentives_engine import router as incentives_engine_router
+from routes.incentives import router as incentives_engine_router
 from routes.battle_pass import router as battle_pass_router
 from routes.mycard import router as mycard_router
 from routes.comm_conversations import router as comm_conversations_router
