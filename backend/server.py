@@ -32,7 +32,7 @@ from routes.payments import router as payments_router
 from routes.settings import router as settings_router
 from routes.admin import router as admin_router
 from routes.uploads import router as uploads_router
-from routes.inspection_photos import router as inspection_photos_router
+from routes.inspection import router as inspection_photos_router
 from routes.canvassing_map import router as canvassing_map_router
 from routes.weather import router as weather_router
 from routes.client_education import router as client_education_router
