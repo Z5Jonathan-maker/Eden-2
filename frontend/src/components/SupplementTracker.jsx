@@ -4,14 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { Input } from '../shared/ui/input';
 import { Badge } from '../shared/ui/badge';
-import { 
-  FileText, Plus, DollarSign, Clock, CheckCircle, XCircle, 
+import {
+  FileText, Plus, DollarSign, Clock, CheckCircle, XCircle,
   AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp, Sparkles, Loader2
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
-
-var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 var STATUS_COLORS = {
   draft: 'bg-gray-500',
@@ -51,29 +50,26 @@ function SupplementTracker() {
   var [aiJustifications, setAiJustifications] = useState({});
   var [loadingAiBySupplement, setLoadingAiBySupplement] = useState({});
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
-  const fetchData = useCallback(function fetchData() {
+  const fetchData = useCallback(async function fetchData() {
     setLoading(true);
-    var headers = { 'Authorization': 'Bearer ' + getToken() };
-    
-    Promise.all([
-      fetch(API_URL + '/api/claims/' + claimId, { headers }),
-      fetch(API_URL + '/api/supplements/claim/' + claimId, { headers }),
-      fetch(API_URL + '/api/supplements/categories', { headers })
-    ]).then(function(responses) {
-      return Promise.all(responses.map(function(r) { return r.json(); }));
-    }).then(function(data) {
-      setClaim(data[0]);
-      setSupplements(data[1].supplements || []);
-      setTotals(data[1].totals || {});
-      setCategories(data[2] || []);
+    try {
+      var [claimRes, suppsRes, catsRes] = await Promise.all([
+        apiGet('/api/claims/' + claimId),
+        apiGet('/api/supplements/claim/' + claimId),
+        apiGet('/api/supplements/categories')
+      ]);
+
+      if (claimRes.ok) setClaim(claimRes.data);
+      if (suppsRes.ok) {
+        setSupplements(suppsRes.data.supplements || []);
+        setTotals(suppsRes.data.totals || {});
+      }
+      if (catsRes.ok) setCategories(catsRes.data || []);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
       setLoading(false);
-    }).catch(function() {
-      setLoading(false);
-    });
+    }
   }, [claimId]);
 
   useEffect(function() {
@@ -103,69 +99,50 @@ function SupplementTracker() {
     }));
   }
 
-  function createSupplement() {
+  async function createSupplement() {
     if (!newSupplement.title || newSupplement.line_items.length === 0) {
       alert('Please add a title and at least one line item');
       return;
     }
 
-    fetch(API_URL + '/api/supplements/', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        claim_id: claimId,
-        claim_number: claim ? claim.claim_number : '',
-        title: newSupplement.title,
-        description: newSupplement.description,
-        line_items: newSupplement.line_items
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function() {
+    var res = await apiPost('/api/supplements/', {
+      claim_id: claimId,
+      claim_number: claim ? claim.claim_number : '',
+      title: newSupplement.title,
+      description: newSupplement.description,
+      line_items: newSupplement.line_items
+    });
+
+    if (res.ok) {
       setShowNewForm(false);
       setNewSupplement({ title: '', description: '', line_items: [] });
       fetchData();
+    }
+  }
+
+  async function submitSupplement(supplementId) {
+    var res = await apiPost('/api/supplements/' + supplementId + '/submit', {});
+    if (res.ok) fetchData();
+  }
+
+  async function updateSupplementStatus(supplementId, status, approvedAmount) {
+    var res = await apiPut('/api/supplements/' + supplementId, {
+      status: status,
+      carrier_approved_amount: approvedAmount,
+      carrier_response_date: new Date().toISOString()
     });
-  }
 
-  function submitSupplement(supplementId) {
-    fetch(API_URL + '/api/supplements/' + supplementId + '/submit', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + getToken() }
-    })
-    .then(function() { fetchData(); });
-  }
-
-  function updateSupplementStatus(supplementId, status, approvedAmount) {
-    fetch(API_URL + '/api/supplements/' + supplementId, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        status: status,
-        carrier_approved_amount: approvedAmount,
-        carrier_response_date: new Date().toISOString()
-      })
-    })
-    .then(function() { 
+    if (res.ok) {
       setEditingSupplement(null);
-      fetchData(); 
-    });
+      fetchData();
+    }
   }
 
-  function deleteSupplement(supplementId) {
+  async function deleteSupplement(supplementId) {
     if (!window.confirm('Delete this draft supplement?')) return;
-    
-    fetch(API_URL + '/api/supplements/' + supplementId, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + getToken() }
-    })
-    .then(function() { fetchData(); });
+
+    var res = await apiDelete('/api/supplements/' + supplementId);
+    if (res.ok) fetchData();
   }
 
   function buildEstimateFromSupplement(supp, mode) {
@@ -179,16 +156,11 @@ function SupplementTracker() {
     return { line_items: lineItems };
   }
 
-  function generateAiJustification(supp) {
+  async function generateAiJustification(supp) {
     setLoadingAiBySupplement(Object.assign({}, loadingAiBySupplement, { [supp.id]: true }));
 
-    fetch(API_URL + '/api/ai/task', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+    try {
+      var res = await apiPost('/api/ai/task', {
         task: 'supplement_justification',
         claim_id: claimId,
         payload: {
@@ -196,26 +168,26 @@ function SupplementTracker() {
           contractor_estimate: buildEstimateFromSupplement(supp, 'contractor'),
           scope_notes: supp.description || ''
         }
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var output = data.output || data;
-      if (output && output.executive_summary) {
-        setAiJustifications(Object.assign({}, aiJustifications, { [supp.id]: output }));
-        toast.success('AI supplement justification generated');
+      });
+
+      if (res.ok) {
+        var output = res.data.output || res.data;
+        if (output && output.executive_summary) {
+          setAiJustifications(Object.assign({}, aiJustifications, { [supp.id]: output }));
+          toast.success('AI supplement justification generated');
+        } else {
+          toast.error('Failed to generate AI justification');
+        }
       } else {
-        toast.error(data.detail || 'Failed to generate AI justification');
+        toast.error(res.error || 'Failed to generate AI justification');
       }
-    })
-    .catch(function() {
+    } catch (err) {
       toast.error('Failed to generate AI justification');
-    })
-    .finally(function() {
+    } finally {
       setLoadingAiBySupplement(function(prev) {
         return Object.assign({}, prev, { [supp.id]: false });
       });
-    });
+    }
   }
 
   if (loading) {

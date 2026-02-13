@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
-import { 
-  CheckCircle, XCircle, Loader2, Database, RefreshCw, 
+import {
+  CheckCircle, XCircle, Loader2, Database, RefreshCw,
   ExternalLink, AlertCircle, FolderPlus, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 const NotionIntegration = () => {
   const [loading, setLoading] = useState(true);
@@ -21,17 +20,11 @@ const NotionIntegration = () => {
   const [syncing, setSyncing] = useState(false);
   const [selectedDatabase, setSelectedDatabase] = useState('');
 
-  const getToken = () => localStorage.getItem('eden_token');
-
   const fetchDatabases = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/notion/databases`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-
+      const res = await apiGet('/api/notion/databases');
       if (res.ok) {
-        const data = await res.json();
-        setDatabases(data.databases || []);
+        setDatabases(res.data.databases || []);
       }
     } catch (err) {
       console.error('Failed to fetch databases:', err);
@@ -40,13 +33,9 @@ const NotionIntegration = () => {
 
   const fetchPages = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/notion/pages`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-
+      const res = await apiGet('/api/notion/pages');
       if (res.ok) {
-        const data = await res.json();
-        setPages(data.pages || []);
+        setPages(res.data.pages || []);
       }
     } catch (err) {
       console.error('Failed to fetch pages:', err);
@@ -56,15 +45,12 @@ const NotionIntegration = () => {
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/notion/status`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
+      const res = await apiGet('/api/notion/status');
+
       if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
-        
-        if (data.connected) {
+        setStatus(res.data);
+
+        if (res.data.connected) {
           await Promise.all([fetchDatabases(), fetchPages()]);
         }
       }
@@ -88,26 +74,17 @@ const NotionIntegration = () => {
 
     setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/api/notion/databases/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`
-        },
-        body: JSON.stringify({
-          parent_page_id: selectedParent,
-          title: 'Eden Claims'
-        })
+      const res = await apiPost('/api/notion/databases/create', {
+        parent_page_id: selectedParent,
+        title: 'Eden Claims'
       });
 
-      const data = await res.json();
-      
       if (res.ok) {
         toast.success('Claims database created in Notion!');
         await fetchDatabases();
-        setSelectedDatabase(data.database_id);
+        setSelectedDatabase(res.data.database_id);
       } else {
-        toast.error(data.detail || 'Failed to create database');
+        toast.error(res.error || 'Failed to create database');
       }
     } catch (err) {
       toast.error('Failed to create database');
@@ -124,20 +101,15 @@ const NotionIntegration = () => {
 
     setSyncing(true);
     try {
-      const res = await fetch(`${API_URL}/api/notion/sync/all?database_id=${selectedDatabase}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
+      const res = await apiPost(`/api/notion/sync/all?database_id=${selectedDatabase}`, {});
 
-      const data = await res.json();
-      
       if (res.ok) {
-        toast.success(`Synced ${data.synced} claims to Notion!`);
-        if (data.failed > 0) {
-          toast.warning(`${data.failed} claims failed to sync`);
+        toast.success(`Synced ${res.data.synced} claims to Notion!`);
+        if (res.data.failed > 0) {
+          toast.warning(`${res.data.failed} claims failed to sync`);
         }
       } else {
-        toast.error(data.detail || 'Failed to sync claims');
+        toast.error(res.error || 'Failed to sync claims');
       }
     } catch (err) {
       toast.error('Failed to sync claims');

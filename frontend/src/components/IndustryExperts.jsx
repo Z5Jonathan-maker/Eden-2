@@ -29,8 +29,7 @@ import {
   Home,
   Sparkles,
 } from 'lucide-react';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet } from '@/lib/api';
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -82,18 +81,16 @@ const IndustryExperts = () => {
   const fetchData = async () => {
     try {
       const [expertsRes, mentorsRes] = await Promise.all([
-        fetch(`${API_URL}/api/knowledge-base/experts`),
-        fetch(`${API_URL}/api/knowledge-base/mentors`),
+        apiGet('/api/knowledge-base/experts'),
+        apiGet('/api/knowledge-base/mentors'),
       ]);
 
       if (expertsRes.ok) {
-        const data = await expertsRes.json();
-        setExperts(data.experts || []);
+        setExperts(expertsRes.data.experts || []);
       }
 
       if (mentorsRes.ok) {
-        const data = await mentorsRes.json();
-        setMentors(data.mentors || []);
+        setMentors(mentorsRes.data.mentors || []);
       }
     } catch (err) {
       console.error('Failed to fetch experts:', err);
@@ -103,10 +100,9 @@ const IndustryExperts = () => {
 
   const fetchExpertDetail = async (expertId) => {
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/experts/${expertId}`);
+      const res = await apiGet(`/api/knowledge-base/experts/${expertId}`);
       if (res.ok) {
-        const data = await res.json();
-        setSelectedExpert(data);
+        setSelectedExpert(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch expert detail:', err);
@@ -120,12 +116,9 @@ const IndustryExperts = () => {
     }
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`
-      );
+      const res = await apiGet(`/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.results);
+        setSearchResults(res.data.results);
       }
     } catch (err) {
       console.error('Search failed:', err);
