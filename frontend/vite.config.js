@@ -89,4 +89,23 @@ export default defineConfig({
     port: 3000,
     open: false,
   },
+
+  // Vitest configuration
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['node_modules/', 'e2e/', 'build/', 'dist/'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'e2e/',
+      ],
+    },
+  },
 });
