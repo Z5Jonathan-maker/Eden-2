@@ -9,10 +9,10 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
-import { Button } from '../shared/ui/button';
-import { Progress } from '../shared/ui/progress';
-import { Badge } from '../shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Button } from '../../shared/ui/button';
+import { Progress } from '../../shared/ui/progress';
+import { Badge } from '../../shared/ui/badge';
 import {
   Play, Trophy, Target, Flame, Star, ChevronRight,
   MapPin, Calendar, TrendingUp, Award, Zap
