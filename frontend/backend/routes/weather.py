@@ -29,6 +29,7 @@ NWS_HEADERS = {
 
 # ASOS/METAR via Iowa State University (free, comprehensive historical data)
 IOWA_METAR_BASE = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
+WAYBACK_SELECTION_URL = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer"
 
 
 # ============ MODELS ============
@@ -1256,3 +1257,32 @@ async def get_verification_history(
         "verifications": verifications,
         "count": len(verifications)
     }
+
+
+@router.get("/imagery/releases")
+async def get_historical_imagery_releases(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Proxy Wayback release metadata through backend to avoid browser-side CORS/rate issues.
+    """
+    params = {"f": "pjson"}
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(WAYBACK_SELECTION_URL, params=params)
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Wayback metadata unavailable ({response.status_code})",
+                )
+            payload = response.json()
+            selection = payload.get("Selection", [])
+            return {
+                "source": "esri_wayback",
+                "count": len(selection),
+                "selection": selection,
+            }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Historical imagery metadata unavailable: {exc}")
