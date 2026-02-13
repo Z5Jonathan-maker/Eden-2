@@ -4,6 +4,7 @@ AI Module - Pydantic Models
 Request/response models for AI chat, copilot, and context features.
 """
 
+import os
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
