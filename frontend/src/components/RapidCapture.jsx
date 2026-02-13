@@ -34,7 +34,7 @@ import {
   useInspectionPhotos,
   CAMERA_ERRORS 
 } from '../features/inspections/hooks';
-import { api, API_URL } from '../lib/api';
+import { api, apiPost, API_URL } from '../lib/api';
 import { formatDuration, isMobile } from '../lib/core';
 
 // Helper to add token to photo URLs for img tag authentication
@@ -668,16 +668,11 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         if (photo.latitude) formData.append('latitude', photo.latitude.toString());
         if (photo.longitude) formData.append('longitude', photo.longitude.toString());
         if (photo.annotation) formData.append('notes', photo.annotation);
-        
-        const res = await fetch(`${API_URL}/api/inspections/photos`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: formData
-        });
-        
+
+        const res = await apiPost('/api/inspections/photos', formData);
+
         if (res.ok) {
-          const created = await res.json();
-          results.push(created);
+          results.push(res.data);
           uploadedCount++;
           // Remove from offline storage
           await OfflineService.deletePhoto(claimId, photo.id);
@@ -699,16 +694,11 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         const form = new FormData();
         form.append('file', audioBlob, `session-${inspectionSession.sessionId}.webm`);
         form.append('session_id', inspectionSession.sessionId);
-        
-        const voiceRes = await fetch(`${API_URL}/api/inspections/sessions/voice`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: form
-        });
-        
+
+        const voiceRes = await apiPost('/api/inspections/sessions/voice', form);
+
         if (voiceRes.ok) {
-          const voiceData = await voiceRes.json();
-          if (voiceData.transcript) {
+          if (voiceRes.data.transcript) {
             toast.success('Voice notes transcribed & linked to photos!');
           } else {
             toast.info('Voice uploaded (transcription pending)');
