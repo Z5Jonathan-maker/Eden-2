@@ -14,8 +14,7 @@ import {
   ChevronRight, Filter, Search, X, PenTool
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const API = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, apiDelete } from '@/lib/api';
 
 // Format currency
 const formatCurrency = (amount) => {
@@ -87,45 +86,30 @@ export default function Scales() {
   // Fetch data
   const fetchEstimates = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/scales/estimates`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setEstimates(data);
-      }
+      const res = await apiGet('/api/scales/estimates');
+      if (res.ok) setEstimates(res.data);
     } catch (error) {
       console.error('Error fetching estimates:', error);
     }
-  }, [token]);
+  }, []);
 
   const fetchComparisons = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/scales/comparisons`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setComparisons(data);
-      }
+      const res = await apiGet('/api/scales/comparisons');
+      if (res.ok) setComparisons(res.data);
     } catch (error) {
       console.error('Error fetching comparisons:', error);
     }
-  }, [token]);
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/scales/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
+      const res = await apiGet('/api/scales/stats');
+      if (res.ok) setStats(res.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchEstimates();
@@ -139,25 +123,18 @@ export default function Scales() {
     formData.append('file', file);
     formData.append('estimate_type', estimateType);
 
-    const res = await fetch(`${API}/api/scales/upload`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
-    });
+    const res = await apiPost('/api/scales/upload', formData);
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Upload failed');
+      throw new Error(res.error || 'Upload failed');
     }
 
-    const data = await res.json();
-    
     // Show warning if no line items were parsed
-    if (data.warning) {
-      toast.warning(data.warning, { duration: 8000 });
+    if (res.data.warning) {
+      toast.warning(res.data.warning, { duration: 8000 });
     }
-    
-    return data;
+
+    return res.data;
   };
 
   // Handle upload both estimates
@@ -226,24 +203,16 @@ export default function Scales() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/scales/compare`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          carrier_estimate_id: selectedCarrier,
-          contractor_estimate_id: selectedContractor
-        })
+      const res = await apiPost('/api/scales/compare', {
+        carrier_estimate_id: selectedCarrier,
+        contractor_estimate_id: selectedContractor
       });
 
       if (!res.ok) {
         throw new Error('Comparison failed');
       }
 
-      const comparison = await res.json();
-      setActiveComparison(comparison);
+      setActiveComparison(res.data);
       await fetchComparisons();
       await fetchStats();
       setActiveTab('results');
@@ -262,24 +231,16 @@ export default function Scales() {
 
     setAnalyzing(true);
     try {
-      const res = await fetch(`${API}/api/scales/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          comparison_id: activeComparison.id,
-          analysis_focus: focus
-        })
+      const res = await apiPost('/api/scales/analyze', {
+        comparison_id: activeComparison.id,
+        analysis_focus: focus
       });
 
       if (!res.ok) {
         throw new Error('Analysis failed');
       }
 
-      const analysis = await res.json();
-      setAiAnalysis(analysis);
+      setAiAnalysis(res.data);
       toast.success('AI analysis complete!');
       
     } catch (error) {
@@ -295,26 +256,17 @@ export default function Scales() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/scales/dispute-letter`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          comparison_id: activeComparison.id,
-          item_ids: []  // Will use all high-impact items
-        })
+      const res = await apiPost('/api/scales/dispute-letter', {
+        comparison_id: activeComparison.id,
+        item_ids: []  // Will use all high-impact items
       });
 
       if (!res.ok) {
         throw new Error('Failed to generate letter');
       }
 
-      const result = await res.json();
-      
       // Download as text file
-      const blob = new Blob([result.dispute_letter], { type: 'text/plain' });
+      const blob = new Blob([res.data.dispute_letter], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -334,13 +286,10 @@ export default function Scales() {
   const loadComparison = async (comparisonId) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/scales/comparisons/${comparisonId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiGet(`/api/scales/comparisons/${comparisonId}`);
 
       if (res.ok) {
-        const comparison = await res.json();
-        setActiveComparison(comparison);
+        setActiveComparison(res.data);
         setAiAnalysis(null);
         setActiveTab('results');
       }
@@ -356,10 +305,7 @@ export default function Scales() {
     if (!window.confirm('Are you sure you want to delete this estimate?')) return;
 
     try {
-      const res = await fetch(`${API}/api/scales/estimates/${estimateId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiDelete(`/api/scales/estimates/${estimateId}`);
 
       if (res.ok) {
         await fetchEstimates();
