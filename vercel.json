@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build && cp -r build/. ../build/",
+  "outputDirectory": "build",
+  "framework": null,
+  "installCommand": "cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://eden-2.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
