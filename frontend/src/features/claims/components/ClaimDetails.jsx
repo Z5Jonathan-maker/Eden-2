@@ -101,13 +101,9 @@ const ClaimDetails = () => {
   const fetchClaimPhotos = useCallback(async () => {
     setLoadingPhotos(true);
     try {
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/inspections/claim/${claimId}/photos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`/api/inspections/claim/${claimId}/photos`);
       if (res.ok) {
-        const data = await res.json();
-        setPhotos(data.photos || []);
+        setPhotos(res.data.photos || []);
       }
     } catch (err) {
       console.error('Failed to fetch claim photos:', err);
@@ -118,14 +114,10 @@ const ClaimDetails = () => {
 
   const fetchNotionPage = useCallback(async () => {
     try {
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/notion/claim-page/${claimId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`/api/notion/claim-page/${claimId}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data.exists) {
-          setNotionPage(data);
+        if (res.data.exists) {
+          setNotionPage(res.data);
         }
       }
     } catch (err) {
@@ -136,27 +128,17 @@ const ClaimDetails = () => {
   const createNotionStrategyPage = async () => {
     setCreatingNotionPage(true);
     try {
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/notion/claim-page/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ claim_id: claimId }),
-      });
+      const res = await apiPost('/api/notion/claim-page/create', { claim_id: claimId });
 
-      const data = await res.json();
-
-      if (res.ok && (data.success || data.exists)) {
-        setNotionPage({ exists: true, url: data.url, page_id: data.page_id });
+      if (res.ok && (res.data.success || res.data.exists)) {
+        setNotionPage({ exists: true, url: res.data.url, page_id: res.data.page_id });
         toast.success('Strategy page created in Notion!');
         // Open the page
-        if (data.url) {
-          window.open(data.url, '_blank');
+        if (res.data.url) {
+          window.open(res.data.url, '_blank');
         }
       } else {
-        toast.error(data.detail || 'Failed to create Notion page');
+        toast.error(res.error?.detail || res.error || 'Failed to create Notion page');
       }
     } catch (err) {
       toast.error('Failed to create Notion page');
@@ -224,8 +206,6 @@ const ClaimDetails = () => {
 
     setSchedulingAppointment(true);
     try {
-      const token = localStorage.getItem('eden_token');
-
       // Build start and end times
       const startDateTime = new Date(`${appointmentForm.date}T${appointmentForm.time}`);
       const endDateTime = new Date(startDateTime.getTime() + appointmentForm.duration * 60 * 1000);
@@ -240,19 +220,10 @@ const ClaimDetails = () => {
         reminder_minutes: 30,
       };
 
-      const res = await fetch(
-        `${API_URL}/api/integrations/google/calendar/events?claim_id=${claimId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(eventPayload),
-        }
+      const res = await apiPost(
+        `/api/integrations/google/calendar/events?claim_id=${claimId}`,
+        eventPayload
       );
-
-      const data = await res.json();
 
       if (res.ok) {
         toast.success('Appointment scheduled!', {
@@ -283,7 +254,7 @@ const ClaimDetails = () => {
           },
         });
       } else {
-        toast.error(data.detail || 'Failed to schedule appointment');
+        toast.error(res.error?.detail || res.error || 'Failed to schedule appointment');
       }
     } catch (err) {
       console.error('Schedule error:', err);
@@ -408,29 +379,20 @@ Generated on: ${new Date().toLocaleString()}
   const handleGenerateAIBrief = async () => {
     try {
       setLoadingAiBrief(true);
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/ai/task`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await apiPost('/api/ai/task', {
+        task: 'claim_brief',
+        claim_id: claimId,
+        payload: {
+          include_docs: true,
+          include_notes: true,
         },
-        body: JSON.stringify({
-          task: 'claim_brief',
-          claim_id: claimId,
-          payload: {
-            include_docs: true,
-            include_notes: true,
-          },
-        }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to generate AI brief');
+        throw new Error(res.error?.detail || res.error || 'Failed to generate AI brief');
       }
 
-      setAiBrief(data.output || data);
+      setAiBrief(res.data.output || res.data);
       toast.success('AI brief generated');
     } catch (err) {
       toast.error(err.message || 'Failed to generate AI brief');
@@ -442,31 +404,22 @@ Generated on: ${new Date().toLocaleString()}
   const handleGenerateAIDraft = async (audience = 'client', channel = 'email') => {
     try {
       setLoadingAiDraft(true);
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/ai/task`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await apiPost('/api/ai/task', {
+        task: 'draft_communication',
+        claim_id: claimId,
+        payload: {
+          audience,
+          channel,
+          intent: 'request documents and provide status update',
+          tone: 'professional',
         },
-        body: JSON.stringify({
-          task: 'draft_communication',
-          claim_id: claimId,
-          payload: {
-            audience,
-            channel,
-            intent: 'request documents and provide status update',
-            tone: 'professional',
-          },
-        }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to generate AI draft');
+        throw new Error(res.error?.detail || res.error || 'Failed to generate AI draft');
       }
 
-      const output = data.output || data;
+      const output = res.data.output || res.data;
       setAiDraft({
         ...output,
         audience,
@@ -518,7 +471,6 @@ Generated on: ${new Date().toLocaleString()}
 
     setSendingAIDraftEmail(true);
     try {
-      const token = localStorage.getItem('eden_token');
       const rawUser = localStorage.getItem('eden_user');
       let parsedUser = {};
       try {
@@ -533,16 +485,9 @@ Generated on: ${new Date().toLocaleString()}
       confirmPayload.append('context_type', 'claim');
       confirmPayload.append('context_id', claimId);
 
-      const tokenRes = await fetch(`${API_URL}/api/integrations/gmail/confirm-token`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: confirmPayload,
-      });
-      const tokenData = await tokenRes.json().catch(() => ({}));
+      const tokenRes = await apiPost('/api/integrations/gmail/confirm-token', confirmPayload);
       if (!tokenRes.ok) {
-        throw new Error(tokenData.detail || 'Failed to issue email confirmation token');
+        throw new Error(tokenRes.error?.detail || tokenRes.error || 'Failed to issue email confirmation token');
       }
 
       const sendPayload = new FormData();
@@ -554,20 +499,13 @@ Generated on: ${new Date().toLocaleString()}
       sendPayload.append('body', aiDraft.body);
       sendPayload.append('user_id', String(userId));
       sendPayload.append('ai_generated', 'true');
-      sendPayload.append('confirmation_token', tokenData.confirmation_token || '');
+      sendPayload.append('confirmation_token', tokenRes.data.confirmation_token || '');
       sendPayload.append('context_type', 'claim');
       sendPayload.append('context_id', claimId);
 
-      const sendRes = await fetch(`${API_URL}/api/integrations/gmail/send-email`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: sendPayload,
-      });
-      const sendData = await sendRes.json().catch(() => ({}));
+      const sendRes = await apiPost('/api/integrations/gmail/send-email', sendPayload);
       if (!sendRes.ok) {
-        throw new Error(sendData.detail || 'Failed to send AI email');
+        throw new Error(sendRes.error?.detail || sendRes.error || 'Failed to send AI email');
       }
 
       toast.success('AI email sent successfully');
