@@ -5,7 +5,7 @@
  */
 
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
+import { browserTracingIntegration, replayIntegration } from '@sentry/react';
 
 // Only initialize Sentry in production
 const SENTRY_DSN = import.meta.env.REACT_APP_SENTRY_DSN;
@@ -22,8 +22,8 @@ export function initSentry() {
     dsn: SENTRY_DSN,
     environment: ENVIRONMENT,
     integrations: [
-      new BrowserTracing(),
-      new Sentry.Replay({
+      browserTracingIntegration(),
+      replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),

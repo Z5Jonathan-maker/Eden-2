@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { UserRound } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../../shared/ui/button";
 
 interface ProfileCardProps {
   name: string;

@@ -14,6 +14,6 @@ export const claimsApi = {
   uploadDocument: (claimId: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiPost(`/api/claims/${claimId}/documents`, formData, { formData: true });
+    return apiPost(`/api/claims/${claimId}/documents`, { body: formData });
   },
 };

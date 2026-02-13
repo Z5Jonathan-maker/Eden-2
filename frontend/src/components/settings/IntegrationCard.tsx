@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../../shared/ui/button";
 import StatusBadge from "./StatusBadge";
 
 type StatusVariant = "connected" | "not_connected" | "error" | "warning";
