@@ -12,6 +12,7 @@ import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { NAV_ICONS } from '../assets/badges';
+import { apiGet, apiPost, apiPut } from '@/lib/api';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -31,24 +32,20 @@ const VoiceAssistantConsole = () => {
   }, []);
 
   const fetchData = async () => {
-    const token = localStorage.getItem('eden_token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    
     try {
       const [configRes, scriptsRes, guardrailsRes, statsRes, callsRes] = await Promise.all([
-        fetch(`${API_URL}/api/voice-assistant/config`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/scripts`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/guardrails`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/stats/today`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/calls?limit=20`, { headers })
+        apiGet('/api/voice-assistant/config'),
+        apiGet('/api/voice-assistant/scripts'),
+        apiGet('/api/voice-assistant/guardrails'),
+        apiGet('/api/voice-assistant/stats/today'),
+        apiGet('/api/voice-assistant/calls?limit=20')
       ]);
 
-      setConfig(await configRes.json());
-      setScripts(await scriptsRes.json());
-      setGuardrails(await guardrailsRes.json());
-      setStats(await statsRes.json());
-      const callsData = await callsRes.json();
-      setCalls(callsData.calls || []);
+      setConfig(configRes.ok ? configRes.data : null);
+      setScripts(scriptsRes.ok ? scriptsRes.data : null);
+      setGuardrails(guardrailsRes.ok ? guardrailsRes.data : null);
+      setStats(statsRes.ok ? statsRes.data : null);
+      setCalls(callsRes.ok ? (callsRes.data.calls || []) : []);
     } catch (error) {
       toast.error('Failed to load Voice Assistant data');
     } finally {
@@ -57,12 +54,8 @@ const VoiceAssistantConsole = () => {
   };
 
   const toggleAssistant = async () => {
-    const token = localStorage.getItem('eden_token');
     try {
-      const res = await fetch(`${API_URL}/api/voice-assistant/config/toggle?enabled=${!config?.enabled}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiPost(`/api/voice-assistant/config/toggle?enabled=${!config?.enabled}`, {});
       if (res.ok) {
         setConfig({ ...config, enabled: !config?.enabled });
         toast.success(`Voice Assistant ${!config?.enabled ? 'enabled' : 'disabled'}`);
@@ -73,16 +66,8 @@ const VoiceAssistantConsole = () => {
   };
 
   const updateScripts = async () => {
-    const token = localStorage.getItem('eden_token');
     try {
-      const res = await fetch(`${API_URL}/api/voice-assistant/scripts`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(scripts)
-      });
+      const res = await apiPut('/api/voice-assistant/scripts', scripts);
       if (res.ok) {
         toast.success('Scripts updated');
         fetchData();
