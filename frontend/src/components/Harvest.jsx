@@ -219,14 +219,9 @@ const decodeJwtPayload = (token) => {
   }
 };
 
-const getTokenClaims = () => {
-  try {
-    const rawToken = window?.localStorage?.getItem('eden_token');
-    return decodeJwtPayload(rawToken);
-  } catch (_err) {
-    return null;
-  }
-};
+// Token claims no longer accessible with httpOnly cookies
+// User object from AuthContext contains necessary permissions
+const getTokenClaims = () => null;
 
 const hasTurfAdminAccess = (user, tokenClaims = null) => {
   // Emergency local override for field ops triage:

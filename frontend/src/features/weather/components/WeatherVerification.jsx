@@ -143,7 +143,6 @@ const WeatherVerification = ({ embedded = false }) => {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -194,7 +193,6 @@ const WeatherVerification = ({ embedded = false }) => {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -225,7 +223,6 @@ const WeatherVerification = ({ embedded = false }) => {
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
