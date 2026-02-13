@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
 import { Badge } from '../../../shared/ui/badge';
-import ApiService from '../../../services/ApiService';
+import { apiGet } from '@/lib/api';
 import {
   ArrowLeft,
   User,
@@ -33,14 +33,19 @@ const ClientClaimDetails = () => {
   const fetchClaimData = useCallback(async () => {
     try {
       setLoading(true);
-      const [claimData, notesData, docsData] = await Promise.all([
-        ApiService.getClaim(claimId),
-        ApiService.getClaimNotes(claimId).catch(() => []),
-        ApiService.getClaimDocuments(claimId).catch(() => []),
+      const [claimRes, notesRes, docsRes] = await Promise.all([
+        apiGet(`/api/claims/${claimId}`),
+        apiGet(`/api/claims/${claimId}/notes`).catch(() => ({ ok: false, data: [] })),
+        apiGet(`/api/claims/${claimId}/documents`).catch(() => ({ ok: false, data: [] })),
       ]);
-      setClaim(claimData);
-      setNotes(notesData);
-      setDocuments(docsData);
+
+      if (!claimRes.ok) {
+        throw new Error(claimRes.error || 'Failed to fetch claim');
+      }
+
+      setClaim(claimRes.data);
+      setNotes(notesRes.ok ? notesRes.data : []);
+      setDocuments(docsRes.ok ? docsRes.data : []);
       setError('');
     } catch (err) {
       setError(err.message);

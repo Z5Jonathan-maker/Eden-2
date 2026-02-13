@@ -28,9 +28,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ApiService from '../../../services/ApiService';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiPost, API_URL } from '@/lib/api';
 const COMMS_PREFS_KEY = 'eden_comms_followup_prefs';
 
 // Status badge colors
@@ -553,12 +551,18 @@ const ClaimCommsPanel = ({
         body: m.body,
         created_at: m.created_at,
       }));
-      const result = await ApiService.getClaimCommsCopilot(claimId, {
+      const res = await apiPost(`/api/ai/claims/${claimId}/comms-copilot`, {
         intent: draftIntent,
         tone: draftTone,
         channel: 'sms',
         messages: payloadMessages,
       });
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to generate comms copilot');
+      }
+
+      const result = res.data;
       setCommsCopilot(result);
       if (result?.suggested_reply) {
         setSmsBody(result.suggested_reply);

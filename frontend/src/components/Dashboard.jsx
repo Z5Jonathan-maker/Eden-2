@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import ApiService from '../services/ApiService';
+import { apiGet } from '@/lib/api';
 import {
   FolderOpen,
   Clock,
@@ -22,8 +22,6 @@ import {
 } from 'lucide-react';
 import { getTierBadge, UI_ICONS, PAGE_ICONS } from '../assets/badges';
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -36,13 +34,9 @@ const Dashboard = () => {
   // Fetch Battle Pass progress
   const fetchBattlePassProgress = useCallback(async () => {
     try {
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/battle-pass/progress`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/battle-pass/progress');
       if (res.ok) {
-        const data = await res.json();
-        setBattlePassProgress(data);
+        setBattlePassProgress(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch battle pass progress:', err);
@@ -68,15 +62,15 @@ const Dashboard = () => {
             return;
           }
 
-          const status = await ApiService.getPaymentStatus(sessionId);
+          const res = await apiGet(`/api/payments/status/${sessionId}`);
 
-          if (status.payment_status === 'paid') {
+          if (res.ok && res.data.payment_status === 'paid') {
             setPaymentStatus({
               type: 'success',
-              message: `Payment successful! Your ${status.package_id || 'subscription'} plan is now active.`,
+              message: `Payment successful! Your ${res.data.package_id || 'subscription'} plan is now active.`,
             });
             window.history.replaceState({}, '', '/dashboard');
-          } else if (status.status === 'expired') {
+          } else if (res.ok && res.data.status === 'expired') {
             setPaymentStatus({
               type: 'error',
               message: 'Payment session expired. Please try again.',
@@ -107,7 +101,34 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const dashboardStats = await ApiService.getDashboardStats();
+      const res = await apiGet('/api/claims/');
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to fetch claims');
+      }
+
+      const claims = res.data || [];
+      const now = new Date();
+      const thisMonth = now.getMonth();
+      const thisYear = now.getFullYear();
+
+      const dashboardStats = {
+        totalClaims: claims.length,
+        activeClaims: claims.filter((c) => !['Completed', 'Closed'].includes(c.status)).length,
+        completedThisMonth: claims.filter((c) => {
+          const createdAt = new Date(c.created_at);
+          return (
+            c.status === 'Completed' &&
+            createdAt.getMonth() === thisMonth &&
+            createdAt.getFullYear() === thisYear
+          );
+        }).length,
+        pendingInspections: claims.filter((c) => c.status === 'Under Review').length,
+        totalValue: claims.reduce((sum, c) => sum + (c.estimated_value || 0), 0),
+        avgProcessingTime: '12 days', // Would need more data to calculate
+        recentClaims: claims.slice(0, 4),
+      };
+
       setStats(dashboardStats);
       setError('');
     } catch (err) {

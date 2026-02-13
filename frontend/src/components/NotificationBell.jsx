@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Bell, Check, CheckCheck, FileText, UserPlus, RefreshCw, 
+import {
+  Bell, Check, CheckCheck, FileText, UserPlus, RefreshCw,
   Wifi, WifiOff, X, Flame, Trophy, MessageSquare, AlertCircle,
   ChevronRight
 } from 'lucide-react';
 import { Button } from '../shared/ui/button';
-import ApiService from '../services/ApiService';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPut, API_URL } from '@/lib/api';
 
 const NotificationBell = () => {
   const navigate = useNavigate();
@@ -173,13 +171,10 @@ const NotificationBell = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/notifications?limit=30`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      const data = await response.json();
-      setNotifications(data.notifications || data || []);
+      const res = await apiGet('/api/notifications?limit=30');
+      if (res.ok) {
+        setNotifications(res.data.notifications || res.data || []);
+      }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -189,13 +184,10 @@ const NotificationBell = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/notifications/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      const data = await response.json();
-      setUnreadCount(data.unread_count || data.count || 0);
+      const res = await apiGet('/api/notifications/unread-count');
+      if (res.ok) {
+        setUnreadCount(res.data.unread_count || res.data.count || 0);
+      }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
     }
@@ -205,21 +197,18 @@ const NotificationBell = () => {
     // Mark as read
     if (!notification.is_read) {
       try {
-        await fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-          }
-        });
-        setNotifications(prev => 
-          prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        const res = await apiPut(`/api/notifications/${notification.id}/read`);
+        if (res.ok) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+          );
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
       } catch (err) {
         console.error('Failed to mark notification as read:', err);
       }
     }
-    
+
     // Navigate to cta_route if available, otherwise fallback to claim_id
     if (notification.cta_route) {
       navigate(notification.cta_route);
@@ -232,14 +221,11 @@ const NotificationBell = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await fetch(`${API_URL}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+      const res = await apiPut('/api/notifications/read-all');
+      if (res.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+      }
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }

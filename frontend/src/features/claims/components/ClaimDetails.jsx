@@ -5,7 +5,7 @@ import { Button } from '../../../shared/ui/button';
 import { Badge } from '../../../shared/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../shared/ui/dialog';
-import ApiService from '../../../services/ApiService';
+import { apiGet, apiPost, apiPut } from '@/lib/api';
 import {
   ArrowLeft,
   Edit,
@@ -168,17 +168,22 @@ const ClaimDetails = () => {
   const fetchClaimData = useCallback(async () => {
     try {
       setLoading(true);
-      const [claimData, notesData, docsData, readinessData] = await Promise.all([
-        ApiService.getClaim(claimId),
-        ApiService.getClaimNotes(claimId).catch(() => []),
-        ApiService.getClaimDocuments(claimId).catch(() => []),
-        ApiService.getFloridaClaimReadiness(claimId).catch(() => null),
+      const [claimRes, notesRes, docsRes, readinessRes] = await Promise.all([
+        apiGet(`/api/claims/${claimId}`),
+        apiGet(`/api/claims/${claimId}/notes`).catch(() => ({ ok: false, data: [] })),
+        apiGet(`/api/claims/${claimId}/documents`).catch(() => ({ ok: false, data: [] })),
+        apiGet(`/api/claims/${claimId}/florida-readiness`).catch(() => ({ ok: false, data: null })),
       ]);
-      setClaim(claimData);
-      setEditForm(claimData);
-      setNotes(notesData);
-      setDocuments(docsData);
-      setFloridaReadiness(readinessData);
+
+      if (!claimRes.ok) {
+        throw new Error(claimRes.error || 'Failed to fetch claim');
+      }
+
+      setClaim(claimRes.data);
+      setEditForm(claimRes.data);
+      setNotes(notesRes.ok ? notesRes.data : []);
+      setDocuments(docsRes.ok ? docsRes.data : []);
+      setFloridaReadiness(readinessRes.ok ? readinessRes.data : null);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -258,8 +263,14 @@ const ClaimDetails = () => {
         // Add note about the scheduled appointment
         const appointmentNote = `📅 Appointment scheduled: ${appointmentForm.title} on ${new Date(appointmentForm.date).toLocaleDateString()} at ${appointmentForm.time}`;
         try {
-          const note = await ApiService.addClaimNote(claimId, appointmentNote);
-          setNotes([note, ...notes]);
+          const noteRes = await apiPost(`/api/claims/${claimId}/notes`, {
+            claim_id: claimId,
+            content: appointmentNote,
+            tags: [],
+          });
+          if (noteRes.ok) {
+            setNotes([noteRes.data, ...notes]);
+          }
         } catch (e) {
           // Note failed, but appointment was created
         }
@@ -287,8 +298,17 @@ const ClaimDetails = () => {
 
     try {
       setAddingNote(true);
-      const note = await ApiService.addClaimNote(claimId, newNote.trim());
-      setNotes([note, ...notes]);
+      const res = await apiPost(`/api/claims/${claimId}/notes`, {
+        claim_id: claimId,
+        content: newNote.trim(),
+        tags: [],
+      });
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to add note');
+      }
+
+      setNotes([res.data, ...notes]);
       setNewNote('');
     } catch (err) {
       toast.error('Failed to add note: ' + err.message);
@@ -310,8 +330,13 @@ const ClaimDetails = () => {
   const handleSaveEdit = async () => {
     try {
       setSaving(true);
-      const updated = await ApiService.updateClaim(claimId, editForm);
-      setClaim(updated);
+      const res = await apiPut(`/api/claims/${claimId}`, editForm);
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to update claim');
+      }
+
+      setClaim(res.data);
       setIsEditing(false);
       toast.success('Claim updated successfully');
     } catch (err) {
@@ -585,8 +610,13 @@ Generated on: ${new Date().toLocaleString()}
   const handleGenerateDemandManifest = async () => {
     try {
       setLoadingDemandManifest(true);
-      const manifest = await ApiService.getDemandPackageManifest(claimId);
-      setDemandManifest(manifest);
+      const res = await apiGet(`/api/claims/${claimId}/demand-package-manifest`);
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to generate demand package manifest');
+      }
+
+      setDemandManifest(res.data);
       toast.success('Demand package manifest generated');
     } catch (err) {
       toast.error(err.message || 'Failed to generate demand package manifest');
@@ -598,7 +628,13 @@ Generated on: ${new Date().toLocaleString()}
   const handleGenerateCopilotActions = async () => {
     try {
       setLoadingCopilotActions(true);
-      const result = await ApiService.getClaimCopilotActions(claimId);
+      const res = await apiPost(`/api/ai/claims/${claimId}/copilot-next-actions`, {});
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to generate copilot actions');
+      }
+
+      const result = res.data;
       setCopilotActions(Array.isArray(result?.actions) ? result.actions : []);
       setCopilotEvidenceGaps(Array.isArray(result?.evidence_gaps) ? result.evidence_gaps : []);
       setCopilotMeta({

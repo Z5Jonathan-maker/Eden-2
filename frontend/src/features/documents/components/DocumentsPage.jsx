@@ -14,9 +14,7 @@ import {
 } from 'lucide-react';
 import { NAV_ICONS } from '../../../assets/badges';
 import ClaimSelector from './ClaimSelector';
-import ApiService from '../../../services/ApiService';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiPut, apiPost, API_URL } from '@/lib/api';
 const getToken = () => localStorage.getItem('eden_token');
 
 const Documents = () => {
@@ -385,12 +383,18 @@ const Documents = () => {
     const applyKey = String(doc?.id || doc?.name || '');
     try {
       setApplyingExtractionByDocId((prev) => ({ ...prev, [applyKey]: true }));
-      await ApiService.updateClaim(selectedClaimId, updates);
+
+      const res = await apiPut(`/api/claims/${selectedClaimId}`, updates);
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to update claim');
+      }
+
       try {
-        await ApiService.addClaimNote(
-          selectedClaimId,
-          `AI extraction applied from document "${doc?.name || 'document'}". Updated fields: ${fieldNames.join(', ')}.`
-        );
+        await apiPost(`/api/claims/${selectedClaimId}/notes`, {
+          claim_id: selectedClaimId,
+          content: `AI extraction applied from document "${doc?.name || 'document'}". Updated fields: ${fieldNames.join(', ')}.`,
+          tags: [],
+        });
       } catch (noteErr) {
         // Non-blocking: claim update already succeeded.
       }

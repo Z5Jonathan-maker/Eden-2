@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../shared/ui/button';
-import ApiService from '../services/ApiService';
+import { apiPost } from '@/lib/api';
 import { ArrowLeft, Save, Loader2, AlertCircle, Target } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 
@@ -44,8 +44,13 @@ const NewClaim = () => {
         ...formData,
         estimated_value: parseFloat(formData.estimated_value) || 0
       };
-      const newClaim = await ApiService.createClaim(claimData);
-      navigate(`/claims/${newClaim.id}`);
+      const res = await apiPost('/api/claims/', claimData);
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to create claim');
+      }
+
+      navigate(`/claims/${res.data.id}`);
     } catch (err) {
       setError(err.message);
     } finally {

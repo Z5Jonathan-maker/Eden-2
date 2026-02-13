@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
-import ApiService from '../services/ApiService';
+import { apiGet } from '@/lib/api';
 import NotificationBell from './NotificationBell';
 import {
   FolderOpen,
@@ -36,8 +36,13 @@ const ClientPortal = () => {
   const fetchClaims = async () => {
     try {
       setLoading(true);
-      const data = await ApiService.getClaims();
-      setClaims(data);
+      const res = await apiGet('/api/claims/');
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to fetch claims');
+      }
+
+      setClaims(res.data || []);
       setError('');
     } catch (err) {
       setError(err.message);

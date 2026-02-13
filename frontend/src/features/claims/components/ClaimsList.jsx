@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../../../services/ApiService';
+import { apiGet } from '@/lib/api';
 import {
   Search,
   Plus,
@@ -42,8 +42,14 @@ const ClaimsList = () => {
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await ApiService.getClaims(filterStatus);
-      setClaims(data);
+      const query = filterStatus && filterStatus !== 'All' ? `?filter_status=${encodeURIComponent(filterStatus)}` : '';
+      const res = await apiGet(`/api/claims/${query}`);
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to fetch claims');
+      }
+
+      setClaims(res.data || []);
       setError('');
     } catch (err) {
       setError(err.message);
