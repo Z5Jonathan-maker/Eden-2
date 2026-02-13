@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setSentryUser, clearSentryUser } from '../lib/sentry';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL;
 
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+          setSentryUser(userData); // Track user in Sentry
         } else {
           // Not authenticated or session expired
           setUser(null);
@@ -87,6 +89,7 @@ export const AuthProvider = ({ children }) => {
 
       // Store user data in state (no token storage needed - it's in httpOnly cookie)
       setUser(data.user);
+      setSentryUser(data.user); // Track user in Sentry
 
       return { success: true };
     } catch (error) {
@@ -149,7 +152,8 @@ export const AuthProvider = ({ children }) => {
       console.error('[Auth] Logout request failed:', error);
       // Continue with local logout even if backend call fails
     } finally {
-      // Clear local state
+      // Clear local state and Sentry tracking
+      clearSentryUser();
       setUser(null);
     }
   };

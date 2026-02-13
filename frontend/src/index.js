@@ -1,7 +1,12 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { initSentry } from './lib/sentry';
+
+// ============ SENTRY INITIALIZATION ============
+// Initialize error tracking before React loads
+initSentry();
 
 // ============ ENVIRONMENT VALIDATION ============
 // Fail fast if critical environment variables are missing

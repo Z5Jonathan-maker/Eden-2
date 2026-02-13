@@ -31,6 +31,8 @@
     "@radix-ui/react-toggle-group": "^1.1.7",
     "@radix-ui/react-tooltip": "^1.2.4",
     "@react-leaflet/core": "^2.1.0",
+    "@sentry/react": "^10.38.0",
+    "@sentry/tracing": "^7.120.4",
     "@twilio/conversations": "^2.6.5",
     "ajv": "^6.12.6",
     "ajv-keywords": "^3.5.2",
