@@ -1,0 +1,99 @@
+.mycard-theme {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.mycard-theme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mycard-theme--tactical {
+  background:
+    radial-gradient(circle at top right, rgba(6, 182, 212, 0.2), transparent 32%),
+    linear-gradient(160deg, #0f172a 0%, #020617 70%);
+}
+
+.mycard-theme--tactical::before {
+  background-image:
+    linear-gradient(rgba(30, 41, 59, 0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.45) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.55;
+}
+
+.mycard-theme--field {
+  background:
+    radial-gradient(circle at center, rgba(245, 158, 11, 0.12), transparent 52%),
+    repeating-linear-gradient(135deg, rgba(24, 44, 26, 0.9) 0, rgba(24, 44, 26, 0.9) 10px, rgba(44, 65, 31, 0.9) 10px, rgba(44, 65, 31, 0.9) 20px);
+}
+
+.mycard-theme--field::before {
+  background: conic-gradient(from 220deg, transparent 0deg 300deg, rgba(251, 191, 36, 0.2) 320deg 360deg);
+  transform-origin: 50% 50%;
+  animation: mycard-radar-sweep 4.2s linear infinite;
+  opacity: 0.6;
+}
+
+.mycard-theme--elite {
+  background:
+    linear-gradient(160deg, rgba(15, 15, 18, 0.96), rgba(8, 8, 11, 0.98)),
+    repeating-linear-gradient(45deg, rgba(63, 63, 70, 0.4) 0, rgba(63, 63, 70, 0.4) 2px, transparent 2px, transparent 8px);
+}
+
+.mycard-theme--elite::before {
+  background: linear-gradient(115deg, transparent 15%, rgba(250, 204, 21, 0.22) 48%, transparent 82%);
+  transform: translateX(-110%);
+  animation: mycard-sheen 5.5s ease-in-out infinite;
+}
+
+.mycard-corner-brackets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mycard-corner-brackets span {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: rgba(34, 211, 238, 0.9);
+  border-style: solid;
+}
+
+.mycard-corner-brackets span:nth-child(1) { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+.mycard-corner-brackets span:nth-child(2) { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+.mycard-corner-brackets span:nth-child(3) { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+.mycard-corner-brackets span:nth-child(4) { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+.mycard-radar-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: inset 0 0 28px rgba(251, 191, 36, 0.12);
+  pointer-events: none;
+}
+
+.mycard-gold-trim {
+  position: absolute;
+  inset: 6px;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(250, 204, 21, 0.55);
+  pointer-events: none;
+}
+
+@keyframes mycard-radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes mycard-sheen {
+  0%, 65%, 100% { transform: translateX(-110%); }
+  35% { transform: translateX(120%); }
+}

@@ -1,5 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+const e2eBackendUrl = process.env.E2E_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://eden-gsot.onrender.com';
 
 /**
  * Eden E2E Test Configuration
@@ -54,9 +55,10 @@ module.exports = defineConfig({
   ],
 
   /* Run local server before tests */
-  // webServer: {
-  //   command: 'yarn start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  webServer: {
+    command: `cross-env REACT_APP_BACKEND_URL=${e2eBackendUrl} npm start`,
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 180000,
+  },
 });

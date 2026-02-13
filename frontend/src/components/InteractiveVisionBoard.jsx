@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
@@ -38,6 +38,11 @@ const InteractiveVisionBoard = () => {
   const [stats, setStats] = useState(null);
   const [showAddVision, setShowAddVision] = useState(false);
   const [showTeamPost, setShowTeamPost] = useState(false);
+  const [saveState, setSaveState] = useState('idle');
+  const [savePulse, setSavePulse] = useState(false);
+  const [journalReady, setJournalReady] = useState(false);
+  const initialJournalSync = useRef(false);
+  const autoSaveTimerRef = useRef(null);
   
   // Journal form
   const [journalForm, setJournalForm] = useState({
@@ -66,6 +71,23 @@ const InteractiveVisionBoard = () => {
     content: '',
     post_type: 'encouragement'
   });
+
+  const moodOrder = ['tough', 'challenging', 'okay', 'good', 'great'];
+  const moodByValue = { 1: 'tough', 2: 'challenging', 3: 'okay', 4: 'good', 5: 'great' };
+  const moodValue = moodOrder.indexOf(journalForm.mood) + 1 || 3;
+  const moodColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'];
+  const moodEmojis = ['[LOW]', '[CHALLENGE]', '[OK]', '[GOOD]', '[GREAT]'];
+  const energyGlow = Math.min(0.95, 0.2 + (journalForm.energy_level / 10) * 0.75);
+  const monthProgress = useMemo(() => {
+    const current = journalHistory?.stats?.days_this_month || 0;
+    const max = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    return Math.min(100, Math.round((current / max) * 100));
+  }, [journalHistory?.stats?.days_this_month]);
+
+  const gratitudeEntries = journalForm.gratitude.filter((item) => item.trim());
+  const beliefEntries = journalForm.beliefs.filter((item) => item.trim());
+  const winEntries = journalForm.wins.filter((item) => item.trim());
+  const isStreakHot = (journalHistory?.stats?.current_streak || 0) > 7;
 
   const fetchData = useCallback(async () => {
     try {
@@ -104,6 +126,7 @@ const InteractiveVisionBoard = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
+      setJournalReady(true);
       setLoading(false);
     }
   }, []);
@@ -112,8 +135,9 @@ const InteractiveVisionBoard = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleSaveJournal = async () => {
+  const handleSaveJournal = useCallback(async ({ silent = false } = {}) => {
     try {
+      setSaveState('saving');
       const cleanGratitude = journalForm.gratitude.filter(g => g.trim());
       const cleanBeliefs = journalForm.beliefs.filter(b => b.trim());
       const cleanWins = journalForm.wins.filter(w => w.trim());
@@ -133,12 +157,41 @@ const InteractiveVisionBoard = () => {
       });
 
       if (res.ok) {
-        fetchData();
+        setSaveState('saved');
+        setSavePulse(true);
+        if (!silent) {
+          fetchData();
+        }
+        setTimeout(() => setSavePulse(false), 450);
+        setTimeout(() => setSaveState('idle'), 1400);
       }
     } catch (error) {
+      setSaveState('idle');
       console.error('Error saving journal:', error);
     }
-  };
+  }, [journalForm, fetchData]);
+
+  useEffect(() => {
+    if (!journalReady) return undefined;
+    if (!initialJournalSync.current) {
+      initialJournalSync.current = true;
+      return undefined;
+    }
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSaveJournal({ silent: true });
+    }, 850);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [journalForm, journalReady, handleSaveJournal]);
 
   const handleAddVisionItem = async () => {
     try {
@@ -234,11 +287,11 @@ const InteractiveVisionBoard = () => {
 
   const getMoodEmoji = (mood) => {
     const moods = {
-      great: '🔥',
-      good: '😊',
-      okay: '😐',
-      challenging: '😤',
-      tough: '😔'
+      great: '[GREAT]',
+      good: '[GOOD]',
+      okay: '[OK]',
+      challenging: '[CHALLENGE]',
+      tough: '[LOW]'
     };
     return moods[mood] || '';
   };
@@ -317,15 +370,26 @@ const InteractiveVisionBoard = () => {
             {/* Journal Form */}
             <div className="lg:col-span-2 space-y-6">
               <div className="card-tactical p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Feather className="w-5 h-5 text-purple-400" />
-                  <h3 className="font-tactical font-bold text-white uppercase">Today&apos;s Journal</h3>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Feather className="w-5 h-5 text-purple-400" />
+                    <h3 className="font-tactical font-bold text-white uppercase">Today&apos;s Journal</h3>
+                  </div>
+                  <div className={`vision-fade-in text-xs font-mono uppercase tracking-wider ${saveState === 'saved' ? 'text-emerald-400' : 'text-cyan-300'}`}>
+                    {saveState === 'saving' && 'Saving...'}
+                    {saveState === 'saved' && (
+                      <span className={`inline-flex items-center gap-1 ${savePulse ? 'vision-save-checkmark' : ''}`}>
+                        <Check className="w-3 h-3" /> Saved
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-6">
-                  {/* Gratitude */}
+                                    {/* Gratitude */}
                   <div>
                     <label className="block text-sm font-mono text-zinc-300 mb-2 uppercase tracking-wider">
-                      🙏 What I&apos;m Grateful For
+                      What I&apos;m Grateful For
+                      {journalForm.is_shared && <span className="ml-2 rounded-full bg-cyan-500/20 text-cyan-300 px-2 py-0.5 text-[10px]">Shared with team</span>}
                     </label>
                     {journalForm.gratitude.map((item, i) => (
                       <input
@@ -337,19 +401,24 @@ const InteractiveVisionBoard = () => {
                           newGratitude[i] = e.target.value;
                           setJournalForm({...journalForm, gratitude: newGratitude});
                         }}
-                        className="input-tactical w-full mb-2"
+                        className="input-tactical w-full mb-2 vision-fade-in"
                         placeholder={`Gratitude ${i + 1}...`}
                       />
                     ))}
+                    {gratitudeEntries.length === 0 && (
+                      <div className="text-slate-500 text-sm italic">
+                        Nothing here yet - start writing to build your journey.
+                      </div>
+                    )}
                   </div>
 
                   {/* Beliefs */}
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      ✨ What I&apos;m Believing For
+                      What I&apos;m Believing For
                     </label>
                     {journalForm.beliefs.map((item, i) => (
-                      <div key={i} className="flex gap-2 mb-2">
+                      <div key={i} className="flex gap-2 mb-2 vision-slide-up">
                         <input
                           type="text"
                           value={item}
@@ -372,15 +441,21 @@ const InteractiveVisionBoard = () => {
                         )}
                       </div>
                     ))}
+                    {beliefEntries.length === 0 && (
+                      <div className="text-slate-500 text-sm italic">
+                        Nothing here yet - start writing to build your journey.
+                      </div>
+                    )}
                   </div>
 
                   {/* Wins */}
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      🏆 Today&apos;s Wins
+                      Today&apos;s Wins
+                      {journalForm.is_shared && <span className="ml-2 rounded-full bg-cyan-500/20 text-cyan-300 px-2 py-0.5 text-[10px]">Shared with team</span>}
                     </label>
                     {journalForm.wins.map((item, i) => (
-                      <div key={i} className="flex gap-2 mb-2">
+                      <div key={i} className="flex gap-2 mb-2 vision-slide-up">
                         <input
                           type="text"
                           value={item}
@@ -403,50 +478,69 @@ const InteractiveVisionBoard = () => {
                         )}
                       </div>
                     ))}
+                    {winEntries.length === 0 && (
+                      <div className="text-slate-500 text-sm italic">
+                        Nothing here yet - start writing to build your journey.
+                      </div>
+                    )}
                   </div>
 
                   {/* Thoughts */}
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700">
-                      💭 My Thoughts (Private)
+                      My Thoughts (Private)
                     </label>
                     <Textarea
                       value={journalForm.thoughts}
                       onChange={(e) => setJournalForm({...journalForm, thoughts: e.target.value})}
                       placeholder="What's on your mind today..."
                       rows={4}
-                      className="focus:ring-2 focus:ring-purple-500"
+                      className="focus:ring-2 focus:ring-purple-500 vision-fade-in"
                     />
+                    {!journalForm.thoughts.trim() && (
+                      <div className="text-slate-500 text-sm italic mt-2">
+                        Nothing here yet - start writing to build your journey.
+                      </div>
+                    )}
                   </div>
 
-                  {/* Mood & Energy */}
+                                    {/* Mood & Energy */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2 text-gray-700">Mood</label>
-                      <select
-                        value={journalForm.mood}
-                        onChange={(e) => setJournalForm({...journalForm, mood: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      <div
+                        className="rounded-lg border border-slate-700 p-3 vision-mood-shift"
+                        style={{ background: `linear-gradient(90deg, ${moodColors[0]}, ${moodColors[moodValue - 1]})` }}
                       >
-                        <option value="">Select mood...</option>
-                        <option value="great">🔥 Great</option>
-                        <option value="good">😊 Good</option>
-                        <option value="okay">😐 Okay</option>
-                        <option value="challenging">😤 Challenging</option>
-                        <option value="tough">😔 Tough</option>
-                      </select>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={moodValue}
+                          onChange={(e) => setJournalForm({...journalForm, mood: moodByValue[parseInt(e.target.value, 10)]})}
+                          className="w-full"
+                        />
+                        <p className="text-center text-sm text-white mt-1">
+                          {moodEmojis[moodValue - 1]} {journalForm.mood || 'okay'}
+                        </p>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2 text-gray-700">Energy (1-10)</label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={journalForm.energy_level}
-                        onChange={(e) => setJournalForm({...journalForm, energy_level: parseInt(e.target.value)})}
-                        className="w-full"
-                      />
-                      <p className="text-center text-sm text-gray-500">{journalForm.energy_level}/10</p>
+                      <div
+                        className={`rounded-lg border border-cyan-500/30 p-3 ${journalForm.energy_level >= 8 ? 'vision-pulse-glow' : ''}`}
+                        style={{ boxShadow: `0 0 18px rgba(34, 211, 238, ${energyGlow})` }}
+                      >
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={journalForm.energy_level}
+                          onChange={(e) => setJournalForm({...journalForm, energy_level: parseInt(e.target.value, 10)})}
+                          className="w-full"
+                        />
+                        <p className="text-center text-sm text-gray-200">{journalForm.energy_level}/10</p>
+                      </div>
                     </div>
                   </div>
 
@@ -464,6 +558,34 @@ const InteractiveVisionBoard = () => {
                     </label>
                   </div>
 
+                  {journalForm.is_shared && (
+                    <div className="rounded-xl border border-cyan-500/30 bg-slate-900/50 p-3 vision-fade-in">
+                      <p className="text-xs uppercase tracking-wider text-cyan-300 mb-2">Team Preview</p>
+                      <div className="text-sm text-slate-300">
+                        <p className="mb-1 font-medium">Gratitude:</p>
+                        {gratitudeEntries.length > 0 ? (
+                          <ul className="list-disc list-inside text-slate-400">
+                            {gratitudeEntries.slice(0, 3).map((item, index) => (
+                              <li key={`g-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="italic text-slate-500">Add gratitude entries to share.</p>
+                        )}
+                        <p className="mt-3 mb-1 font-medium">Wins:</p>
+                        {winEntries.length > 0 ? (
+                          <ul className="list-disc list-inside text-slate-400">
+                            {winEntries.slice(0, 3).map((item, index) => (
+                              <li key={`w-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="italic text-slate-500">Add wins to share.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <Button onClick={handleSaveJournal} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                     Save Journal Entry
                   </Button>
@@ -476,19 +598,25 @@ const InteractiveVisionBoard = () => {
               <div className="card-tactical p-5">
                 <h3 className="font-tactical font-bold text-white uppercase mb-4">Your Journey</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Current Streak</span>
+                  <div className={`flex items-center justify-between rounded-lg border px-3 py-2 ${isStreakHot ? 'border-purple-500/40 vision-pulse-glow' : 'border-zinc-700/40'}`}>
+                    <span className="text-zinc-300 flex items-center gap-2"><Award className="w-4 h-4 text-purple-400" />Current Streak</span>
                     <span className="text-2xl font-bold text-purple-400">
                       {journalHistory?.stats?.current_streak || 0} days
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Total Entries</span>
+                    <span className="text-zinc-400 flex items-center gap-2"><BookOpen className="w-4 h-4 text-cyan-400" />Total Entries</span>
                     <span className="font-medium text-white">{journalHistory?.stats?.total_entries || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">This Month</span>
+                    <span className="text-zinc-400 flex items-center gap-2"><Calendar className="w-4 h-4 text-amber-400" />This Month</span>
                     <span className="font-medium text-white">{journalHistory?.stats?.days_this_month || 0} days</span>
+                  </div>
+                  <div className="pt-1">
+                    <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
+                      <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 vision-fade-in" style={{ width: `${monthProgress}%` }} />
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-1">{monthProgress}% of month logged</p>
                   </div>
                 </div>
               </div>
@@ -517,83 +645,67 @@ const InteractiveVisionBoard = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">My Vision Board</h2>
               <Button onClick={() => setShowAddVision(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-2" /> Add Vision
+                <Plus className="w-4 h-4 mr-2" /> Add Vision Item
               </Button>
             </div>
 
-            {/* Categories */}
-            {visionItems?.categories?.map((cat) => {
-              const items = visionItems.by_category?.[cat.id] || [];
-              if (items.length === 0) return null;
-              
-              return (
-                <div key={cat.id} className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
-                      {getCategoryIcon(cat.id)}
-                    </div>
-                    <h3 className="font-medium text-gray-800">{cat.name}</h3>
-                    <Badge variant="outline">{items.length}</Badge>
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {items.map((item) => (
-                      <div key={item.id} className={`relative overflow-hidden ${item.is_achieved ? 'bg-green-50 border-green-200' : ''}`}>
-                        {item.image_url && (
-                          <div className="h-32 bg-gray-100">
-                            <img src={`${API_URL}${item.image_url}`} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <div className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium">{item.title}</h4>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleToggleAchieved(item.id, item.is_achieved)}
-                              >
-                                <Check className={`w-4 h-4 ${item.is_achieved ? 'text-green-600' : 'text-gray-600'}`} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteVisionItem(item.id)}
-                              >
-                                <Trash2 className="w-4 h-4 text-gray-600" />
-                              </Button>
-                            </div>
-                          </div>
-                          {item.description && (
-                            <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                          )}
-                          {item.affirmation && (
-                            <p className="text-sm italic text-purple-600 mb-2">&ldquo;{item.affirmation}&rdquo;</p>
-                          )}
-                          {item.target_date && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <Calendar className="w-3 h-3" />
-                              {item.target_date}
-                            </div>
-                          )}
-                          {item.is_achieved && (
-                            <Badge className="mt-2 bg-green-100 text-green-800">Achieved! 🎉</Badge>
-                          )}
+                        {/* Categories */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visionItems?.items?.map((item) => {
+                const itemType = item.affirmation ? 'Quote' : item.target_date ? 'Milestone' : item.image_url ? 'Image Goal' : 'Goal';
+                const categoryMeta = visionItems?.categories?.find((cat) => cat.id === item.category);
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-slate-900/60 border border-slate-700 rounded-xl p-4 transition-all duration-300 vision-card-hover relative overflow-hidden ${item.is_achieved ? 'border-emerald-400/40' : ''}`}
+                  >
+                    <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,rgba(15,23,42,0.35)_1px,transparent_1px),linear-gradient(180deg,rgba(15,23,42,0.35)_1px,transparent_1px)] bg-[size:24px_24px] opacity-30" />
+                    {item.image_url ? (
+                      <img src={`${API_URL}${item.image_url}`} alt={item.title} className="rounded-lg mb-3 h-36 w-full object-cover" />
+                    ) : (
+                      <div className="rounded-lg mb-3 h-36 w-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500">
+                        <Image className="w-6 h-6" />
+                      </div>
+                    )}
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-slate-800 border border-slate-600 text-slate-300">{itemType}</Badge>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleAchieved(item.id, item.is_achieved)}>
+                            <Check className={`w-4 h-4 ${item.is_achieved ? 'text-emerald-400' : 'text-slate-400'}`} />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteVisionItem(item.id)}>
+                            <Trash2 className="w-4 h-4 text-slate-500" />
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-slate-200 font-semibold">{item.title}</div>
+                      <div className="text-slate-400 text-sm mt-1">{item.description || item.affirmation || 'Define this vision in one line.'}</div>
+                      <div className="mt-3 text-xs text-slate-500 flex items-center gap-2">
+                        {categoryMeta ? <span>{categoryMeta.name}</span> : <span>{item.category}</span>}
+                        {item.target_date && (
+                          <>
+                            <span>•</span>
+                            <span>{item.target_date}</span>
+                          </>
+                        )}
+                      </div>
+                      {item.is_achieved && (
+                        <Badge className="mt-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">Achieved</Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             {(!visionItems?.items || visionItems.items.length === 0) && (
               <div className="text-center py-12">
-                <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 mb-2">Start Your Vision Board</h3>
-                <p className="text-gray-500 mb-4">Add your dreams, goals, and aspirations</p>
+                <Target className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-200 mb-2">Start Your Vision Board</h3>
+                <p className="text-slate-400 mb-4">Build your board with goals, quotes, milestones, and image anchors.</p>
                 <Button onClick={() => setShowAddVision(true)} className="bg-purple-600 hover:bg-purple-700">
-                  <Plus className="w-4 h-4 mr-2" /> Add Your First Vision
+                  <Plus className="w-4 h-4 mr-2" /> Add Vision Item
                 </Button>
               </div>
             )}
@@ -650,13 +762,13 @@ const InteractiveVisionBoard = () => {
                   <div className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                        🙏
+                        GR
                       </div>
                       <div>
                         <p className="font-medium text-yellow-800">{entry.user_name}&apos;s Gratitude</p>
                         <ul className="text-sm text-yellow-700 mt-1">
                           {entry.gratitude?.map((g, i) => (
-                            <li key={i}>• {g}</li>
+                            <li key={i}>- {g}</li>
                           ))}
                         </ul>
                       </div>
@@ -705,7 +817,7 @@ const InteractiveVisionBoard = () => {
                   <h3 className="font-medium text-stone-600">Founder&apos;s Note</h3>
                 </div>
                 <p className="text-stone-600 leading-relaxed">
-                  Eden was born from frustration—piecing together a dozen apps that were each &ldquo;good enough&rdquo; but none truly excellent. 
+                  Eden was born from frustration - piecing together a dozen apps that were each &ldquo;good enough&rdquo; but none truly excellent. 
                   But more than frustration, Eden was born from conviction: that the people we serve deserve better. 
                   They deserve advocates who aren&apos;t drowning in administrative chaos. They deserve systems built with 
                   the same excellence we&apos;d want for our own families.
@@ -718,6 +830,39 @@ const InteractiveVisionBoard = () => {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes visionFadeIn {
+          from { opacity: 0.25; }
+          to { opacity: 1; }
+        }
+        @keyframes visionSlideUp {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes visionPulseGlow {
+          0%, 100% { box-shadow: 0 0 0 rgba(147, 51, 234, 0.25); }
+          50% { box-shadow: 0 0 18px rgba(147, 51, 234, 0.55); }
+        }
+        @keyframes visionMoodShift {
+          from { filter: saturate(0.9); }
+          to { filter: saturate(1.1); }
+        }
+        @keyframes visionSaveCheck {
+          0% { transform: scale(0.85); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .vision-fade-in { animation: visionFadeIn 240ms ease-in-out; }
+        .vision-slide-up { animation: visionSlideUp 280ms ease-out; }
+        .vision-pulse-glow { animation: visionPulseGlow 1.8s ease-in-out infinite; }
+        .vision-mood-shift { animation: visionMoodShift 260ms ease-in-out; }
+        .vision-save-checkmark { animation: visionSaveCheck 220ms ease-out; }
+        .vision-card-hover:hover {
+          border-color: rgba(56, 189, 248, 0.45);
+          box-shadow: 0 0 22px rgba(56, 189, 248, 0.18);
+          transform: translateY(-2px);
+        }
+      `}</style>
 
       {/* Add Vision Modal */}
       {showAddVision && (
@@ -813,11 +958,11 @@ const InteractiveVisionBoard = () => {
                   onChange={(e) => setTeamPostForm({...teamPostForm, post_type: e.target.value})}
                   className="w-full px-3 py-2 border rounded-lg"
                 >
-                  <option value="encouragement">💪 Encouragement</option>
-                  <option value="gratitude">🙏 Gratitude</option>
-                  <option value="win">🏆 Win/Celebration</option>
-                  <option value="quote">💡 Quote/Inspiration</option>
-                  <option value="milestone">🎯 Milestone</option>
+                  <option value="encouragement">Encouragement</option>
+                  <option value="gratitude">Gratitude</option>
+                  <option value="win">Win/Celebration</option>
+                  <option value="quote">Quote/Inspiration</option>
+                  <option value="milestone">Milestone</option>
                 </select>
               </div>
               
@@ -849,3 +994,8 @@ const InteractiveVisionBoard = () => {
 };
 
 export default InteractiveVisionBoard;
+
+
+
+
+

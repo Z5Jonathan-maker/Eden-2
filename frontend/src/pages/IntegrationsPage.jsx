@@ -18,7 +18,7 @@ import {
   Check, X, Loader2, ExternalLink, RefreshCw,
   Settings, Link2, Unlink, ChevronRight
 } from 'lucide-react';
-import { api, API_URL, getToken } from '../lib/api';
+import { api, API_URL } from '../lib/api';
 
 const IntegrationCard = ({ 
   name, 

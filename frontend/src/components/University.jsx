@@ -5,7 +5,7 @@
  * Refactored to use modular components from ./university/
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UniversityHeader from './university/UniversityHeader';
 import StatsBanner from './university/StatsBanner';
@@ -58,18 +58,11 @@ function University() {
     is_published: false
   });
 
-  const getToken = () => localStorage.getItem('eden_token');
+  const getToken = useCallback(() => localStorage.getItem('eden_token'), []);
   const canEdit = user && (user.role === 'admin' || user.role === 'manager');
 
-  // Initial data fetch
-  useEffect(() => {
-    fetchCompanySettings();
-    fetchData();
-    fetchCustomContent();
-  }, []);
-
   // API Functions
-  const fetchCompanySettings = async () => {
+  const fetchCompanySettings = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/settings/company`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -85,7 +78,7 @@ function University() {
       setUniversityName('Your Firm University');
       setEditedName('Your Firm University');
     }
-  };
+  }, [getToken]);
 
   const saveUniversityName = async () => {
     try {
@@ -104,7 +97,7 @@ function University() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const headers = { 'Authorization': `Bearer ${getToken()}` };
     
@@ -132,7 +125,7 @@ function University() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
   const fetchVideoSources = async () => {
     try {
@@ -146,7 +139,7 @@ function University() {
     }
   };
 
-  const fetchCustomContent = async () => {
+  const fetchCustomContent = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/university/custom/all`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -156,7 +149,14 @@ function University() {
     } catch (err) {
       console.error('Failed to fetch custom content:', err);
     }
-  };
+  }, [getToken]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchCompanySettings();
+    fetchData();
+    fetchCustomContent();
+  }, [fetchCompanySettings, fetchData, fetchCustomContent]);
 
   // Content Management Functions
   const handleCreateContent = async () => {

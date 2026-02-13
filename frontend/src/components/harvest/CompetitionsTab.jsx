@@ -9,10 +9,20 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
-import { 
-  Flame, Trophy, Clock, Users, Target, Plus, 
-  Medal, TrendingUp, Calendar, Gift, ChevronRight,
-  Crown, Star
+import {
+  Flame,
+  Trophy,
+  Clock,
+  Users,
+  Target,
+  Plus,
+  Medal,
+  TrendingUp,
+  Calendar,
+  Gift,
+  ChevronRight,
+  Crown,
+  Star,
 } from 'lucide-react';
 
 // Create Competition Modal
@@ -24,7 +34,7 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
     metric: 'doors',
     start_date: new Date().toISOString().split('T')[0],
     end_date: '',
-    target_value: ''
+    target_value: '',
   });
 
   if (!show) return null;
@@ -39,7 +49,7 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
       metric: 'doors',
       start_date: new Date().toISOString().split('T')[0],
       end_date: '',
-      target_value: ''
+      target_value: '',
     });
   };
 
@@ -57,28 +67,28 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
             <label className="text-sm text-zinc-400 mb-1 block">Title *</label>
             <Input
               value={form.title}
-              onChange={(e) => setForm({...form, title: e.target.value})}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="Weekly Door Blitz"
               className="bg-zinc-800 border-zinc-600 text-white"
             />
           </div>
-          
+
           <div>
             <label className="text-sm text-zinc-400 mb-1 block">Description</label>
             <Input
               value={form.description}
-              onChange={(e) => setForm({...form, description: e.target.value})}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Knock the most doors to win!"
               className="bg-zinc-800 border-zinc-600 text-white"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-zinc-400 mb-1 block">Prize</label>
               <Input
                 value={form.prize}
-                onChange={(e) => setForm({...form, prize: e.target.value})}
+                onChange={(e) => setForm({ ...form, prize: e.target.value })}
                 placeholder="$500"
                 className="bg-zinc-800 border-zinc-600 text-white"
               />
@@ -87,7 +97,7 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
               <label className="text-sm text-zinc-400 mb-1 block">Metric</label>
               <select
                 value={form.metric}
-                onChange={(e) => setForm({...form, metric: e.target.value})}
+                onChange={(e) => setForm({ ...form, metric: e.target.value })}
                 className="w-full h-9 px-3 bg-gray-800 border border-zinc-600 rounded-md text-white"
               >
                 <option value="doors">Doors Knocked</option>
@@ -96,14 +106,14 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-zinc-400 mb-1 block">Start Date</label>
               <Input
                 type="date"
                 value={form.start_date}
-                onChange={(e) => setForm({...form, start_date: e.target.value})}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                 className="bg-zinc-800 border-zinc-600 text-white"
               />
             </div>
@@ -112,32 +122,32 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
               <Input
                 type="date"
                 value={form.end_date}
-                onChange={(e) => setForm({...form, end_date: e.target.value})}
+                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                 className="bg-zinc-800 border-zinc-600 text-white"
               />
             </div>
           </div>
-          
+
           <div>
             <label className="text-sm text-zinc-400 mb-1 block">Target (optional)</label>
             <Input
               type="number"
               value={form.target_value}
-              onChange={(e) => setForm({...form, target_value: e.target.value})}
+              onChange={(e) => setForm({ ...form, target_value: e.target.value })}
               placeholder="e.g., 1000 doors"
               className="bg-zinc-800 border-zinc-600 text-white"
             />
           </div>
-          
+
           <div className="flex gap-3 pt-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1 border-zinc-600 text-zinc-400"
               onClick={onClose}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-orange-500 hover:bg-orange-600"
               onClick={handleSubmit}
               disabled={!form.title || !form.end_date}
@@ -153,18 +163,22 @@ const CreateCompetitionModal = ({ show, onClose, onCreate }) => {
 
 // Competition Card
 const CompetitionCard = ({ competition, onJoin, isJoined }) => {
-  const progressPercent = competition.target_value 
+  const progressPercent = competition.target_value
     ? Math.min(100, (competition.my_progress / competition.target_value) * 100)
-    : (competition.leader_progress > 0 
-        ? Math.min(100, (competition.my_progress / competition.leader_progress) * 100)
-        : 0);
+    : competition.leader_progress > 0
+      ? Math.min(100, (competition.my_progress / competition.leader_progress) * 100)
+      : 0;
 
   const getMetricIcon = (metric) => {
-    switch(metric) {
-      case 'doors': return '🚪';
-      case 'appointments': return '📅';
-      case 'signed': return '✍️';
-      default: return '🎯';
+    switch (metric) {
+      case 'doors':
+        return '🚪';
+      case 'appointments':
+        return '📅';
+      case 'signed':
+        return '✍️';
+      default:
+        return '🎯';
     }
   };
 
@@ -188,7 +202,7 @@ const CompetitionCard = ({ competition, onJoin, isJoined }) => {
           </Badge>
         </div>
       </div>
-      
+
       <CardContent className="p-4 space-y-4">
         {/* Stats Row */}
         <div className="flex justify-between items-center">
@@ -199,16 +213,19 @@ const CompetitionCard = ({ competition, onJoin, isJoined }) => {
             </span>
           </div>
           <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-            {competition.metric === 'doors' ? 'Doors' : 
-             competition.metric === 'appointments' ? 'Appointments' : 'Contracts'}
+            {competition.metric === 'doors'
+              ? 'Doors'
+              : competition.metric === 'appointments'
+                ? 'Appointments'
+                : 'Contracts'}
           </Badge>
         </div>
-        
+
         {/* Description */}
         <p className="text-zinc-400 text-sm line-clamp-2">
           {competition.description || 'Compete to win amazing prizes!'}
         </p>
-        
+
         {/* Progress Section */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
@@ -220,7 +237,7 @@ const CompetitionCard = ({ competition, onJoin, isJoined }) => {
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
-        
+
         {/* Leader Info */}
         {competition.leader_name && competition.leader_name !== 'No entries' && (
           <div className="flex items-center justify-between p-2 bg-zinc-800/50 rounded-lg">
@@ -232,7 +249,7 @@ const CompetitionCard = ({ competition, onJoin, isJoined }) => {
             <span className="text-orange-400 font-bold">{competition.leader_progress || 0}</span>
           </div>
         )}
-        
+
         {/* Prize & Action */}
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-center gap-2">
@@ -242,18 +259,14 @@ const CompetitionCard = ({ competition, onJoin, isJoined }) => {
               <p className="text-green-400 font-bold">{competition.prize || 'TBD'}</p>
             </div>
           </div>
-          
+
           {isJoined ? (
-            <Button 
-              variant="outline" 
-              className="border-green-500 text-green-400"
-              disabled
-            >
+            <Button variant="outline" className="border-green-500 text-green-400" disabled>
               <Star className="w-4 h-4 mr-2" />
               Joined
             </Button>
           ) : (
-            <Button 
+            <Button
               className="bg-orange-500 hover:bg-orange-600"
               onClick={() => onJoin(competition.id)}
             >
@@ -278,10 +291,7 @@ const EmptyState = ({ canCreate, onCreateClick }) => (
       Competitions bring out the best in teams. Check back soon for new challenges!
     </p>
     {canCreate && (
-      <Button 
-        className="bg-orange-500 hover:bg-orange-600"
-        onClick={onCreateClick}
-      >
+      <Button className="bg-orange-500 hover:bg-orange-600" onClick={onCreateClick}>
         <Plus className="w-4 h-4 mr-2" />
         Create First Competition
       </Button>
@@ -290,12 +300,12 @@ const EmptyState = ({ canCreate, onCreateClick }) => (
 );
 
 // Main Competitions Tab Component
-export const CompetitionsTab = ({ 
-  competitions = [], 
+export const CompetitionsTab = ({
+  competitions = [],
   canCreate = false,
   onCreateCompetition,
   onJoinCompetition,
-  currentUserId
+  currentUserId,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -320,9 +330,9 @@ export const CompetitionsTab = ({
           <Flame className="w-5 h-5" />
           COMPETITIONS
         </div>
-        
+
         {canCreate && competitions.length > 0 && (
-          <Button 
+          <Button
             className="bg-orange-500 hover:bg-orange-600"
             size="sm"
             onClick={() => setShowCreateModal(true)}
@@ -335,14 +345,11 @@ export const CompetitionsTab = ({
 
       {/* Competitions Grid */}
       {competitions.length === 0 ? (
-        <EmptyState 
-          canCreate={canCreate}
-          onCreateClick={() => setShowCreateModal(true)}
-        />
+        <EmptyState canCreate={canCreate} onCreateClick={() => setShowCreateModal(true)} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {competitions.map((comp) => (
-            <CompetitionCard 
+            <CompetitionCard
               key={comp.id}
               competition={comp}
               onJoin={handleJoin}

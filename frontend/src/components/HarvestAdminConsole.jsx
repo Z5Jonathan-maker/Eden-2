@@ -1,6 +1,6 @@
 /**
  * HarvestAdminConsole - Admin interface for gamification management
- * 
+ *
  * Based on HARVEST_GAMIFICATION_SPEC.md
  * Features:
  * - Campaign management (create, edit, end)
@@ -14,11 +14,32 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Progress } from './ui/progress';
-import { 
-  RefreshCw, Trophy, Gift, Target, Zap, Clock, Plus,
-  CheckCircle2, XCircle, ChevronRight, Edit, Trash2,
-  Users, TrendingUp, Calendar, Award, Package, History,
-  Play, Pause, X, Check, AlertCircle, MapPin, Settings
+import {
+  RefreshCw,
+  Trophy,
+  Gift,
+  Target,
+  Zap,
+  Clock,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  ChevronRight,
+  Edit,
+  Trash2,
+  Users,
+  TrendingUp,
+  Calendar,
+  Award,
+  Package,
+  History,
+  Play,
+  Pause,
+  X,
+  Check,
+  AlertCircle,
+  MapPin,
+  Settings,
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 
@@ -31,7 +52,7 @@ const ADMIN_TABS = [
   { id: 'territories', label: 'Territories', icon: MapPin },
   { id: 'rewards', label: 'Rewards', icon: Gift },
   { id: 'redemptions', label: 'Redemptions', icon: Package },
-  { id: 'settings', label: 'Settings', icon: Settings }
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 // Status badge component
@@ -45,13 +66,11 @@ const StatusBadge = ({ status }) => {
     pending: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Pending' },
     approved: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Approved' },
     fulfilled: { bg: 'bg-green-100', text: 'text-green-700', label: 'Fulfilled' },
-    denied: { bg: 'bg-red-100', text: 'text-red-700', label: 'Denied' }
+    denied: { bg: 'bg-red-100', text: 'text-red-700', label: 'Denied' },
   };
-  
+
   const c = config[status] || config.draft;
-  return (
-    <Badge className={`${c.bg} ${c.text} border-0`}>{c.label}</Badge>
-  );
+  return <Badge className={`${c.bg} ${c.text} border-0`}>{c.label}</Badge>;
 };
 
 // ============================================
@@ -61,11 +80,11 @@ const CampaignsTab = ({ token, onRefresh }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  
+
   const fetchCampaigns = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns?include_past=true`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -77,18 +96,18 @@ const CampaignsTab = ({ token, onRefresh }) => {
       setLoading(false);
     }
   }, [token]);
-  
+
   useEffect(() => {
     fetchCampaigns();
   }, [fetchCampaigns]);
-  
+
   const endCampaign = async (campaignId) => {
     if (!window.confirm('Are you sure you want to end this campaign?')) return;
-    
+
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns/${campaignId}/end`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         fetchCampaigns();
@@ -97,11 +116,15 @@ const CampaignsTab = ({ token, onRefresh }) => {
       console.error('Failed to end campaign:', err);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -115,10 +138,10 @@ const CampaignsTab = ({ token, onRefresh }) => {
           New Campaign
         </Button>
       </div>
-      
+
       {/* Campaigns List */}
       <div className="space-y-3">
-        {campaigns.map(campaign => (
+        {campaigns.map((campaign) => (
           <Card key={campaign.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -135,7 +158,8 @@ const CampaignsTab = ({ token, onRefresh }) => {
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {new Date(campaign.start_date).toLocaleDateString()} - {new Date(campaign.end_date).toLocaleDateString()}
+                        {new Date(campaign.start_date).toLocaleDateString()} -{' '}
+                        {new Date(campaign.end_date).toLocaleDateString()}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
@@ -148,7 +172,7 @@ const CampaignsTab = ({ token, onRefresh }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   {campaign.status === 'active' && (
                     <Button size="sm" variant="outline" onClick={() => endCampaign(campaign.id)}>
@@ -161,37 +185,44 @@ const CampaignsTab = ({ token, onRefresh }) => {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Progress */}
               {campaign.leader && (
                 <div className="mt-3 pt-3 border-t">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Leader: {campaign.leader.name}</span>
-                    <span className="font-medium text-orange-600">{campaign.leader.value} {campaign.goal_type}</span>
+                    <span className="font-medium text-orange-600">
+                      {campaign.leader.value} {campaign.goal_type}
+                    </span>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
         ))}
-        
+
         {campaigns.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
               <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <h3 className="text-lg font-semibold text-gray-700">No Campaigns</h3>
-              <p className="text-sm text-gray-500">Create your first campaign to motivate your team!</p>
+              <p className="text-sm text-gray-500">
+                Create your first campaign to motivate your team!
+              </p>
             </CardContent>
           </Card>
         )}
       </div>
-      
+
       {/* Create Campaign Modal */}
       {showCreate && (
-        <CreateCampaignModal 
-          token={token} 
+        <CreateCampaignModal
+          token={token}
           onClose={() => setShowCreate(false)}
-          onSuccess={() => { setShowCreate(false); fetchCampaigns(); }}
+          onSuccess={() => {
+            setShowCreate(false);
+            fetchCampaigns();
+          }}
         />
       )}
     </div>
@@ -208,28 +239,28 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
     start_date: new Date().toISOString().split('T')[0],
     end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     points_bonus: 100,
-    icon: '🎯'
+    icon: '🎯',
   });
   const [loading, setLoading] = useState(false);
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const res = await fetch(`${API_URL}/api/harvest/campaigns`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formData,
           start_date: new Date(formData.start_date).toISOString(),
-          end_date: new Date(formData.end_date).toISOString()
-        })
+          end_date: new Date(formData.end_date).toISOString(),
+        }),
       });
-      
+
       if (res.ok) {
         onSuccess();
       }
@@ -239,44 +270,50 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-lg w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Create Campaign</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
             <Input
               value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Weekend Door Blitz"
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <Input
               value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Hit your target for bonus points!"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Goal Type</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.goal_type}
-                onChange={e => setFormData({...formData, goal_type: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, goal_type: e.target.value })}
               >
                 <option value="doors">Doors</option>
                 <option value="appointments">Appointments</option>
@@ -289,19 +326,21 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
               <Input
                 type="number"
                 value={formData.target_value}
-                onChange={e => setFormData({...formData, target_value: parseInt(e.target.value)})}
+                onChange={(e) =>
+                  setFormData({ ...formData, target_value: parseInt(e.target.value) })
+                }
                 min={1}
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <Input
                 type="date"
                 value={formData.start_date}
-                onChange={e => setFormData({...formData, start_date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
               />
             </div>
             <div>
@@ -309,18 +348,20 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
               <Input
                 type="date"
                 value={formData.end_date}
-                onChange={e => setFormData({...formData, end_date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bonus Points</label>
               <Input
                 type="number"
                 value={formData.points_bonus}
-                onChange={e => setFormData({...formData, points_bonus: parseInt(e.target.value)})}
+                onChange={(e) =>
+                  setFormData({ ...formData, points_bonus: parseInt(e.target.value) })
+                }
                 min={0}
               />
             </div>
@@ -328,17 +369,21 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
               <Input
                 value={formData.icon}
-                onChange={e => setFormData({...formData, icon: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                 placeholder="🎯"
               />
             </div>
           </div>
-          
+
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={loading}>
+            <Button
+              type="submit"
+              className="flex-1 bg-orange-500 hover:bg-orange-600"
+              disabled={loading}
+            >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Create Campaign'}
             </Button>
           </div>
@@ -354,12 +399,12 @@ const CreateCampaignModal = ({ token, onClose, onSuccess }) => {
 const TemplatesTab = ({ token }) => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
         const res = await fetch(`${API_URL}/api/harvest/campaigns/templates/list`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
@@ -373,18 +418,18 @@ const TemplatesTab = ({ token }) => {
     };
     fetchTemplates();
   }, [token]);
-  
+
   const applyTemplate = async (templateId) => {
     const name = window.prompt('Enter campaign name:');
     if (!name) return;
-    
+
     try {
       const startDate = new Date().toISOString();
       const res = await fetch(
         `${API_URL}/api/harvest/campaigns/from-template/${templateId}?name=${encodeURIComponent(name)}&start_date=${startDate}`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       if (res.ok) {
@@ -394,20 +439,24 @@ const TemplatesTab = ({ token }) => {
       console.error('Failed to create from template:', err);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">Campaign Templates</h3>
         <p className="text-sm text-gray-500">Quick-start campaigns with pre-configured settings</p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates.map(template => (
+        {templates.map((template) => (
           <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="p-4">
               <div className="text-center mb-3">
@@ -415,13 +464,15 @@ const TemplatesTab = ({ token }) => {
               </div>
               <h4 className="font-semibold text-gray-900 text-center">{template.name}</h4>
               <p className="text-sm text-gray-500 text-center mt-1">{template.description}</p>
-              
+
               <div className="flex justify-center gap-4 mt-4 text-xs text-gray-500">
                 <span>{template.duration_days} days</span>
-                <span>{template.default_target} {template.goal_type}</span>
+                <span>
+                  {template.default_target} {template.goal_type}
+                </span>
               </div>
-              
-              <Button 
+
+              <Button
                 className="w-full mt-4 bg-orange-500 hover:bg-orange-600"
                 onClick={() => applyTemplate(template.id)}
               >
@@ -443,11 +494,11 @@ const RewardsTab = ({ token }) => {
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  
+
   const fetchRewards = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/rewards?is_active=false`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -459,18 +510,18 @@ const RewardsTab = ({ token }) => {
       setLoading(false);
     }
   }, [token]);
-  
+
   useEffect(() => {
     fetchRewards();
   }, [fetchRewards]);
-  
+
   const archiveReward = async (rewardId) => {
     if (!window.confirm('Archive this reward?')) return;
-    
+
     try {
       const res = await fetch(`${API_URL}/api/harvest/rewards/${rewardId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         fetchRewards();
@@ -479,11 +530,15 @@ const RewardsTab = ({ token }) => {
       console.error('Failed to archive reward:', err);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -496,16 +551,20 @@ const RewardsTab = ({ token }) => {
           Add Reward
         </Button>
       </div>
-      
+
       <div className="space-y-3">
-        {rewards.map(reward => (
+        {rewards.map((reward) => (
           <Card key={reward.id}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center">
                     {reward.image_url ? (
-                      <img src={reward.image_url} alt="" className="w-12 h-12 object-cover rounded" />
+                      <img
+                        src={reward.image_url}
+                        alt=""
+                        className="w-12 h-12 object-cover rounded"
+                      />
                     ) : (
                       <Trophy className="w-8 h-8 text-purple-500" />
                     )}
@@ -522,7 +581,9 @@ const RewardsTab = ({ token }) => {
                     </div>
                     <p className="text-sm text-gray-500">{reward.description}</p>
                     <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                      <span className="font-medium text-purple-600">{reward.points_required} pts</span>
+                      <span className="font-medium text-purple-600">
+                        {reward.points_required} pts
+                      </span>
                       <span className="capitalize">{reward.category?.replace('_', ' ')}</span>
                       {reward.stock_quantity !== null && (
                         <span>Stock: {reward.stock_quantity}</span>
@@ -530,7 +591,7 @@ const RewardsTab = ({ token }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="ghost">
                     <Edit className="w-4 h-4" />
@@ -543,7 +604,7 @@ const RewardsTab = ({ token }) => {
             </CardContent>
           </Card>
         ))}
-        
+
         {rewards.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
@@ -554,13 +615,16 @@ const RewardsTab = ({ token }) => {
           </Card>
         )}
       </div>
-      
+
       {/* Create Reward Modal */}
       {showCreate && (
-        <CreateRewardModal 
+        <CreateRewardModal
           token={token}
           onClose={() => setShowCreate(false)}
-          onSuccess={() => { setShowCreate(false); fetchRewards(); }}
+          onSuccess={() => {
+            setShowCreate(false);
+            fetchRewards();
+          }}
         />
       )}
     </div>
@@ -575,24 +639,24 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
     category: 'gift_card',
     points_required: 1000,
     stock_quantity: null,
-    is_featured: false
+    is_featured: false,
   });
   const [loading, setLoading] = useState(false);
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const res = await fetch(`${API_URL}/api/harvest/rewards`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
-      
+
       if (res.ok) {
         onSuccess();
       }
@@ -602,44 +666,50 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-lg w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Add Reward</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Reward Name</label>
             <Input
               value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="$50 Amazon Gift Card"
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <Input
               value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Digital gift card delivered via email"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.category}
-                onChange={e => setFormData({...formData, category: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
                 <option value="gift_card">Gift Card</option>
                 <option value="merchandise">Merchandise</option>
@@ -649,23 +719,34 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Points Required</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Points Required
+              </label>
               <Input
                 type="number"
                 value={formData.points_required}
-                onChange={e => setFormData({...formData, points_required: parseInt(e.target.value)})}
+                onChange={(e) =>
+                  setFormData({ ...formData, points_required: parseInt(e.target.value) })
+                }
                 min={1}
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock (leave empty for unlimited)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stock (leave empty for unlimited)
+              </label>
               <Input
                 type="number"
                 value={formData.stock_quantity || ''}
-                onChange={e => setFormData({...formData, stock_quantity: e.target.value ? parseInt(e.target.value) : null})}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    stock_quantity: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
                 min={0}
                 placeholder="Unlimited"
               />
@@ -675,19 +756,23 @@ const CreateRewardModal = ({ token, onClose, onSuccess }) => {
                 <input
                   type="checkbox"
                   checked={formData.is_featured}
-                  onChange={e => setFormData({...formData, is_featured: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
                   className="w-4 h-4"
                 />
                 <span className="text-sm font-medium text-gray-700">Featured Reward</span>
               </label>
             </div>
           </div>
-          
+
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-purple-500 hover:bg-purple-600" disabled={loading}>
+            <Button
+              type="submit"
+              className="flex-1 bg-purple-500 hover:bg-purple-600"
+              disabled={loading}
+            >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Add Reward'}
             </Button>
           </div>
@@ -705,12 +790,15 @@ const RedemptionsTab = ({ token }) => {
   const [counts, setCounts] = useState({ pending: 0, approved: 0, fulfilled: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
-  
+
   const fetchRedemptions = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/redemptions${filter !== 'all' ? `?status=${filter}` : ''}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `${API_URL}/api/harvest/redemptions${filter !== 'all' ? `?status=${filter}` : ''}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         const data = await res.json();
         setRedemptions(data.redemptions || []);
@@ -722,20 +810,20 @@ const RedemptionsTab = ({ token }) => {
       setLoading(false);
     }
   }, [token, filter]);
-  
+
   useEffect(() => {
     fetchRedemptions();
   }, [fetchRedemptions]);
-  
+
   const processRedemption = async (redemptionId, action, notes = null) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/redemptions/${redemptionId}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ action, notes })
+        body: JSON.stringify({ action, notes }),
       });
       if (res.ok) {
         fetchRedemptions();
@@ -744,11 +832,15 @@ const RedemptionsTab = ({ token }) => {
       console.error('Failed to process redemption:', err);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -759,10 +851,10 @@ const RedemptionsTab = ({ token }) => {
           </p>
         </div>
       </div>
-      
+
       {/* Filter Tabs */}
       <div className="flex gap-2">
-        {['pending', 'approved', 'fulfilled', 'all'].map(f => (
+        {['pending', 'approved', 'fulfilled', 'all'].map((f) => (
           <Button
             key={f}
             size="sm"
@@ -775,10 +867,10 @@ const RedemptionsTab = ({ token }) => {
           </Button>
         ))}
       </div>
-      
+
       {/* Redemptions List */}
       <div className="space-y-3">
-        {redemptions.map(redemption => (
+        {redemptions.map((redemption) => (
           <Card key={redemption.id}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -799,19 +891,19 @@ const RedemptionsTab = ({ token }) => {
                     </p>
                   </div>
                 </div>
-                
+
                 {redemption.status === 'pending' && (
                   <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="bg-green-500 hover:bg-green-600"
                       onClick={() => processRedemption(redemption.id, 'approve')}
                     >
                       <Check className="w-4 h-4 mr-1" />
                       Approve
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50"
                       onClick={() => {
@@ -824,9 +916,9 @@ const RedemptionsTab = ({ token }) => {
                     </Button>
                   </div>
                 )}
-                
+
                 {redemption.status === 'approved' && (
-                  <Button 
+                  <Button
                     size="sm"
                     className="bg-purple-500 hover:bg-purple-600"
                     onClick={() => processRedemption(redemption.id, 'fulfill')}
@@ -835,7 +927,7 @@ const RedemptionsTab = ({ token }) => {
                     Mark Fulfilled
                   </Button>
                 )}
-                
+
                 {redemption.status === 'denied' && redemption.denial_reason && (
                   <p className="text-sm text-red-500">Reason: {redemption.denial_reason}</p>
                 )}
@@ -843,7 +935,7 @@ const RedemptionsTab = ({ token }) => {
             </CardContent>
           </Card>
         ))}
-        
+
         {redemptions.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
@@ -867,11 +959,11 @@ const TerritoriesTab = ({ token }) => {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTerritory, setSelectedTerritory] = useState(null);
-  
+
   const fetchTerritories = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/territories/?include_inactive=true`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -883,11 +975,11 @@ const TerritoriesTab = ({ token }) => {
       setLoading(false);
     }
   }, [token]);
-  
+
   const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -897,19 +989,19 @@ const TerritoriesTab = ({ token }) => {
       console.error('Failed to fetch users:', err);
     }
   }, [token]);
-  
+
   useEffect(() => {
     fetchTerritories();
     fetchUsers();
   }, [fetchTerritories, fetchUsers]);
-  
+
   const deleteTerritory = async (territoryId) => {
     if (!window.confirm('Are you sure you want to deactivate this territory?')) return;
-    
+
     try {
       const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         fetchTerritories();
@@ -918,16 +1010,16 @@ const TerritoriesTab = ({ token }) => {
       console.error('Failed to delete territory:', err);
     }
   };
-  
+
   const assignUser = async (territoryId, userId) => {
     try {
       const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}/assign`, {
         method: 'POST',
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId })
+        body: JSON.stringify({ user_id: userId }),
       });
       if (res.ok) {
         fetchTerritories();
@@ -936,13 +1028,16 @@ const TerritoriesTab = ({ token }) => {
       console.error('Failed to assign user:', err);
     }
   };
-  
+
   const unassignUser = async (territoryId, userId) => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/territories/${territoryId}/assign/${userId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `${API_URL}/api/harvest/territories/${territoryId}/assign/${userId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         fetchTerritories();
       }
@@ -950,11 +1045,15 @@ const TerritoriesTab = ({ token }) => {
       console.error('Failed to unassign user:', err);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -967,14 +1066,14 @@ const TerritoriesTab = ({ token }) => {
           New Territory
         </Button>
       </div>
-      
+
       <div className="space-y-3">
-        {territories.map(territory => (
+        {territories.map((territory) => (
           <Card key={territory.id} className={!territory.is_active ? 'opacity-60' : ''}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: territory.color || '#3B82F6' }}
                   />
@@ -982,16 +1081,20 @@ const TerritoriesTab = ({ token }) => {
                     <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                       {territory.name}
                       {!territory.is_active && (
-                        <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">Inactive</Badge>
+                        <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">
+                          Inactive
+                        </Badge>
                       )}
                     </h4>
-                    <p className="text-sm text-gray-500">{territory.description || 'No description'}</p>
+                    <p className="text-sm text-gray-500">
+                      {territory.description || 'No description'}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => setSelectedTerritory(territory)}
                     data-testid={`manage-territory-${territory.id}`}
@@ -999,8 +1102,8 @@ const TerritoriesTab = ({ token }) => {
                     <Users className="w-4 h-4 mr-1" />
                     Assign
                   </Button>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     className="text-red-500 border-red-200 hover:bg-red-50"
                     onClick={() => deleteTerritory(territory.id)}
@@ -1009,7 +1112,7 @@ const TerritoriesTab = ({ token }) => {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Stats */}
               <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
                 <div>
@@ -1022,27 +1125,29 @@ const TerritoriesTab = ({ token }) => {
                 </div>
                 <div>
                   <span className="text-gray-500">Coverage</span>
-                  <p className="font-semibold text-blue-600">{territory.stats?.coverage_percent || 0}%</p>
+                  <p className="font-semibold text-blue-600">
+                    {territory.stats?.coverage_percent || 0}%
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Contracts</span>
                   <p className="font-semibold text-green-600">{territory.stats?.contracts || 0}</p>
                 </div>
               </div>
-              
+
               {/* Assigned Users */}
               {territory.assigned_users && territory.assigned_users.length > 0 && (
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-xs text-gray-500 mb-2">Assigned Reps:</p>
                   <div className="flex flex-wrap gap-2">
-                    {territory.assigned_users.map(assignment => (
-                      <Badge 
+                    {territory.assigned_users.map((assignment) => (
+                      <Badge
                         key={assignment.user_id}
                         className="bg-blue-100 text-blue-700 border-0 flex items-center gap-1"
                       >
                         <Users className="w-3 h-3" />
                         {assignment.user_name || assignment.user_id}
-                        <button 
+                        <button
                           onClick={() => unassignUser(territory.id, assignment.user_id)}
                           className="ml-1 hover:text-red-600"
                         >
@@ -1056,27 +1161,32 @@ const TerritoriesTab = ({ token }) => {
             </CardContent>
           </Card>
         ))}
-        
+
         {territories.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
               <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <h3 className="text-lg font-semibold text-gray-700">No Territories</h3>
-              <p className="text-sm text-gray-500">Create territories to organize your canvassing areas</p>
+              <p className="text-sm text-gray-500">
+                Create territories to organize your canvassing areas
+              </p>
             </CardContent>
           </Card>
         )}
       </div>
-      
+
       {/* Create Territory Modal */}
       {showCreate && (
-        <CreateTerritoryModal 
-          token={token} 
-          onClose={() => setShowCreate(false)} 
-          onSuccess={() => { setShowCreate(false); fetchTerritories(); }}
+        <CreateTerritoryModal
+          token={token}
+          onClose={() => setShowCreate(false)}
+          onSuccess={() => {
+            setShowCreate(false);
+            fetchTerritories();
+          }}
         />
       )}
-      
+
       {/* Assign Users Modal */}
       {selectedTerritory && (
         <AssignUsersModal
@@ -1099,20 +1209,20 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
     name: '',
     description: '',
     color: '#3B82F6',
-    priority: 2
+    priority: 2,
   });
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       // For now, create with empty polygon - can be drawn on map later
       const res = await fetch(`${API_URL}/api/harvest/territories/`, {
         method: 'POST',
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formData,
@@ -1120,11 +1230,11 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
             { lat: 27.95, lng: -82.46 },
             { lat: 27.96, lng: -82.46 },
             { lat: 27.96, lng: -82.45 },
-            { lat: 27.95, lng: -82.45 }
-          ]
-        })
+            { lat: 27.95, lng: -82.45 },
+          ],
+        }),
       });
-      
+
       if (res.ok) {
         onSuccess();
       } else {
@@ -1137,44 +1247,50 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">New Territory</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <Input
               value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Zone A - Downtown"
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <Input
               value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="High-density residential area"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
               <input
                 type="color"
                 value={formData.color}
-                onChange={e => setFormData({...formData, color: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 className="w-full h-10 rounded-md border border-gray-300 cursor-pointer"
               />
             </div>
@@ -1183,7 +1299,7 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.priority}
-                onChange={e => setFormData({...formData, priority: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
               >
                 <option value={1}>Low</option>
                 <option value={2}>Medium</option>
@@ -1191,16 +1307,20 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
               </select>
             </div>
           </div>
-          
+
           <p className="text-sm text-gray-500">
             Note: Territory boundaries can be drawn on the map after creation.
           </p>
-          
+
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600" disabled={loading}>
+            <Button
+              type="submit"
+              className="flex-1 bg-blue-500 hover:bg-blue-600"
+              disabled={loading}
+            >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Create Territory'}
             </Button>
           </div>
@@ -1212,30 +1332,43 @@ const CreateTerritoryModal = ({ token, onClose, onSuccess }) => {
 
 // Assign Users Modal
 const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassign }) => {
-  const assignedIds = (territory.assignments || territory.assigned_users || []).map(a => a.user_id);
-  const availableUsers = users.filter(u => !assignedIds.includes(u.id) && u.role !== 'client');
-  
+  const assignedIds = (territory.assignments || territory.assigned_users || []).map(
+    (a) => a.user_id
+  );
+  const availableUsers = users.filter((u) => !assignedIds.includes(u.id) && u.role !== 'client');
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Assign Reps to {territory.name}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Currently Assigned */}
         {assignedIds.length > 0 && (
           <div className="mb-4">
             <p className="text-sm font-medium text-gray-700 mb-2">Currently Assigned</p>
             <div className="space-y-2">
-              {(territory.assignments || territory.assigned_users || []).map(assignment => {
-                const user = users.find(u => u.id === assignment.user_id);
+              {(territory.assignments || territory.assigned_users || []).map((assignment) => {
+                const user = users.find((u) => u.id === assignment.user_id);
                 return (
-                  <div key={assignment.user_id} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
-                    <span className="text-sm font-medium">{user?.full_name || assignment.user_name || 'Unknown'}</span>
-                    <button 
+                  <div
+                    key={assignment.user_id}
+                    className="flex items-center justify-between p-2 bg-blue-50 rounded-lg"
+                  >
+                    <span className="text-sm font-medium">
+                      {user?.full_name || assignment.user_name || 'Unknown'}
+                    </span>
+                    <button
                       onClick={() => onUnassign(assignment.user_id)}
                       className="text-red-500 hover:text-red-600"
                     >
@@ -1247,14 +1380,17 @@ const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassi
             </div>
           </div>
         )}
-        
+
         {/* Available Users */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">Available Reps</p>
           {availableUsers.length > 0 ? (
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {availableUsers.map(user => (
-                <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100">
+              {availableUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100"
+                >
                   <div>
                     <span className="text-sm font-medium">{user.full_name}</span>
                     <span className="text-xs text-gray-500 ml-2">{user.role}</span>
@@ -1269,7 +1405,7 @@ const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassi
             <p className="text-sm text-gray-500 py-4 text-center">All reps are already assigned</p>
           )}
         </div>
-        
+
         <div className="mt-4 pt-4 border-t">
           <Button variant="outline" className="w-full" onClick={onClose}>
             Done
@@ -1285,25 +1421,35 @@ const AssignUsersModal = ({ territory, users, token, onClose, onAssign, onUnassi
 // ============================================
 const SettingsTab = ({ token }) => {
   const [dispositions, setDispositions] = useState([]);
-  const [dailyGoals, setDailyGoals] = useState({ doors_knocked: 40, appointments_set: 3, signed_contracts: 1 });
+  const [dailyGoals, setDailyGoals] = useState({
+    doors_knocked: 40,
+    appointments_set: 3,
+    signed_contracts: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   const fetchSettings = useCallback(async () => {
     try {
       const [dispRes, goalsRes] = await Promise.all([
-        fetch(`${API_URL}/api/harvest/v2/dispositions`, { headers: { Authorization: `Bearer ${token}` }}),
-        fetch(`${API_URL}/api/harvest/v2/daily-goals`, { headers: { Authorization: `Bearer ${token}` }})
+        fetch(`${API_URL}/api/harvest/v2/dispositions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/harvest/v2/daily-goals`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
-      
+
       if (dispRes.ok) {
         const data = await dispRes.json();
         setDispositions(data.dispositions || []);
       }
-      
+
       if (goalsRes.ok) {
         const data = await goalsRes.json();
-        setDailyGoals(data.goals || { doors_knocked: 40, appointments_set: 3, signed_contracts: 1 });
+        setDailyGoals(
+          data.goals || { doors_knocked: 40, appointments_set: 3, signed_contracts: 1 }
+        );
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
@@ -1311,23 +1457,23 @@ const SettingsTab = ({ token }) => {
       setLoading(false);
     }
   }, [token]);
-  
+
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
-  
+
   const saveGoals = async () => {
     setSaving(true);
     try {
       const res = await fetch(`${API_URL}/api/harvest/v2/daily-goals`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dailyGoals)
+        body: JSON.stringify(dailyGoals),
       });
-      
+
       if (res.ok) {
         alert('Daily goals updated!');
       }
@@ -1337,11 +1483,15 @@ const SettingsTab = ({ token }) => {
       setSaving(false);
     }
   };
-  
+
   if (loading) {
-    return <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <RefreshCw className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Daily Goals */}
@@ -1356,44 +1506,54 @@ const SettingsTab = ({ token }) => {
           <p className="text-sm text-gray-500">
             Set daily targets that reps need to hit to maintain their streak and earn bonuses.
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Doors Knocked</label>
               <Input
                 type="number"
                 value={dailyGoals.doors_knocked}
-                onChange={e => setDailyGoals({...dailyGoals, doors_knocked: parseInt(e.target.value) || 0})}
+                onChange={(e) =>
+                  setDailyGoals({ ...dailyGoals, doors_knocked: parseInt(e.target.value) || 0 })
+                }
                 min={1}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Appointments Set</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Appointments Set
+              </label>
               <Input
                 type="number"
                 value={dailyGoals.appointments_set}
-                onChange={e => setDailyGoals({...dailyGoals, appointments_set: parseInt(e.target.value) || 0})}
+                onChange={(e) =>
+                  setDailyGoals({ ...dailyGoals, appointments_set: parseInt(e.target.value) || 0 })
+                }
                 min={0}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contracts Signed</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contracts Signed
+              </label>
               <Input
                 type="number"
                 value={dailyGoals.signed_contracts}
-                onChange={e => setDailyGoals({...dailyGoals, signed_contracts: parseInt(e.target.value) || 0})}
+                onChange={(e) =>
+                  setDailyGoals({ ...dailyGoals, signed_contracts: parseInt(e.target.value) || 0 })
+                }
                 min={0}
               />
             </div>
           </div>
-          
+
           <Button onClick={saveGoals} disabled={saving} className="bg-blue-500 hover:bg-blue-600">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
             Save Daily Goals
           </Button>
         </CardContent>
       </Card>
-      
+
       {/* Dispositions */}
       <Card>
         <CardHeader>
@@ -1406,11 +1566,11 @@ const SettingsTab = ({ token }) => {
           <p className="text-sm text-gray-500 mb-4">
             These are the status options available when logging a door visit.
           </p>
-          
+
           <div className="space-y-2">
             {dispositions.map((disp, idx) => (
               <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div 
+                <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
                   style={{ backgroundColor: disp.color }}
                 >
@@ -1418,12 +1578,14 @@ const SettingsTab = ({ token }) => {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">{disp.label}</p>
-                  <p className="text-xs text-gray-500">Code: {disp.code} • Points: {disp.points}</p>
+                  <p className="text-xs text-gray-500">
+                    Code: {disp.code} • Points: {disp.points}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-          
+
           <p className="text-sm text-gray-400 mt-4">
             Disposition configuration is managed at the system level. Contact support to modify.
           </p>
@@ -1439,13 +1601,13 @@ const SettingsTab = ({ token }) => {
 const HarvestAdminConsole = () => {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [refreshKey, setRefreshKey] = useState(0);
-  
+
   const token = localStorage.getItem('eden_token');
-  
+
   const handleRefresh = () => {
-    setRefreshKey(k => k + 1);
+    setRefreshKey((k) => k + 1);
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1453,10 +1615,18 @@ const HarvestAdminConsole = () => {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={NAV_ICONS.harvest_admin} alt="Harvest Admin" className="w-10 h-10 object-contain icon-3d-shadow" />
+              <img
+                src={NAV_ICONS.harvest_admin}
+                alt="Harvest Admin"
+                className="w-10 h-10 object-contain icon-3d-shadow"
+              />
               <div>
-                <h1 className="text-xl font-tactical font-bold text-white tracking-wide text-glow-orange">HARVEST ADMIN</h1>
-                <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Manage gamification for your team</p>
+                <h1 className="text-xl font-tactical font-bold text-white tracking-wide text-glow-orange">
+                  HARVEST ADMIN
+                </h1>
+                <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
+                  Manage gamification for your team
+                </p>
               </div>
             </div>
             <Button variant="outline" onClick={handleRefresh}>
@@ -1464,10 +1634,10 @@ const HarvestAdminConsole = () => {
               Refresh
             </Button>
           </div>
-          
+
           {/* Tab Navigation */}
           <div className="flex gap-1 mt-4 overflow-x-auto">
-            {ADMIN_TABS.map(tab => {
+            {ADMIN_TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
@@ -1475,9 +1645,7 @@ const HarvestAdminConsole = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-orange-100 text-orange-700' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                    isActive ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:bg-gray-100'
                   }`}
                   data-testid={`admin-${tab.id}-tab`}
                 >
@@ -1489,7 +1657,7 @@ const HarvestAdminConsole = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6" key={refreshKey}>
         {activeTab === 'campaigns' && <CampaignsTab token={token} onRefresh={handleRefresh} />}

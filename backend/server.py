@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request, Depends, Header
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -43,6 +43,7 @@ from routes.harvest_scoring import router as harvest_scoring_router
 from routes.contracts import router as contracts_router
 from routes.oauth import router as oauth_router
 from routes.ai import router as ai_router
+from routes.ai_claim_workspace import router as ai_claim_workspace_router
 from routes.gamma import router as gamma_router
 from routes.cqil import router as cqil_router
 from routes.centurion import router as centurion_router
@@ -60,6 +61,7 @@ from routes.harvest_rewards_campaigns import router as harvest_rewards_campaigns
 from routes.incentives_engine import router as incentives_engine_router
 from routes.battle_pass import router as battle_pass_router
 from routes.mycard import router as mycard_router
+from routes.comm_conversations import router as comm_conversations_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -225,10 +227,33 @@ async def health_check():
     }
 
 
+async def require_admin_user(authorization: str = Header(default=None)):
+    """Require a valid bearer token for an active admin user."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(" ", 1)[1].strip()
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Inactive or missing user")
+
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return user
+
+
 @app.get("/api/debug/info")
-async def debug_info():
+async def debug_info(current_user: dict = Depends(require_admin_user)):
     """Debug info endpoint - version, build date, configuration"""
-    # This should be protected in production
     return {
         "version": "1.0.0",
         "build_date": "2026-02-05",
@@ -245,7 +270,7 @@ async def debug_info():
 
 
 @app.post("/api/demo/seed")
-async def seed_demo():
+async def seed_demo(current_user: dict = Depends(require_admin_user)):
     """Seed demo data for testing/staging"""
     from demo_data import seed_demo_data
     result = await seed_demo_data(db)
@@ -253,7 +278,7 @@ async def seed_demo():
 
 
 @app.delete("/api/demo/clear")
-async def clear_demo():
+async def clear_demo(current_user: dict = Depends(require_admin_user)):
     """Clear demo data"""
     from demo_data import clear_demo_data
     result = await clear_demo_data(db)
@@ -331,6 +356,7 @@ app.include_router(harvest_scoring_router)
 app.include_router(contracts_router)
 app.include_router(oauth_router)
 app.include_router(ai_router)
+app.include_router(ai_claim_workspace_router)
 app.include_router(gamma_router)
 app.include_router(cqil_router)
 app.include_router(centurion_router)
@@ -348,6 +374,7 @@ app.include_router(harvest_rewards_campaigns_router)
 app.include_router(incentives_engine_router)
 app.include_router(battle_pass_router)
 app.include_router(mycard_router)
+app.include_router(comm_conversations_router)
 app.include_router(feature_flags_router)
 
 # Include integrations routers
@@ -390,25 +417,34 @@ async def ensure_admin_user():
     """Ensure at least one admin user exists"""
     admin_count = await db.users.count_documents({"role": "admin"})
     if admin_count == 0:
-        # Upgrade existing test user to admin or create one
+        environment = os.environ.get("ENVIRONMENT", "development").lower()
         existing_user = await db.users.find_one({"email": "test@eden.com"})
-        if existing_user:
+        if existing_user and environment in ["development", "local", "test"]:
             await db.users.update_one({"email": "test@eden.com"}, {"$set": {"role": "admin"}})
-            logging.info("Upgraded test@eden.com to admin")
-        else:
-            # Create admin user
-            admin_password = os.environ.get("ADMIN_INITIAL_PASSWORD", "admin123")
-            admin_user = {
-                "id": str(uuid.uuid4()),
-                "email": "admin@eden.com",
-                "full_name": "System Admin",
-                "role": "admin",
-                "password": get_password_hash(admin_password),
-                "is_active": True,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.users.insert_one(admin_user)
-            logging.info(f"Created admin user: admin@eden.com / {'*' * len(admin_password)} (set via ADMIN_INITIAL_PASSWORD)")
+            logging.warning("Upgraded test@eden.com to admin in non-production environment")
+            return
+
+        admin_password = os.environ.get("ADMIN_INITIAL_PASSWORD", "").strip()
+        if not admin_password:
+            logging.error(
+                "No admin user exists and ADMIN_INITIAL_PASSWORD is not set. "
+                "Refusing insecure default password bootstrap."
+            )
+            return
+
+        admin_user = {
+            "id": str(uuid.uuid4()),
+            "email": "admin@eden.com",
+            "full_name": "System Admin",
+            "role": "admin",
+            "password": get_password_hash(admin_password),
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(admin_user)
+        logging.info(
+            "Created admin user admin@eden.com using ADMIN_INITIAL_PASSWORD bootstrap"
+        )
 
 # WebSocket endpoint for real-time notifications
 @app.websocket("/ws/notifications")

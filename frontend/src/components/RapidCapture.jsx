@@ -34,7 +34,7 @@ import {
   useInspectionPhotos,
   CAMERA_ERRORS 
 } from '../features/inspections/hooks';
-import { api, API_URL, getToken } from '../lib/api';
+import { api, API_URL } from '../lib/api';
 import { formatDuration, isMobile } from '../lib/core';
 
 // Helper to add token to photo URLs for img tag authentication
@@ -853,7 +853,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
 
         {/* Photo Preview */}
         <div className="flex-1 relative bg-black flex items-center justify-center">
-          <img src={addTokenToPhotoUrl(currentPhoto.url, getToken())} alt="" className="max-w-full max-h-full object-contain" />
+          <img src={addTokenToPhotoUrl(currentPhoto.url())} alt="" className="max-w-full max-h-full object-contain" />
           
           {currentPhoto.latitude && (
             <div className="absolute top-4 left-4 bg-black/60 px-2 py-1 rounded-full flex items-center gap-1">
@@ -987,7 +987,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
                     onClick={() => { setSelectedPhotoIndex(i); setStep('edit'); }}
                     className="relative aspect-square rounded-lg overflow-hidden bg-gray-800 cursor-pointer group hover:ring-2 hover:ring-orange-500 transition-all"
                   >
-                    <img src={addTokenToPhotoUrl(p.url, getToken())} alt="" className="w-full h-full object-cover" />
+                    <img src={addTokenToPhotoUrl(p.url())} alt="" className="w-full h-full object-cover" />
                     
                     <button
                       onClick={(e) => { e.stopPropagation(); deletePhoto(p.id); }}
@@ -1122,7 +1122,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
           <div className="absolute bottom-36 left-0 right-0 px-4">
             <div className="flex gap-1.5 overflow-x-auto">
               {photos.slice(-6).map(p => (
-                <img key={p.id} src={addTokenToPhotoUrl(p.url, getToken())} className="w-12 h-12 rounded object-cover border border-white/30" />
+                <img key={p.id} src={addTokenToPhotoUrl(p.url())} className="w-12 h-12 rounded object-cover border border-white/30" />
               ))}
               {photos.length > 6 && (
                 <div className="w-12 h-12 bg-black/50 rounded flex items-center justify-center text-white text-xs font-bold">

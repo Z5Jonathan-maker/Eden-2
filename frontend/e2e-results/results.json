@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/app/frontend/playwright.config.js",
-    "rootDir": "/app/frontend/e2e",
+    "configFile": "C:\\Users\\HP\\Documents\\trae_projects\\eden 2\\frontend\\frontend\\playwright.config.js",
+    "rootDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/e2e",
     "forbidOnly": false,
     "fullyParallel": true,
     "globalSetup": null,
@@ -11,20 +11,20 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 2
+      "actualWorkers": 6
     },
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/app/frontend/test-results",
+        "outputDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 6
         },
         "id": "iPhone SE (small)",
         "name": "iPhone SE (small)",
-        "testDir": "/app/frontend/e2e",
+        "testDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -32,15 +32,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "/app/frontend/test-results",
+        "outputDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 6
         },
         "id": "iPhone 14 Pro Max (large)",
         "name": "iPhone 14 Pro Max (large)",
-        "testDir": "/app/frontend/e2e",
+        "testDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -48,15 +48,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "/app/frontend/test-results",
+        "outputDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 6
         },
         "id": "Desktop Chrome",
         "name": "Desktop Chrome",
-        "testDir": "/app/frontend/e2e",
+        "testDir": "C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -92,26 +92,31 @@
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.1",
-    "workers": 2,
-    "webServer": null
+    "version": "1.58.2",
+    "workers": 6,
+    "webServer": {
+      "command": "cross-env REACT_APP_BACKEND_URL=https://eden-gsot.onrender.com npm start",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 180000
+    }
   },
   "suites": [
     {
-      "title": "harvest.spec.js",
-      "file": "harvest.spec.js",
+      "title": "navigation.spec.js",
+      "file": "navigation.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Harvest/Canvassing",
-          "file": "harvest.spec.js",
+          "title": "Navigation",
+          "file": "navigation.spec.js",
           "line": 8,
           "column": 6,
           "specs": [
             {
-              "title": "harvest page renders without overflow",
+              "title": "main navigation links are visible",
               "ok": true,
               "tags": [],
               "tests": [
@@ -126,12 +131,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7509,
+                      "duration": 27517,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-05T14:22:36.750Z",
+                      "startTime": "2026-02-12T20:01:20.574Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -139,13 +144,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e6e9d27afd1c1e4330b-4e7ee446ed86f70e060f",
-              "file": "harvest.spec.js",
-              "line": 17,
+              "id": "ce7c070a851ea64285fd-668075dbf8379a7104f8",
+              "file": "navigation.spec.js",
+              "line": 14,
               "column": 3
             },
             {
-              "title": "map container is visible",
+              "title": "dashboard loads without overflow",
               "ok": true,
               "tags": [],
               "tests": [
@@ -160,12 +165,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 6376,
+                      "duration": 28069,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-05T14:22:36.782Z",
+                      "startTime": "2026-02-12T20:01:20.575Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -173,13 +178,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e6e9d27afd1c1e4330b-75307a3382357d8e6dc5",
-              "file": "harvest.spec.js",
-              "line": 29,
+              "id": "ce7c070a851ea64285fd-ee7a60f36230e185bd42",
+              "file": "navigation.spec.js",
+              "line": 25,
               "column": 3
             },
             {
-              "title": "tab navigation works",
+              "title": "claims page loads without errors",
               "ok": true,
               "tags": [],
               "tests": [
@@ -191,15 +196,15 @@
                   "projectName": "Desktop Chrome",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 7134,
+                      "duration": 29354,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-05T14:22:43.384Z",
+                      "startTime": "2026-02-12T20:01:20.449Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -207,13 +212,115 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e6e9d27afd1c1e4330b-32984c764ee06187f9a1",
-              "file": "harvest.spec.js",
-              "line": 34,
+              "id": "ce7c070a851ea64285fd-72a03b666a566ae45f42",
+              "file": "navigation.spec.js",
+              "line": 33,
               "column": 3
             },
             {
-              "title": "leaderboard tab shows content",
+              "title": "harvest/canvassing page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Desktop Chrome",
+                  "projectName": "Desktop Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 30737,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-12T20:01:20.327Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ce7c070a851ea64285fd-2d25369e539b38a8d24b",
+              "file": "navigation.spec.js",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "inspections page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Desktop Chrome",
+                  "projectName": "Desktop Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 33880,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-12T20:01:20.779Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ce7c070a851ea64285fd-fb04305cbdf157c65f0b",
+              "file": "navigation.spec.js",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "contracts page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Desktop Chrome",
+                  "projectName": "Desktop Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 29870,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-12T20:01:20.504Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ce7c070a851ea64285fd-f78f233ec72d8f7e2a51",
+              "file": "navigation.spec.js",
+              "line": 79,
+              "column": 3
+            },
+            {
+              "title": "integrations page loads",
               "ok": true,
               "tags": [],
               "tests": [
@@ -228,12 +335,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6796,
+                      "duration": 12396,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-05T14:22:44.487Z",
+                      "startTime": "2026-02-12T20:01:49.818Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -241,13 +348,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e6e9d27afd1c1e4330b-2a8fbf15dac064796de5",
-              "file": "harvest.spec.js",
-              "line": 52,
+              "id": "ce7c070a851ea64285fd-e81c65f1c94bb29fd285",
+              "file": "navigation.spec.js",
+              "line": 90,
               "column": 3
             },
             {
-              "title": "stats footer is visible",
+              "title": "notification bell is clickable",
               "ok": true,
               "tags": [],
               "tests": [
@@ -262,12 +369,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5800,
+                      "duration": 12643,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-02-05T14:22:50.527Z",
+                      "startTime": "2026-02-12T20:01:50.374Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -275,81 +382,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e6e9d27afd1c1e4330b-5fe49856bbf51a537417",
-              "file": "harvest.spec.js",
-              "line": 66,
-              "column": 3
-            },
-            {
-              "title": "pin markers are visible on map",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Desktop Chrome",
-                  "projectName": "Desktop Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 8008,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "Found 55 map markers\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-02-05T14:22:51.297Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4e6e9d27afd1c1e4330b-808d7d58a556abc1cac0",
-              "file": "harvest.spec.js",
-              "line": 76,
-              "column": 3
-            },
-            {
-              "title": "clicking map marker opens popup",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Desktop Chrome",
-                  "projectName": "Desktop Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 8024,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-02-05T14:22:56.336Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4e6e9d27afd1c1e4330b-3b009206f893d2db78e7",
-              "file": "harvest.spec.js",
-              "line": 88,
+              "id": "ce7c070a851ea64285fd-0a95387ef71390409adc",
+              "file": "navigation.spec.js",
+              "line": 101,
               "column": 3
             }
           ]
@@ -359,9 +394,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-02-05T14:22:35.857Z",
-    "duration": 28576.962,
-    "expected": 7,
+    "startTime": "2026-02-12T20:00:54.418Z",
+    "duration": 69400.89199999999,
+    "expected": 8,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -7,15 +7,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { 
-  Radar, Globe, Eye, Wrench, Loader2, CheckCircle, XCircle, 
-  Clock, AlertCircle, AlertTriangle, Route, Lock, Code, Copy,
-  Smartphone, Monitor, Tablet, Play
+import {
+  Radar,
+  Globe,
+  Eye,
+  Wrench,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  AlertTriangle,
+  Route,
+  Lock,
+  Code,
+  Copy,
+  Smartphone,
+  Monitor,
+  Tablet,
+  Play,
 } from 'lucide-react';
 
 // Scan Results Card Component
 const ScanResultsCard = ({ sentinelScan }) => {
   if (!sentinelScan) return null;
+  const formatLatency = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? `${num.toFixed(0)}ms` : null;
+  };
 
   return (
     <Card className="bg-white border-purple-500/30 border">
@@ -25,11 +44,15 @@ const ScanResultsCard = ({ sentinelScan }) => {
             <Radar className="w-5 h-5 text-purple-400" />
             API Scan: {sentinelScan.scan_id}
           </CardTitle>
-          <Badge className={
-            sentinelScan.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-            sentinelScan.status === 'running' ? 'bg-blue-500/20 text-blue-400' :
-            'bg-red-500/20 text-red-400'
-          }>
+          <Badge
+            className={
+              sentinelScan.status === 'completed'
+                ? 'bg-green-500/20 text-green-400'
+                : sentinelScan.status === 'running'
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-red-500/20 text-red-400'
+            }
+          >
             {sentinelScan.status?.toUpperCase()}
           </Badge>
         </div>
@@ -37,16 +60,16 @@ const ScanResultsCard = ({ sentinelScan }) => {
       <CardContent>
         {sentinelScan.status === 'running' && (
           <div className="mb-4">
-            <Progress 
-              value={(sentinelScan.routes_checked / (sentinelScan.total_routes || 1)) * 100} 
-              className="h-2" 
+            <Progress
+              value={(sentinelScan.routes_checked / (sentinelScan.total_routes || 1)) * 100}
+              className="h-2"
             />
             <p className="text-xs text-gray-500 mt-1">
               Checking {sentinelScan.routes_checked} of {sentinelScan.total_routes} endpoints...
             </p>
           </div>
         )}
-        
+
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>
             <p className="text-2xl font-bold text-gray-900">{sentinelScan.total_routes}</p>
@@ -61,7 +84,9 @@ const ScanResultsCard = ({ sentinelScan }) => {
             <p className="text-xs text-gray-500">Failed</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-yellow-400">{sentinelScan.break_reports_generated}</p>
+            <p className="text-2xl font-bold text-yellow-400">
+              {sentinelScan.break_reports_generated}
+            </p>
             <p className="text-xs text-gray-500">Break Reports</p>
           </div>
         </div>
@@ -72,12 +97,14 @@ const ScanResultsCard = ({ sentinelScan }) => {
             <p className="text-sm font-medium text-gray-600 mb-2">Endpoint Results</p>
             <div className="space-y-1">
               {sentinelScan.route_results.map((result, idx) => (
-                <div 
+                <div
                   key={idx}
                   className={`flex items-center justify-between p-2 rounded text-sm ${
-                    result.status === 'pass' ? 'bg-green-500/10' :
-                    result.status === 'fail' ? 'bg-red-500/10' :
-                    'bg-gray-800'
+                    result.status === 'pass'
+                      ? 'bg-green-500/10'
+                      : result.status === 'fail'
+                        ? 'bg-red-500/10'
+                        : 'bg-gray-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -88,7 +115,9 @@ const ScanResultsCard = ({ sentinelScan }) => {
                     ) : (
                       <Clock className="w-4 h-4 text-gray-600" />
                     )}
-                    <span className="text-gray-300">{result.method} {result.path}</span>
+                    <span className="text-gray-300">
+                      {result.method} {result.path}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     {result.response_code && (
@@ -96,8 +125,10 @@ const ScanResultsCard = ({ sentinelScan }) => {
                         {result.response_code}
                       </Badge>
                     )}
-                    {result.latency_ms && (
-                      <span className="text-xs text-gray-500">{result.latency_ms.toFixed(0)}ms</span>
+                    {formatLatency(result.latency_ms) && (
+                      <span className="text-xs text-gray-500">
+                        {formatLatency(result.latency_ms)}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -122,11 +153,15 @@ const BrowserCrawlCard = ({ browserCrawl }) => {
             <Eye className="w-5 h-5 text-blue-400" />
             Browser UI Crawl: {browserCrawl.crawl_id}
           </CardTitle>
-          <Badge className={
-            browserCrawl.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-            browserCrawl.status === 'running' ? 'bg-blue-500/20 text-blue-400' :
-            'bg-red-500/20 text-red-400'
-          }>
+          <Badge
+            className={
+              browserCrawl.status === 'completed'
+                ? 'bg-green-500/20 text-green-400'
+                : browserCrawl.status === 'running'
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-red-500/20 text-red-400'
+            }
+          >
             {browserCrawl.status?.toUpperCase()}
           </Badge>
         </div>
@@ -138,26 +173,36 @@ const BrowserCrawlCard = ({ browserCrawl }) => {
             <span>Crawling frontend routes with headless browser...</span>
           </div>
         )}
-        
+
         <div className="grid grid-cols-5 gap-4 text-center mb-4">
           <div>
-            <p className="text-2xl font-bold text-gray-900">{browserCrawl.result.routes_checked || 0}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {browserCrawl.result.routes_checked || 0}
+            </p>
             <p className="text-xs text-gray-500">Routes</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-green-400">{browserCrawl.result.routes_passed || 0}</p>
+            <p className="text-2xl font-bold text-green-400">
+              {browserCrawl.result.routes_passed || 0}
+            </p>
             <p className="text-xs text-gray-500">Passed</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-red-400">{browserCrawl.result.routes_failed || 0}</p>
+            <p className="text-2xl font-bold text-red-400">
+              {browserCrawl.result.routes_failed || 0}
+            </p>
             <p className="text-xs text-gray-500">Failed</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-blue-400">{browserCrawl.result.total_elements_found || 0}</p>
+            <p className="text-2xl font-bold text-blue-400">
+              {browserCrawl.result.total_elements_found || 0}
+            </p>
             <p className="text-xs text-gray-500">Elements Found</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-orange-400">{browserCrawl.result.total_elements_missing || 0}</p>
+            <p className="text-2xl font-bold text-orange-400">
+              {browserCrawl.result.total_elements_missing || 0}
+            </p>
             <p className="text-xs text-gray-500">Missing</p>
           </div>
         </div>
@@ -229,8 +274,8 @@ const AutoFixesCard = ({ autoFixes, isGenerating, onGenerateFixes }) => {
                     </Badge>
                     <span className="text-gray-900 font-medium">{fix.issue}</span>
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="ghost"
                     className="text-gray-600 hover:text-gray-900"
                     onClick={() => navigator.clipboard.writeText(fix.code || fix.suggestion)}
@@ -280,9 +325,7 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
                 <Badge variant="outline" className="text-xs text-gray-600">
                   {route.module}
                 </Badge>
-                {route.auth_required && (
-                  <Lock className="w-3 h-3 text-yellow-400" />
-                )}
+                {route.auth_required && <Lock className="w-3 h-3 text-yellow-400" />}
               </div>
             </div>
           ))}
@@ -303,11 +346,11 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
             <div key={idx} className="flex items-center justify-between p-2 bg-gray-800 rounded">
               <div>
                 <p className="text-gray-900 text-sm">{endpoint.name}</p>
-                <p className="text-gray-500 text-xs">{endpoint.method} {endpoint.path}</p>
+                <p className="text-gray-500 text-xs">
+                  {endpoint.method} {endpoint.path}
+                </p>
               </div>
-              {endpoint.auth_required && (
-                <Lock className="w-3 h-3 text-yellow-400" />
-              )}
+              {endpoint.auth_required && <Lock className="w-3 h-3 text-yellow-400" />}
             </div>
           ))}
         </div>
@@ -317,11 +360,15 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
 );
 
 // Mobile Regression Card Component
-const MobileRegressionCard = ({ onRunMobileRegression, mobileRegression, isMobileRegressionRunning }) => {
+const MobileRegressionCard = ({
+  onRunMobileRegression,
+  mobileRegression,
+  isMobileRegressionRunning,
+}) => {
   const viewportIcons = {
     desktop: Monitor,
     tablet: Tablet,
-    mobile: Smartphone
+    mobile: Smartphone,
   };
 
   return (
@@ -386,12 +433,18 @@ const MobileRegressionCard = ({ onRunMobileRegression, mobileRegression, isMobil
                 <div className="space-y-2">
                   {mobileRegression.mobile_issues.slice(0, 5).map((issue, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-300">{issue.route}: {issue.issue}</span>
-                      <Badge className={
-                        issue.severity === 'P0' ? 'bg-red-500/20 text-red-400' :
-                        issue.severity === 'P1' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-600'
-                      }>
+                      <span className="text-gray-300">
+                        {issue.route}: {issue.issue}
+                      </span>
+                      <Badge
+                        className={
+                          issue.severity === 'P0'
+                            ? 'bg-red-500/20 text-red-400'
+                            : issue.severity === 'P1'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-gray-500/20 text-gray-600'
+                        }
+                      >
                         {issue.severity}
                       </Badge>
                     </div>
@@ -408,7 +461,9 @@ const MobileRegressionCard = ({ onRunMobileRegression, mobileRegression, isMobil
               <Smartphone className="w-8 h-8 opacity-50" />
             </div>
             <p>Test your app across Desktop, Tablet, and Mobile viewports</p>
-            <p className="text-sm text-gray-500 mt-2">Identifies responsive design issues automatically</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Identifies responsive design issues automatically
+            </p>
           </div>
         )}
       </CardContent>
@@ -432,7 +487,7 @@ export const CenturionTab = ({
   onRunScan,
   onRunBrowserCrawl,
   onGenerateFixes,
-  onRunMobileRegression
+  onRunMobileRegression,
 }) => {
   return (
     <div className="space-y-6">
@@ -446,11 +501,13 @@ export const CenturionTab = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">The Centurion</h2>
-                <p className="text-gray-600">Button/Link/Route Verifier — Detects dead ends & broken handlers</p>
+                <p className="text-gray-600">
+                  Button/Link/Route Verifier — Detects dead ends & broken handlers
+                </p>
               </div>
             </div>
             <div className="flex gap-3">
-              <Button 
+              <Button
                 onClick={onRunScan}
                 disabled={isScanRunning || isBrowserCrawlRunning}
                 className="bg-purple-600 hover:bg-purple-700"
@@ -467,7 +524,7 @@ export const CenturionTab = ({
                   </>
                 )}
               </Button>
-              <Button 
+              <Button
                 onClick={onRunBrowserCrawl}
                 disabled={isScanRunning || isBrowserCrawlRunning}
                 variant="outline"
@@ -485,7 +542,7 @@ export const CenturionTab = ({
                   </>
                 )}
               </Button>
-              <Button 
+              <Button
                 onClick={() => onGenerateFixes(browserCrawl?.crawl_id)}
                 disabled={isGeneratingFixes}
                 variant="outline"
@@ -519,19 +576,25 @@ export const CenturionTab = ({
           </Card>
           <Card className="bg-white border-gray-200">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-green-400">{sentinelSummary.routes_verified || 0}</p>
+              <p className="text-3xl font-bold text-green-400">
+                {sentinelSummary.routes_verified || 0}
+              </p>
               <p className="text-xs text-gray-500">Routes Verified</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-gray-200">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-red-400">{sentinelSummary.dead_ends_found || 0}</p>
+              <p className="text-3xl font-bold text-red-400">
+                {sentinelSummary.dead_ends_found || 0}
+              </p>
               <p className="text-xs text-gray-500">Dead Ends Found</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-gray-200">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-blue-400">{sentinelSummary.issues_auto_fixed || 0}</p>
+              <p className="text-3xl font-bold text-blue-400">
+                {sentinelSummary.issues_auto_fixed || 0}
+              </p>
               <p className="text-xs text-gray-500">Auto-Fixed</p>
             </CardContent>
           </Card>
@@ -540,29 +603,26 @@ export const CenturionTab = ({
 
       {/* Scan Results */}
       <ScanResultsCard sentinelScan={sentinelScan} />
-      
+
       {/* Browser Crawl Results */}
       <BrowserCrawlCard browserCrawl={browserCrawl} />
-      
+
       {/* Auto-Fixes */}
-      <AutoFixesCard 
-        autoFixes={autoFixes} 
+      <AutoFixesCard
+        autoFixes={autoFixes}
         isGenerating={isGeneratingFixes}
         onGenerateFixes={onGenerateFixes}
       />
 
       {/* Mobile Regression Card */}
-      <MobileRegressionCard 
+      <MobileRegressionCard
         onRunMobileRegression={onRunMobileRegression}
         mobileRegression={mobileRegression}
         isMobileRegressionRunning={isMobileRegressionRunning}
       />
 
       {/* Route Registry */}
-      <RouteRegistry 
-        sentinelRoutes={sentinelRoutes} 
-        sentinelEndpoints={sentinelEndpoints} 
-      />
+      <RouteRegistry sentinelRoutes={sentinelRoutes} sentinelEndpoints={sentinelEndpoints} />
     </div>
   );
 };

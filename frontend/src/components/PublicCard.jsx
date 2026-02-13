@@ -2,7 +2,7 @@
  * PublicCard.jsx - Public Business Card View
  * Premium Tactical Military-Style Digital Business Card for sharing
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   User, Mail, Phone, Share2, Star, Briefcase, Copy, 
@@ -61,11 +61,7 @@ const PublicCard = () => {
   });
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    fetchCard();
-  }, [slug]);
-
-  const fetchCard = async () => {
+  const fetchCard = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/mycard/public/${slug}`);
       if (res.ok) {
@@ -82,7 +78,11 @@ const PublicCard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    fetchCard();
+  }, [fetchCard]);
 
   const trackClick = async (type) => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -23,11 +23,37 @@ const NotionIntegration = () => {
 
   const getToken = () => localStorage.getItem('eden_token');
 
-  useEffect(() => {
-    fetchStatus();
+  const fetchDatabases = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/notion/databases`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDatabases(data.databases || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch databases:', err);
+    }
   }, []);
 
-  const fetchStatus = async () => {
+  const fetchPages = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/notion/pages`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setPages(data.pages || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pages:', err);
+    }
+  }, []);
+
+  const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/notion/status`, {
@@ -48,37 +74,11 @@ const NotionIntegration = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchDatabases, fetchPages]);
 
-  const fetchDatabases = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/notion/databases`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setDatabases(data.databases || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch databases:', err);
-    }
-  };
-
-  const fetchPages = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/notion/pages`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setPages(data.pages || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch pages:', err);
-    }
-  };
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
   const createDatabase = async () => {
     if (!selectedParent) {

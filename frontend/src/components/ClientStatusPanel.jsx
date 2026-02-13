@@ -6,22 +6,30 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Loader2, MessageSquare, Copy, ExternalLink, Presentation, Check, ChevronDown } from 'lucide-react';
+import {
+  Loader2,
+  MessageSquare,
+  Copy,
+  ExternalLink,
+  Presentation,
+  Check,
+  ChevronDown,
+} from 'lucide-react';
 import { useClientStatus, CLAIM_STAGES } from '../hooks/useClientStatus';
 import { useGamma } from '../hooks/useGamma';
 import { toast } from 'sonner';
 
 // Stage Progress Bar Component
 const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
-  const currentOrder = CLAIM_STAGES.find(s => s.id === currentStage)?.order || 1;
-  
+  const currentOrder = CLAIM_STAGES.find((s) => s.id === currentStage)?.order || 1;
+
   return (
     <div className="flex items-center justify-between w-full mb-4">
       {CLAIM_STAGES.map((stage, index) => {
         const isCompleted = stage.order < currentOrder;
         const isCurrent = stage.id === currentStage;
         const isUpcoming = stage.order > currentOrder;
-        
+
         return (
           <React.Fragment key={stage.id}>
             {/* Stage dot/circle */}
@@ -41,20 +49,24 @@ const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
               >
                 {isCompleted ? <Check className="w-4 h-4" /> : stage.order}
               </button>
-              <span className={`
+              <span
+                className={`
                 text-xs mt-1 whitespace-nowrap
                 ${isCurrent ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
-              `}>
+              `}
+              >
                 {stage.label}
               </span>
             </div>
-            
+
             {/* Connector line */}
             {index < CLAIM_STAGES.length - 1 && (
-              <div className={`
+              <div
+                className={`
                 flex-1 h-0.5 mx-2
                 ${stage.order < currentOrder ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}
-              `} />
+              `}
+              />
             )}
           </React.Fragment>
         );
@@ -64,18 +76,18 @@ const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
 };
 
 // Client Update Modal
-const ClientUpdateModal = ({ 
-  isOpen, 
-  onClose, 
-  generatedUpdate, 
+const ClientUpdateModal = ({
+  isOpen,
+  onClose,
+  generatedUpdate,
   onCreateDeck,
   creatingDeck,
-  claimNumber 
+  claimNumber,
 }) => {
   const [copied, setCopied] = useState(false);
-  
+
   if (!isOpen || !generatedUpdate) return null;
-  
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(generatedUpdate.message);
@@ -86,12 +98,15 @@ const ClientUpdateModal = ({
       toast.error('Failed to copy');
     }
   };
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
           <div>
@@ -100,14 +115,16 @@ const ClientUpdateModal = ({
           </div>
           <Badge variant="outline">{generatedUpdate.stage_label}</Badge>
         </div>
-        
+
         <div className="p-4 overflow-y-auto max-h-[50vh]">
-          <div className="text-sm text-gray-500 mb-2">Subject: {generatedUpdate.suggested_subject}</div>
+          <div className="text-sm text-gray-500 mb-2">
+            Subject: {generatedUpdate.suggested_subject}
+          </div>
           <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg whitespace-pre-wrap text-sm">
             {generatedUpdate.message}
           </div>
         </div>
-        
+
         <div className="p-4 border-t dark:border-gray-700 flex flex-wrap gap-2">
           <Button
             variant="outline"
@@ -118,7 +135,7 @@ const ClientUpdateModal = ({
             {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
             {copied ? 'Copied!' : 'Copy Text'}
           </Button>
-          
+
           <Button
             onClick={onCreateDeck}
             disabled={creatingDeck}
@@ -132,7 +149,7 @@ const ClientUpdateModal = ({
             )}
             {creatingDeck ? 'Creating...' : 'Create Gamma Deck'}
           </Button>
-          
+
           <Button variant="ghost" onClick={onClose} className="flex-1">
             Close
           </Button>
@@ -143,11 +160,7 @@ const ClientUpdateModal = ({
 };
 
 // Main Panel Component
-export const ClientStatusPanel = ({ 
-  claimId, 
-  isClientView = false,
-  compact = false 
-}) => {
+export const ClientStatusPanel = ({ claimId, isClientView = false, compact = false }) => {
   const {
     status,
     loading,
@@ -158,19 +171,19 @@ export const ClientStatusPanel = ({
     generateUpdate,
     createClientDeck,
     updateStage,
-    clearGeneratedUpdate
+    clearGeneratedUpdate,
   } = useClientStatus(claimId);
-  
+
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [creatingDeck, setCreatingDeck] = useState(false);
   const [toneDropdown, setToneDropdown] = useState(false);
-  
+
   useEffect(() => {
     if (claimId) {
       fetchStatus();
     }
   }, [claimId, fetchStatus]);
-  
+
   const handleGenerateUpdate = async (tone = 'encouraging') => {
     setToneDropdown(false);
     try {
@@ -180,7 +193,7 @@ export const ClientStatusPanel = ({
       toast.error(err.message || 'Failed to generate update');
     }
   };
-  
+
   const handleCreateDeck = async () => {
     setCreatingDeck(true);
     try {
@@ -189,8 +202,8 @@ export const ClientStatusPanel = ({
         toast.success('Client deck created!', {
           action: {
             label: 'Open in Gamma',
-            onClick: () => window.open(result.edit_url, '_blank')
-          }
+            onClick: () => window.open(result.edit_url, '_blank'),
+          },
         });
         window.open(result.edit_url, '_blank');
       }
@@ -200,18 +213,18 @@ export const ClientStatusPanel = ({
       setCreatingDeck(false);
     }
   };
-  
+
   const handleStageClick = async (newStage) => {
     if (isClientView) return; // Clients can't change stage
-    
+
     try {
       await updateStage(newStage);
-      toast.success(`Stage updated to ${CLAIM_STAGES.find(s => s.id === newStage)?.label}`);
+      toast.success(`Stage updated to ${CLAIM_STAGES.find((s) => s.id === newStage)?.label}`);
     } catch (err) {
       toast.error(err.message || 'Failed to update stage');
     }
   };
-  
+
   if (loading && !status) {
     return (
       <Card>
@@ -221,19 +234,17 @@ export const ClientStatusPanel = ({
       </Card>
     );
   }
-  
+
   if (error && !status) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-red-500">
-          {error}
-        </CardContent>
+        <CardContent className="p-6 text-center text-red-500">{error}</CardContent>
       </Card>
     );
   }
-  
+
   if (!status) return null;
-  
+
   // Client View - Simplified
   if (isClientView) {
     return (
@@ -241,30 +252,34 @@ export const ClientStatusPanel = ({
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center justify-between">
             <span>Your Claim Status</span>
-            <Badge variant="outline" className="text-blue-600">{status.stage_label}</Badge>
+            <Badge variant="outline" className="text-blue-600">
+              {status.stage_label}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <StageProgressBar currentStage={status.stage} editable={false} />
-          
+
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <p className="text-sm">{status.status_text}</p>
           </div>
-          
+
           {status.next_actions_firm && (
             <div>
               <h4 className="text-sm font-medium text-gray-500 mb-1">What We're Doing</h4>
               <p className="text-sm">{status.next_actions_firm}</p>
             </div>
           )}
-          
+
           {status.next_actions_client && (
             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">What We Need From You</h4>
+              <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">
+                What We Need From You
+              </h4>
               <p className="text-sm">{status.next_actions_client}</p>
             </div>
           )}
-          
+
           {status.last_client_update_at && (
             <p className="text-xs text-gray-400">
               Last updated: {new Date(status.last_client_update_at).toLocaleDateString()}
@@ -274,7 +289,7 @@ export const ClientStatusPanel = ({
       </Card>
     );
   }
-  
+
   // Adjuster View - Full Controls
   return (
     <>
@@ -286,30 +301,34 @@ export const ClientStatusPanel = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <StageProgressBar 
-            currentStage={status.stage} 
+          <StageProgressBar
+            currentStage={status.stage}
             onStageClick={handleStageClick}
             editable={true}
           />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-              <h4 className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">What We're Doing</h4>
+              <h4 className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
+                What We're Doing
+              </h4>
               <p className="text-sm">{status.next_actions_firm || 'Processing claim...'}</p>
             </div>
-            
+
             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
-              <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1 uppercase tracking-wider">What We Need From Client</h4>
+              <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1 uppercase tracking-wider">
+                What We Need From Client
+              </h4>
               <p className="text-sm">{status.next_actions_client || 'No action needed'}</p>
             </div>
           </div>
-          
+
           {status.last_client_update_at && (
             <p className="text-xs text-gray-400">
               Last client update: {new Date(status.last_client_update_at).toLocaleString()}
             </p>
           )}
-          
+
           {/* Generate Update Button with Tone Dropdown */}
           <div className="relative">
             <div className="flex gap-2">
@@ -326,19 +345,23 @@ export const ClientStatusPanel = ({
                 )}
                 {generatingUpdate ? 'Eve is writing...' : 'Generate Client Update (Eve)'}
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => setToneDropdown(!toneDropdown)}
                 className="px-2"
               >
-                <ChevronDown className={`w-4 h-4 transition-transform ${toneDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${toneDropdown ? 'rotate-180' : ''}`}
+                />
               </Button>
             </div>
-            
+
             {toneDropdown && (
               <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
-                <div className="p-2 text-xs text-gray-500 border-b dark:border-gray-700">Select Tone</div>
+                <div className="p-2 text-xs text-gray-500 border-b dark:border-gray-700">
+                  Select Tone
+                </div>
                 <button
                   onClick={() => handleGenerateUpdate('encouraging')}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -362,7 +385,7 @@ export const ClientStatusPanel = ({
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Update Modal */}
       <ClientUpdateModal
         isOpen={showUpdateModal}

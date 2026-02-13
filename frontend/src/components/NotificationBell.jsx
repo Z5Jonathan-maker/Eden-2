@@ -30,19 +30,36 @@ const NotificationBell = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Polling fallback
+  const startPolling = useCallback(() => {
+    if (pollIntervalRef.current) return;
+    
+    // console.log('Starting notification polling');
+    pollIntervalRef.current = setInterval(() => {
+      fetchUnreadCount();
+    }, 15000);
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      // console.log('Stopping notification polling');
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
   // Connect to WebSocket
   const connectWebSocket = useCallback(() => {
     const token = localStorage.getItem('eden_token');
-    if (!token) return;
+    if (!token) return undefined;
 
     const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    
+
     try {
       const ws = new WebSocket(`${wsUrl}/ws/notifications?token=${token}`);
-      
+
       const connectionTimeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.OPEN) {
-          // console.log('WebSocket connection timeout, falling back to polling');
           ws.close();
           startPolling();
         }
@@ -50,10 +67,9 @@ const NotificationBell = () => {
 
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        // console.log('WebSocket connected');
         setWsConnected(true);
         stopPolling();
-        
+
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
@@ -63,12 +79,10 @@ const NotificationBell = () => {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (data.type === 'notification') {
             setNotifications(prev => [data.data, ...prev]);
             setUnreadCount(prev => prev + 1);
-          } else if (data.type === 'connected') {
-            // console.log('WebSocket connection confirmed');
           }
         } catch (e) {
           console.error('Failed to parse WebSocket message:', e);
@@ -77,15 +91,13 @@ const NotificationBell = () => {
 
       ws.onclose = (event) => {
         clearTimeout(connectionTimeout);
-        // console.log('WebSocket disconnected:', event.code, event.reason);
         setWsConnected(false);
         wsRef.current = null;
-        
+
         startPolling();
-        
+
         if (event.code !== 1000 && event.code !== 4001) {
           reconnectTimeoutRef.current = setTimeout(() => {
-            // console.log('Attempting to reconnect WebSocket...');
             connectWebSocket();
           }, 10000);
         }
@@ -114,26 +126,9 @@ const NotificationBell = () => {
     } catch (e) {
       console.error('WebSocket creation failed:', e);
       startPolling();
+      return undefined;
     }
-  }, []);
-
-  // Polling fallback
-  const startPolling = useCallback(() => {
-    if (pollIntervalRef.current) return;
-    
-    // console.log('Starting notification polling');
-    pollIntervalRef.current = setInterval(() => {
-      fetchUnreadCount();
-    }, 15000);
-  }, []);
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      // console.log('Stopping notification polling');
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  }, []);
+  }, [startPolling, stopPolling]);
 
   useEffect(() => {
     fetchNotifications();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -38,11 +38,7 @@ function UserManagement() {
     return localStorage.getItem('eden_token');
   }
 
-  useEffect(function() {
-    fetchData();
-  }, []);
-
-  function fetchData() {
+  const fetchData = useCallback(function fetchData() {
     setLoading(true);
     var headers = { 'Authorization': 'Bearer ' + getToken() };
     
@@ -62,7 +58,11 @@ function UserManagement() {
       setError('Failed to load users. You may not have permission.');
       setLoading(false);
     });
-  }
+  }, []);
+
+  useEffect(function() {
+    fetchData();
+  }, [fetchData]);
 
   function handleCreateUser(e) {
     e.preventDefault();

@@ -34,3 +34,13 @@ A full-stack application for insurance claims management, field operations, and 
 
 ## Architecture
 See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
+
+## Production Deploy (Frontend)
+
+Use one command only:
+
+```powershell
+npm --prefix frontend run deploy:prod
+```
+
+This is pinned to Vercel project `eden2` and verifies `https://eden2-five.vercel.app` after deploy.

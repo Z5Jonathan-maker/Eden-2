@@ -23,7 +23,7 @@ const CommCenterDialer = ({ claimId, defaultNumber }) => {
       to: phoneNumber,
       claim_id: claimId || null,
       script: script || null,
-      record: recordCall
+      record: recordCall,
     });
     setCalling(false);
 
@@ -62,11 +62,7 @@ const CommCenterDialer = ({ claimId, defaultNumber }) => {
         />
         Record call
       </label>
-      <Button
-        onClick={handleCall}
-        className="btn-tactical w-full"
-        disabled={calling}
-      >
+      <Button onClick={handleCall} className="btn-tactical w-full" disabled={calling}>
         {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
         <span>Initiate Call</span>
       </Button>

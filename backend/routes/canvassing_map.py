@@ -2,6 +2,7 @@
 Canvassing Map API Routes - Enzy-style canvassing with interactive maps
 """
 import os
+import math
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
@@ -9,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import uuid
 
-from dependencies import db, get_current_active_user as get_current_user
+from dependencies import db, get_current_active_user as get_current_user, require_role
 
 router = APIRouter(prefix="/api/canvassing-map", tags=["Canvassing Map"])
 
@@ -26,6 +27,7 @@ class DoorPinCreate(BaseModel):
     homeowner_name: Optional[str] = None
     phone: Optional[str] = None
     territory_id: Optional[str] = None
+    idempotency_key: Optional[str] = None
 
 class DoorPinUpdate(BaseModel):
     disposition: Optional[str] = None
@@ -63,6 +65,142 @@ DISPOSITIONS = {
     "do_not_knock": {"color": "#1F2937", "label": "Do Not Knock", "icon": "ban"},
 }
 
+
+def _coerce_float(value):
+    try:
+        numeric = float(value)
+        return numeric
+    except (TypeError, ValueError):
+        return None
+
+
+def _distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Haversine distance in meters."""
+    earth_radius_m = 6371000.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = (
+        math.sin(d_phi / 2.0) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2.0) ** 2
+    )
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return earth_radius_m * c
+
+
+PIN_DEDUPE_TIME_SECONDS = 45
+PIN_DEDUPE_DISTANCE_METERS = 25
+
+
+def _find_duplicate_pin(
+    latitude: float,
+    longitude: float,
+    candidates: List[dict],
+    max_distance_meters: float = PIN_DEDUPE_DISTANCE_METERS,
+) -> Optional[dict]:
+    """Return the closest duplicate candidate within max_distance_meters."""
+    closest = None
+    for existing in candidates:
+        existing_lat = _coerce_float(existing.get("latitude"))
+        existing_lng = _coerce_float(existing.get("longitude"))
+        if existing_lat is None or existing_lng is None:
+            continue
+        meters = _distance_meters(latitude, longitude, existing_lat, existing_lng)
+        if meters <= max_distance_meters and (
+            closest is None or meters < closest["distance_m"]
+        ):
+            closest = {
+                "pin": existing,
+                "latitude": existing_lat,
+                "longitude": existing_lng,
+                "distance_m": meters,
+            }
+    return closest
+
+
+def _duplicate_pin_response(duplicate: dict) -> dict:
+    pin = duplicate["pin"]
+    return {
+        "id": pin.get("id"),
+        "latitude": duplicate["latitude"],
+        "longitude": duplicate["longitude"],
+        "address": pin.get("address"),
+        "disposition": pin.get("disposition", "unmarked"),
+        "territory_id": pin.get("territory_id"),
+        "created_at": pin.get("created_at"),
+        "updated_at": pin.get("updated_at"),
+        "duplicate": True,
+        "duplicate_distance_m": round(duplicate["distance_m"], 1),
+        "message": "Duplicate pin prevented",
+        "disposition_info": DISPOSITIONS.get(
+            pin.get("disposition", "unmarked"), DISPOSITIONS["unmarked"]
+        ),
+    }
+
+
+def _pin_create_response_from_doc(pin_doc: dict) -> dict:
+    normalized = _normalize_pin_coordinates(pin_doc or {})
+    disposition = normalized.get("disposition", "unmarked")
+    return {
+        "id": normalized.get("id"),
+        "latitude": normalized.get("latitude"),
+        "longitude": normalized.get("longitude"),
+        "address": normalized.get("address"),
+        "disposition": disposition,
+        "territory_id": normalized.get("territory_id"),
+        "created_at": normalized.get("created_at"),
+        "updated_at": normalized.get("updated_at"),
+        "message": "Pin created successfully",
+        "disposition_info": DISPOSITIONS.get(disposition, DISPOSITIONS["unmarked"]),
+        "coords_valid": normalized.get("coords_valid", False),
+        "coords_source": normalized.get("coords_source", "invalid"),
+    }
+
+
+def _normalize_pin_coordinates(pin: dict) -> dict:
+    """
+    Normalize pin coordinates across legacy field variants.
+    Priorities:
+    1) latitude/longitude
+    2) lat/lng
+    3) last history point lat/lng
+    """
+    latitude = _coerce_float(pin.get("latitude"))
+    longitude = _coerce_float(pin.get("longitude"))
+    source = "latitude_longitude"
+
+    if latitude is None or longitude is None:
+        latitude = _coerce_float(pin.get("lat"))
+        longitude = _coerce_float(pin.get("lng"))
+        source = "lat_lng"
+
+    if latitude is None or longitude is None:
+        history = pin.get("history") or []
+        if isinstance(history, list):
+            for entry in reversed(history):
+                hist_lat = _coerce_float((entry or {}).get("lat"))
+                hist_lng = _coerce_float((entry or {}).get("lng"))
+                if hist_lat is not None and hist_lng is not None:
+                    latitude = hist_lat
+                    longitude = hist_lng
+                    source = "history"
+                    break
+
+    valid = (
+        latitude is not None
+        and longitude is not None
+        and -90 <= latitude <= 90
+        and -180 <= longitude <= 180
+    )
+
+    normalized = dict(pin)
+    normalized["latitude"] = latitude
+    normalized["longitude"] = longitude
+    normalized["coords_valid"] = valid
+    normalized["coords_source"] = source if valid else "invalid"
+    return normalized
+
 # ============================================
 # Door Pin Endpoints
 # ============================================
@@ -74,11 +212,55 @@ async def create_door_pin(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new door pin on the map with optional Regrid parcel enrichment"""
+    now_iso = datetime.now(timezone.utc).isoformat()
+    user_id = current_user.get("id")
+    idempotency_key = (pin.idempotency_key or "").strip() or None
+
+    # Strong duplicate protection for retries: if idempotency key already exists, return prior pin.
+    if idempotency_key:
+        existing_by_key = await db.canvassing_pins.find_one(
+            {"user_id": user_id, "idempotency_key": idempotency_key},
+            {"_id": 0},
+        )
+        if existing_by_key:
+            existing_duplicate = {
+                "pin": existing_by_key,
+                "latitude": _coerce_float(existing_by_key.get("latitude")) or pin.latitude,
+                "longitude": _coerce_float(existing_by_key.get("longitude")) or pin.longitude,
+                "distance_m": 0.0,
+            }
+            response = _duplicate_pin_response(existing_duplicate)
+            response["duplicate_reason"] = "idempotency_key"
+            return response
+
+    # Prevent accidental duplicate drops (rapid retries / double taps).
+    lat_pad = 0.001  # ~111m latitude window (pre-filter)
+    lng_pad = 0.001  # coarse pre-filter; exact distance checked below
+    recent_cutoff = (datetime.now(timezone.utc) - timedelta(seconds=PIN_DEDUPE_TIME_SECONDS)).isoformat()
+    recent_candidates = await db.canvassing_pins.find(
+        {
+            "user_id": user_id,
+            "created_at": {"$gte": recent_cutoff},
+            "latitude": {"$gte": pin.latitude - lat_pad, "$lte": pin.latitude + lat_pad},
+            "longitude": {"$gte": pin.longitude - lng_pad, "$lte": pin.longitude + lng_pad},
+        },
+        {"_id": 0},
+    ).sort("created_at", -1).to_list(10)
+
+    duplicate = _find_duplicate_pin(
+        pin.latitude,
+        pin.longitude,
+        recent_candidates,
+        PIN_DEDUPE_DISTANCE_METERS,
+    )
+    if duplicate:
+        return _duplicate_pin_response(duplicate)
+
     pin_id = str(uuid.uuid4())
     
     doc = {
         "id": pin_id,
-        "user_id": current_user.get("id"),
+        "user_id": user_id,
         "created_by_name": current_user.get("full_name", "Unknown"),
         "latitude": pin.latitude,
         "longitude": pin.longitude,
@@ -88,8 +270,9 @@ async def create_door_pin(
         "homeowner_name": pin.homeowner_name,
         "phone": pin.phone,
         "territory_id": pin.territory_id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "idempotency_key": idempotency_key,
+        "created_at": now_iso,
+        "updated_at": now_iso,
         # Regrid parcel fields (to be enriched)
         "ll_uuid": None,
         "parcel_path": None,
@@ -99,13 +282,21 @@ async def create_door_pin(
         "parcel_enriched_at": None,
         "history": [{
             "disposition": pin.disposition,
-            "user_id": current_user.get("id"),
+            "user_id": user_id,
             "user_name": current_user.get("full_name"),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": now_iso
         }]
     }
     
     await db.canvassing_pins.insert_one(doc)
+
+    # Read-after-write verification: only return success if persisted pin is queryable.
+    persisted_pin = await db.canvassing_pins.find_one({"id": pin_id}, {"_id": 0})
+    if not persisted_pin:
+        raise HTTPException(
+            status_code=500,
+            detail="Pin persistence verification failed. Please retry.",
+        )
     
     # Background task to enrich with Regrid parcel data
     background_tasks.add_task(
@@ -114,12 +305,8 @@ async def create_door_pin(
         pin.latitude,
         pin.longitude
     )
-    
-    return {
-        "id": pin_id,
-        "message": "Pin created successfully",
-        "disposition_info": DISPOSITIONS.get(pin.disposition, DISPOSITIONS["unmarked"])
-    }
+
+    return _pin_create_response_from_doc(persisted_pin)
 
 
 async def enrich_pin_with_regrid(pin_id: str, lat: float, lon: float):
@@ -215,21 +402,37 @@ async def get_door_pins(
             coords = [float(x) for x in bounds.split(",")]
             if len(coords) == 4:
                 sw_lat, sw_lng, ne_lat, ne_lng = coords
-                query["latitude"] = {"$gte": sw_lat, "$lte": ne_lat}
-                query["longitude"] = {"$gte": sw_lng, "$lte": ne_lng}
+                query["$or"] = [
+                    {
+                        "latitude": {"$gte": sw_lat, "$lte": ne_lat},
+                        "longitude": {"$gte": sw_lng, "$lte": ne_lng},
+                    },
+                    {
+                        "lat": {"$gte": sw_lat, "$lte": ne_lat},
+                        "lng": {"$gte": sw_lng, "$lte": ne_lng},
+                    },
+                ]
         except:
             pass
     
     pins = await db.canvassing_pins.find(
         query,
-        {"_id": 0, "history": 0}
+        {"_id": 0}
     ).sort("updated_at", -1).to_list(1000)
     
     # Add disposition info to each pin
+    normalized_pins = []
     for pin in pins:
-        pin["disposition_info"] = DISPOSITIONS.get(pin.get("disposition", "unmarked"), DISPOSITIONS["unmarked"])
+        normalized = _normalize_pin_coordinates(pin)
+        normalized["disposition_info"] = DISPOSITIONS.get(
+            normalized.get("disposition", "unmarked"),
+            DISPOSITIONS["unmarked"],
+        )
+        # Keep payload lean for pin list while retaining normalized coords.
+        normalized.pop("history", None)
+        normalized_pins.append(normalized)
     
-    return pins
+    return normalized_pins
 
 
 @router.get("/pins/{pin_id}")
@@ -824,6 +1027,88 @@ async def get_canvassing_overview(
 async def get_disposition_options():
     """Get all available disposition options with colors"""
     return DISPOSITIONS
+
+
+@router.post("/pins/repair-invalid")
+async def repair_invalid_pins(
+    current_user: dict = Depends(require_role(["admin", "manager"]))
+):
+    """
+    Repair canvassing pins missing valid latitude/longitude.
+    Safe repair order:
+    1) existing lat/lng fields
+    2) latest history lat/lng
+    Leaves unresolved pins untouched and reports IDs.
+    """
+    pins = await db.canvassing_pins.find({}, {"_id": 0}).to_list(5000)
+    scanned = len(pins)
+    repaired = 0
+    unresolved = []
+    unresolved_samples = []
+
+    for pin in pins:
+        pin_id = pin.get("id")
+        lat = _coerce_float(pin.get("latitude"))
+        lng = _coerce_float(pin.get("longitude"))
+        valid_primary = (
+            lat is not None and lng is not None and -90 <= lat <= 90 and -180 <= lng <= 180
+        )
+        if valid_primary:
+            continue
+
+        candidate_lat = _coerce_float(pin.get("lat"))
+        candidate_lng = _coerce_float(pin.get("lng"))
+
+        if not (
+            candidate_lat is not None
+            and candidate_lng is not None
+            and -90 <= candidate_lat <= 90
+            and -180 <= candidate_lng <= 180
+        ):
+            history = pin.get("history") or []
+            if isinstance(history, list) and history:
+                latest = history[-1]
+                candidate_lat = _coerce_float(latest.get("lat"))
+                candidate_lng = _coerce_float(latest.get("lng"))
+
+        if (
+            candidate_lat is not None
+            and candidate_lng is not None
+            and -90 <= candidate_lat <= 90
+            and -180 <= candidate_lng <= 180
+        ):
+            await db.canvassing_pins.update_one(
+                {"id": pin_id},
+                {
+                    "$set": {
+                        "latitude": candidate_lat,
+                        "longitude": candidate_lng,
+                        "lat": candidate_lat,
+                        "lng": candidate_lng,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                },
+            )
+            repaired += 1
+        else:
+            unresolved.append(pin_id)
+            unresolved_samples.append({
+                "id": pin_id,
+                "address": pin.get("address"),
+                "latitude": pin.get("latitude"),
+                "longitude": pin.get("longitude"),
+                "lat": pin.get("lat"),
+                "lng": pin.get("lng"),
+            })
+
+    return {
+        "success": True,
+        "scanned": scanned,
+        "repaired": repaired,
+        "unresolved_count": len(unresolved),
+        "unresolved_pin_ids": unresolved[:50],
+        "unresolved_samples": unresolved_samples[:50],
+    }
 
 
 # ============================================

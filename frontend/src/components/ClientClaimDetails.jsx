@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import ApiService from '../services/ApiService';
-import { 
-  ArrowLeft, 
-  User, 
-  Calendar, 
-  MapPin, 
-  DollarSign, 
+import {
+  ArrowLeft,
+  User,
+  Calendar,
+  MapPin,
+  DollarSign,
   FileCheck,
   Loader2,
   Clock,
   CheckCircle2,
   FileText,
   MessageSquare,
-  LogOut
+  LogOut,
 } from 'lucide-react';
 
 const ClientClaimDetails = () => {
@@ -30,17 +30,13 @@ const ClientClaimDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchClaimData();
-  }, [claimId]);
-
-  const fetchClaimData = async () => {
+  const fetchClaimData = useCallback(async () => {
     try {
       setLoading(true);
       const [claimData, notesData, docsData] = await Promise.all([
         ApiService.getClaim(claimId),
         ApiService.getClaimNotes(claimId).catch(() => []),
-        ApiService.getClaimDocuments(claimId).catch(() => [])
+        ApiService.getClaimDocuments(claimId).catch(() => []),
       ]);
       setClaim(claimData);
       setNotes(notesData);
@@ -51,7 +47,11 @@ const ClientClaimDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [claimId]);
+
+  useEffect(() => {
+    fetchClaimData();
+  }, [fetchClaimData]);
 
   const handleLogout = () => {
     logout();
@@ -60,11 +60,11 @@ const ClientClaimDetails = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      'New': 'bg-blue-100 text-blue-800',
+      New: 'bg-blue-100 text-blue-800',
       'In Progress': 'bg-yellow-100 text-yellow-800',
       'Under Review': 'bg-purple-100 text-purple-800',
-      'Completed': 'bg-green-100 text-green-800',
-      'Closed': 'bg-gray-100 text-gray-800'
+      Completed: 'bg-green-100 text-green-800',
+      Closed: 'bg-gray-100 text-gray-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -74,7 +74,7 @@ const ClientClaimDetails = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -146,9 +146,9 @@ const ClientClaimDetails = () => {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/client')} 
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/client')}
           className="mb-6"
           data-testid="back-to-portal"
         >
@@ -185,28 +185,34 @@ const ClientClaimDetails = () => {
               <div className="flex items-center justify-between">
                 {['New', 'In Progress', 'Under Review', 'Completed'].map((step, index) => (
                   <div key={step} className="flex items-center">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      index < statusStep 
-                        ? 'bg-green-500 text-gray-900' 
-                        : index === statusStep - 1
-                        ? 'bg-orange-500 text-gray-900'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                        index < statusStep
+                          ? 'bg-green-500 text-gray-900'
+                          : index === statusStep - 1
+                            ? 'bg-orange-500 text-gray-900'
+                            : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
                       {index < statusStep ? (
                         <CheckCircle2 className="w-5 h-5" />
                       ) : (
                         <span className="text-sm font-medium">{index + 1}</span>
                       )}
                     </div>
-                    <span className={`ml-2 text-sm ${
-                      index < statusStep ? 'text-green-600 font-medium' : 'text-gray-500'
-                    }`}>
+                    <span
+                      className={`ml-2 text-sm ${
+                        index < statusStep ? 'text-green-600 font-medium' : 'text-gray-500'
+                      }`}
+                    >
                       {step}
                     </span>
                     {index < 3 && (
-                      <div className={`w-12 h-1 mx-2 ${
-                        index < statusStep - 1 ? 'bg-green-500' : 'bg-gray-200'
-                      }`} />
+                      <div
+                        className={`w-12 h-1 mx-2 ${
+                          index < statusStep - 1 ? 'bg-green-500' : 'bg-gray-200'
+                        }`}
+                      />
                     )}
                   </div>
                 ))}
@@ -255,7 +261,9 @@ const ClientClaimDetails = () => {
                 <User className="w-5 h-5 text-gray-600 mt-1" />
                 <div>
                   <p className="text-sm text-gray-500">Assigned Adjuster</p>
-                  <p className="font-medium text-gray-900">{claim.assigned_to || 'Pending Assignment'}</p>
+                  <p className="font-medium text-gray-900">
+                    {claim.assigned_to || 'Pending Assignment'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start space-x-3">
@@ -329,15 +337,22 @@ const ClientClaimDetails = () => {
             ) : (
               <div className="space-y-2">
                 {documents.map((doc) => (
-                  <div key={doc.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+                  <div
+                    key={doc.id}
+                    className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                  >
                     <div className="flex items-center space-x-3">
                       <FileText className="w-6 h-6 text-orange-600" />
                       <div>
                         <p className="font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-xs text-gray-500">{doc.type} • {formatDate(doc.uploaded_at)}</p>
+                        <p className="text-xs text-gray-500">
+                          {doc.type} • {formatDate(doc.uploaded_at)}
+                        </p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">Download</Button>
+                    <Button variant="outline" size="sm">
+                      Download
+                    </Button>
                   </div>
                 ))}
               </div>

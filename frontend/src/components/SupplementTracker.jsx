@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -6,9 +6,10 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { 
   FileText, Plus, DollarSign, Clock, CheckCircle, XCircle, 
-  AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp
+  AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp, Sparkles, Loader2
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
+import { toast } from 'sonner';
 
 var API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -47,16 +48,14 @@ function SupplementTracker() {
   var [expandedSupplement, setExpandedSupplement] = useState(null);
   var [newSupplement, setNewSupplement] = useState({ title: '', description: '', line_items: [] });
   var [newLineItem, setNewLineItem] = useState({ description: '', category: 'general', quantity: 1, unit: 'EA', unit_price: 0, total: 0 });
+  var [aiJustifications, setAiJustifications] = useState({});
+  var [loadingAiBySupplement, setLoadingAiBySupplement] = useState({});
 
   function getToken() {
     return localStorage.getItem('eden_token');
   }
 
-  useEffect(function() {
-    fetchData();
-  }, [claimId]);
-
-  function fetchData() {
+  const fetchData = useCallback(function fetchData() {
     setLoading(true);
     var headers = { 'Authorization': 'Bearer ' + getToken() };
     
@@ -75,7 +74,11 @@ function SupplementTracker() {
     }).catch(function() {
       setLoading(false);
     });
-  }
+  }, [claimId]);
+
+  useEffect(function() {
+    fetchData();
+  }, [fetchData]);
 
   function formatCurrency(amount) {
     return '$' + (amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -163,6 +166,56 @@ function SupplementTracker() {
       headers: { 'Authorization': 'Bearer ' + getToken() }
     })
     .then(function() { fetchData(); });
+  }
+
+  function buildEstimateFromSupplement(supp, mode) {
+    var lineItems = (supp.line_items || []).map(function(item) {
+      var amount = mode === 'carrier' ? (item.carrier_approved || 0) : (item.total || 0);
+      return {
+        name: item.description || 'Line Item',
+        amount: Number(amount) || 0
+      };
+    });
+    return { line_items: lineItems };
+  }
+
+  function generateAiJustification(supp) {
+    setLoadingAiBySupplement(Object.assign({}, loadingAiBySupplement, { [supp.id]: true }));
+
+    fetch(API_URL + '/api/ai/task', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + getToken(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        task: 'supplement_justification',
+        claim_id: claimId,
+        payload: {
+          carrier_estimate: buildEstimateFromSupplement(supp, 'carrier'),
+          contractor_estimate: buildEstimateFromSupplement(supp, 'contractor'),
+          scope_notes: supp.description || ''
+        }
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var output = data.output || data;
+      if (output && output.executive_summary) {
+        setAiJustifications(Object.assign({}, aiJustifications, { [supp.id]: output }));
+        toast.success('AI supplement justification generated');
+      } else {
+        toast.error(data.detail || 'Failed to generate AI justification');
+      }
+    })
+    .catch(function() {
+      toast.error('Failed to generate AI justification');
+    })
+    .finally(function() {
+      setLoadingAiBySupplement(function(prev) {
+        return Object.assign({}, prev, { [supp.id]: false });
+      });
+    });
   }
 
   if (loading) {
@@ -446,6 +499,27 @@ function SupplementTracker() {
                         </table>
                       )}
 
+                      {/* AI Justification */}
+                      {aiJustifications[supp.id] && (
+                        <div className="mb-4 rounded-lg border border-cyan-300/40 bg-cyan-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-cyan-700 mb-1">AI Justification</p>
+                          <p className="text-sm text-gray-900 mb-2">{aiJustifications[supp.id].executive_summary}</p>
+                          {aiJustifications[supp.id].rebuttal_points && aiJustifications[supp.id].rebuttal_points.length > 0 && (
+                            <ul className="text-xs text-gray-700 space-y-1 mb-2">
+                              {aiJustifications[supp.id].rebuttal_points.slice(0, 3).map(function(point, idx) {
+                                return <li key={supp.id + '-rebuttal-' + idx}>- {point}</li>;
+                              })}
+                            </ul>
+                          )}
+                          {aiJustifications[supp.id].line_items && aiJustifications[supp.id].line_items.length > 0 && (
+                            <div className="text-xs text-gray-600">
+                              Top Delta: {aiJustifications[supp.id].line_items[0].line_item} (
+                              {formatCurrency(aiJustifications[supp.id].line_items[0].delta)})
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Actions */}
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-500">
@@ -453,6 +527,21 @@ function SupplementTracker() {
                           {supp.carrier_response_date && <span className="ml-4">Response: {new Date(supp.carrier_response_date).toLocaleDateString()}</span>}
                         </div>
                         <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={function(e) {
+                              e.stopPropagation();
+                              generateAiJustification(supp);
+                            }}
+                            disabled={!!loadingAiBySupplement[supp.id]}
+                          >
+                            {loadingAiBySupplement[supp.id] ? (
+                              <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Analyzing...</>
+                            ) : (
+                              <><Sparkles className="w-4 h-4 mr-1" />AI Justification</>
+                            )}
+                          </Button>
                           {supp.status === 'draft' && (
                             <>
                               <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={function(e) { e.stopPropagation(); submitSupplement(supp.id); }}>

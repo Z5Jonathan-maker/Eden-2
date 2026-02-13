@@ -10,10 +10,14 @@ import { Play, Clock, CheckCircle, XCircle, AlertCircle, Zap } from 'lucide-reac
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case 'passed': return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case 'failed': return <XCircle className="w-5 h-5 text-red-500" />;
-    case 'warning': return <AlertCircle className="w-5 h-5 text-yellow-500" />;
-    default: return <Clock className="w-5 h-5 text-gray-600" />;
+    case 'passed':
+      return <CheckCircle className="w-5 h-5 text-green-500" />;
+    case 'failed':
+      return <XCircle className="w-5 h-5 text-red-500" />;
+    case 'warning':
+      return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+    default:
+      return <Clock className="w-5 h-5 text-gray-600" />;
   }
 };
 
@@ -40,11 +44,15 @@ const TestResultsList = ({ testResults }) => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge className={
-                  result.status === 'passed' ? 'bg-green-500/20 text-green-400' :
-                  result.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                  'bg-yellow-500/20 text-yellow-400'
-                }>
+                <Badge
+                  className={
+                    result.status === 'passed'
+                      ? 'bg-green-500/20 text-green-400'
+                      : result.status === 'failed'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
+                  }
+                >
                   {result.status.toUpperCase()}
                 </Badge>
                 <span className="text-xs text-gray-500">{result.duration}</span>
@@ -60,9 +68,9 @@ const TestResultsList = ({ testResults }) => {
 const TestResultsSummary = ({ testResults }) => {
   if (testResults.length === 0) return null;
 
-  const passed = testResults.filter(t => t.status === 'passed').length;
-  const failed = testResults.filter(t => t.status === 'failed').length;
-  const warnings = testResults.filter(t => t.status === 'warning').length;
+  const passed = testResults.filter((t) => t.status === 'passed').length;
+  const failed = testResults.filter((t) => t.status === 'failed').length;
+  const warnings = testResults.filter((t) => t.status === 'warning').length;
   const total = testResults.length;
 
   return (
@@ -116,7 +124,7 @@ export const TestsTab = ({
   selectedTests,
   setSelectedTests,
   isRunning,
-  onRunTests
+  onRunTests,
 }) => {
   return (
     <div className="space-y-6">
@@ -141,7 +149,7 @@ export const TestsTab = ({
               <option value="frontend">Frontend Only</option>
               <option value="database">Database Only</option>
             </select>
-            
+
             <Button
               onClick={onRunTests}
               disabled={isRunning}
@@ -170,9 +178,7 @@ export const TestsTab = ({
       <TestResultsList testResults={testResults} />
 
       {/* Empty State */}
-      {testResults.length === 0 && !isRunning && (
-        <EmptyState onRunTests={onRunTests} />
-      )}
+      {testResults.length === 0 && !isRunning && <EmptyState onRunTests={onRunTests} />}
     </div>
   );
 };

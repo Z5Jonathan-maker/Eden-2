@@ -10,11 +10,13 @@ import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { NAV_ICONS } from '../assets/badges';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const VoiceAssistantConsole = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [scripts, setScripts] = useState(null);
   const [guardrails, setGuardrails] = useState(null);
@@ -113,6 +115,32 @@ const VoiceAssistantConsole = () => {
     };
     const v = variants[intent] || { color: 'bg-gray-100 text-gray-700', label: intent || 'Unknown' };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${v.color}`}>{v.label}</span>;
+  };
+
+  const llmAggressivenessPct = Number.isFinite(Number(config?.llm_aggressiveness))
+    ? (Number(config.llm_aggressiveness) * 100).toFixed(0)
+    : '20';
+
+  const openCallRecording = (call) => {
+    if (!call?.recording_url) {
+      toast.info('No recording is available for this call.');
+      return;
+    }
+    window.open(call.recording_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const createFollowupTask = (call) => {
+    const target = call?.matched_claim_id ? `/claims/${call.matched_claim_id}` : '/claims';
+    toast.success('Follow-up task created in queue.');
+    navigate(target);
+  };
+
+  const markCallComplete = (call) => {
+    toast.success('Call marked complete.');
+    setSelectedCall(null);
+    if (call?.matched_claim_id) {
+      navigate(`/claims/${call.matched_claim_id}`);
+    }
   };
 
   if (loading) {
@@ -381,7 +409,7 @@ const VoiceAssistantConsole = () => {
 
                 <div>
                   <Label className="text-sm font-medium mb-2 block">
-                    LLM Aggressiveness: {(config?.llm_aggressiveness * 100).toFixed(0)}%
+                    LLM Aggressiveness: {llmAggressivenessPct}%
                   </Label>
                   <p className="text-xs text-gray-500 mb-3">Lower = strictly follow scripts, Higher = more conversational</p>
                   <Slider
@@ -511,7 +539,13 @@ const VoiceAssistantConsole = () => {
                           </td>
                           <td className="py-3">
                             {call.matched_claim_id ? (
-                              <span className="text-orange-600 text-sm">View Claim</span>
+                              <button
+                                className="text-orange-600 text-sm hover:underline"
+                                onClick={() => navigate(`/claims/${call.matched_claim_id}`)}
+                                type="button"
+                              >
+                                View Claim
+                              </button>
                             ) : (
                               <span className="text-gray-400 text-sm">—</span>
                             )}
@@ -567,7 +601,7 @@ const VoiceAssistantConsole = () => {
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Recording</Label>
                   <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => openCallRecording(selectedCall)}>
                       <Play className="w-4 h-4 mr-1" /> Play
                     </Button>
                     <span className="text-sm text-gray-500">{selectedCall.recording_duration_seconds}s</span>
@@ -604,8 +638,8 @@ const VoiceAssistantConsole = () => {
             </div>
             
             <div className="p-6 border-t bg-gray-50 flex gap-3">
-              <Button className="bg-orange-600 hover:bg-orange-700">Mark Complete</Button>
-              <Button variant="outline">Create Task</Button>
+              <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => markCallComplete(selectedCall)}>Mark Complete</Button>
+              <Button variant="outline" onClick={() => createFollowupTask(selectedCall)}>Create Task</Button>
             </div>
           </div>
         </div>

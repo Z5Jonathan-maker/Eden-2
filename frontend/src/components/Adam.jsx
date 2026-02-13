@@ -1,7 +1,7 @@
 /**
  * Adam Component - QA Runner & CQIL Dashboard
  * Main container for automated testing and quality assurance
- * 
+ *
  * Refactored to use modular components from ./adam/
  * Updated to use centralized API client (Feb 4, 2026)
  */
@@ -15,7 +15,7 @@ import {
   DashboardTab,
   CenturionTab,
   TestsTab,
-  ReportsTab
+  ReportsTab,
 } from './adam/index';
 
 const Adam = () => {
@@ -24,27 +24,27 @@ const Adam = () => {
   const [testResults, setTestResults] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedTests, setSelectedTests] = useState('all');
-  
+
   // CQIL state
   const [systemHealth, setSystemHealth] = useState(null);
   const [cqilMetrics, setCqilMetrics] = useState(null);
   const [breakReports, setBreakReports] = useState([]);
-  
+
   // Centurion state
   const [sentinelScan, setSentinelScan] = useState(null);
   const [sentinelSummary, setSentinelSummary] = useState(null);
   const [sentinelRoutes, setSentinelRoutes] = useState([]);
   const [sentinelEndpoints, setSentinelEndpoints] = useState([]);
   const [isScanRunning, setIsScanRunning] = useState(false);
-  
+
   // Browser crawl state
   const [browserCrawl, setBrowserCrawl] = useState(null);
   const [isBrowserCrawlRunning, setIsBrowserCrawlRunning] = useState(false);
-  
+
   // Auto-fix state
   const [autoFixes, setAutoFixes] = useState(null);
   const [isGeneratingFixes, setIsGeneratingFixes] = useState(false);
-  
+
   // Mobile regression state
   const [mobileRegression, setMobileRegression] = useState(null);
   const [isMobileRegressionRunning, setIsMobileRegressionRunning] = useState(false);
@@ -63,7 +63,7 @@ const Adam = () => {
       const [summaryRes, routesRes, endpointsRes] = await Promise.all([
         apiGet('/api/centurion/summary', { cache: false }),
         apiGet('/api/centurion/routes', { cache: false }),
-        apiGet('/api/centurion/endpoints', { cache: false })
+        apiGet('/api/centurion/endpoints', { cache: false }),
       ]);
 
       if (summaryRes.ok) setSentinelSummary(summaryRes.data);
@@ -77,25 +77,25 @@ const Adam = () => {
   const runSentinelScan = async () => {
     setIsScanRunning(true);
     setSentinelScan(null);
-    
+
     try {
       const res = await apiPost('/api/centurion/scan', {
         check_api_routes: true,
         check_ui_elements: true,
         check_navigation: true,
-        timeout_seconds: 10
+        timeout_seconds: 10,
       });
-      
+
       if (res.ok) {
         const scan = res.data;
         setSentinelScan(scan);
-        
+
         const pollInterval = setInterval(async () => {
           const statusRes = await apiGet(`/api/centurion/scan/${scan.scan_id}`, { cache: false });
           if (statusRes.ok) {
             const updatedScan = statusRes.data;
             setSentinelScan(updatedScan);
-            
+
             if (updatedScan.status === 'completed' || updatedScan.status === 'failed') {
               clearInterval(pollInterval);
               setIsScanRunning(false);
@@ -104,7 +104,7 @@ const Adam = () => {
             }
           }
         }, 1000);
-        
+
         setTimeout(() => {
           clearInterval(pollInterval);
           setIsScanRunning(false);
@@ -119,20 +119,22 @@ const Adam = () => {
   const runBrowserCrawl = async () => {
     setIsBrowserCrawlRunning(true);
     setBrowserCrawl(null);
-    
+
     try {
       const res = await apiPost('/api/centurion/browser-crawl', {});
-      
+
       if (res.ok) {
         const crawl = res.data;
         setBrowserCrawl({ crawl_id: crawl.crawl_id, status: 'starting' });
-        
+
         const pollInterval = setInterval(async () => {
-          const statusRes = await apiGet(`/api/centurion/browser-crawl/${crawl.crawl_id}`, { cache: false });
+          const statusRes = await apiGet(`/api/centurion/browser-crawl/${crawl.crawl_id}`, {
+            cache: false,
+          });
           if (statusRes.ok) {
             const updatedCrawl = statusRes.data;
             setBrowserCrawl(updatedCrawl);
-            
+
             if (updatedCrawl.status === 'completed' || updatedCrawl.status === 'failed') {
               clearInterval(pollInterval);
               setIsBrowserCrawlRunning(false);
@@ -140,7 +142,7 @@ const Adam = () => {
             }
           }
         }, 2000);
-        
+
         setTimeout(() => {
           clearInterval(pollInterval);
           setIsBrowserCrawlRunning(false);
@@ -155,12 +157,12 @@ const Adam = () => {
   const generateAutoFixes = async (crawlId = null) => {
     setIsGeneratingFixes(true);
     try {
-      const endpoint = crawlId 
+      const endpoint = crawlId
         ? `/api/centurion/generate-fixes?crawl_id=${crawlId}`
         : '/api/centurion/generate-fixes';
-      
+
       const res = await apiPost(endpoint, {});
-      
+
       if (res.ok) {
         setAutoFixes(res.data);
       }
@@ -174,23 +176,26 @@ const Adam = () => {
   const runMobileRegression = async () => {
     setIsMobileRegressionRunning(true);
     setMobileRegression(null);
-    
+
     try {
       const res = await apiPost('/api/centurion/mobile-regression', {
-        viewports: ['desktop', 'mobile', 'tablet']
+        viewports: ['desktop', 'mobile', 'tablet'],
       });
-      
+
       if (res.ok) {
         const regression = res.data;
         setMobileRegression({ regression_id: regression.regression_id, status: 'starting' });
-        
+
         // Poll for results
         const pollInterval = setInterval(async () => {
-          const statusRes = await apiGet(`/api/centurion/mobile-regression/${regression.regression_id}`, { cache: false });
+          const statusRes = await apiGet(
+            `/api/centurion/mobile-regression/${regression.regression_id}`,
+            { cache: false }
+          );
           if (statusRes.ok) {
             const updatedRegression = statusRes.data;
             setMobileRegression(updatedRegression);
-            
+
             if (updatedRegression.status === 'completed' || updatedRegression.status === 'failed') {
               clearInterval(pollInterval);
               setIsMobileRegressionRunning(false);
@@ -198,7 +203,7 @@ const Adam = () => {
             }
           }
         }, 3000);
-        
+
         // Timeout after 5 minutes
         setTimeout(() => {
           clearInterval(pollInterval);
@@ -216,7 +221,7 @@ const Adam = () => {
       const [healthRes, metricsRes, reportsRes] = await Promise.all([
         apiGet('/api/cqil/health', { cache: false }),
         apiGet('/api/cqil/metrics', { cache: false }),
-        apiGet('/api/cqil/break-reports?limit=10', { cache: false })
+        apiGet('/api/cqil/break-reports?limit=10', { cache: false }),
       ]);
 
       if (healthRes.ok) setSystemHealth(healthRes.data);
@@ -230,19 +235,19 @@ const Adam = () => {
   // Test Functions
   const runBackendTests = async () => {
     const results = [];
-    
+
     for (const test of TEST_SUITES.backend) {
       try {
         const startTime = Date.now();
         const response = await apiGet(`/api${test.endpoint}`, { cache: false });
         const duration = Date.now() - startTime;
-        
+
         results.push({
           id: test.id,
           name: test.name,
           status: response.ok ? 'passed' : 'failed',
           message: `Response: ${response.status || (response.ok ? 200 : 'error')}`,
-          duration: `${duration}ms`
+          duration: `${duration}ms`,
         });
       } catch (error) {
         results.push({
@@ -250,79 +255,79 @@ const Adam = () => {
           name: test.name,
           status: 'failed',
           message: error.message,
-          duration: '-'
+          duration: '-',
         });
       }
     }
-    
+
     return results;
   };
 
   const runIntegrationTests = async () => {
     const results = [];
-    
+
     try {
       const response = await apiGet('/api/integrations/test', { cache: false });
-      
+
       if (response.ok) {
         const availableIntegrations = response.data.integrations || [];
-        
-        TEST_SUITES.integrations.forEach(test => {
+
+        TEST_SUITES.integrations.forEach((test) => {
           const isAvailable = availableIntegrations.includes(test.test);
           results.push({
             id: test.id,
             name: test.name,
             status: isAvailable ? 'passed' : 'warning',
             message: isAvailable ? 'Service available' : 'Service not configured',
-            duration: '-'
+            duration: '-',
           });
         });
       }
     } catch {
-      TEST_SUITES.integrations.forEach(test => {
+      TEST_SUITES.integrations.forEach((test) => {
         results.push({
           id: test.id,
           name: test.name,
           status: 'warning',
           message: 'Integration check skipped',
-          duration: '-'
+          duration: '-',
         });
       });
     }
-    
+
     return results;
   };
 
   const runFrontendTests = () => {
-    return TEST_SUITES.frontend.map(test => ({
+    return TEST_SUITES.frontend.map((test) => ({
       id: test.id,
       name: test.name,
       status: 'passed',
       message: 'Route accessible',
-      duration: '-'
+      duration: '-',
     }));
   };
 
   const runDatabaseTests = async () => {
     const results = [];
-    
+
     try {
       await apiGet('/api/status', { cache: false });
-      
+
       results.push({
         id: 'db-connection',
         name: 'MongoDB Connection',
         status: 'passed',
         message: 'Database connected',
-        duration: '-'
+        duration: '-',
       });
-      
+
       results.push({
         id: 'db-collections',
         name: 'Required Collections',
         status: 'passed',
         message: 'Collections accessible',
-        duration: '-'
+        duration: '-',
       });
     } catch (error) {
       results.push({
@@ -330,35 +335,35 @@ const Adam = () => {
         name: 'MongoDB Connection',
         status: 'failed',
         message: error.message,
-        duration: '-'
+        duration: '-',
       });
     }
-    
+
     return results;
   };
 
   const runAllTests = async () => {
     setIsRunning(true);
     setTestResults([]);
-    
+
     let allResults = [];
-    
+
     if (selectedTests === 'all' || selectedTests === 'backend') {
-      allResults = [...allResults, ...await runBackendTests()];
+      allResults = [...allResults, ...(await runBackendTests())];
     }
-    
+
     if (selectedTests === 'all' || selectedTests === 'integrations') {
-      allResults = [...allResults, ...await runIntegrationTests()];
+      allResults = [...allResults, ...(await runIntegrationTests())];
     }
-    
+
     if (selectedTests === 'all' || selectedTests === 'frontend') {
       allResults = [...allResults, ...runFrontendTests()];
     }
-    
+
     if (selectedTests === 'all' || selectedTests === 'database') {
-      allResults = [...allResults, ...await runDatabaseTests()];
+      allResults = [...allResults, ...(await runDatabaseTests())];
     }
-    
+
     setTestResults(allResults);
     setIsRunning(false);
   };
@@ -366,11 +371,7 @@ const Adam = () => {
   return (
     <div className="min-h-screen bg-tactical-animated text-white page-enter">
       {/* Header */}
-      <AdamHeader 
-        cqilMetrics={cqilMetrics}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <AdamHeader cqilMetrics={cqilMetrics} activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Content */}
       <div className="p-6">
@@ -417,9 +418,7 @@ const Adam = () => {
           />
         )}
 
-        {activeTab === 'reports' && (
-          <ReportsTab breakReports={breakReports} />
-        )}
+        {activeTab === 'reports' && <ReportsTab breakReports={breakReports} />}
       </div>
 
       {/* Footer */}
@@ -429,7 +428,12 @@ const Adam = () => {
             <Shield className="w-4 h-4 text-orange-500" />
             <span className="font-mono">Eden CQIL — Continuous Quality & Integrity Layer</span>
           </div>
-          <span>Last updated: {cqilMetrics?.last_updated ? new Date(cqilMetrics.last_updated).toLocaleString() : 'N/A'}</span>
+          <span>
+            Last updated:{' '}
+            {cqilMetrics?.last_updated
+              ? new Date(cqilMetrics.last_updated).toLocaleString()
+              : 'N/A'}
+          </span>
         </div>
       </div>
     </div>

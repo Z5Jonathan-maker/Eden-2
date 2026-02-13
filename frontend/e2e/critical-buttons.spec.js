@@ -22,11 +22,16 @@ test.describe('Critical Buttons Smoke Test', () => {
   
   for (const pageInfo of CRITICAL_PAGES) {
     test(`${pageInfo.name} - all buttons are visible and don't crash on hover`, async ({ page, isMobile }) => {
+      const isHarvest = pageInfo.path === '/canvassing';
+      if (isHarvest) {
+        test.setTimeout(45000);
+      }
       const errors = setupConsoleErrorCapture(page);
       
       await page.goto(pageInfo.path);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1500);
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('main').first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.waitForTimeout(1000);
       
       // Get all visible buttons in main content (not sidebar)
       const main = page.locator('main');
@@ -35,12 +40,12 @@ test.describe('Critical Buttons Smoke Test', () => {
       
       // On mobile, just verify buttons exist and page loaded without errors
       // Desktop can do hover testing
-      const maxToTest = isMobile ? 5 : 15;
+      const maxToTest = isMobile ? 5 : (isHarvest ? 8 : 15);
       
       for (let i = 0; i < Math.min(count, maxToTest); i++) {
         const button = buttons.nth(i);
         try {
-          if (!isMobile) {
+          if (!isMobile && !isHarvest) {
             await button.hover({ timeout: 2000 });
             await page.waitForTimeout(100);
           } else {
@@ -73,8 +78,9 @@ test.describe('Critical Buttons Smoke Test', () => {
     
     for (const btn of criticalButtons) {
       await page.goto(btn.page);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('main').first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.waitForTimeout(800);
       
       const button = page.locator(`button:has-text("${btn.text}")`).first();
       

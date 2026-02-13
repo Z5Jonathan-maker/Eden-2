@@ -1,23 +1,23 @@
-import { useEffect } from "react";
-import { toast } from "sonner";
-import { API_URL } from "../lib/api";
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { API_URL } from '../lib/api';
 
-const STORAGE_KEY = "eden_connectivity_toast_v1";
+const STORAGE_KEY = 'eden_connectivity_toast_v1';
 
 function isLocalhost() {
   const host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
 export default function ApiConnectivityToast() {
   useEffect(() => {
     // Only show once per browser/session (reduce noise for end users)
     if (sessionStorage.getItem(STORAGE_KEY)) return;
-    sessionStorage.setItem(STORAGE_KEY, "1");
+    sessionStorage.setItem(STORAGE_KEY, '1');
 
     // HTTPS requirement reminder for camera/GPS (prod)
     if (!window.isSecureContext && !isLocalhost()) {
-      toast.error("Camera + GPS require HTTPS. Open the app on https:// (or install as PWA).", {
+      toast.error('Camera + GPS require HTTPS. Open the app on https:// (or install as PWA).', {
         duration: 8000,
       });
     }
@@ -29,19 +29,19 @@ export default function ApiConnectivityToast() {
         // Prefer /health (no auth) and fast.
         const url = `${API_URL}/health`;
         const res = await fetch(url, {
-          method: "GET",
+          method: 'GET',
           signal: controller.signal,
-          cache: "no-store",
+          cache: 'no-store',
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         // If we got here, backend is reachable.
       } catch (e) {
         // If backend unreachable, most actions appear "dead" (buttons feel broken).
-        toast.error("Backend not reachable. Most buttons/saves will fail until API is connected.", {
+        toast.error('Backend not reachable. Most buttons/saves will fail until API is connected.', {
           duration: 10000,
           description:
-            "Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js.",
+            'Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js.',
         });
       }
     };
@@ -56,4 +56,3 @@ export default function ApiConnectivityToast() {
 
   return null;
 }
-

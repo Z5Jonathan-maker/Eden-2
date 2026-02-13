@@ -22,9 +22,7 @@ export const ReportsTab = ({ breakReports }) => {
                 Issues detected by The Centurion
               </CardDescription>
             </div>
-            <Badge className="bg-gray-700 text-gray-300">
-              {breakReports.length} Reports
-            </Badge>
+            <Badge className="bg-gray-700 text-gray-300">{breakReports.length} Reports</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -40,11 +38,15 @@ export const ReportsTab = ({ breakReports }) => {
                 <div key={idx} className="p-4 bg-gray-800 rounded-lg">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <Badge className={
-                        report.severity === 'P0' ? 'bg-red-500/20 text-red-400' :
-                        report.severity === 'P1' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-600'
-                      }>
+                      <Badge
+                        className={
+                          report.severity === 'P0'
+                            ? 'bg-red-500/20 text-red-400'
+                            : report.severity === 'P1'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-gray-500/20 text-gray-600'
+                        }
+                      >
                         {report.severity}
                       </Badge>
                       <span className="ml-2 text-gray-600 text-sm">{report.module}</span>
@@ -54,9 +56,7 @@ export const ReportsTab = ({ breakReports }) => {
                     </span>
                   </div>
                   <p className="text-gray-900 font-medium">{report.description}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Route: {report.route}
-                  </p>
+                  <p className="text-sm text-gray-500 mt-1">Route: {report.route}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs">
                     <span className="text-gray-600">Expected: {report.expected}</span>
                     <span className="text-red-400">Actual: {report.actual}</span>

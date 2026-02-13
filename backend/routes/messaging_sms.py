@@ -4,6 +4,7 @@ Handles sending and receiving SMS messages per claim via Twilio.
 
 Endpoints:
 - POST /api/claims/{claim_id}/messages/sms/send - Send SMS to client
+- POST /api/claims/{claim_id}/messages/sms/confirm-token - Issue one-time token for AI-generated SMS send
 - GET /api/claims/{claim_id}/messages - Get message history for claim
 - POST /api/sms/twilio/webhook - Receive inbound SMS and status updates
 - GET /api/sms/status - Check Twilio configuration status
@@ -35,6 +36,16 @@ router = APIRouter(tags=["SMS Messaging"])
 
 # Rate limiting: max messages per claim per hour
 MAX_SMS_PER_CLAIM_PER_HOUR = 10
+AI_SMS_CONFIRM_TTL_MINUTES = 10
+
+
+def _is_admin_user(user: dict) -> bool:
+    if not isinstance(user, dict):
+        return False
+    if user.get("is_admin") is True or user.get("is_superuser") is True:
+        return True
+    role = str(user.get("role", "")).lower()
+    return role in {"admin", "manager", "owner", "super_admin", "superadmin", "administrator"}
 
 
 # ============================================
@@ -47,6 +58,12 @@ class SendSMSRequest(BaseModel):
     body: str  # Message content
     template_key: Optional[str] = None  # Optional template to use
     template_vars: Optional[dict] = None  # Variables for template
+    ai_generated: bool = False
+    confirmation_token: Optional[str] = None
+    risk_acknowledged: Optional[bool] = None
+    risk_level: Optional[str] = None
+    risk_flags: Optional[List[str]] = None
+    thread_intent: Optional[str] = None
 
 
 class SendSMSResponse(BaseModel):
@@ -76,6 +93,100 @@ class MessageResponse(BaseModel):
     created_at: str
 
 
+class AIGeneratedSMSConfirmResponse(BaseModel):
+    claim_id: str
+    confirmation_token: str
+    expires_at: str
+    ttl_minutes: int = AI_SMS_CONFIRM_TTL_MINUTES
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _parse_iso_datetime(value: str) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+async def _issue_ai_sms_confirmation_token(claim_id: str, current_user: dict) -> dict:
+    token = uuid.uuid4().hex
+    now_dt = _now_utc()
+    expires_at = now_dt + __import__("datetime").timedelta(minutes=AI_SMS_CONFIRM_TTL_MINUTES)
+    doc = {
+        "id": str(uuid.uuid4()),
+        "claim_id": claim_id,
+        "user_id": current_user.get("id"),
+        "token": token,
+        "purpose": "ai_outbound_sms",
+        "used": False,
+        "created_at": now_dt.isoformat(),
+        "expires_at": expires_at.isoformat(),
+    }
+    await db.ai_outbound_confirmations.insert_one(doc)
+    return doc
+
+
+async def _consume_ai_sms_confirmation_token(claim_id: str, token: str, current_user: dict) -> dict:
+    if not token:
+        raise HTTPException(
+            status_code=428,
+            detail="AI-generated outbound SMS requires confirmation token. Request one before sending.",
+        )
+
+    doc = await db.ai_outbound_confirmations.find_one(
+        {
+            "claim_id": claim_id,
+            "user_id": current_user.get("id"),
+            "token": token,
+            "purpose": "ai_outbound_sms",
+            "used": False,
+        },
+        {"_id": 0},
+    )
+    if not doc:
+        raise HTTPException(status_code=412, detail="Invalid or already-used confirmation token")
+
+    expires_at = _parse_iso_datetime(doc.get("expires_at"))
+    if not expires_at or expires_at < _now_utc():
+        raise HTTPException(status_code=412, detail="Confirmation token expired")
+
+    await db.ai_outbound_confirmations.update_one(
+        {"id": doc["id"]},
+        {"$set": {"used": True, "used_at": _now_utc().isoformat()}},
+    )
+    return doc
+
+
+# ============================================
+# AI OUTBOUND CONFIRMATION TOKEN
+# ============================================
+
+@router.post("/api/claims/{claim_id}/messages/sms/confirm-token", response_model=AIGeneratedSMSConfirmResponse)
+async def issue_ai_sms_confirm_token(
+    claim_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """
+    Issue a short-lived one-time token required to send AI-generated outbound SMS.
+    Keeps irreversible outbound messaging explicitly user-confirmed.
+    """
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0, "id": 1})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    token_doc = await _issue_ai_sms_confirmation_token(claim_id, current_user)
+    return AIGeneratedSMSConfirmResponse(
+        claim_id=claim_id,
+        confirmation_token=token_doc["token"],
+        expires_at=token_doc["expires_at"],
+    )
+
+
 # ============================================
 # SMS SEND ENDPOINT
 # ============================================
@@ -101,6 +212,25 @@ async def send_claim_sms(
     claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
+
+    # 1.5 Outbound QA gate for claim-critical identifiers
+    required_fields = [
+        ("claim_number", "Claim number"),
+        ("date_of_loss", "Date of loss"),
+        ("policy_number", "Policy number"),
+        ("client_name", "Client name"),
+        ("property_address", "Property address"),
+    ]
+    missing_fields = [label for key, label in required_fields if not claim.get(key)]
+    if missing_fields:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "Communication QA gate failed. Missing critical claim data.",
+                "missing_fields": missing_fields,
+                "action": "Complete missing claim fields before outbound messaging.",
+            },
+        )
     
     # 2. Check rate limiting
     one_hour_ago = (datetime.now(timezone.utc) - __import__('datetime').timedelta(hours=1)).isoformat()
@@ -118,6 +248,14 @@ async def send_claim_sms(
     
     # 3. Format phone number
     to_number = format_phone_number(request.to)
+
+    consumed_confirm_doc = None
+    if request.ai_generated:
+        consumed_confirm_doc = await _consume_ai_sms_confirmation_token(
+            claim_id=claim_id,
+            token=request.confirmation_token or "",
+            current_user=current_user,
+        )
     
     # 4. Determine message body
     if request.template_key and request.template_key in SMS_TEMPLATES:
@@ -155,7 +293,13 @@ async def send_claim_sms(
         "created_by_name": user_name,
         "created_at": now,
         "updated_at": now,
-        "template_key": request.template_key
+        "template_key": request.template_key,
+        "ai_generated": bool(request.ai_generated),
+        "confirmation_id": consumed_confirm_doc.get("id") if consumed_confirm_doc else None,
+        "risk_acknowledged": bool(request.risk_acknowledged) if request.risk_acknowledged is not None else None,
+        "risk_level": str(request.risk_level).lower() if request.risk_level else None,
+        "risk_flags": [str(flag)[:160] for flag in (request.risk_flags or [])][:8],
+        "thread_intent": str(request.thread_intent).lower() if request.thread_intent else None,
     }
     
     await db.messages.insert_one(message_doc)
@@ -245,6 +389,85 @@ async def get_claim_messages(
         "limit": limit,
         "skip": skip,
         "claim_id": claim_id
+    }
+
+
+@router.get("/api/sms/audit")
+async def get_sms_risk_audit(
+    days: int = Query(7, ge=1, le=90),
+    risk_level: Optional[str] = Query(None),
+    risk_acknowledged: Optional[bool] = Query(None),
+    thread_intent: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Admin audit view for outbound AI-generated SMS risk metadata.
+    Returns recent events + summary counters for compliance review.
+    """
+    if not _is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required for SMS audit logs")
+
+    window_start = (_now_utc() - __import__("datetime").timedelta(days=days)).isoformat()
+    query = {
+        "channel": "sms",
+        "direction": "outbound",
+        "ai_generated": True,
+        "created_at": {"$gte": window_start},
+    }
+    if risk_level:
+        query["risk_level"] = str(risk_level).lower()
+    if risk_acknowledged is not None:
+        query["risk_acknowledged"] = bool(risk_acknowledged)
+    if thread_intent:
+        query["thread_intent"] = str(thread_intent).lower()
+
+    projection = {
+        "_id": 0,
+        "id": 1,
+        "claim_id": 1,
+        "to": 1,
+        "status": 1,
+        "body": 1,
+        "created_at": 1,
+        "created_by_name": 1,
+        "risk_level": 1,
+        "risk_acknowledged": 1,
+        "risk_flags": 1,
+        "thread_intent": 1,
+        "confirmation_id": 1,
+    }
+    events = await db.messages.find(query, projection).sort("created_at", -1).limit(limit).to_list(limit)
+
+    summary_pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": None,
+                "total": {"$sum": 1},
+                "high_risk": {
+                    "$sum": {"$cond": [{"$eq": ["$risk_level", "high"]}, 1, 0]}
+                },
+                "ack_missing": {
+                    "$sum": {"$cond": [{"$ne": ["$risk_acknowledged", True]}, 1, 0]}
+                },
+            }
+        },
+    ]
+    summary_rows = await db.messages.aggregate(summary_pipeline).to_list(1)
+    summary = summary_rows[0] if summary_rows else {"total": 0, "high_risk": 0, "ack_missing": 0}
+    summary.pop("_id", None)
+
+    return {
+        "window_days": days,
+        "filters": {
+            "risk_level": risk_level,
+            "risk_acknowledged": risk_acknowledged,
+            "thread_intent": thread_intent,
+            "limit": limit,
+        },
+        "summary": summary,
+        "events": events,
     }
 
 

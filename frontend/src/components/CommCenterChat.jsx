@@ -1,5 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MessageSquare, Users, Search, Plus, Megaphone, Hash, Lock, Paperclip, Image as ImageIcon, Reply, Pencil, Trash2, X, UserPlus, PhoneCall, FileText, Sparkles } from 'lucide-react';
+import {
+  MessageSquare,
+  Users,
+  Search,
+  Plus,
+  Megaphone,
+  Hash,
+  Lock,
+  Paperclip,
+  Image as ImageIcon,
+  Reply,
+  Pencil,
+  Trash2,
+  X,
+  UserPlus,
+  PhoneCall,
+  FileText,
+  Sparkles,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet, apiPost, apiPatch, apiDelete, API_URL } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -57,7 +75,8 @@ const typeIcon = (type) => {
   return <Hash className="w-3 h-3 text-cyan-400" />;
 };
 
-const attachmentKey = (file) => `${file?.name || 'unknown'}__${file?.size || 0}__${file?.lastModified || 0}`;
+const attachmentKey = (file) =>
+  `${file?.name || 'unknown'}__${file?.size || 0}__${file?.lastModified || 0}`;
 const nowIso = () => new Date().toISOString();
 
 const CommCenterChat = () => {
@@ -138,13 +157,16 @@ const CommCenterChat = () => {
     return Boolean(selectedInboxItem?.membership);
   }, [canManageChannels, selectedChannel, selectedInboxItem]);
 
-  const canManageMessage = useCallback((msg) => {
-    if (!msg) return false;
-    if (canManageChannels) return true;
-    if (msg.sender_user_id === user?.id) return true;
-    const membershipRole = selectedInboxItem?.membership?.role;
-    return membershipRole === 'owner' || membershipRole === 'admin';
-  }, [canManageChannels, selectedInboxItem?.membership?.role, user?.id]);
+  const canManageMessage = useCallback(
+    (msg) => {
+      if (!msg) return false;
+      if (canManageChannels) return true;
+      if (msg.sender_user_id === user?.id) return true;
+      const membershipRole = selectedInboxItem?.membership?.role;
+      return membershipRole === 'owner' || membershipRole === 'admin';
+    },
+    [canManageChannels, selectedInboxItem?.membership?.role, user?.id]
+  );
 
   const loadClaims = useCallback(async () => {
     const res = await apiGet('/api/claims/');
@@ -193,7 +215,9 @@ const CommCenterChat = () => {
       setMessages([]);
       return;
     }
-    const res = await apiGet(`/api/comm/channels/${channelId}/messages?limit=100`, { cache: false });
+    const res = await apiGet(`/api/comm/channels/${channelId}/messages?limit=100`, {
+      cache: false,
+    });
     if (!res.ok) {
       toast.error(res.error || 'Failed to load channel messages');
       return;
@@ -337,7 +361,12 @@ const CommCenterChat = () => {
       return false;
     }
     setPendingAttachments((prev) => {
-      const exists = prev.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
+      const exists = prev.some(
+        (item) =>
+          item.name === file.name &&
+          item.size === file.size &&
+          item.lastModified === file.lastModified
+      );
       if (exists) return prev;
       return [...prev, file];
     });
@@ -426,39 +455,42 @@ const CommCenterChat = () => {
   };
 
   const pushUploadActivity = useCallback((type, text) => {
-    setUploadActivity((prev) => [
-      { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, text, at: nowIso() },
-      ...prev,
-    ].slice(0, 8));
+    setUploadActivity((prev) =>
+      [
+        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, text, at: nowIso() },
+        ...prev,
+      ].slice(0, 8)
+    );
   }, []);
 
-  const uploadAttachmentWithProgress = (channelId, file) => new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('upload', file);
-    const xhr = new XMLHttpRequest();
-    activeUploadXhrRef.current = xhr;
-    xhr.open('POST', `${API_URL}/api/comm/channels/${channelId}/attachments`);
-    xhr.withCredentials = true; // Send httpOnly cookies for authentication
-    xhr.upload.onprogress = (event) => {
-      if (!event.lengthComputable) return;
-      setUploadProgress(Math.round((event.loaded / event.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(true);
-      } else {
-        try {
-          const payload = JSON.parse(xhr.responseText || '{}');
-          reject(new Error(payload.detail || `Upload failed (${xhr.status})`));
-        } catch {
-          reject(new Error(`Upload failed (${xhr.status})`));
+  const uploadAttachmentWithProgress = (channelId, file) =>
+    new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('upload', file);
+      const xhr = new XMLHttpRequest();
+      activeUploadXhrRef.current = xhr;
+      xhr.open('POST', `${API_URL}/api/comm/channels/${channelId}/attachments`);
+      xhr.withCredentials = true; // Send httpOnly cookies for authentication
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return;
+        setUploadProgress(Math.round((event.loaded / event.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(true);
+        } else {
+          try {
+            const payload = JSON.parse(xhr.responseText || '{}');
+            reject(new Error(payload.detail || `Upload failed (${xhr.status})`));
+          } catch {
+            reject(new Error(`Upload failed (${xhr.status})`));
+          }
         }
-      }
-    };
-    xhr.onerror = () => reject(new Error('Network error during upload'));
-    xhr.onabort = () => reject(new Error('Upload canceled'));
-    xhr.send(formData);
-  });
+      };
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.onabort = () => reject(new Error('Upload canceled'));
+      xhr.send(formData);
+    });
 
   const handleCancelUpload = () => {
     cancelUploadRequestedRef.current = true;
@@ -520,14 +552,22 @@ const CommCenterChat = () => {
         toast.info(`${uploadedCount} uploaded, ${failed.length} failed. Use Retry Failed.`);
         pushUploadActivity('warning', `${uploadedCount} uploaded, ${failed.length} failed.`);
       } else {
-        toast.error(`${failed.length} attachment${failed.length > 1 ? 's' : ''} failed. Use Retry Failed.`);
-        pushUploadActivity('error', `${failed.length} upload${failed.length > 1 ? 's' : ''} failed.`);
+        toast.error(
+          `${failed.length} attachment${failed.length > 1 ? 's' : ''} failed. Use Retry Failed.`
+        );
+        pushUploadActivity(
+          'error',
+          `${failed.length} upload${failed.length > 1 ? 's' : ''} failed.`
+        );
       }
       return;
     }
     setFailedAttachmentErrors({});
     toast.success(`${uploadedCount} attachment${uploadedCount > 1 ? 's' : ''} uploaded`);
-    pushUploadActivity('success', `${uploadedCount} attachment${uploadedCount > 1 ? 's' : ''} uploaded.`);
+    pushUploadActivity(
+      'success',
+      `${uploadedCount} attachment${uploadedCount > 1 ? 's' : ''} uploaded.`
+    );
     clearPendingAttachments();
   };
 
@@ -557,7 +597,10 @@ const CommCenterChat = () => {
 
   const handleAcknowledgeAnnouncement = async (messageId) => {
     if (!selectedChannelId || !messageId) return;
-    const res = await apiPost(`/api/comm/channels/${selectedChannelId}/announcement/${messageId}/ack`, {});
+    const res = await apiPost(
+      `/api/comm/channels/${selectedChannelId}/announcement/${messageId}/ack`,
+      {}
+    );
     if (!res.ok) {
       toast.error(res.error || 'Failed to acknowledge');
       return;
@@ -742,10 +785,16 @@ const CommCenterChat = () => {
               className="input-tactical w-full px-3 py-2 text-sm"
             >
               {CHANNEL_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
-            <button onClick={handleCreateChannel} disabled={creatingChannel} className="btn-tactical w-full px-3 py-2 text-xs flex items-center justify-center gap-2">
+            <button
+              onClick={handleCreateChannel}
+              disabled={creatingChannel}
+              className="btn-tactical w-full px-3 py-2 text-xs flex items-center justify-center gap-2"
+            >
               <Plus className="w-3 h-3" /> {creatingChannel ? 'Creating...' : 'Create'}
             </button>
           </div>
@@ -770,7 +819,9 @@ const CommCenterChat = () => {
                       <span className="text-sm text-zinc-200 truncate">{ch.name || 'Unnamed'}</span>
                     </div>
                     {(item.unread_count || 0) > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300">{item.unread_count}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300">
+                        {item.unread_count}
+                      </span>
                     )}
                   </div>
                   <div className="text-[10px] text-zinc-500 mt-1 truncate">
@@ -791,13 +842,19 @@ const CommCenterChat = () => {
             {selectedChannel ? selectedChannel.name : 'Select a Channel'}
           </h1>
           {selectedChannel?.type === 'announcement_only' && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase tracking-wide">Announcement Only</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase tracking-wide">
+              Announcement Only
+            </span>
           )}
         </div>
         <div className="mb-3 rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
-          <div className="text-[11px] uppercase tracking-wider text-zinc-400 mb-2">Comms Quick Start</div>
+          <div className="text-[11px] uppercase tracking-wider text-zinc-400 mb-2">
+            Comms Quick Start
+          </div>
           <div className="flex flex-wrap gap-2 mb-2">
-            <span className="text-[10px] px-2 py-1 rounded border border-cyan-500/30 text-cyan-300">Text Chat</span>
+            <span className="text-[10px] px-2 py-1 rounded border border-cyan-500/30 text-cyan-300">
+              Text Chat
+            </span>
             <span className="text-[10px] px-2 py-1 rounded border border-fuchsia-500/30 text-fuchsia-300 inline-flex items-center gap-1">
               <ImageIcon className="w-3 h-3" /> GIF
             </span>
@@ -809,8 +866,8 @@ const CommCenterChat = () => {
             </span>
           </div>
           <p className="text-xs text-zinc-400">
-            1) Choose an inbox channel for team chat. 2) Use message, GIF URL, or attachment actions below.
-            3) For client voice and SMS, open a Client Thread from the right panel.
+            1) Choose an inbox channel for team chat. 2) Use message, GIF URL, or attachment actions
+            below. 3) For client voice and SMS, open a Client Thread from the right panel.
           </p>
         </div>
 
@@ -822,15 +879,21 @@ const CommCenterChat = () => {
           ) : (
             messages.map((msg) => (
               <div key={msg.id} className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 font-mono">{msg.sender_name || msg.sender_user_id || 'system'}</span>
-                <div className={`border rounded-lg p-2 text-sm ${msg.type === 'announcement' ? 'bg-amber-500/10 border-amber-500/30 text-amber-100' : 'bg-zinc-800/70 border-zinc-700/40 text-zinc-200'}`}>
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  {msg.sender_name || msg.sender_user_id || 'system'}
+                </span>
+                <div
+                  className={`border rounded-lg p-2 text-sm ${msg.type === 'announcement' ? 'bg-amber-500/10 border-amber-500/30 text-amber-100' : 'bg-zinc-800/70 border-zinc-700/40 text-zinc-200'}`}
+                >
                   {msg.reply_to_message && (
                     <div className="mb-2 text-[10px] px-2 py-1 rounded border border-zinc-600/40 bg-zinc-900/40">
                       Replying to {msg.reply_to_message.sender_name}: {msg.reply_to_message.body}
                     </div>
                   )}
                   {msg.type === 'announcement' && msg.title && (
-                    <div className="text-xs font-semibold uppercase tracking-wide mb-1">{msg.title}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide mb-1">
+                      {msg.title}
+                    </div>
                   )}
                   {editingMessageId === msg.id ? (
                     <div className="space-y-2">
@@ -840,8 +903,21 @@ const CommCenterChat = () => {
                         className="input-tactical w-full px-3 py-2 text-sm"
                       />
                       <div className="flex items-center gap-2">
-                        <button className="btn-tactical px-2 py-1 text-xs" onClick={() => handleSaveEdit(msg.id)}>Save</button>
-                        <button className="btn-tactical px-2 py-1 text-xs" onClick={() => { setEditingMessageId(''); setEditingBody(''); }}>Cancel</button>
+                        <button
+                          className="btn-tactical px-2 py-1 text-xs"
+                          onClick={() => handleSaveEdit(msg.id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="btn-tactical px-2 py-1 text-xs"
+                          onClick={() => {
+                            setEditingMessageId('');
+                            setEditingBody('');
+                          }}
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   ) : msg.type === 'gif' ? (
@@ -892,7 +968,13 @@ const CommCenterChat = () => {
                   {!msg.is_deleted && msg.type !== 'announcement' && (
                     <div className="mt-2 flex items-center gap-2 text-[10px]">
                       <button
-                        onClick={() => setReplyToMessage({ id: msg.id, sender_name: msg.sender_name || 'Unknown', body: msg.body || '' })}
+                        onClick={() =>
+                          setReplyToMessage({
+                            id: msg.id,
+                            sender_name: msg.sender_name || 'Unknown',
+                            body: msg.body || '',
+                          })
+                        }
                         className="inline-flex items-center gap-1 px-2 py-1 rounded border border-zinc-600/40 hover:border-zinc-500/70"
                       >
                         <Reply className="w-3 h-3" />
@@ -921,7 +1003,9 @@ const CommCenterChat = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-zinc-600 font-mono">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}</span>
+                <span className="text-[10px] text-zinc-600 font-mono">
+                  {msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}
+                </span>
               </div>
             ))
           )}
@@ -954,14 +1038,26 @@ const CommCenterChat = () => {
                   className="btn-tactical px-3 py-2 text-xs inline-flex items-center justify-center gap-1 disabled:opacity-60"
                   data-testid="team-copilot-btn"
                 >
-                  {runningTeamCopilot ? 'Thinking...' : <><Sparkles className="w-3 h-3" /> Team Copilot</>}
+                  {runningTeamCopilot ? (
+                    'Thinking...'
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3" /> Team Copilot
+                    </>
+                  )}
                 </button>
               </div>
               {teamCopilot && (
-                <div className="rounded border border-violet-500/20 bg-zinc-900/50 p-2 text-xs space-y-1" data-testid="team-copilot-panel">
+                <div
+                  className="rounded border border-violet-500/20 bg-zinc-900/50 p-2 text-xs space-y-1"
+                  data-testid="team-copilot-panel"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <p className="uppercase tracking-wide text-[10px] text-violet-300">Copilot</p>
-                    <p className="text-[10px] text-zinc-500">{teamCopilot.provider || 'unknown'} / {teamCopilot.model || 'unknown'} / {teamCopilot.confidence || 'medium'}</p>
+                    <p className="text-[10px] text-zinc-500">
+                      {teamCopilot.provider || 'unknown'} / {teamCopilot.model || 'unknown'} /{' '}
+                      {teamCopilot.confidence || 'medium'}
+                    </p>
                   </div>
                   <p className="text-zinc-300">{teamCopilot.summary}</p>
                   <p className="text-zinc-400">Next: {teamCopilot.next_action}</p>
@@ -983,47 +1079,67 @@ const CommCenterChat = () => {
                     className="input-tactical w-full px-3 py-2 text-sm min-h-[90px]"
                     placeholder="Write announcement..."
                   />
-                  <button onClick={handlePostAnnouncement} disabled={sending} className="btn-tactical px-4 py-2 text-sm">
+                  <button
+                    onClick={handlePostAnnouncement}
+                    disabled={sending}
+                    className="btn-tactical px-4 py-2 text-sm"
+                  >
                     {sending ? 'Posting...' : 'Post Announcement'}
                   </button>
                 </>
               ) : (
-                <p className="text-xs text-zinc-500">Read-only channel. Only admins can post announcements.</p>
+                <p className="text-xs text-zinc-500">
+                  Read-only channel. Only admins can post announcements.
+                </p>
               )
-            ) : (
-              canPostInSelected ? (
-                <div className="space-y-2">
-                  {replyToMessage && (
-                    <div className="text-xs rounded border border-zinc-700/50 bg-zinc-900/50 p-2 flex items-center justify-between">
-                      <span>Replying to {replyToMessage.sender_name}: {replyToMessage.body}</span>
-                      <button className="inline-flex items-center gap-1" onClick={() => setReplyToMessage(null)}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <input
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      className="input-tactical flex-1 px-3 py-2 text-sm"
-                      placeholder="Type a message..."
-                    />
-                    <button onClick={handleSendMessage} disabled={sending} className="btn-tactical px-4 py-2 text-sm">{sending ? 'Sending...' : 'Send'}</button>
+            ) : canPostInSelected ? (
+              <div className="space-y-2">
+                {replyToMessage && (
+                  <div className="text-xs rounded border border-zinc-700/50 bg-zinc-900/50 p-2 flex items-center justify-between">
+                    <span>
+                      Replying to {replyToMessage.sender_name}: {replyToMessage.body}
+                    </span>
+                    <button
+                      className="inline-flex items-center gap-1"
+                      onClick={() => setReplyToMessage(null)}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
-                  <div
-                    className={`rounded-lg border p-2 transition-all ${dragOverUpload ? 'border-cyan-400/60 bg-cyan-500/10' : 'border-zinc-700/40 bg-zinc-900/20'}`}
-                    onDrop={handleUploadDrop}
-                    onDragOver={handleUploadDragOver}
-                    onDragLeave={handleUploadDragLeave}
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    className="input-tactical flex-1 px-3 py-2 text-sm"
+                    placeholder="Type a message..."
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={sending}
+                    className="btn-tactical px-4 py-2 text-sm"
                   >
-                    <div className="flex gap-2 items-center">
+                    {sending ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
+                <div
+                  className={`rounded-lg border p-2 transition-all ${dragOverUpload ? 'border-cyan-400/60 bg-cyan-500/10' : 'border-zinc-700/40 bg-zinc-900/20'}`}
+                  onDrop={handleUploadDrop}
+                  onDragOver={handleUploadDragOver}
+                  onDragLeave={handleUploadDragLeave}
+                >
+                  <div className="flex gap-2 items-center">
                     <input
                       value={gifUrlInput}
                       onChange={(e) => setGifUrlInput(e.target.value)}
                       className="input-tactical flex-1 px-3 py-2 text-xs"
                       placeholder="Paste GIF URL (giphy/tenor direct URL)"
                     />
-                    <button onClick={handleSendGif} disabled={sending || !gifUrlInput.trim()} className="btn-tactical px-3 py-2 text-xs inline-flex items-center gap-1">
+                    <button
+                      onClick={handleSendGif}
+                      disabled={sending || !gifUrlInput.trim()}
+                      className="btn-tactical px-3 py-2 text-xs inline-flex items-center gap-1"
+                    >
                       <ImageIcon className="w-3 h-3" />
                       GIF
                     </button>
@@ -1049,7 +1165,9 @@ const CommCenterChat = () => {
                       className="btn-tactical px-3 py-2 text-xs inline-flex items-center gap-1"
                     >
                       <Paperclip className="w-3 h-3" />
-                      {uploadingAttachment ? `Uploading ${uploadProgress}%` : `Send File${pendingAttachments.length > 1 ? 's' : ''}`}
+                      {uploadingAttachment
+                        ? `Uploading ${uploadProgress}%`
+                        : `Send File${pendingAttachments.length > 1 ? 's' : ''}`}
                     </button>
                     {!uploadingAttachment && failedAttachments.length > 0 && (
                       <button
@@ -1068,168 +1186,203 @@ const CommCenterChat = () => {
                         Cancel
                       </button>
                     )}
-                    </div>
-                    <p className="mt-2 text-[10px] text-zinc-500">
-                      Drop file(s) here or use Attach. Then click Send File.
+                  </div>
+                  <p className="mt-2 text-[10px] text-zinc-500">
+                    Drop file(s) here or use Attach. Then click Send File.
+                  </p>
+                  {failedAttachments.length > 0 && (
+                    <p className="mt-1 text-[10px] text-amber-300">
+                      {failedAttachments.length} file{failedAttachments.length > 1 ? 's' : ''}{' '}
+                      failed in last run. Retry uses only failed files.
                     </p>
-                    {failedAttachments.length > 0 && (
-                      <p className="mt-1 text-[10px] text-amber-300">
-                        {failedAttachments.length} file{failedAttachments.length > 1 ? 's' : ''} failed in last run. Retry uses only failed files.
-                      </p>
+                  )}
+                </div>
+                {pendingAttachments.length > 0 && (
+                  <div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-2 text-[10px] text-zinc-400">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="truncate">
+                        Ready to upload: {pendingAttachments.length} file
+                        {pendingAttachments.length > 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={clearPendingAttachments}
+                        className="text-zinc-500 hover:text-zinc-300"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="max-h-20 overflow-y-auto space-y-1">
+                      {pendingAttachments.map((file, index) => (
+                        <div
+                          key={`${file.name}-${file.size}-${index}`}
+                          className="flex items-center justify-between gap-2 rounded border border-zinc-700/40 px-2 py-1"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate">
+                              {file.name} ({Math.max(1, Math.round(file.size / 1024))} KB)
+                            </div>
+                            {failedAttachmentErrors[attachmentKey(file)] && (
+                              <div className="truncate text-[10px] text-red-300">
+                                {failedAttachmentErrors[attachmentKey(file)]}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removePendingAttachment(index)}
+                            disabled={uploadingAttachment}
+                            className="text-zinc-500 hover:text-zinc-300"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {pendingAttachmentPreviewUrl && (
+                      <img
+                        src={pendingAttachmentPreviewUrl}
+                        alt="First attachment preview"
+                        className="mt-2 h-16 w-16 object-cover rounded border border-zinc-700/60"
+                      />
+                    )}
+                    {uploadingAttachment && (
+                      <div className="mt-2">
+                        <div className="h-1.5 w-full rounded bg-zinc-800 overflow-hidden">
+                          <div
+                            className="h-full bg-cyan-400 transition-all duration-150"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <p className="mt-1 text-[10px] text-zinc-500">
+                          Uploading {uploadQueueIndex}/{uploadQueueTotal}: {uploadingFileName} (
+                          {uploadProgress}%)
+                        </p>
+                      </div>
                     )}
                   </div>
-                  {pendingAttachments.length > 0 && (
-                    <div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-2 text-[10px] text-zinc-400">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="truncate">
-                          Ready to upload: {pendingAttachments.length} file{pendingAttachments.length > 1 ? 's' : ''}
-                        </span>
-                        <button onClick={clearPendingAttachments} className="text-zinc-500 hover:text-zinc-300">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <div className="max-h-20 overflow-y-auto space-y-1">
-                        {pendingAttachments.map((file, index) => (
-                          <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-2 rounded border border-zinc-700/40 px-2 py-1">
-                            <div className="min-w-0">
-                              <div className="truncate">
-                                {file.name} ({Math.max(1, Math.round(file.size / 1024))} KB)
-                              </div>
-                              {failedAttachmentErrors[attachmentKey(file)] && (
-                                <div className="truncate text-[10px] text-red-300">
-                                  {failedAttachmentErrors[attachmentKey(file)]}
-                                </div>
-                              )}
+                )}
+                <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-400">
+                      GIF Picker
+                    </span>
+                    <input
+                      value={gifSearch}
+                      onChange={(e) => setGifSearch(e.target.value)}
+                      placeholder="Search quick GIFs..."
+                      className="input-tactical px-2 py-1 text-[10px] w-40"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    {filteredGifs.slice(0, 12).map((gif) => (
+                      <button
+                        key={gif.id}
+                        type="button"
+                        onClick={() => setGifUrlInput(gif.url)}
+                        className={`relative overflow-hidden rounded border transition-all ${gifUrlInput === gif.url ? 'border-cyan-400/60' : 'border-zinc-700/60 hover:border-cyan-400/40'}`}
+                        title={gif.label}
+                      >
+                        <img
+                          src={gif.url}
+                          alt={gif.label}
+                          className="h-14 w-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="text-[10px] text-zinc-500">
+                  Pick from GIF library or paste a direct GIF URL. Choose a file, review it, then
+                  click Send File (15MB max).
+                </div>
+                {recentAttachments.length > 0 && (
+                  <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2">
+                      Recent Attachments
+                    </div>
+                    <div className="space-y-1">
+                      {recentAttachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between gap-2 rounded border border-zinc-700/40 px-2 py-1"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate text-[11px] text-zinc-300">
+                              {attachment.name}
                             </div>
-                            <button
-                              onClick={() => removePendingAttachment(index)}
-                              disabled={uploadingAttachment}
-                              className="text-zinc-500 hover:text-zinc-300"
+                            <div className="truncate text-[10px] text-zinc-500">
+                              {attachment.sender}{' '}
+                              {attachment.createdAt
+                                ? `- ${new Date(attachment.createdAt).toLocaleString()}`
+                                : ''}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <a
+                              href={`${API_URL}/api/comm/uploads/${attachment.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-tactical px-2 py-1 text-[10px]"
                             >
-                              <X className="w-3 h-3" />
+                              Open
+                            </a>
+                            <button
+                              onClick={() => handleCopyAttachmentLink(attachment)}
+                              disabled={copyingAttachmentId === attachment.id}
+                              className="btn-tactical px-2 py-1 text-[10px]"
+                            >
+                              {copyingAttachmentId === attachment.id ? 'Copying...' : 'Copy Link'}
+                            </button>
+                            <button
+                              onClick={() => handleShareAttachmentLink(attachment)}
+                              disabled={sharingAttachmentId === attachment.id}
+                              className="btn-tactical px-2 py-1 text-[10px]"
+                            >
+                              {sharingAttachmentId === attachment.id ? 'Sharing...' : 'Share Link'}
                             </button>
                           </div>
-                        ))}
-                      </div>
-                      {pendingAttachmentPreviewUrl && (
-                        <img
-                          src={pendingAttachmentPreviewUrl}
-                          alt="First attachment preview"
-                          className="mt-2 h-16 w-16 object-cover rounded border border-zinc-700/60"
-                        />
-                      )}
-                      {uploadingAttachment && (
-                        <div className="mt-2">
-                          <div className="h-1.5 w-full rounded bg-zinc-800 overflow-hidden">
-                            <div
-                              className="h-full bg-cyan-400 transition-all duration-150"
-                              style={{ width: `${uploadProgress}%` }}
-                            />
-                          </div>
-                          <p className="mt-1 text-[10px] text-zinc-500">
-                            Uploading {uploadQueueIndex}/{uploadQueueTotal}: {uploadingFileName} ({uploadProgress}%)
-                          </p>
                         </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] uppercase tracking-wider text-zinc-400">GIF Picker</span>
-                      <input
-                        value={gifSearch}
-                        onChange={(e) => setGifSearch(e.target.value)}
-                        placeholder="Search quick GIFs..."
-                        className="input-tactical px-2 py-1 text-[10px] w-40"
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                      {filteredGifs.slice(0, 12).map((gif) => (
-                        <button
-                          key={gif.id}
-                          type="button"
-                          onClick={() => setGifUrlInput(gif.url)}
-                          className={`relative overflow-hidden rounded border transition-all ${gifUrlInput === gif.url ? 'border-cyan-400/60' : 'border-zinc-700/60 hover:border-cyan-400/40'}`}
-                          title={gif.label}
-                        >
-                          <img src={gif.url} alt={gif.label} className="h-14 w-full object-cover" loading="lazy" />
-                        </button>
                       ))}
                     </div>
                   </div>
-                  <div className="text-[10px] text-zinc-500">
-                    Pick from GIF library or paste a direct GIF URL. Choose a file, review it, then click Send File (15MB max).
+                )}
+                {uploadActivity.length > 0 && (
+                  <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2">
+                      Upload Activity
+                    </div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {uploadActivity.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-2 text-[10px] border border-zinc-700/30 rounded px-2 py-1"
+                        >
+                          <span
+                            className={`truncate ${
+                              item.type === 'error'
+                                ? 'text-red-300'
+                                : item.type === 'warning'
+                                  ? 'text-amber-300'
+                                  : item.type === 'success'
+                                    ? 'text-emerald-300'
+                                    : 'text-zinc-300'
+                            }`}
+                          >
+                            {item.text}
+                          </span>
+                          <span className="text-zinc-500 shrink-0">
+                            {new Date(item.at).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {recentAttachments.length > 0 && (
-                    <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
-                      <div className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2">Recent Attachments</div>
-                      <div className="space-y-1">
-                        {recentAttachments.map((attachment) => (
-                          <div key={attachment.id} className="flex items-center justify-between gap-2 rounded border border-zinc-700/40 px-2 py-1">
-                            <div className="min-w-0">
-                              <div className="truncate text-[11px] text-zinc-300">{attachment.name}</div>
-                              <div className="truncate text-[10px] text-zinc-500">
-                                {attachment.sender} {attachment.createdAt ? `- ${new Date(attachment.createdAt).toLocaleString()}` : ''}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <a
-                                href={`${API_URL}/api/comm/uploads/${attachment.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn-tactical px-2 py-1 text-[10px]"
-                              >
-                                Open
-                              </a>
-                              <button
-                                onClick={() => handleCopyAttachmentLink(attachment)}
-                                disabled={copyingAttachmentId === attachment.id}
-                                className="btn-tactical px-2 py-1 text-[10px]"
-                              >
-                                {copyingAttachmentId === attachment.id ? 'Copying...' : 'Copy Link'}
-                              </button>
-                              <button
-                                onClick={() => handleShareAttachmentLink(attachment)}
-                                disabled={sharingAttachmentId === attachment.id}
-                                className="btn-tactical px-2 py-1 text-[10px]"
-                              >
-                                {sharingAttachmentId === attachment.id ? 'Sharing...' : 'Share Link'}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {uploadActivity.length > 0 && (
-                    <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 p-2">
-                      <div className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2">Upload Activity</div>
-                      <div className="space-y-1 max-h-24 overflow-y-auto">
-                        {uploadActivity.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between gap-2 text-[10px] border border-zinc-700/30 rounded px-2 py-1">
-                            <span
-                              className={`truncate ${
-                                item.type === 'error'
-                                  ? 'text-red-300'
-                                  : item.type === 'warning'
-                                    ? 'text-amber-300'
-                                    : item.type === 'success'
-                                      ? 'text-emerald-300'
-                                      : 'text-zinc-300'
-                              }`}
-                            >
-                              {item.text}
-                            </span>
-                            <span className="text-zinc-500 shrink-0">{new Date(item.at).toLocaleTimeString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-zinc-500">You do not have posting permissions in this channel.</p>
-              )
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-500">
+                You do not have posting permissions in this channel.
+              </p>
             )}
           </div>
         )}
@@ -1239,7 +1392,9 @@ const CommCenterChat = () => {
         <div className="mb-4 pb-4 border-b border-zinc-700/40">
           <div className="flex items-center gap-2 mb-3">
             <Users className="w-4 h-4 text-orange-400" />
-            <h2 className="text-sm font-tactical text-zinc-200 uppercase tracking-wider">Channel Members</h2>
+            <h2 className="text-sm font-tactical text-zinc-200 uppercase tracking-wider">
+              Channel Members
+            </h2>
           </div>
           {!selectedChannel ? (
             <p className="text-xs text-zinc-500">Select a channel to view members.</p>
@@ -1287,8 +1442,13 @@ const CommCenterChat = () => {
                   <p className="text-xs text-zinc-500">No members found.</p>
                 ) : (
                   channelMembers.map((m) => (
-                    <div key={m.id} className="text-xs p-2 rounded border border-zinc-700/40 bg-zinc-900/30">
-                      <div className="text-zinc-200">{m.user?.full_name || m.user?.email || m.user_id}</div>
+                    <div
+                      key={m.id}
+                      className="text-xs p-2 rounded border border-zinc-700/40 bg-zinc-900/30"
+                    >
+                      <div className="text-zinc-200">
+                        {m.user?.full_name || m.user?.email || m.user_id}
+                      </div>
                       <div className="text-zinc-500 uppercase">{m.role}</div>
                     </div>
                   ))
@@ -1300,7 +1460,9 @@ const CommCenterChat = () => {
 
         <div className="flex items-center gap-2 mb-3">
           <Users className="w-4 h-4 text-orange-400" />
-          <h2 className="text-sm font-tactical text-zinc-200 uppercase tracking-wider">Client Threads</h2>
+          <h2 className="text-sm font-tactical text-zinc-200 uppercase tracking-wider">
+            Client Threads
+          </h2>
         </div>
         <p className="text-[11px] text-zinc-500 mb-2">
           Open a claim thread for client SMS history and voice call actions.
@@ -1321,13 +1483,18 @@ const CommCenterChat = () => {
               onClick={() => navigate(`/comms/claim/${claim.id}`)}
               className="w-full text-left p-2 rounded-lg border border-zinc-700/40 bg-zinc-900/40 hover:border-orange-500/40 transition-all"
             >
-              <div className="text-sm text-zinc-200 truncate">{claim.client_name || claim.insured_name || 'Unknown'}</div>
+              <div className="text-sm text-zinc-200 truncate">
+                {claim.client_name || claim.insured_name || 'Unknown'}
+              </div>
               <div className="text-[10px] text-zinc-500 font-mono truncate">
-                {claim.claim_number ? `#${claim.claim_number}` : 'No claim #'} - {claim.property_address || claim.loss_location || 'No address'}
+                {claim.claim_number ? `#${claim.claim_number}` : 'No claim #'} -{' '}
+                {claim.property_address || claim.loss_location || 'No address'}
               </div>
             </button>
           ))}
-          {filteredClaims.length === 0 && <p className="text-xs text-zinc-500">No matching claims.</p>}
+          {filteredClaims.length === 0 && (
+            <p className="text-xs text-zinc-500">No matching claims.</p>
+          )}
         </div>
       </div>
     </div>

@@ -10,8 +10,12 @@ import { useMap, useMapEvents } from 'react-leaflet';
  */
 export const MapController = ({ onLocationFound, onMapClick }) => {
   useMapEvents({
-    locationfound(e) { onLocationFound?.(e.latlng); },
-    click(e) { onMapClick?.(e.latlng); }
+    locationfound(e) {
+      onLocationFound?.(e.latlng);
+    },
+    click(e) {
+      onMapClick?.(e.latlng);
+    },
   });
   return null;
 };

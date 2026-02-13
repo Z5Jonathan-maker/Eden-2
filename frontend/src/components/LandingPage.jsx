@@ -16,24 +16,27 @@ import { APP_LOGO, FEATURE_ICONS, TIER_BADGES } from '../assets/badges';
 const useInView = (options = {}) => {
   const ref = useRef(null);
   const [isInView, setIsInView] = useState(false);
+  const threshold = options.threshold ?? 0.1;
+  const root = options.root ?? null;
+  const rootMargin = options.rootMargin ?? '0px';
 
   useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setIsInView(true);
       }
-    }, { threshold: 0.1, ...options });
+    }, { threshold, root, rootMargin });
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    observer.observe(node);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      observer.unobserve(node);
+      observer.disconnect();
     };
-  }, []);
+  }, [threshold, root, rootMargin]);
 
   return [ref, isInView];
 };

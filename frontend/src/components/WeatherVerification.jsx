@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -8,7 +8,7 @@ import {
   Cloud, Wind, MapPin, Calendar, Search, FileText, CheckCircle2,
   AlertTriangle, Copy, Download, History, Loader2, Shield,
   Thermometer, CloudRain, Droplets, CloudLightning, Snowflake,
-  Eye, ChevronDown, ChevronUp, ExternalLink, Zap
+  Eye, ChevronDown, ChevronUp, ExternalLink, Zap, Target
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -24,9 +24,11 @@ const EVENT_CONFIG = {
 
 // Confidence level styling
 const CONFIDENCE_STYLES = {
+  confirmed: { color: 'text-emerald-300', bg: 'bg-emerald-500/20', label: 'CONFIRMED', description: 'Strong multi-source evidence supports this DOL' },
   high: { color: 'text-green-400', bg: 'bg-green-500/20', label: 'HIGH CONFIDENCE', description: 'Strong evidence supports this DOL' },
   medium: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'MEDIUM CONFIDENCE', description: 'Moderate evidence, review recommended' },
   low: { color: 'text-red-400', bg: 'bg-red-500/20', label: 'LOW CONFIDENCE', description: 'Limited evidence, additional verification needed' },
+  unverified: { color: 'text-slate-300', bg: 'bg-slate-500/20', label: 'UNVERIFIED', description: 'No claim-grade event signal found in selected window' },
 };
 
 const WeatherVerification = ({ embedded = false }) => {
@@ -37,11 +39,14 @@ const WeatherVerification = ({ embedded = false }) => {
   const [zip, setZip] = useState('');
   const [dolDate, setDolDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [eventType, setEventType] = useState('wind');
   
   // Results state
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [events, setEvents] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [error, setError] = useState(null);
   
   // History state
@@ -53,12 +58,56 @@ const WeatherVerification = ({ embedded = false }) => {
   
   const token = localStorage.getItem('eden_token');
 
-  // Load history on mount
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const fetchHistory = async () => {
+  const getResponseErrorDetail = async (response, fallbackMessage) => {
+    try {
+      const payload = await response.json();
+      if (typeof payload?.detail === 'string' && payload.detail.trim()) return payload.detail.trim();
+      if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message.trim();
+      if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error.trim();
+    } catch (err) {
+      // Fall through to status-based message.
+    }
+
+    const statusText = response.statusText ? `: ${response.statusText}` : '';
+    return `${fallbackMessage} (${response.status}${statusText})`;
+  };
+
+  const fetchJsonWithResilience = async (url, options, fallbackMessage, retries = 1, timeoutMs = 45000) => {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        if (response.ok) {
+          return { ok: true, data: await response.json(), response };
+        }
+        const detail = await getResponseErrorDetail(response, fallbackMessage);
+        lastError = new Error(detail);
+        if ([502, 503, 504].includes(response.status) && attempt < retries) {
+          await delay(350 * (attempt + 1));
+          continue;
+        }
+        return { ok: false, errorMessage: detail, response };
+      } catch (err) {
+        lastError = new Error('Network issue reaching weather services. Please try again in a moment.');
+        if (attempt < retries) {
+          await delay(450 * (attempt + 1));
+          continue;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    return { ok: false, errorMessage: lastError?.message || fallbackMessage, response: null };
+  };
+
+  // Load history on mount
+  const fetchHistory = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/weather/history?days=30`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -69,6 +118,67 @@ const WeatherVerification = ({ embedded = false }) => {
       }
     } catch (err) {
       console.error('Error fetching history:', err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const normalizeVerificationPayload = (data) => {
+    const primarySources = data?.primary_sources || [];
+    const stationSource = primarySources.find(s => s.source_type === 'asos_metar') || primarySources[0];
+
+    return {
+      ...data,
+      verification_status: data?.verified_dol ? 'verified' : 'review_needed',
+      confidence: (data?.confidence || 'unverified').toLowerCase(),
+      summary: data?.event_summary || 'Verification completed',
+      nearest_station: stationSource?.station_id || 'N/A',
+      station_distance: stationSource?.distance_miles !== undefined && stationSource?.distance_miles !== null
+        ? `${stationSource.distance_miles} miles`
+        : 'N/A',
+    };
+  };
+
+  const fetchCandidates = async () => {
+    setCandidatesLoading(true);
+    try {
+      const result = await fetchJsonWithResilience(
+        `${API_URL}/api/weather/dol/candidates`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            address,
+            city,
+            state,
+            zip_code: zip,
+            start_date: dolDate,
+            end_date: endDate || dolDate,
+            event_type: eventType,
+            top_n: 10,
+            max_distance_miles: 25,
+            min_wind_mph: 30
+          })
+        },
+        'Failed to fetch candidate dates',
+      );
+
+      if (result.ok) {
+        setCandidates(result.data?.candidates || []);
+        return { ok: true, data: result.data };
+      }
+
+      return { ok: false, errorMessage: result.errorMessage || 'Failed to fetch candidate dates' };
+    } catch (err) {
+      console.error('Failed to fetch candidate dates:', err);
+      return { ok: false, errorMessage: err?.message || 'Failed to fetch candidate dates' };
+    } finally {
+      setCandidatesLoading(false);
     }
   };
 
@@ -82,39 +192,88 @@ const WeatherVerification = ({ embedded = false }) => {
     setError(null);
     setResult(null);
     setEvents([]);
+    setCandidates([]);
 
     try {
-      const res = await fetch(`${API_URL}/api/weather/verify-dol`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const verifyResult = await fetchJsonWithResilience(
+        `${API_URL}/api/weather/verify-dol`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            address,
+            city,
+            state,
+            zip_code: zip,
+            start_date: dolDate,
+            end_date: endDate || dolDate,
+            event_type: eventType
+          })
         },
-        body: JSON.stringify({
-          address,
-          city,
-          state,
-          zip_code: zip,
-          start_date: dolDate,
-          end_date: endDate || dolDate,
-          event_type: 'all'
-        })
-      });
+        'Verification failed',
+        1,
+        60000,
+      );
 
-      if (res.ok) {
-        const data = await res.json();
-        setResult(data);
-        processEvents(data);
-        fetchHistory();
-        toast.success('Verification complete');
+      let verifyPayload = null;
+      if (verifyResult.ok) {
+        verifyPayload = verifyResult.data;
+      } else if (
+        city &&
+        String(verifyResult.errorMessage || '').toLowerCase().includes('unable to geocode')
+      ) {
+        // Retry without city for areas where postal city naming diverges.
+        const retryWithoutCity = await fetchJsonWithResilience(
+          `${API_URL}/api/weather/verify-dol`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              address,
+              city: '',
+              state,
+              zip_code: zip,
+              start_date: dolDate,
+              end_date: endDate || dolDate,
+              event_type: eventType
+            })
+          },
+          'Verification failed',
+          0,
+          60000,
+        );
+        if (retryWithoutCity.ok) {
+          verifyPayload = retryWithoutCity.data;
+        } else {
+          throw new Error(retryWithoutCity.errorMessage || verifyResult.errorMessage || 'Verification failed');
+        }
       } else {
-        throw new Error('Verification failed');
+        throw new Error(verifyResult.errorMessage || 'Verification failed');
+      }
+
+      const normalized = normalizeVerificationPayload(verifyPayload);
+      setResult(normalized);
+      processEvents(normalized);
+      const inlineCandidates = normalized?.candidate_dates?.[eventType] || [];
+      setCandidates(inlineCandidates);
+
+      const candidatesResult = await fetchCandidates();
+      fetchHistory();
+
+      if (candidatesResult?.ok === false) {
+        toast.warning(candidatesResult.errorMessage || 'Verification complete; candidate discovery is temporarily unavailable');
+      } else {
+        toast.success('Verification complete');
       }
     } catch (err) {
       console.error(err);
-      setError('Failed to verify date of loss');
-      // Generate sample data for demo
-      generateSampleData();
+      setError(err?.message || 'Failed to verify date of loss');
     } finally {
       setLoading(false);
     }
@@ -122,40 +281,58 @@ const WeatherVerification = ({ embedded = false }) => {
 
   const processEvents = (data) => {
     const processed = [];
-    
-    // Process LSRs
-    if (data.lsrs) {
-      data.lsrs.forEach(lsr => {
+
+    const fromCandidates = data?.candidate_dates?.[eventType] || [];
+    fromCandidates.forEach((candidate) => {
+      const peakStart = candidate.peak_window_start || candidate.candidate_date;
+      const [datePart, timePart = '00:00'] = String(peakStart).split(/[T ]/);
+      const isWind = eventType === 'wind';
+      const magnitude = isWind
+        ? candidate.peak_wind_mph
+        : candidate.max_hail_inches;
+      const unit = isWind ? 'MPH' : 'IN';
+
+      processed.push({
+        date: candidate.candidate_date || datePart,
+        time: timePart.slice(0, 5),
+        type: isWind ? 'WIND SIGNAL' : 'HAIL SIGNAL',
+        magnitude: magnitude || 0,
+        unit,
+        location: `${city}, ${state}`,
+        source: isWind ? 'METAR/ASOS' : 'NWS LSR',
+        remarks: isWind
+          ? `${candidate.station_count || 0} station(s) corroborate this day`
+          : `${candidate.report_count || 0} hail report(s), closest ${candidate.min_distance_miles || 'n/a'} miles`,
+        eventBadges: isWind ? ['W'] : ['H'],
+      });
+    });
+
+    if (processed.length === 0 && data?.primary_sources) {
+      data.primary_sources.forEach((source) => {
+        if (source.source_type !== 'asos_metar' && source.source_type !== 'nws_lsr_hail') {
+          return;
+        }
+        const stamp = source.timestamp || '';
+        const parsed = stamp ? String(stamp).split(/[T ]/) : [];
+        const datePart = parsed[0] || dolDate;
+        const timePart = (parsed[1] || '00:00').slice(0, 5);
+        const isHail = source.source_type === 'nws_lsr_hail';
         processed.push({
-          date: lsr.date,
-          time: lsr.time || '12:00',
-          type: lsr.type,
-          magnitude: lsr.magnitude,
-          unit: lsr.unit,
-          location: lsr.location,
-          source: 'LSR',
-          remarks: lsr.remarks,
-          eventBadges: getEventBadges(lsr)
+          date: datePart,
+          time: timePart,
+          type: isHail ? 'HAIL REPORT' : 'WIND OBS',
+          magnitude: isHail ? (source.magnitude || 0) : (source.max_wind_mph || 0),
+          unit: isHail ? 'IN' : 'MPH',
+          location: `${city}, ${state}`,
+          source: isHail ? 'NWS LSR' : source.station_id,
+          remarks: isHail
+            ? `${source.distance_miles || 'n/a'} miles from property`
+            : `${source.observation_count || 0} observations`,
+          eventBadges: isHail ? ['H'] : ['W'],
         });
       });
     }
-    
-    // Process radar data
-    if (data.radar_events) {
-      data.radar_events.forEach(e => {
-        processed.push({
-          date: e.date,
-          time: e.time,
-          type: 'RADAR',
-          magnitude: e.max_reflectivity,
-          unit: 'dBZ',
-          location: 'Radar Coverage',
-          source: 'NEXRAD',
-          eventBadges: ['S']
-        });
-      });
-    }
-    
+
     processed.sort((a, b) => new Date(b.date) - new Date(a.date));
     setEvents(processed);
   };
@@ -173,49 +350,9 @@ const WeatherVerification = ({ embedded = false }) => {
     return badges;
   };
 
-  const generateSampleData = () => {
-    const sampleEvents = [];
-    const baseDate = new Date(dolDate || Date.now());
-    
-    // Generate realistic weather events around DOL
-    for (let i = -3; i <= 3; i++) {
-      const date = new Date(baseDate);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      if (Math.random() > 0.4 || i === 0) {
-        const windSpeed = Math.floor(Math.random() * 40 + 20);
-        const hasHail = Math.random() > 0.6;
-        
-        sampleEvents.push({
-          date: dateStr,
-          time: `${Math.floor(Math.random() * 12 + 8)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-          type: hasHail ? 'HAIL' : 'TSTM WND',
-          magnitude: hasHail ? (Math.random() * 1.5 + 0.5).toFixed(2) : windSpeed,
-          unit: hasHail ? 'IN' : 'MPH',
-          location: `${city}, ${state}`,
-          source: 'LSR',
-          remarks: hasHail 
-            ? 'Quarter to golf ball size hail reported'
-            : `Wind gusts measured at ${windSpeed} mph`,
-          eventBadges: hasHail ? ['H', 'W'] : ['W']
-        });
-      }
-    }
-    
-    setEvents(sampleEvents);
-    setResult({
-      verification_status: 'verified',
-      confidence: sampleEvents.length > 2 ? 'high' : 'medium',
-      summary: `Found ${sampleEvents.length} weather events within verification window`,
-      coordinates: { lat: 27.95, lng: -82.45 },
-      nearest_station: 'KTBW (Tampa Bay)',
-      station_distance: '12.3 miles'
-    });
-  };
-
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr || 'N/A';
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       month: 'short', 
@@ -304,7 +441,7 @@ const WeatherVerification = ({ embedded = false }) => {
         {/* Search Form */}
         <Card className="bg-zinc-900/50 border-zinc-800/50 mb-6">
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
               <div className="md:col-span-2">
                 <label className="text-xs text-gray-500 mb-1 block">Property Address *</label>
                 <Input
@@ -351,6 +488,17 @@ const WeatherVerification = ({ embedded = false }) => {
                   className="bg-gray-800 border-gray-300 text-gray-900"
                 />
               </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Peril Type</label>
+                <select
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full h-10 rounded-md bg-gray-800 border border-gray-300 px-3 text-gray-900"
+                >
+                  <option value="wind">Wind</option>
+                  <option value="hail">Hail</option>
+                </select>
+              </div>
             </div>
             <div className="flex justify-end mt-4">
               <Button 
@@ -366,7 +514,7 @@ const WeatherVerification = ({ embedded = false }) => {
                 ) : (
                   <>
                     <Search className="w-4 h-4 mr-2" />
-                    Verify Date of Loss
+                    Verify + Discover Dates
                   </>
                 )}
               </Button>
@@ -393,20 +541,20 @@ const WeatherVerification = ({ embedded = false }) => {
                       setAddress(item.address || '');
                       setCity(item.city || '');
                       setState(item.state || '');
-                      setDolDate(item.start_date || '');
+                      setDolDate(item.analysis_start_date || '');
                       setShowHistory(false);
                     }}
                   >
                     <div>
                       <p className="text-gray-900 font-medium text-sm">{item.address}, {item.city}</p>
-                      <p className="text-gray-500 text-xs">DOL: {formatDate(item.start_date)}</p>
+                      <p className="text-gray-500 text-xs">Window start: {formatDate(item.analysis_start_date)}</p>
                     </div>
                     <Badge className={`${
-                      item.confidence === 'high' ? 'bg-green-500/20 text-green-400' :
-                      item.confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      item.dol_confidence === 'confirmed' || item.dol_confidence === 'high' ? 'bg-green-500/20 text-green-400' :
+                      item.dol_confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                       'bg-red-500/20 text-red-400'
                     }`}>
-                      {item.confidence || 'N/A'}
+                      {item.dol_confidence || 'N/A'}
                     </Badge>
                   </div>
                 ))}
@@ -499,6 +647,60 @@ const WeatherVerification = ({ embedded = false }) => {
 
             {/* Right Column - Events Table (Drodat Style) */}
             <div className="lg:col-span-2">
+              <Card className="bg-white border-gray-200 mb-4">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="w-5 h-5 text-emerald-500" />
+                      Top Candidate DOLs
+                    </CardTitle>
+                    <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                      {eventType.toUpperCase()}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {candidatesLoading ? (
+                    <div className="py-6 text-center text-gray-500 text-sm">
+                      <Loader2 className="w-4 h-4 inline mr-2 animate-spin" />
+                      Ranking candidate dates...
+                    </div>
+                  ) : candidates.length === 0 ? (
+                    <div className="py-6 text-center text-gray-500 text-sm">
+                      No claim-grade candidate dates found in this window.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {candidates.slice(0, 5).map((candidate, index) => (
+                        <div key={`${candidate.candidate_date}-${index}`} className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-gray-900">
+                              #{index + 1} {formatDate(candidate.candidate_date)}
+                            </p>
+                            <Badge className={`${
+                              candidate.confidence === 'confirmed' || candidate.confidence === 'high'
+                                ? 'bg-green-500/20 text-green-700'
+                                : candidate.confidence === 'medium'
+                                  ? 'bg-yellow-500/20 text-yellow-700'
+                                  : 'bg-slate-500/20 text-slate-700'
+                            }`}>
+                              {(candidate.confidence || 'low').toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {eventType === 'wind'
+                              ? `Peak wind ${candidate.peak_wind_mph || 0} mph | ${candidate.station_count || 0} station(s)`
+                              : `Max hail ${candidate.max_hail_inches || 0} in | ${candidate.report_count || 0} report(s)`}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Window: {candidate.peak_window_start || 'n/a'} -> {candidate.peak_window_end || 'n/a'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
               <Card className="bg-white border-gray-200">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">

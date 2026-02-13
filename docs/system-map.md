@@ -42,6 +42,32 @@
 
 No new environment variables are required for Incentives Releases.
 
+## MyCard System (Current)
+- Frontend entry: `frontend/src/components/MyCard.jsx`
+- Frontend modules: `frontend/src/components/mycard/`
+  - `TemplateSelector.tsx`
+  - `LivePreviewPanel.tsx`
+  - `HeadshotUploader.tsx`
+  - `ShareModal.tsx`
+  - `FeedbackModule.tsx`
+  - `EngagementPanel.tsx`
+  - `PerformanceSummary.tsx`
+  - `ReviewsPanel.tsx`
+  - `AnalyticsHooks.ts`
+- Frontend route: `/mycard` in `frontend/src/App.js`
+- Backend router: `backend/routes/mycard.py`
+- Backend endpoints:
+  - `GET /api/mycard/me`
+  - `POST /api/mycard/create`
+  - `PUT /api/mycard/update`
+  - `POST /api/mycard/share-link`
+  - `GET /api/mycard/google-reviews`
+  - `POST /api/mycard/upload-headshot`
+  - `GET /api/mycard/headshot/{file_id}`
+- Storage behavior:
+  - cloud-first upload if `CLOUDINARY_*` env vars are configured
+  - local fallback: `backend/uploads/mycard_headshots`
+
 ## History Check: Intel Hub + Harvest
 - Git history in this repo shows only `1ebe083 base env fix` for these paths; no explicit Intel Hub or Harvest commits are visible.
 - Current working tree includes Intel Hub and Harvest modules; treat as present but history for earlier changes is not verifiable from this repo snapshot.

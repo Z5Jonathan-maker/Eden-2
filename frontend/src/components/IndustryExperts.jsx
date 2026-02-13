@@ -10,24 +10,46 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
-import { 
-  User, Book, FileText, Link, ExternalLink, Search,
-  Lightbulb, Award, Youtube, Globe, Linkedin, ChevronRight,
-  BookOpen, Briefcase, Scale, Home, Sparkles
+import {
+  User,
+  Book,
+  FileText,
+  Link,
+  ExternalLink,
+  Search,
+  Lightbulb,
+  Award,
+  Youtube,
+  Globe,
+  Linkedin,
+  ChevronRight,
+  BookOpen,
+  Briefcase,
+  Scale,
+  Home,
+  Sparkles,
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const getCategoryIcon = (category) => {
   switch (category) {
-    case 'Roofing & Claims': return <Home className="w-4 h-4" />;
-    case 'Public Adjusting': return <Briefcase className="w-4 h-4" />;
-    case 'Insurance Law': return <Scale className="w-4 h-4" />;
-    case 'Insurance Coverage': return <FileText className="w-4 h-4" />;
-    case 'Insurance Appraisal': return <Award className="w-4 h-4" />;
-    case 'Public Adjusting Business': return <Sparkles className="w-4 h-4" />;
-    case 'Leadership': return <User className="w-4 h-4" />;
-    default: return <BookOpen className="w-4 h-4" />;
+    case 'Roofing & Claims':
+      return <Home className="w-4 h-4" />;
+    case 'Public Adjusting':
+      return <Briefcase className="w-4 h-4" />;
+    case 'Insurance Law':
+      return <Scale className="w-4 h-4" />;
+    case 'Insurance Coverage':
+      return <FileText className="w-4 h-4" />;
+    case 'Insurance Appraisal':
+      return <Award className="w-4 h-4" />;
+    case 'Public Adjusting Business':
+      return <Sparkles className="w-4 h-4" />;
+    case 'Leadership':
+      return <User className="w-4 h-4" />;
+    default:
+      return <BookOpen className="w-4 h-4" />;
   }
 };
 
@@ -39,7 +61,7 @@ const getCategoryColor = (category) => {
     'Insurance Coverage': 'bg-green-100 text-green-700 border-green-200',
     'Insurance Appraisal': 'bg-yellow-100 text-yellow-700 border-yellow-200',
     'Public Adjusting Business': 'bg-pink-100 text-pink-700 border-pink-200',
-    'Leadership': 'bg-indigo-100 text-indigo-700 border-indigo-200'
+    Leadership: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   };
   return colors[category] || 'bg-gray-100 text-zinc-300 border-gray-200';
 };
@@ -61,14 +83,14 @@ const IndustryExperts = () => {
     try {
       const [expertsRes, mentorsRes] = await Promise.all([
         fetch(`${API_URL}/api/knowledge-base/experts`),
-        fetch(`${API_URL}/api/knowledge-base/mentors`)
+        fetch(`${API_URL}/api/knowledge-base/mentors`),
       ]);
-      
+
       if (expertsRes.ok) {
         const data = await expertsRes.json();
         setExperts(data.experts || []);
       }
-      
+
       if (mentorsRes.ok) {
         const data = await mentorsRes.json();
         setMentors(data.mentors || []);
@@ -96,9 +118,11 @@ const IndustryExperts = () => {
       setSearchResults(null);
       return;
     }
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(
+        `${API_URL}/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`
+      );
       if (res.ok) {
         const data = await res.json();
         setSearchResults(data.results);
@@ -109,7 +133,7 @@ const IndustryExperts = () => {
   };
 
   const ExpertCard = ({ expert, onClick }) => (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-lg transition-all hover:border-orange-300 group"
       onClick={() => onClick(expert.id)}
       data-testid={`expert-card-${expert.id}`}
@@ -118,15 +142,16 @@ const IndustryExperts = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg">
-              {expert.name.split(' ').map(n => n[0]).join('')}
+              {expert.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')}
             </div>
             <div>
               <CardTitle className="text-lg group-hover:text-orange-600 transition-colors">
                 {expert.name}
               </CardTitle>
-              {expert.alias && (
-                <p className="text-sm text-zinc-500 italic">"{expert.alias}"</p>
-              )}
+              {expert.alias && <p className="text-sm text-zinc-500 italic">"{expert.alias}"</p>}
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
@@ -164,20 +189,19 @@ const IndustryExperts = () => {
       {/* Header */}
       <div className="flex items-start gap-4">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
-          {expert.name.split(' ').map(n => n[0]).join('')}
+          {expert.name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')}
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">{expert.name}</h2>
-          {expert.alias && (
-            <p className="text-zinc-500 italic">"{expert.alias}"</p>
-          )}
+          {expert.alias && <p className="text-zinc-500 italic">"{expert.alias}"</p>}
           <Badge className={`${getCategoryColor(expert.category)} mt-2`}>
             {getCategoryIcon(expert.category)}
             <span className="ml-1">{expert.category}</span>
           </Badge>
-          {expert.location && (
-            <p className="text-sm text-zinc-500 mt-1">📍 {expert.location}</p>
-          )}
+          {expert.location && <p className="text-sm text-zinc-500 mt-1">📍 {expert.location}</p>}
         </div>
       </div>
 
@@ -252,16 +276,14 @@ const IndustryExperts = () => {
               {expert.books.map((book, i) => (
                 <div key={i} className="border rounded-lg p-4 bg-blue-50/30">
                   <h4 className="font-semibold text-white">{book.title}</h4>
-                  {book.coauthor && (
-                    <p className="text-sm text-zinc-500">with {book.coauthor}</p>
-                  )}
+                  {book.coauthor && <p className="text-sm text-zinc-500">with {book.coauthor}</p>}
                   {book.excerpt && (
                     <p className="text-sm text-zinc-400 mt-2 italic">"{book.excerpt}"</p>
                   )}
                   {book.url && (
-                    <a 
-                      href={book.url} 
-                      target="_blank" 
+                    <a
+                      href={book.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
                     >
@@ -295,9 +317,9 @@ const IndustryExperts = () => {
                       <FileText className="w-4 h-4 text-green-500 mt-1 flex-shrink-0" />
                     )}
                     <div>
-                      <a 
-                        href={article.url} 
-                        target="_blank" 
+                      <a
+                        href={article.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-white hover:text-orange-600 transition-colors"
                       >
@@ -354,11 +376,7 @@ const IndustryExperts = () => {
         </Card>
       )}
 
-      <Button 
-        variant="outline" 
-        onClick={() => setSelectedExpert(null)}
-        className="w-full"
-      >
+      <Button variant="outline" onClick={() => setSelectedExpert(null)} className="w-full">
         ← Back to All Experts
       </Button>
     </div>
@@ -378,12 +396,18 @@ const IndustryExperts = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-2 tracking-wide">
-            <img src="/icons/experts.png" alt="Experts" className="w-10 h-10 object-contain icon-3d-shadow" />
+            <img
+              src="/icons/experts.png"
+              alt="Experts"
+              className="w-10 h-10 object-contain icon-3d-shadow"
+            />
             Industry Experts
           </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Learn from the best in public adjusting</p>
+          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
+            Learn from the best in public adjusting
+          </p>
         </div>
-        
+
         {/* Search */}
         <div className="flex gap-2">
           <Input
@@ -412,7 +436,7 @@ const IndustryExperts = () => {
             ) : (
               <div className="space-y-3">
                 {searchResults.map((result, i) => (
-                  <div 
+                  <div
                     key={i}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-800/50 cursor-pointer"
                     onClick={() => fetchExpertDetail(result.expert_id)}
@@ -428,16 +452,14 @@ const IndustryExperts = () => {
                         ))}
                       </div>
                     </div>
-                    <Badge className="bg-orange-100 text-orange-700">
-                      Score: {result.score}
-                    </Badge>
+                    <Badge className="bg-orange-100 text-orange-700">Score: {result.score}</Badge>
                   </div>
                 ))}
               </div>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSearchResults(null)}
               className="mt-4"
             >
@@ -466,11 +488,7 @@ const IndustryExperts = () => {
           <TabsContent value="experts" className="mt-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {experts.map((expert) => (
-                <ExpertCard 
-                  key={expert.id} 
-                  expert={expert} 
-                  onClick={fetchExpertDetail}
-                />
+                <ExpertCard key={expert.id} expert={expert} onClick={fetchExpertDetail} />
               ))}
             </div>
           </TabsContent>
@@ -478,7 +496,7 @@ const IndustryExperts = () => {
           <TabsContent value="mentors" className="mt-6">
             <div className="grid gap-4 md:grid-cols-2">
               {mentors.map((mentor) => (
-                <Card 
+                <Card
                   key={mentor.id}
                   className="hover:shadow-lg transition-all hover:border-indigo-300"
                   data-testid={`mentor-card-${mentor.id}`}
@@ -486,7 +504,10 @@ const IndustryExperts = () => {
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                        {mentor.name.split(' ').map(n => n[0]).join('')}
+                        {mentor.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
                       </div>
                       <div>
                         <CardTitle>{mentor.name}</CardTitle>
@@ -498,7 +519,7 @@ const IndustryExperts = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p className="text-zinc-400">{mentor.bio}</p>
-                    
+
                     {mentor.relevance && (
                       <p className="text-sm text-indigo-600">
                         <strong>Relevance:</strong> {mentor.relevance}
@@ -510,9 +531,9 @@ const IndustryExperts = () => {
                         <p className="font-medium text-sm text-zinc-300 mb-2">Key Books:</p>
                         {mentor.books.map((book, i) => (
                           <div key={i} className="text-sm">
-                            <a 
-                              href={book.url} 
-                              target="_blank" 
+                            <a
+                              href={book.url}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-600 hover:underline"
                             >

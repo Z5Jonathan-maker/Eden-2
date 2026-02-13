@@ -1,6 +1,6 @@
 /**
  * InspectionReportPanel - Display and manage inspection reports
- * 
+ *
  * Features:
  * - Generate report button
  * - Report display (markdown)
@@ -14,9 +14,19 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import {
-  FileText, Loader2, Copy, Download, RefreshCw,
-  ChevronDown, ChevronUp, Clock, CheckCircle2, AlertCircle,
-  Sparkles, X, History
+  FileText,
+  Loader2,
+  Copy,
+  Download,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  X,
+  History,
 } from 'lucide-react';
 import { useInspectionReport } from '../hooks/useInspectionReport';
 
@@ -31,7 +41,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
     fetchReport,
     copyReportToClipboard,
     downloadReport,
-    clearReport
+    clearReport,
   } = useInspectionReport();
 
   const [showHistory, setShowHistory] = useState(false);
@@ -83,9 +93,12 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
   const canGenerate = sessionStatus === 'completed' || sessionStatus === 'in_progress';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" data-testid="inspection-report-panel">
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+      data-testid="inspection-report-panel"
+    >
       {/* Header */}
-      <div 
+      <div
         className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-b cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
@@ -166,12 +179,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                 <div>
                   <p className="text-red-700 font-medium">Generation Failed</p>
                   <p className="text-red-600 text-sm">{error}</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerate}
-                    className="mt-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={handleGenerate} className="mt-2">
                     <RefreshCw className="w-3 h-3 mr-1" />
                     Retry
                   </Button>
@@ -235,8 +243,8 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                       key={r.id}
                       onClick={() => handleSelectVersion(r.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors ${
-                        report.id === r.id 
-                          ? 'bg-purple-100 text-purple-700' 
+                        report.id === r.id
+                          ? 'bg-purple-100 text-purple-700'
                           : 'hover:bg-gray-100 text-gray-600'
                       }`}
                     >
@@ -250,7 +258,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
               )}
 
               {/* Markdown Content */}
-              <div 
+              <div
                 className="bg-gray-50 rounded-lg p-4 max-h-[500px] overflow-y-auto prose prose-sm max-w-none"
                 data-testid="report-content"
               >
@@ -265,9 +273,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                   <Clock className="w-3 h-3" />
                   Generated {new Date(report.generated_at).toLocaleString()}
                 </span>
-                <span>
-                  By {report.generated_by || 'Eve AI'}
-                </span>
+                <span>By {report.generated_by || 'Eve AI'}</span>
               </div>
             </>
           )}

@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { api, apiUpload, apiDelete, API_URL, clearCache, getToken } from '../../../lib/api';
+import { api, apiUpload, apiDelete, API_URL, clearCache } from '../../../lib/api';
 
 /**
  * useInspectionPhotos Hook

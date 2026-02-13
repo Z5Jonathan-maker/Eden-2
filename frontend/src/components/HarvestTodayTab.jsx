@@ -1,9 +1,9 @@
 /**
  * HarvestTodayTab - Enzy-Style Daily Overview with Premium Gamification
- * 
+ *
  * "Athletic Luxury" theme with animated progress ring, streak indicators,
  * and competition cards. Mobile-first design with smooth animations.
- * 
+ *
  * Features:
  * - Animated circular progress ring for daily goal
  * - Streak flame with multiplier badges
@@ -17,21 +17,42 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { 
-  Flame, RefreshCw, Target, Gift, Trophy, Zap, Clock,
-  CheckCircle2, ChevronRight, TrendingUp, Award, Crown, Users,
-  Sun, CloudSun, Sparkles
+import {
+  Flame,
+  RefreshCw,
+  Target,
+  Gift,
+  Trophy,
+  Zap,
+  Clock,
+  CheckCircle2,
+  ChevronRight,
+  TrendingUp,
+  Award,
+  Crown,
+  Users,
+  Sun,
+  CloudSun,
+  Sparkles,
 } from 'lucide-react';
-import { resolveApiBase } from '../lib/api';
+import { harvestService } from '../services/harvestService';
+import StatCard from './harvest/StatCard';
+import HarvestChallengeCard from './harvest/ChallengeCard';
+import './harvest/HarvestAnimations.css';
 
-const API_URL = resolveApiBase();
+const toFiniteNumber = (value, fallback = 0) => {
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
+
+const clampPercent = (value) => Math.min(Math.max(toFiniteNumber(value, 0), 0), 100);
 
 // Enzy-Style Progress Ring Component - Tactical Theme
 const ProgressRing = ({ progress, size = 180, strokeWidth = 14, children }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
-  
+
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
@@ -65,9 +86,7 @@ const ProgressRing = ({ progress, size = 180, strokeWidth = 14, children }) => {
           </linearGradient>
         </defs>
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        {children}
-      </div>
+      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
     </div>
   );
 };
@@ -81,7 +100,7 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
     if (streak > 0) return '🔥';
     return '❄️';
   };
-  
+
   const getBgGradient = () => {
     if (isCritical) return 'from-red-600/80 to-rose-700/80';
     if (isAtRisk) return 'from-amber-600/80 to-orange-600/80';
@@ -89,12 +108,14 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
     if (streak > 0) return 'from-orange-600/80 to-red-600/80';
     return 'from-zinc-700/80 to-zinc-800/80';
   };
-  
+
   const streakGoal = 10;
   const doorsRemaining = Math.max(streakGoal - (doorsToday || 0), 0);
-  
+
   return (
-    <div className={`rounded-xl p-5 bg-gradient-to-r ${getBgGradient()} text-white harvest-animate-in border border-zinc-700/30`}>
+    <div
+      className={`rounded-xl p-5 bg-gradient-to-r ${getBgGradient()} text-white harvest-animate-in border border-zinc-700/30`}
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className={`text-4xl ${streak > 0 ? 'harvest-flame' : ''}`}>
@@ -116,17 +137,19 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
           </div>
         )}
       </div>
-      
+
       {doorsRemaining > 0 && (
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-white/80">
               {doorsRemaining} doors to {streak > 0 ? 'keep streak' : 'start streak'}
             </span>
-            <span className="font-semibold">{doorsToday || 0}/{streakGoal}</span>
+            <span className="font-semibold">
+              {doorsToday || 0}/{streakGoal}
+            </span>
           </div>
           <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-white rounded-full transition-all duration-500"
               style={{ width: `${Math.min(((doorsToday || 0) / streakGoal) * 100, 100)}%` }}
             />
@@ -139,11 +162,11 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
 
 // Competition Card Component
 const CompetitionCard = ({ competition }) => {
-  const progress = competition.my_progress?.progress_percent || 0;
-  
+  const progress = clampPercent(competition?.my_progress?.progress_percent);
+
   return (
-    <div 
-      className="card-tactical overflow-hidden harvest-animate-in"
+    <div
+      className="card-tactical harvest-bp-card harvest-grid-overlay overflow-hidden harvest-animate-in"
       style={{ borderLeftWidth: '4px', borderLeftColor: competition.banner_color || '#EA580C' }}
     >
       <div className="flex items-start justify-between mb-3 p-4 pb-0">
@@ -159,49 +182,64 @@ const CompetitionCard = ({ competition }) => {
           {competition.time_remaining}
         </span>
       </div>
-      
+
       {/* Progress Bar */}
       <div className="mb-3 px-4">
         <div className="flex justify-between text-sm mb-1.5">
           <span className="text-zinc-500 font-mono">
-            {competition.my_progress?.current_value || 0} / {competition.my_progress?.target_value || '?'} {competition.metric?.unit}
+            {competition.my_progress?.current_value || 0} /{' '}
+            {competition.my_progress?.target_value || '?'} {competition.metric?.unit}
           </span>
-          <span className="font-tactical font-bold" style={{ color: competition.banner_color || '#EA580C' }}>
-            {progress.toFixed(0)}%
+          <span
+            className="font-tactical font-bold"
+            style={{ color: competition.banner_color || '#EA580C' }}
+          >
+            {toFiniteNumber(progress).toFixed(0)}%
           </span>
         </div>
         <Progress value={progress} className="h-2.5 bg-zinc-800/50" />
       </div>
-      
+
       {/* Rank & Leader */}
       <div className="flex items-center justify-between text-sm p-4 pt-3 border-t border-zinc-700/30">
         <div className="flex items-center gap-1.5">
           {competition.my_progress?.rank <= 3 ? (
-            <Crown className={`w-4 h-4 ${
-              competition.my_progress?.rank === 1 ? 'text-amber-500' :
-              competition.my_progress?.rank === 2 ? 'text-zinc-400' :
-              'text-orange-500'
-            }`} />
+            <Crown
+              className={`w-4 h-4 ${
+                competition.my_progress?.rank === 1
+                  ? 'text-amber-500'
+                  : competition.my_progress?.rank === 2
+                    ? 'text-zinc-400'
+                    : 'text-orange-500'
+              }`}
+            />
           ) : (
             <Users className="w-4 h-4 text-zinc-500" />
           )}
           <span className="text-zinc-400 font-mono">
-            Your Rank: <span className="font-tactical font-bold text-white">#{competition.my_progress?.rank || '-'}</span>
+            Your Rank:{' '}
+            <span className="font-tactical font-bold text-white">
+              #{competition.my_progress?.rank || '-'}
+            </span>
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-zinc-500 font-mono">
           <Crown className="w-4 h-4 text-amber-500" />
-          <span>{competition.leader?.name} ({competition.leader?.value})</span>
+          <span>
+            {competition.leader?.name} ({competition.leader?.value})
+          </span>
         </div>
       </div>
-      
+
       {/* Gap to qualify */}
-      {competition.my_progress?.target_value && competition.my_progress?.current_value < competition.my_progress?.target_value && (
-        <p className="text-sm text-orange-400 px-4 pb-4 font-tactical font-medium flex items-center gap-1">
-          <Target className="w-4 h-4" />
-          {competition.my_progress.target_value - competition.my_progress.current_value} more to qualify!
-        </p>
-      )}
+      {competition.my_progress?.target_value &&
+        competition.my_progress?.current_value < competition.my_progress?.target_value && (
+          <p className="text-sm text-orange-400 px-4 pb-4 font-tactical font-medium flex items-center gap-1">
+            <Target className="w-4 h-4" />
+            {competition.my_progress.target_value - competition.my_progress.current_value} more to
+            qualify!
+          </p>
+        )}
     </div>
   );
 };
@@ -210,16 +248,18 @@ const CompetitionCard = ({ competition }) => {
 const IncentivesPanel = ({ data }) => {
   const { loading, error, season, phase, drops } = data || {};
   const featured = (drops || []).find((d) => d.featured) || (drops || [])[0];
-  const progress = Math.min(featured?.progress_percent || 0, 100);
+  const progress = clampPercent(featured?.progress_percent);
   const isEligible = featured?.eligible;
   const missing = featured?.missing || [];
 
   return (
-    <div className="card-tactical border border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-zinc-900/60 to-zinc-900/60 harvest-animate-in harvest-animate-in-delay-3 p-5">
+    <div className="card-tactical harvest-bp-card harvest-grid-overlay border border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-zinc-900/60 to-zinc-900/60 harvest-animate-in harvest-animate-in-delay-3 p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Gift className="w-5 h-5 text-orange-400" />
-          <h3 className="font-tactical font-bold text-white uppercase tracking-wide">Incentives Releases</h3>
+          <h3 className="font-tactical font-bold text-white uppercase tracking-wide">
+            Incentives Releases
+          </h3>
         </div>
         {season?.name && (
           <span className="px-2 py-1 rounded bg-zinc-800/50 border border-zinc-700/30 text-zinc-300 font-mono text-xs">
@@ -228,13 +268,9 @@ const IncentivesPanel = ({ data }) => {
         )}
       </div>
 
-      {loading && (
-        <div className="text-sm text-zinc-500 font-mono">Loading incentives...</div>
-      )}
+      {loading && <div className="text-sm text-zinc-500 font-mono">Loading incentives...</div>}
 
-      {!loading && error && (
-        <div className="text-sm text-orange-300 font-mono">{error}</div>
-      )}
+      {!loading && error && <div className="text-sm text-orange-300 font-mono">{error}</div>}
 
       {!loading && !error && !featured && (
         <div className="text-center py-6">
@@ -251,7 +287,11 @@ const IncentivesPanel = ({ data }) => {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-xl bg-zinc-800/60 border border-zinc-700/40 overflow-hidden flex items-center justify-center">
               {featured.image_url ? (
-                <img src={featured.image_url} alt={featured.name} className="w-full h-full object-cover" />
+                <img
+                  src={featured.image_url}
+                  alt={featured.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <Gift className="w-7 h-7 text-orange-400" />
               )}
@@ -259,7 +299,9 @@ const IncentivesPanel = ({ data }) => {
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <p className="font-tactical font-semibold text-white">{featured.name}</p>
-                <span className={`px-2 py-1 rounded text-xs font-mono border ${isEligible ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-zinc-800/60 text-zinc-300 border-zinc-700/40'}`}>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-mono border ${isEligible ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-zinc-800/60 text-zinc-300 border-zinc-700/40'}`}
+                >
                   {isEligible ? 'UNLOCKED' : 'LOCKED'}
                 </span>
               </div>
@@ -276,7 +318,9 @@ const IncentivesPanel = ({ data }) => {
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-1.5">
               <span className="text-zinc-500 font-mono">Progress</span>
-              <span className="font-tactical font-bold text-orange-400">{progress.toFixed(0)}%</span>
+              <span className="font-tactical font-bold text-orange-400">
+                {toFiniteNumber(progress).toFixed(0)}%
+              </span>
             </div>
             <Progress value={progress} className="h-2 bg-zinc-800/50" />
           </div>
@@ -286,7 +330,9 @@ const IncentivesPanel = ({ data }) => {
               {missing.slice(0, 2).map((req, idx) => (
                 <div key={`${req.type}-${idx}`} className="flex items-center justify-between">
                   <span>{req.detail}</span>
-                  <span>{req.current} / {req.target}</span>
+                  <span>
+                    {req.current} / {req.target}
+                  </span>
                 </div>
               ))}
             </div>
@@ -298,17 +344,24 @@ const IncentivesPanel = ({ data }) => {
 };
 
 // Challenge Card Component - Tactical Theme
-const ChallengeCard = ({ challenge, onClaim }) => {
-  const progress = Math.min((challenge.current_progress / challenge.requirement_value) * 100, 100);
+const LegacyChallengeCard = ({ challenge, onClaim }) => {
+  const requirementValue = toFiniteNumber(challenge?.requirement_value, 0);
+  const currentProgress = toFiniteNumber(challenge?.current_progress, 0);
+  const progress =
+    requirementValue > 0 ? clampPercent((currentProgress / requirementValue) * 100) : 0;
   const isCompleted = challenge.state === 'completed';
   const isClaimed = challenge.state === 'claimed';
-  
+
   return (
-    <div className={`p-4 rounded-xl border transition-all ${
-      isCompleted ? 'bg-green-500/10 border-green-500/30' : 
-      isClaimed ? 'bg-zinc-800/30 border-zinc-700/30 opacity-60' :
-      'bg-zinc-800/30 border-zinc-700/30 hover:border-orange-500/30'
-    }`}>
+    <div
+      className={`p-4 rounded-xl border transition-all ${
+        isCompleted
+          ? 'bg-green-500/10 border-green-500/30'
+          : isClaimed
+            ? 'bg-zinc-800/30 border-zinc-700/30 opacity-60'
+            : 'bg-zinc-800/30 border-zinc-700/30 hover:border-orange-500/30'
+      }`}
+    >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2.5">
           <span className="text-2xl">{challenge.icon || '🎯'}</span>
@@ -324,23 +377,25 @@ const ChallengeCard = ({ challenge, onClaim }) => {
           </span>
         )}
       </div>
-      
+
       <div className="mt-3">
         <div className="flex justify-between text-sm mb-1.5">
           <span className="text-zinc-500 font-mono">
             {challenge.current_progress}/{challenge.requirement_value}
           </span>
-          <span className="font-tactical font-semibold text-orange-400">+{challenge.points_reward} pts</span>
+          <span className="font-tactical font-semibold text-orange-400">
+            +{challenge.points_reward} pts
+          </span>
         </div>
-        <Progress 
-          value={progress} 
+        <Progress
+          value={progress}
           className={`h-2 ${isCompleted ? 'bg-green-500/20' : 'bg-zinc-800/50'}`}
         />
       </div>
-      
+
       {isCompleted && !isClaimed && (
-        <Button 
-          size="sm" 
+        <Button
+          size="sm"
           className="w-full mt-3 bg-green-600 hover:bg-green-700 rounded-lg font-mono uppercase"
           onClick={() => onClaim(challenge.id)}
         >
@@ -356,20 +411,20 @@ const ChallengeCard = ({ challenge, onClaim }) => {
 const HarvestTodayTab = ({ dailyGoal = 75 }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Data states
   const [stats, setStats] = useState({
     doors_today: 0,
     appointments_today: 0,
     signed_today: 0,
-    points_today: 0
+    points_today: 0,
   });
   const [streakData, setStreakData] = useState({
     current_streak: 0,
     multiplier: 1.0,
     is_at_risk: false,
     is_critical: false,
-    doors_today: 0
+    doors_today: 0,
   });
   const [challenges, setChallenges] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -380,75 +435,59 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
     error: null,
     season: null,
     phase: null,
-    drops: []
+    drops: [],
   });
-  
-  const token = localStorage.getItem('eden_token');
-  
+
   // Fetch all data
   const fetchData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
-    
+
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      
-      const [todayRes, streakRes, challengesRes, campaignsRes, rewardsRes, competitionsRes, incentivesActiveRes, incentivesProgressRes] = await Promise.all([
-        fetch(`${API_URL}/api/harvest/v2/today`, { headers }),
-        fetch(`${API_URL}/api/harvest/streak`, { headers }),
-        fetch(`${API_URL}/api/harvest/challenges`, { headers }),
-        fetch(`${API_URL}/api/harvest/campaigns`, { headers }),
-        fetch(`${API_URL}/api/harvest/progress/rewards`, { headers }),
-        fetch(`${API_URL}/api/incentives/me/dashboard`, { headers }),
-        fetch(`${API_URL}/api/harvest/incentives/active`, { headers }),
-        fetch(`${API_URL}/api/harvest/incentives/progress`, { headers })
+      const [
+        todayData,
+        streakDataResponse,
+        challengesData,
+        campaignsData,
+        rewardsData,
+        competitionsData,
+        incentivesActiveData,
+        incentivesProgressData,
+      ] = await Promise.all([
+        harvestService.getToday(),
+        harvestService.getStreak(),
+        harvestService.getChallenges(),
+        harvestService.getCampaigns(),
+        harvestService.getRewardProgress(),
+        harvestService.getCompetitionDashboard(),
+        harvestService.getIncentivesActive(),
+        harvestService.getIncentivesProgress(),
       ]);
-      
-      // Use the v2/today endpoint as primary source for daily stats
-      if (todayRes.ok) {
-        const data = await todayRes.json();
-        setStats({
-          doors_today: data.doors_knocked || 0,
-          appointments_today: data.appointments_set || 0,
-          signed_today: data.signed_contracts || 0,
-          points_today: data.total_points || 0
-        });
-        // Update streak from today endpoint if available
-        if (data.streak_days !== undefined) {
-          setStreakData(prev => ({
-            ...prev,
-            current_streak: data.streak_days,
-            doors_today: data.doors_knocked || 0
-          }));
-        }
-      }
-      
-      if (streakRes.ok) {
-        const data = await streakRes.json();
-        setStreakData(prev => ({
-          ...data,
-          doors_today: prev.doors_today || data.doors_today || 0
+
+      setStats({
+        doors_today: todayData.doors_knocked || 0,
+        appointments_today: todayData.appointments_set || 0,
+        signed_today: todayData.signed_contracts || 0,
+        points_today: todayData.total_points || 0,
+      });
+      if (todayData.streak_days !== undefined) {
+        setStreakData((prev) => ({
+          ...prev,
+          current_streak: todayData.streak_days,
+          doors_today: todayData.doors_knocked || 0,
         }));
       }
-      
-      if (challengesRes.ok) {
-        const data = await challengesRes.json();
-        setChallenges(data.challenges || []);
-      }
-      
-      if (campaignsRes.ok) {
-        const data = await campaignsRes.json();
-        setCampaigns((data.campaigns || []).filter(c => c.status === 'active').slice(0, 2));
-      }
-      
-      if (rewardsRes.ok) {
-        const data = await rewardsRes.json();
-        setRewardProgress(data);
-      }
-      
-      if (competitionsRes.ok) {
-        const data = await competitionsRes.json();
-        setActiveCompetitions(data.active_competitions || []);
-      }
+
+      setStreakData((prev) => ({
+        ...streakDataResponse,
+        doors_today: prev.doors_today || streakDataResponse.doors_today || 0,
+      }));
+
+      setChallenges(challengesData.challenges || []);
+      setCampaigns(
+        (campaignsData.campaigns || []).filter((c) => c.status === 'active').slice(0, 2)
+      );
+      setRewardProgress(rewardsData);
+      setActiveCompetitions(competitionsData.active_competitions || []);
 
       // Incentives Releases (Harvest drops)
       let incentivesError = null;
@@ -456,57 +495,57 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
       let incentivesPhase = null;
       let incentivesDrops = [];
 
-      if (incentivesProgressRes.ok) {
-        const data = await incentivesProgressRes.json();
-        incentivesSeason = data.season || null;
-        incentivesPhase = data.phase || null;
-        incentivesDrops = data.drops_progress || [];
-      } else {
-        incentivesError = 'Incentives progress unavailable';
-      }
-
-      if (incentivesActiveRes.ok) {
-        const data = await incentivesActiveRes.json();
-        incentivesSeason = data.season || incentivesSeason;
-        incentivesPhase = data.phase || incentivesPhase;
-      }
+      incentivesSeason = incentivesProgressData.season || null;
+      incentivesPhase = incentivesProgressData.phase || null;
+      incentivesDrops = incentivesProgressData.drops_progress || [];
+      incentivesSeason = incentivesActiveData.season || incentivesSeason;
+      incentivesPhase = incentivesActiveData.phase || incentivesPhase;
 
       setIncentives({
         loading: false,
         error: incentivesError,
         season: incentivesSeason,
         phase: incentivesPhase,
-        drops: incentivesDrops
+        drops: incentivesDrops,
       });
     } catch (err) {
       console.error('Failed to fetch today data:', err);
-      setIncentives(prev => ({ ...prev, loading: false, error: 'Incentives fetch failed' }));
+      setIncentives((prev) => ({ ...prev, loading: false, error: 'Incentives fetch failed' }));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
-  
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  
+
   // Claim challenge reward
   const claimChallenge = async (challengeId) => {
     try {
-      const res = await fetch(`${API_URL}/api/harvest/challenges/${challengeId}/claim`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) fetchData();
+      await harvestService.claimChallenge(challengeId);
+      fetchData();
     } catch (err) {
       console.error('Failed to claim challenge:', err);
     }
   };
-  
+
   const doorsProgress = Math.min((stats.doors_today / dailyGoal) * 100, 100);
-  const greeting = new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
-  
+  const greeting =
+    new Date().getHours() < 12
+      ? 'Good Morning'
+      : new Date().getHours() < 17
+        ? 'Good Afternoon'
+        : 'Good Evening';
+  const coachPulse = streakData.is_critical
+    ? `Critical streak risk. Log ${Math.max(10 - (stats.doors_today || 0), 0)} more doors now.`
+    : streakData.is_at_risk
+      ? `Streak at risk. ${Math.max(10 - (stats.doors_today || 0), 0)} doors keeps momentum alive.`
+      : rewardProgress?.next_reward?.points_remaining > 0
+        ? `${rewardProgress.next_reward.points_remaining} points to unlock ${rewardProgress.next_reward.name}.`
+        : 'Strong pace. Keep stacking doors to secure rank movement today.';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 bg-zinc-900">
@@ -514,7 +553,7 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
       </div>
     );
   }
-  
+
   return (
     <div className="overflow-y-auto harvest-content bg-zinc-900">
       {/* Header */}
@@ -523,32 +562,46 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
           <div>
             <p className="text-sm text-zinc-500 font-mono flex items-center gap-1.5 uppercase">
               <Sun className="w-4 h-4 text-amber-500" />
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'short',
+                day: 'numeric',
+              })}
             </p>
-            <h1 className="text-2xl font-tactical font-bold text-white mt-0.5 uppercase tracking-wide">{greeting}</h1>
+            <h1 className="text-2xl font-tactical font-bold text-white mt-0.5 uppercase tracking-wide">
+              {greeting}
+            </h1>
           </div>
-          <button 
-            onClick={() => fetchData(true)} 
-            disabled={refreshing} 
+          <button
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
             className="p-2.5 rounded-lg border border-zinc-700/30 hover:border-orange-500/30 text-zinc-400 hover:text-orange-400 transition-all"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
-      
+
       <div className="p-4 space-y-4">
         {/* Streak Banner */}
-        <StreakBanner 
-          streak={streakData.current_streak} 
+        <StreakBanner
+          streak={streakData.current_streak}
           isAtRisk={streakData.is_at_risk}
           isCritical={streakData.is_critical}
           multiplier={streakData.multiplier}
           doorsToday={stats.doors_today}
         />
-        
+
+        {/* Coach Pulse */}
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 harvest-animate-in harvest-animate-in-delay-1">
+          <p className="text-xs font-mono uppercase tracking-wider text-orange-300">
+            Harvest Coach
+          </p>
+          <p className="text-sm text-zinc-300 mt-1">{coachPulse}</p>
+        </div>
+
         {/* Progress Ring Card */}
-        <div className="card-tactical p-6 harvest-animate-in harvest-animate-in-delay-1">
+        <div className="card-tactical harvest-bp-card harvest-grid-overlay p-6 harvest-animate-in harvest-animate-in-delay-2">
           <div className="flex flex-col items-center">
             <ProgressRing progress={doorsProgress} size={180} strokeWidth={14}>
               <div className="text-center">
@@ -557,47 +610,63 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
                 {streakData.multiplier > 1 && (
                   <div className="px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 mt-2 inline-flex items-center gap-1">
                     <Zap className="w-3 h-3 text-orange-400" />
-                    <span className="text-orange-400 font-tactical font-bold text-sm">{streakData.multiplier}x</span>
+                    <span className="text-orange-400 font-tactical font-bold text-sm">
+                      {streakData.multiplier}x
+                    </span>
                   </div>
                 )}
               </div>
             </ProgressRing>
-            
+
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-3 mt-6 w-full">
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
-                <p className="text-xl font-tactical font-bold text-blue-400">{stats.doors_today}</p>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase">Doors</p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
-                <p className="text-xl font-tactical font-bold text-green-400">{stats.appointments_today}</p>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase">Appts</p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
-                <p className="text-xl font-tactical font-bold text-purple-400">{stats.signed_today}</p>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase">Signed</p>
-              </div>
-              <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-center">
-                <p className="text-xl font-tactical font-bold text-orange-400">{stats.points_today}</p>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase">Points</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 w-full">
+              <StatCard
+                label="Doors Knocked"
+                value={stats.doors_today}
+                tone="cyan"
+                progress={doorsProgress}
+                deltaLabel="+1 door"
+              />
+              <StatCard
+                label="Appointments"
+                value={stats.appointments_today}
+                tone="emerald"
+                progress={(stats.appointments_today / Math.max(1, dailyGoal / 5)) * 100}
+                deltaLabel="+Lead"
+              />
+              <StatCard
+                label="Contracts"
+                value={stats.signed_today}
+                tone="violet"
+                progress={(stats.signed_today / Math.max(1, dailyGoal / 10)) * 100}
+                deltaLabel="+Contract"
+              />
+              <StatCard
+                label="Points"
+                value={stats.points_today}
+                tone="amber"
+                progress={(stats.points_today / Math.max(1, dailyGoal * 5)) * 100}
+                deltaLabel="+XP"
+              />
             </div>
           </div>
         </div>
-        
+
         {/* Active Competitions */}
         {activeCompetitions.length > 0 && (
           <div className="space-y-3 harvest-animate-in harvest-animate-in-delay-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-orange-500" />
-                <h3 className="font-tactical font-bold text-white uppercase tracking-wide">Active Competitions</h3>
+                <h3 className="font-tactical font-bold text-white uppercase tracking-wide">
+                  Active Competitions
+                </h3>
               </div>
               <span className="px-2 py-1 rounded bg-orange-500/20 border border-orange-500/30 text-orange-400 font-mono text-xs">
                 {activeCompetitions.length} active
               </span>
             </div>
-            {activeCompetitions.slice(0, 2).map(comp => (
+            {activeCompetitions.slice(0, 2).map((comp) => (
               <CompetitionCard key={comp.id} competition={comp} />
             ))}
           </div>
@@ -605,15 +674,17 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
 
         {/* Incentives Releases */}
         <IncentivesPanel data={incentives} />
-        
+
         {/* Mission of the Day */}
         {campaigns.length > 0 && (
-          <div className="card-tactical border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 harvest-animate-in harvest-animate-in-delay-3 p-5">
+          <div className="card-tactical harvest-bp-card harvest-grid-overlay border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 harvest-animate-in harvest-animate-in-delay-3 p-5">
             <div className="flex items-center gap-2 mb-3">
               <Target className="w-5 h-5 text-blue-400" />
-              <h3 className="font-tactical font-bold text-white uppercase tracking-wide">Mission of the Day</h3>
+              <h3 className="font-tactical font-bold text-white uppercase tracking-wide">
+                Mission of the Day
+              </h3>
             </div>
-            {campaigns.slice(0, 1).map(campaign => (
+            {campaigns.slice(0, 1).map((campaign) => (
               <div key={campaign.id}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -624,11 +695,12 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
                 </div>
                 <Progress value={campaign.my_percent || 0} className="h-2 mt-3 bg-zinc-800/50" />
                 <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-zinc-500 font-mono">{campaign.my_progress || 0}/{campaign.target_value}</span>
+                  <span className="text-zinc-500 font-mono">
+                    {campaign.my_progress || 0}/{campaign.target_value}
+                  </span>
                   {campaign.points_bonus > 0 && (
                     <span className="text-blue-400 font-tactical font-medium flex items-center gap-1">
-                      <Award className="w-4 h-4" />
-                      +{campaign.points_bonus} bonus pts
+                      <Award className="w-4 h-4" />+{campaign.points_bonus} bonus pts
                     </span>
                   )}
                 </div>
@@ -636,25 +708,36 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
             ))}
           </div>
         )}
-        
+
         {/* Today's Challenges */}
-        <div className="card-tactical p-5 harvest-animate-in harvest-animate-in-delay-4">
+        <div className="card-tactical harvest-bp-card harvest-grid-overlay p-5 harvest-animate-in harvest-animate-in-delay-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-orange-500" />
-              <h3 className="font-tactical font-bold text-white uppercase tracking-wide">Today&apos;s Challenges</h3>
+              <h3 className="font-tactical font-bold text-white uppercase tracking-wide">
+                Today&apos;s Challenges
+              </h3>
             </div>
             {challenges.length > 0 && (
               <span className="px-2 py-1 rounded bg-zinc-800/50 border border-zinc-700/30 text-zinc-400 font-mono text-xs">
-                {challenges.filter(c => c.state === 'completed').length}/{challenges.length}
+                {challenges.filter((c) => c.state === 'completed').length}/{challenges.length}
               </span>
             )}
           </div>
           <div className="space-y-3">
             {challenges.length > 0 ? (
-              challenges.slice(0, 3).map(challenge => (
-                <ChallengeCard key={challenge.id} challenge={challenge} onClaim={claimChallenge} />
-              ))
+              challenges
+                .slice(0, 3)
+                .map((challenge, idx) => (
+                  <HarvestChallengeCard
+                    key={challenge.id}
+                    challenge={challenge}
+                    onClaim={claimChallenge}
+                    index={idx}
+                    completed={challenge.state === 'completed'}
+                    justCompleted={challenge.state === 'completed'}
+                  />
+                ))
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-3 border border-zinc-700/30">
@@ -666,14 +749,16 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
             )}
           </div>
         </div>
-        
+
         {/* Next Reward Progress */}
         {rewardProgress?.next_reward && (
-          <div className="card-tactical bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 p-5">
+          <div className="card-tactical harvest-bp-card harvest-grid-overlay bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Gift className="w-5 h-5 text-purple-400" />
-                <span className="font-tactical font-bold text-white uppercase tracking-wide">Next Reward</span>
+                <span className="font-tactical font-bold text-white uppercase tracking-wide">
+                  Next Reward
+                </span>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-500" />
             </div>
@@ -682,20 +767,29 @@ const HarvestTodayTab = ({ dailyGoal = 75 }) => {
                 <Trophy className="w-7 h-7 text-purple-400" />
               </div>
               <div className="flex-1">
-                <p className="font-tactical font-semibold text-white">{rewardProgress.next_reward.name}</p>
-                <p className="text-sm text-zinc-500 font-mono">{rewardProgress.next_reward.points_remaining} points to go</p>
+                <p className="font-tactical font-semibold text-white">
+                  {rewardProgress.next_reward.name}
+                </p>
+                <p className="text-sm text-zinc-500 font-mono">
+                  {rewardProgress.next_reward.points_remaining} points to go
+                </p>
               </div>
-              <p className="text-xl font-tactical font-bold text-purple-400">{rewardProgress.next_reward.percent_complete}%</p>
+              <p className="text-xl font-tactical font-bold text-purple-400">
+                {rewardProgress.next_reward.percent_complete}%
+              </p>
             </div>
-            <Progress value={rewardProgress.next_reward.percent_complete} className="h-2 mt-4 bg-zinc-800/50" />
+            <Progress
+              value={rewardProgress.next_reward.percent_complete}
+              className="h-2 mt-4 bg-zinc-800/50"
+            />
           </div>
         )}
-        
+
         {/* Motivation Footer */}
         <div className="text-center py-4">
           <p className="text-sm text-zinc-500 font-mono">
-            {stats.doors_today >= dailyGoal 
-              ? '🎉 Goal reached! Keep the momentum going!' 
+            {stats.doors_today >= dailyGoal
+              ? '🎉 Goal reached! Keep the momentum going!'
               : `${dailyGoal - stats.doors_today} more doors to hit your daily goal`}
           </p>
           {streakData.is_at_risk && (

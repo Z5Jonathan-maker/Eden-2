@@ -16,7 +16,7 @@ export const CqilMetricsCards = ({ cqilMetrics }) => {
       color: 'red',
       bgColor: 'bg-red-500/10',
       textColor: 'text-red-400',
-      borderColor: 'border-red-500/30'
+      borderColor: 'border-red-500/30',
     },
     {
       label: 'P1 Issues',
@@ -26,7 +26,7 @@ export const CqilMetricsCards = ({ cqilMetrics }) => {
       color: 'yellow',
       bgColor: 'bg-yellow-500/10',
       textColor: 'text-yellow-400',
-      borderColor: 'border-yellow-500/30'
+      borderColor: 'border-yellow-500/30',
     },
     {
       label: 'P2 Issues',
@@ -36,7 +36,7 @@ export const CqilMetricsCards = ({ cqilMetrics }) => {
       color: 'zinc',
       bgColor: 'bg-zinc-500/10',
       textColor: 'text-zinc-400',
-      borderColor: 'border-zinc-500/30'
+      borderColor: 'border-zinc-500/30',
     },
     {
       label: 'Resolved (7d)',
@@ -46,8 +46,8 @@ export const CqilMetricsCards = ({ cqilMetrics }) => {
       color: 'green',
       bgColor: 'bg-green-500/10',
       textColor: 'text-green-400',
-      borderColor: 'border-green-500/30'
-    }
+      borderColor: 'border-green-500/30',
+    },
   ];
 
   return (
@@ -55,13 +55,12 @@ export const CqilMetricsCards = ({ cqilMetrics }) => {
       {metrics.map((metric, idx) => {
         const Icon = metric.icon;
         return (
-          <div 
-            key={idx} 
-            className={`card-tactical p-4 ${metric.borderColor} border-l-2`}
-          >
+          <div key={idx} className={`card-tactical p-4 ${metric.borderColor} border-l-2`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">{metric.label}</p>
+                <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                  {metric.label}
+                </p>
                 <p className={`text-3xl font-tactical font-bold ${metric.textColor}`}>
                   {metric.value}
                 </p>

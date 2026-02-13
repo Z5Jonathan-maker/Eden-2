@@ -11,11 +11,27 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
-import { 
-  Scale, FileText, AlertCircle, Search, ExternalLink,
-  Clock, DollarSign, Shield, Users, Calendar, CheckCircle,
-  AlertTriangle, Gavel, BookOpen, Hash, Download, RefreshCw,
-  Database, Copy, Check
+import {
+  Scale,
+  FileText,
+  AlertCircle,
+  Search,
+  ExternalLink,
+  Clock,
+  DollarSign,
+  Shield,
+  Users,
+  Calendar,
+  CheckCircle,
+  AlertTriangle,
+  Gavel,
+  BookOpen,
+  Hash,
+  Download,
+  RefreshCw,
+  Database,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,12 +41,12 @@ const FloridaLaws = () => {
   // Static data state
   const [overview, setOverview] = useState(null);
   const [updates, setUpdates] = useState([]);
-  
+
   // Database-backed statute state
   const [dbStatutes, setDbStatutes] = useState([]);
   const [dbStatus, setDbStatus] = useState(null);
   const [selectedStatute, setSelectedStatute] = useState(null);
-  
+
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
@@ -39,22 +55,7 @@ const FloridaLaws = () => {
   const [activeTab, setActiveTab] = useState('database');
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  const fetchAllData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchOverview(),
-      fetchDbStatutes(),
-      fetchDbStatus(),
-      fetchUpdates()
-    ]);
-    setLoading(false);
-  };
-
-  const fetchOverview = async () => {
+  const fetchOverview = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/knowledge-base/florida-laws`);
       if (res.ok) {
@@ -64,9 +65,9 @@ const FloridaLaws = () => {
     } catch (err) {
       console.error('Failed to fetch overview:', err);
     }
-  };
+  }, []);
 
-  const fetchDbStatutes = async () => {
+  const fetchDbStatutes = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/statutes/?limit=100`);
       if (res.ok) {
@@ -76,9 +77,9 @@ const FloridaLaws = () => {
     } catch (err) {
       console.error('Failed to fetch DB statutes:', err);
     }
-  };
+  }, []);
 
-  const fetchDbStatus = async () => {
+  const fetchDbStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/statutes/status`);
       if (res.ok) {
@@ -88,9 +89,9 @@ const FloridaLaws = () => {
     } catch (err) {
       console.error('Failed to fetch DB status:', err);
     }
-  };
+  }, []);
 
-  const fetchUpdates = async () => {
+  const fetchUpdates = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/knowledge-base/florida-laws/updates`);
       if (res.ok) {
@@ -100,7 +101,17 @@ const FloridaLaws = () => {
     } catch (err) {
       console.error('Failed to fetch updates:', err);
     }
-  };
+  }, []);
+
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([fetchOverview(), fetchDbStatutes(), fetchDbStatus(), fetchUpdates()]);
+    setLoading(false);
+  }, [fetchOverview, fetchDbStatutes, fetchDbStatus, fetchUpdates]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const fetchStatuteDetail = async (sectionNumber) => {
     try {
@@ -109,7 +120,7 @@ const FloridaLaws = () => {
         const data = await res.json();
         setSelectedStatute(data);
       } else {
-        toast.error(`Could not load §${sectionNumber}`);
+        toast.error(`Could not load Sec. ${sectionNumber}`);
       }
     } catch (err) {
       console.error('Failed to fetch statute detail:', err);
@@ -122,9 +133,11 @@ const FloridaLaws = () => {
       setSearchResults(null);
       return;
     }
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/statutes/search?q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(
+        `${API_URL}/api/statutes/search?q=${encodeURIComponent(searchQuery)}`
+      );
       if (res.ok) {
         const data = await res.json();
         setSearchResults(data.results);
@@ -197,12 +210,18 @@ const FloridaLaws = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-2 tracking-wide">
-            <img src="/icons/laws.png" alt="Laws" className="w-10 h-10 object-contain icon-3d-shadow" />
+            <img
+              src="/icons/laws.png"
+              alt="Laws"
+              className="w-10 h-10 object-contain icon-3d-shadow"
+            />
             Florida Laws
           </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Verbatim statutes from Online Sunshine</p>
+          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
+            Verbatim statutes from Online Sunshine
+          </p>
         </div>
-        
+
         {/* Search */}
         <div className="flex gap-2">
           <Input
@@ -229,23 +248,25 @@ const FloridaLaws = () => {
                 <div>
                   <p className="font-semibold text-blue-400">Statute Database</p>
                   <p className="text-sm text-blue-400">
-                    {dbStatus.total_statutes} statutes stored • 
-                    Chapter 626: {dbStatus.coverage?.['626']} • 
-                    Chapter 627: {dbStatus.coverage?.['627']}
+                    {dbStatus.total_statutes} statutes stored | Chapter 626:{' '}
+                    {dbStatus.coverage?.['626']} | Chapter 627: {dbStatus.coverage?.['627']}
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => { fetchDbStatutes(); fetchDbStatus(); }}
+                  onClick={() => {
+                    fetchDbStatutes();
+                    fetchDbStatus();
+                  }}
                   className="border-blue-300"
                 >
                   <RefreshCw className="w-4 h-4 mr-1" />
                   Refresh
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   onClick={triggerFullScrape}
                   disabled={scraping}
@@ -281,14 +302,16 @@ const FloridaLaws = () => {
             ) : (
               <div className="space-y-3">
                 {searchResults.map((result, i) => (
-                  <div 
+                  <div
                     key={i}
                     className="flex items-start justify-between p-3 border rounded-lg hover:bg-orange-50 cursor-pointer"
                     onClick={() => fetchStatuteDetail(result.section_number)}
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-400">§{result.section_number}</Badge>
+                        <Badge className="bg-blue-100 text-blue-400">
+                          Sec. {result.section_number}
+                        </Badge>
                         <span className="font-medium">{result.heading}</span>
                       </div>
                       <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{result.excerpt}</p>
@@ -298,9 +321,9 @@ const FloridaLaws = () => {
                 ))}
               </div>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSearchResults(null)}
               className="mt-4"
             >
@@ -317,22 +340,24 @@ const FloridaLaws = () => {
             <div className="flex items-start justify-between">
               <div>
                 <Badge className="bg-blue-100 text-blue-400 mb-2">
-                  §{selectedStatute.section_number}, {selectedStatute.year} Fla. Stat.
+                  Sec. {selectedStatute.section_number}, {selectedStatute.year} Fla. Stat.
                 </Badge>
-                <CardTitle>{selectedStatute.heading || `Section ${selectedStatute.section_number}`}</CardTitle>
+                <CardTitle>
+                  {selectedStatute.heading || `Section ${selectedStatute.section_number}`}
+                </CardTitle>
                 <CardDescription>{selectedStatute.chapter}</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => copyStatuteText(selectedStatute.body_text)}
                 >
                   {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
                   {copied ? 'Copied!' : 'Copy Text'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedStatute(null)}>
-                  ← Back
+                  Back
                 </Button>
               </div>
             </div>
@@ -345,7 +370,8 @@ const FloridaLaws = () => {
                 VERBATIM STATUTE TEXT
               </div>
               <p className="text-yellow-700 mt-1">
-                This is the exact text as published by the Florida Legislature. Do not modify for legal citations.
+                This is the exact text as published by the Florida Legislature. Do not modify for
+                legal citations.
               </p>
             </div>
 
@@ -355,7 +381,7 @@ const FloridaLaws = () => {
                 {selectedStatute.body_text}
               </pre>
             </ScrollArea>
-            
+
             {/* Metadata */}
             <div className="flex items-center gap-4 text-sm text-zinc-500 flex-wrap">
               <span className="flex items-center gap-1">
@@ -364,10 +390,13 @@ const FloridaLaws = () => {
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                Verified: {selectedStatute.last_verified ? new Date(selectedStatute.last_verified).toLocaleDateString() : 'N/A'}
+                Verified:{' '}
+                {selectedStatute.last_verified
+                  ? new Date(selectedStatute.last_verified).toLocaleDateString()
+                  : 'N/A'}
               </span>
               {selectedStatute.source_url && (
-                <a 
+                <a
                   href={selectedStatute.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -404,7 +433,9 @@ const FloridaLaws = () => {
                 <CardContent className="py-12 text-center">
                   <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-zinc-300">No Statutes in Database</h3>
-                  <p className="text-zinc-500 mt-1 mb-4">Click "Scrape All Statutes" to fetch from Online Sunshine</p>
+                  <p className="text-zinc-500 mt-1 mb-4">
+                    Click "Scrape All Statutes" to fetch from Online Sunshine
+                  </p>
                   <Button onClick={triggerFullScrape} disabled={scraping}>
                     <Download className="w-4 h-4 mr-2" />
                     Scrape All Statutes
@@ -414,11 +445,12 @@ const FloridaLaws = () => {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-zinc-400">
-                  Click any statute to view the verbatim text as published by the Florida Legislature.
+                  Click any statute to view the verbatim text as published by the Florida
+                  Legislature.
                 </p>
                 <div className="grid gap-3 md:grid-cols-2">
                   {dbStatutes.map((statute) => (
-                    <Card 
+                    <Card
                       key={statute.id}
                       className="cursor-pointer hover:shadow-md transition-all hover:border-blue-300"
                       onClick={() => fetchStatuteDetail(statute.section_number)}
@@ -428,16 +460,21 @@ const FloridaLaws = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <Badge className="bg-blue-100 text-blue-400 mb-1">
-                              §{statute.section_number}
+                              Sec. {statute.section_number}
                             </Badge>
-                            <CardTitle className="text-base">{statute.heading || 'View Statute'}</CardTitle>
+                            <CardTitle className="text-base">
+                              {statute.heading || 'View Statute'}
+                            </CardTitle>
                           </div>
                           <ExternalLink className="w-4 h-4 text-gray-400" />
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
                         <p className="text-xs text-zinc-500">
-                          Verified: {statute.last_verified ? new Date(statute.last_verified).toLocaleDateString() : 'N/A'}
+                          Verified:{' '}
+                          {statute.last_verified
+                            ? new Date(statute.last_verified).toLocaleDateString()
+                            : 'N/A'}
                         </p>
                       </CardContent>
                     </Card>
@@ -453,54 +490,54 @@ const FloridaLaws = () => {
               <>
                 <h3 className="text-lg font-semibold text-white">Quick Reference Numbers</h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <KeyNumberCard 
-                    icon={DollarSign} 
-                    label="Max Fee (Standard)" 
+                  <KeyNumberCard
+                    icon={DollarSign}
+                    label="Max Fee (Standard)"
                     value={overview.key_numbers.max_fee_standard}
                     color="bg-green-50 border-green-200 text-green-700"
                   />
-                  <KeyNumberCard 
-                    icon={AlertCircle} 
-                    label="Max Fee (Emergency)" 
+                  <KeyNumberCard
+                    icon={AlertCircle}
+                    label="Max Fee (Emergency)"
                     value={overview.key_numbers.max_fee_emergency}
                     color="bg-yellow-50 border-yellow-200 text-yellow-700"
                   />
-                  <KeyNumberCard 
-                    icon={Shield} 
-                    label="Surety Bond" 
+                  <KeyNumberCard
+                    icon={Shield}
+                    label="Surety Bond"
                     value={`$${overview.key_numbers.surety_bond?.toLocaleString()}`}
                     color="bg-blue-50 border-blue-200 text-blue-400"
                   />
-                  <KeyNumberCard 
-                    icon={Calendar} 
-                    label="Rescission Period" 
+                  <KeyNumberCard
+                    icon={Calendar}
+                    label="Rescission Period"
                     value={`${overview.key_numbers.contract_rescission_days} days`}
                     color="bg-purple-50 border-purple-200 text-purple-700"
                   />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <KeyNumberCard 
-                    icon={Clock} 
-                    label="Claim Acknowledgment" 
+                  <KeyNumberCard
+                    icon={Clock}
+                    label="Claim Acknowledgment"
                     value={`${overview.key_numbers.claim_acknowledgment_days} days`}
                     color="bg-orange-50 border-orange-200 text-orange-700"
                   />
-                  <KeyNumberCard 
-                    icon={CheckCircle} 
-                    label="Pay/Deny Deadline" 
+                  <KeyNumberCard
+                    icon={CheckCircle}
+                    label="Pay/Deny Deadline"
                     value={`${overview.key_numbers.claim_pay_deny_days} days`}
                     color="bg-red-50 border-red-200 text-red-700"
                   />
-                  <KeyNumberCard 
-                    icon={BookOpen} 
-                    label="CE Hours (Biennial)" 
+                  <KeyNumberCard
+                    icon={BookOpen}
+                    label="CE Hours (Biennial)"
                     value={`${overview.key_numbers.ce_hours_biennial} hrs`}
                     color="bg-indigo-50 border-indigo-200 text-indigo-700"
                   />
-                  <KeyNumberCard 
-                    icon={Users} 
-                    label="Max Apprentices" 
+                  <KeyNumberCard
+                    icon={Users}
+                    label="Max Apprentices"
                     value={overview.key_numbers.max_apprentices_per_firm}
                     color="bg-pink-50 border-pink-200 text-pink-700"
                   />
@@ -555,17 +592,20 @@ const FloridaLaws = () => {
                         <CardTitle className="text-base">{update.bill}</CardTitle>
                         <CardDescription>{update.summary}</CardDescription>
                       </div>
-                      <Badge 
+                      <Badge
                         className={
-                          update.status?.includes('advancing') 
-                            ? 'bg-yellow-100 text-yellow-700' 
+                          update.status?.includes('advancing')
+                            ? 'bg-yellow-100 text-yellow-700'
                             : update.status?.includes('Passed')
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-zinc-300'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-zinc-300'
                         }
                       >
-                        {update.status?.includes('advancing') ? 'In Progress' : 
-                         update.status?.includes('Passed') ? 'Passed' : 'Introduced'}
+                        {update.status?.includes('advancing')
+                          ? 'In Progress'
+                          : update.status?.includes('Passed')
+                            ? 'Passed'
+                            : 'Introduced'}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -574,7 +614,7 @@ const FloridaLaws = () => {
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-zinc-500">{update.status}</span>
                       {update.source_url && (
-                        <a 
+                        <a
                           href={update.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
