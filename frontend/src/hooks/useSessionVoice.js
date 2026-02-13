@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { API_URL, getToken } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 export function useSessionVoice() {
   const [isRecording, setIsRecording] = useState(false);
@@ -141,9 +141,7 @@ export function useSessionVoice() {
 
       const res = await fetch(`${API_URL}/api/inspections/sessions/voice`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${getToken()}`
-        },
+        credentials: 'include',
         body: formData
       });
 
@@ -173,7 +171,7 @@ export function useSessionVoice() {
 
     try {
       const res = await fetch(`${API_URL}/api/inspections/sessions/${sessionId}/transcript`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+        credentials: 'include'
       });
 
       if (res.ok) {

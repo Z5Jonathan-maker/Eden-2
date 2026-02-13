@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { api, API_URL, getToken } from '../lib/api';
+import { api, API_URL } from '../lib/api';
 
 export function useInspectionReport() {
   const [generating, setGenerating] = useState(false);
@@ -32,7 +32,7 @@ export function useInspectionReport() {
       const res = await fetch(`${API_URL}/api/inspections/sessions/${sessionId}/report`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          credentials: 'include',
           'Content-Type': 'application/json'
         }
       });
@@ -62,7 +62,7 @@ export function useInspectionReport() {
 
     try {
       const res = await fetch(`${API_URL}/api/inspections/sessions/${sessionId}/reports`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+        credentials: 'include'
       });
 
       if (res.ok) {
@@ -84,7 +84,7 @@ export function useInspectionReport() {
 
     try {
       const res = await fetch(`${API_URL}/api/inspections/reports/${reportId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+        credentials: 'include'
       });
 
       if (res.ok) {
