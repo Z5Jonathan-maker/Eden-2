@@ -22,7 +22,7 @@ import { Button } from '../shared/ui/button';
 import { Input } from '../shared/ui/input';
 import { Textarea } from '../shared/ui/textarea';
 import { PAGE_ICONS } from '../assets/badges';
-import { API_URL } from '../lib/api';
+import { API_URL, apiGet, apiPost, apiPut } from '../lib/api';
 import {
   TemplateSelector,
   HeadshotUploader,
@@ -201,11 +201,9 @@ const MyCardPage = () => {
 
   const fetchCard = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/mycard/me`, {
-        credentials: 'include',
-      });
+      const res = await apiGet('/api/mycard/me');
       if (!res.ok) return;
-      const data = await res.json();
+      const data = res.data;
 
       setCard(data.card || null);
       setHasCard(Boolean(data.has_card));
@@ -245,12 +243,9 @@ const MyCardPage = () => {
 
   const fetchTeamCards = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/mycard/team`, {
-        credentials: 'include',
-      });
+      const res = await apiGet('/api/mycard/team');
       if (!res.ok) return;
-      const data = await res.json();
-      setTeamCards(data.team_cards || []);
+      setTeamCards(res.data.team_cards || []);
     } catch {
       toast.error('Failed to load team cards');
     }
@@ -282,34 +277,21 @@ const MyCardPage = () => {
       if (headshotFile) {
         const form = new FormData();
         form.append('file', headshotFile);
-        const uploadRes = await fetch(`${API_URL}/api/mycard/upload-headshot`, {
-          method: 'POST',
-          credentials: 'include',
-          body: form,
-        });
+        const uploadRes = await apiPost('/api/mycard/upload-headshot', form);
         if (!uploadRes.ok) {
-          const uploadErr = await uploadRes.json().catch(() => ({}));
-          throw new Error(uploadErr.detail || 'Headshot upload failed');
+          throw new Error(uploadRes.error?.detail || uploadRes.error || 'Headshot upload failed');
         }
-        const uploadData = await uploadRes.json();
-        uploadedPhotoUrl = uploadData.profile_photo_url || uploadedPhotoUrl;
+        uploadedPhotoUrl = uploadRes.data.profile_photo_url || uploadedPhotoUrl;
       }
 
-      const res = await fetch(`${API_URL}/api/mycard/${endpoint}`, {
-        method,
-        headers: {
-          credentials: 'include',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...payload.jsonPayload,
-          profile_photo_url: uploadedPhotoUrl,
-        }),
+      const apiCall = method === 'POST' ? apiPost : apiPut;
+      const res = await apiCall(`/api/mycard/${endpoint}`, {
+        ...payload.jsonPayload,
+        profile_photo_url: uploadedPhotoUrl,
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Unable to deploy card');
+        throw new Error(res.error?.detail || res.error || 'Unable to deploy card');
       }
 
       toast.success('Card deployed successfully');

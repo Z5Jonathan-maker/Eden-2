@@ -489,21 +489,17 @@ const TemplatesTab = () => {
   ];
 
   const fetchTemplates = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/incentives/templates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/incentives/templates');
       if (res.ok) {
-        const data = await res.json();
-        setTemplates(data.templates || []);
+        setTemplates(res.data.templates || []);
       }
     } catch (err) {
       console.error('Failed to fetch templates:', err);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   const fetchMetrics = useCallback(async () => {
     try {

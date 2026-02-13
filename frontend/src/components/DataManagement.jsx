@@ -406,7 +406,7 @@ function DataManagement() {
 
   function handleExportCSV() {
     fetch(API_URL + '/api/data/export/claims', {
-      headers: { Authorization: 'Bearer ' + getToken() },
+      credentials: 'include',
     })
       .then(function (res) {
         return res.blob();
@@ -422,7 +422,7 @@ function DataManagement() {
 
   function handleExportJSON() {
     fetch(API_URL + '/api/data/export/claims/json', {
-      headers: { Authorization: 'Bearer ' + getToken() },
+      credentials: 'include',
     })
       .then(function (res) {
         return res.blob();
@@ -438,7 +438,7 @@ function DataManagement() {
 
   function handleDownloadTemplate() {
     fetch(API_URL + '/api/data/template/claims', {
-      headers: { Authorization: 'Bearer ' + getToken() },
+      credentials: 'include',
     })
       .then(function (res) {
         return res.blob();
@@ -452,67 +452,59 @@ function DataManagement() {
       });
   }
 
-  function runLegacyDirectImport(file) {
-    var formData = new FormData();
-    formData.append('file', file);
-    fetch(API_URL + '/api/data/import/claims', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + getToken() },
-      body: formData,
-    })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(async function (data) {
-        if (
-          (!data || data.success !== true) &&
-          isCsvOnlyError(data) &&
-          /\.(xlsx|xls)$/i.test(String(file?.name || ''))
-        ) {
-          try {
-            const csvFile = await convertSpreadsheetToCsvFile(file);
-            var csvFormData = new FormData();
-            csvFormData.append('file', csvFile);
-            const csvResponse = await fetch(API_URL + '/api/data/import/claims', {
-              method: 'POST',
-              headers: { Authorization: 'Bearer ' + getToken() },
-              body: csvFormData,
-            });
-            data = await csvResponse.json();
-            if (data && data.success === true) {
-              toast.info('Legacy backend detected: converted XLSX to CSV automatically.');
-            }
-          } catch (_convertErr) {
-            toast.error('Backend requires CSV. XLSX auto-conversion failed.');
+  async function runLegacyDirectImport(file) {
+    try {
+      var formData = new FormData();
+      formData.append('file', file);
+      const res = await apiPost('/api/data/import/claims', formData);
+
+      let data = res.ok ? res.data : { success: false, error: res.error };
+
+      if (
+        (!data || data.success !== true) &&
+        isCsvOnlyError(data) &&
+        /\.(xlsx|xls)$/i.test(String(file?.name || ''))
+      ) {
+        try {
+          const csvFile = await convertSpreadsheetToCsvFile(file);
+          var csvFormData = new FormData();
+          csvFormData.append('file', csvFile);
+          const csvRes = await apiPost('/api/data/import/claims', csvFormData);
+          data = csvRes.ok ? csvRes.data : { success: false, error: csvRes.error };
+          if (data && data.success === true) {
+            toast.info('Legacy backend detected: converted XLSX to CSV automatically.');
           }
+        } catch (_convertErr) {
+          toast.error('Backend requires CSV. XLSX auto-conversion failed.');
         }
-        if (!data || data.success !== true) {
-          toast.error(data && data.detail ? data.detail : 'Legacy import failed');
-          return;
-        }
-        var reportRows = Array.isArray(data.row_report) ? data.row_report : [];
-        setLastImportReportRows(reportRows);
-        setLastImportSummary({
-          imported: data.imported || 0,
-          updated: data.updated || 0,
-          skipped: data.skipped || 0,
-          warnings: data.warning_count || (Array.isArray(data.warnings) ? data.warnings.length : 0),
-          errors: data.error_count || (Array.isArray(data.errors) ? data.errors.length : 0),
-          totalRows: reportRows.length,
-          isDryRun: false,
-          wouldImport: data.would_import || 0,
-          duplicateStrategy: data.duplicate_strategy || 'skip',
-        });
-        setBackendSupportsDuplicateStrategy(
-          Object.prototype.hasOwnProperty.call(data || {}, 'duplicate_strategy') ||
-            Object.prototype.hasOwnProperty.call(data || {}, 'updated')
-        );
-        toast.success('Legacy import completed');
-        fetchStats();
-      })
-      .catch(function () {
-        toast.error('Legacy import failed');
+      }
+      if (!data || data.success !== true) {
+        toast.error(data && data.detail ? data.detail : 'Legacy import failed');
+        return;
+      }
+      var reportRows = Array.isArray(data.row_report) ? data.row_report : [];
+      setLastImportReportRows(reportRows);
+      setLastImportSummary({
+        imported: data.imported || 0,
+        updated: data.updated || 0,
+        skipped: data.skipped || 0,
+        warnings: data.warning_count || (Array.isArray(data.warnings) ? data.warnings.length : 0),
+        errors: data.error_count || (Array.isArray(data.errors) ? data.errors.length : 0),
+        totalRows: reportRows.length,
+        isDryRun: false,
+        wouldImport: data.would_import || 0,
+        duplicateStrategy: data.duplicate_strategy || 'skip',
       });
+      setBackendSupportsDuplicateStrategy(
+        Object.prototype.hasOwnProperty.call(data || {}, 'duplicate_strategy') ||
+          Object.prototype.hasOwnProperty.call(data || {}, 'updated')
+      );
+      toast.success('Legacy import completed');
+      fetchStats();
+    } catch (err) {
+      console.error('Import error:', err);
+      toast.error('Legacy import failed');
+    }
   }
 
   function applyDryRunResult(data) {

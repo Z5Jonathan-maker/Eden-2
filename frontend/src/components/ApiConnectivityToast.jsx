@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { API_URL } from '../lib/api';
+import { API_URL, apiGet } from '../lib/api';
 
 const STORAGE_KEY = 'eden_connectivity_toast_v1';
 
@@ -27,14 +27,12 @@ export default function ApiConnectivityToast() {
     const check = async () => {
       try {
         // Prefer /health (no auth) and fast.
-        const url = `${API_URL}/health`;
-        const res = await fetch(url, {
-          method: 'GET',
+        const res = await apiGet('/health', {
           signal: controller.signal,
           cache: 'no-store',
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status || 'unreachable'}`);
         // If we got here, backend is reachable.
       } catch (e) {
         // If backend unreachable, most actions appear "dead" (buttons feel broken).

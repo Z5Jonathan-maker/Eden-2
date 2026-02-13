@@ -77,16 +77,6 @@ const PropertyIntelligence = ({ embedded = false }) => {
   const token = localStorage.getItem('eden_token');
   const selectedRelease = useMemo(() => imageryReleases[selectedImageDate] || null, [imageryReleases, selectedImageDate]);
 
-  const buildAuthHeaders = () => {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-  };
-
   const getResponseErrorDetail = async (response, fallbackMessage) => {
     try {
       const payload = await response.json();
@@ -117,6 +107,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
       try {
         const response = await fetch(url, {
           ...options,
+          credentials: 'include',
           signal: controller.signal,
         });
 
@@ -190,7 +181,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
         `${API_URL}/api/weather/stations/nearby?${backendParams.toString()}`,
         {
           method: 'GET',
-          headers: buildAuthHeaders(),
+          headers: {},
         },
         'Address geocode unavailable',
         0,
@@ -385,7 +376,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
           `${API_URL}/api/weather/dol/candidates`,
           {
             method: 'POST',
-            headers: buildAuthHeaders(),
+            headers: {},
             body: JSON.stringify(payload),
           },
           'DOL candidate discovery unavailable',
@@ -410,7 +401,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
           `${API_URL}/api/weather/dol/candidates`,
           {
             method: 'POST',
-            headers: buildAuthHeaders(),
+            headers: {},
             body: JSON.stringify(retryPayload),
           },
           'DOL candidate discovery unavailable',
@@ -478,7 +469,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
         `${API_URL}/api/weather/verify-dol`,
         {
           method: 'POST',
-          headers: buildAuthHeaders(),
+          headers: {},
             body: JSON.stringify({
               address: baseAddressPayload.address,
               city: baseAddressPayload.city,
@@ -503,7 +494,7 @@ const PropertyIntelligence = ({ embedded = false }) => {
             `${API_URL}/api/weather/verify-dol`,
             {
               method: 'POST',
-              headers: buildAuthHeaders(),
+              headers: {},
               body: JSON.stringify({
                 address: baseAddressPayload.address,
                 city: '',
