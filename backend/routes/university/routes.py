@@ -6,9 +6,10 @@ Courses, lessons, articles, quizzes, progress tracking, and certificates.
 '''
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
+import uuid
 
 from dependencies import db, get_current_active_user
 from .models import (
