@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import AnimatedOutlet from '../../components/AnimatedOutlet';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/ui/button';
 import NotificationBell from '../../components/NotificationBell';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
-import { APP_LOGO, NAV_ICONS } from '../assets/badges';
+import { APP_LOGO, NAV_ICONS } from '../../assets/badges';
 
 var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
