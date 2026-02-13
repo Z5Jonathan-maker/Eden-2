@@ -21,8 +21,7 @@ import ProfileCard from './settings/ProfileCard';
 import IntegrationCard from './settings/IntegrationCard';
 import StatusBadge from './settings/StatusBadge';
 import './settings/settings.css';
-
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPut, apiDelete } from '@/lib/api';
 
 const DEFAULT_OAUTH_STATUS = {
   google: { connected: false, user_email: null, scopes: [] },
@@ -42,8 +41,6 @@ const GOOGLE_SCOPE_CHECKS = {
   calendar: ['https://www.googleapis.com/auth/calendar'],
   drive: ['https://www.googleapis.com/auth/drive.file'],
 };
-
-const getAuthToken = () => localStorage.getItem('eden_token');
 
 const readNotificationPrefs = () => {
   try {
@@ -109,20 +106,16 @@ const Settings = () => {
 
   const fetchOAuthStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/oauth/status`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-
+      const res = await apiGet('/api/oauth/status');
       if (!res.ok) return;
 
-      const data = await res.json();
       setOauthStatuses({
-        google: data.statuses?.google || DEFAULT_OAUTH_STATUS.google,
-        signnow: data.statuses?.signnow || DEFAULT_OAUTH_STATUS.signnow,
+        google: res.data.statuses?.google || DEFAULT_OAUTH_STATUS.google,
+        signnow: res.data.statuses?.signnow || DEFAULT_OAUTH_STATUS.signnow,
       });
       setOauthConfigured({
-        google: Boolean(data.configured?.google),
-        signnow: Boolean(data.configured?.signnow),
+        google: Boolean(res.data.configured?.google),
+        signnow: Boolean(res.data.configured?.signnow),
       });
     } catch (error) {
       console.error('Failed to fetch OAuth status:', error);
@@ -132,17 +125,14 @@ const Settings = () => {
   const fetchGammaStatus = useCallback(async () => {
     setGammaLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/gamma/status`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
+      const res = await apiGet('/api/gamma/status');
 
       if (!res.ok) {
         setGammaEnabled(false);
         return;
       }
 
-      const data = await res.json();
-      setGammaEnabled(Boolean(data.enabled));
+      setGammaEnabled(Boolean(res.data.enabled));
     } catch (error) {
       setGammaEnabled(false);
       console.error('Failed to fetch Gamma status:', error);
@@ -153,17 +143,13 @@ const Settings = () => {
 
   const fetchCompanySettings = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/settings/company`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-
+      const res = await apiGet('/api/settings/company');
       if (!res.ok) return;
 
-      const data = await res.json();
       setCompanySettings({
-        company_name: data.company_name || '',
-        university_name: data.university_name || '',
-        tagline: data.tagline || '',
+        company_name: res.data.company_name || '',
+        university_name: res.data.university_name || '',
+        tagline: res.data.tagline || '',
       });
     } catch (error) {
       console.error('Failed to fetch company settings:', error);
@@ -181,14 +167,11 @@ const Settings = () => {
     setLoadingAiMetrics(true);
     setAiMetricsError('');
     try {
-      const res = await fetch(`${API_URL}/api/ai/task/metrics?days=7`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      const data = await res.json().catch(() => ({}));
+      const res = await apiGet('/api/ai/task/metrics?days=7');
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to load AI metrics');
+        throw new Error(res.error || 'Failed to load AI metrics');
       }
-      setAiMetrics(data);
+      setAiMetrics(res.data);
     } catch (error) {
       setAiMetrics(null);
       setAiMetricsError(error.message || 'Failed to load AI metrics');
@@ -205,14 +188,11 @@ const Settings = () => {
     }
     setLoadingAiRouting(true);
     try {
-      const res = await fetch(`${API_URL}/api/ai/routing-config`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      const data = await res.json().catch(() => ({}));
+      const res = await apiGet('/api/ai/routing-config');
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to load AI routing config');
+        throw new Error(res.error || 'Failed to load AI routing config');
       }
-      setAiRouting(data);
+      setAiRouting(res.data);
     } catch (error) {
       toast.error(error.message || 'Failed to load AI routing config');
       setAiRouting(null);
@@ -229,14 +209,11 @@ const Settings = () => {
     }
     setLoadingAiProviderHealth(true);
     try {
-      const res = await fetch(`${API_URL}/api/ai/providers/health`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      const data = await res.json().catch(() => ({}));
+      const res = await apiGet('/api/ai/providers/health');
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to load provider health');
+        throw new Error(res.error || 'Failed to load provider health');
       }
-      setAiProviderHealth(data);
+      setAiProviderHealth(res.data);
     } catch (error) {
       setAiProviderHealth(null);
       toast.error(error.message || 'Failed to load provider health');
@@ -249,22 +226,15 @@ const Settings = () => {
     if (!aiRouting?.config) return;
     setSavingAiRouting(true);
     try {
-      const res = await fetch(`${API_URL}/api/ai/routing-config`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          fallback_enabled: Boolean(aiRouting.config.fallback_enabled),
-          task_provider_order: aiRouting.config.task_provider_order || {},
-        }),
+      const res = await apiPut('/api/ai/routing-config', {
+        fallback_enabled: Boolean(aiRouting.config.fallback_enabled),
+        task_provider_order: aiRouting.config.task_provider_order || {},
       });
-      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to save AI routing config');
+        throw new Error(res.error || 'Failed to save AI routing config');
       }
-      setAiRouting((prev) => (prev ? { ...prev, config: data.config || prev.config } : prev));
+      setAiRouting((prev) => (prev ? { ...prev, config: res.data.config || prev.config } : prev));
       toast.success('AI routing updated');
     } catch (error) {
       toast.error(error.message || 'Failed to save AI routing config');
@@ -303,23 +273,19 @@ const Settings = () => {
   const initiateOAuth = async (provider) => {
     setConnectingProvider(provider);
     try {
-      const res = await fetch(`${API_URL}/api/oauth/${provider}/connect`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
+      const res = await apiGet(`/api/oauth/${provider}/connect`);
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.detail || `Failed to connect ${provider}.`);
+        toast.error(res.error || `Failed to connect ${provider}.`);
         return;
       }
 
-      const data = await res.json();
-      if (!data.auth_url) {
+      if (!res.data.auth_url) {
         toast.error(`Missing authorization URL for ${provider}.`);
         return;
       }
 
-      window.location.href = data.auth_url;
+      window.location.href = res.data.auth_url;
     } catch (error) {
       toast.error(`Failed to start ${provider} connection.`);
     } finally {
@@ -329,10 +295,7 @@ const Settings = () => {
 
   const disconnectOAuth = async (provider) => {
     try {
-      const res = await fetch(`${API_URL}/api/oauth/${provider}/disconnect`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
+      const res = await apiDelete(`/api/oauth/${provider}/disconnect`);
 
       if (!res.ok) {
         toast.error(`Failed to disconnect ${provider}.`);
@@ -349,14 +312,7 @@ const Settings = () => {
   const saveCompanySettings = async () => {
     setCompanySaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/settings/company`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify(companySettings),
-      });
+      const res = await apiPut('/api/settings/company', companySettings);
 
       if (!res.ok) {
         toast.error('Failed to save profile settings.');

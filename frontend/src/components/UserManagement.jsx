@@ -3,13 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { Input } from '../shared/ui/input';
 import { Badge } from '../shared/ui/badge';
-import { 
-  Users, UserPlus, Shield, ShieldCheck, ShieldAlert, 
+import {
+  Users, UserPlus, Shield, ShieldCheck, ShieldAlert,
   Edit, Trash2, Check, X, RefreshCw
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
-
-var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 var ROLE_COLORS = {
   admin: 'bg-red-600',
@@ -34,101 +33,63 @@ function UserManagement() {
   var [formData, setFormData] = useState({ email: '', full_name: '', password: '', role: 'adjuster' });
   var [error, setError] = useState('');
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
-
-  const fetchData = useCallback(function fetchData() {
+  const fetchData = useCallback(async function fetchData() {
     setLoading(true);
-    var headers = { 'Authorization': 'Bearer ' + getToken() };
-    
-    Promise.all([
-      fetch(API_URL + '/api/users/', { headers }),
-      fetch(API_URL + '/api/users/me', { headers })
-    ]).then(function(responses) {
-      return Promise.all(responses.map(function(r) { 
-        if (!r.ok) throw new Error('Failed to fetch');
-        return r.json(); 
-      }));
-    }).then(function(data) {
-      setUsers(data[0] || []);
-      setCurrentUserInfo(data[1]);
-      setLoading(false);
-    }).catch(function(err) {
+    try {
+      var [usersRes, meRes] = await Promise.all([
+        apiGet('/api/users/'),
+        apiGet('/api/users/me')
+      ]);
+
+      if (usersRes.ok) setUsers(usersRes.data || []);
+      if (meRes.ok) setCurrentUserInfo(meRes.data);
+    } catch (err) {
       setError('Failed to load users. You may not have permission.');
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
 
   useEffect(function() {
     fetchData();
   }, [fetchData]);
 
-  function handleCreateUser(e) {
+  async function handleCreateUser(e) {
     e.preventDefault();
     setError('');
-    
-    fetch(API_URL + '/api/users/', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-    .then(function(r) {
-      if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail); });
-      return r.json();
-    })
-    .then(function() {
+
+    var res = await apiPost('/api/users/', formData);
+
+    if (res.ok) {
       setShowCreateForm(false);
       setFormData({ email: '', full_name: '', password: '', role: 'adjuster' });
       fetchData();
-    })
-    .catch(function(err) {
-      setError(err.message);
-    });
+    } else {
+      setError(res.error || 'Failed to create user');
+    }
   }
 
-  function handleUpdateUser(userId, updateData) {
-    fetch(API_URL + '/api/users/' + userId, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(updateData)
-    })
-    .then(function(r) {
-      if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail); });
-      return r.json();
-    })
-    .then(function() {
+  async function handleUpdateUser(userId, updateData) {
+    var res = await apiPut('/api/users/' + userId, updateData);
+
+    if (res.ok) {
       setEditingUser(null);
       fetchData();
-    })
-    .catch(function(err) {
-      setError(err.message);
-    });
+    } else {
+      setError(res.error || 'Failed to update user');
+    }
   }
 
-  function handleDeleteUser(userId) {
+  async function handleDeleteUser(userId) {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    
-    fetch(API_URL + '/api/users/' + userId, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + getToken() }
-    })
-    .then(function(r) {
-      if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail); });
-      return r.json();
-    })
-    .then(function() {
+
+    var res = await apiDelete('/api/users/' + userId);
+
+    if (res.ok) {
       fetchData();
-    })
-    .catch(function(err) {
-      setError(err.message);
-    });
+    } else {
+      setError(res.error || 'Failed to delete user');
+    }
   }
 
   function handleToggleActive(user) {
