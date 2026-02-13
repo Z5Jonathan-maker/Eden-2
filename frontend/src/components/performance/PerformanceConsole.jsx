@@ -11,10 +11,11 @@ import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../shared/ui/card';
 import { Badge } from '../../shared/ui/badge';
-import { 
-  MapPin, Trophy, Settings, Users, Target, 
+import {
+  MapPin, Trophy, Settings, Users, Target,
   Gift, Calendar, BarChart3, Zap, Brain, AlertTriangle, Loader2, Download
 } from 'lucide-react';
+import { apiGet, apiPut } from '@/lib/api';
 
 // Import existing admin consoles
 import HarvestAdminConsole from '../HarvestAdminConsole';
@@ -194,17 +195,11 @@ const PerformanceOverview = ({ onNavigate }) => {
       setLoadingAiMetrics(true);
       setAiMetricsError('');
       try {
-        const token = localStorage.getItem('eden_token');
-        const res = await fetch(`${API_URL}/api/ai/task/metrics?days=${aiMetricsDays}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const res = await apiGet(`/api/ai/task/metrics?days=${aiMetricsDays}`);
         if (!res.ok) {
-          throw new Error(data.detail || 'Failed to load AI metrics');
+          throw new Error(res.error || 'Failed to load AI metrics');
         }
-        setAiMetrics(data);
+        setAiMetrics(res.data);
       } catch (err) {
         setAiMetricsError(err.message || 'Failed to load AI metrics');
       } finally {
@@ -220,7 +215,6 @@ const PerformanceOverview = ({ onNavigate }) => {
       setLoadingSmsAudit(true);
       setSmsAuditError('');
       try {
-        const token = localStorage.getItem('eden_token');
         const params = new URLSearchParams();
         params.set('days', String(smsAuditDays));
         params.set('limit', '40');
@@ -228,16 +222,11 @@ const PerformanceOverview = ({ onNavigate }) => {
         if (smsAuditAck === 'ack') params.set('risk_acknowledged', 'true');
         if (smsAuditAck === 'unack') params.set('risk_acknowledged', 'false');
         if (smsAuditIntent !== 'all') params.set('thread_intent', smsAuditIntent);
-        const res = await fetch(`${API_URL}/api/sms/audit?${params.toString()}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const res = await apiGet(`/api/sms/audit?${params.toString()}`);
         if (!res.ok) {
-          throw new Error(data.detail || 'Failed to load SMS risk audit');
+          throw new Error(res.error || 'Failed to load SMS risk audit');
         }
-        setSmsAudit(data);
+        setSmsAudit(res.data);
       } catch (err) {
         setSmsAuditError(err.message || 'Failed to load SMS risk audit');
       } finally {
@@ -297,24 +286,18 @@ const PerformanceOverview = ({ onNavigate }) => {
       setLoadingSmsThresholds(true);
       setSmsThresholdsError('');
       try {
-        const token = localStorage.getItem('eden_token');
-        const res = await fetch(`${API_URL}/api/settings/ai-comms-risk-thresholds`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const res = await apiGet('/api/settings/ai-comms-risk-thresholds');
         if (!res.ok) {
-          throw new Error(data.detail || 'Failed to load audit thresholds');
+          throw new Error(res.error || 'Failed to load audit thresholds');
         }
         setSmsAuditThresholds({
-          minEvents: Number(data.min_events ?? DEFAULT_SMS_AUDIT_THRESHOLDS.minEvents),
-          highRiskRatePct: Number(data.high_risk_rate_pct ?? DEFAULT_SMS_AUDIT_THRESHOLDS.highRiskRatePct),
-          ackMissingRatePct: Number(data.ack_missing_rate_pct ?? DEFAULT_SMS_AUDIT_THRESHOLDS.ackMissingRatePct),
+          minEvents: Number(res.data.min_events ?? DEFAULT_SMS_AUDIT_THRESHOLDS.minEvents),
+          highRiskRatePct: Number(res.data.high_risk_rate_pct ?? DEFAULT_SMS_AUDIT_THRESHOLDS.highRiskRatePct),
+          ackMissingRatePct: Number(res.data.ack_missing_rate_pct ?? DEFAULT_SMS_AUDIT_THRESHOLDS.ackMissingRatePct),
         });
         setSmsThresholdsMeta({
-          updatedAt: data.updated_at || null,
-          updatedBy: data.updated_by || null,
+          updatedAt: res.data.updated_at || null,
+          updatedBy: res.data.updated_by || null,
         });
       } catch (err) {
         setSmsThresholdsError(err.message || 'Failed to load audit thresholds');
@@ -367,26 +350,17 @@ const PerformanceOverview = ({ onNavigate }) => {
     setSavingSmsThresholds(true);
     setSmsThresholdsError('');
     try {
-      const token = localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/settings/ai-comms-risk-thresholds`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          min_events: Number(smsAuditThresholds.minEvents || 0),
-          high_risk_rate_pct: Number(smsAuditThresholds.highRiskRatePct || 0),
-          ack_missing_rate_pct: Number(smsAuditThresholds.ackMissingRatePct || 0),
-        }),
+      const res = await apiPut('/api/settings/ai-comms-risk-thresholds', {
+        min_events: Number(smsAuditThresholds.minEvents || 0),
+        high_risk_rate_pct: Number(smsAuditThresholds.highRiskRatePct || 0),
+        ack_missing_rate_pct: Number(smsAuditThresholds.ackMissingRatePct || 0),
       });
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Failed to save audit thresholds');
+        throw new Error(res.error || 'Failed to save audit thresholds');
       }
       setSmsThresholdsMeta({
-        updatedAt: data.updated_at || null,
-        updatedBy: data.updated_by || null,
+        updatedAt: res.data.updated_at || null,
+        updatedBy: res.data.updated_by || null,
       });
     } catch (err) {
       setSmsThresholdsError(err.message || 'Failed to save audit thresholds');
