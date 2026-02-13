@@ -34,6 +34,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import ClaimCommsPanel from './ClaimCommsPanel';
+import ScheduleAppointmentModal from './ScheduleAppointmentModal';
+import PhotoViewerModal from './PhotoViewerModal';
 import { Textarea } from '../../../shared/ui/textarea';
 import { Input } from '../../../shared/ui/input';
 import { Label } from '../../../shared/ui/label';
@@ -1963,223 +1965,20 @@ Generated on: ${new Date().toLocaleString()}
       </div>
 
       {/* Schedule Appointment Modal */}
-      <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarPlus className="w-5 h-5 text-green-600" />
-              Schedule Appointment
-            </DialogTitle>
-            <DialogDescription>Create an appointment for this claim</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="apt-title">Title *</Label>
-              <Input
-                id="apt-title"
-                value={appointmentForm.title}
-                onChange={(e) => setAppointmentForm({ ...appointmentForm, title: e.target.value })}
-                placeholder="e.g., Property Inspection"
-                data-testid="apt-title-input"
-              />
-            </div>
-
-            {/* Date & Time Row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="apt-date">Date *</Label>
-                <Input
-                  id="apt-date"
-                  type="date"
-                  value={appointmentForm.date}
-                  onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
-                  data-testid="apt-date-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="apt-time">Time *</Label>
-                <Input
-                  id="apt-time"
-                  type="time"
-                  value={appointmentForm.time}
-                  onChange={(e) => setAppointmentForm({ ...appointmentForm, time: e.target.value })}
-                  data-testid="apt-time-input"
-                />
-              </div>
-            </div>
-
-            {/* Duration */}
-            <div className="space-y-2">
-              <Label htmlFor="apt-duration">Duration</Label>
-              <select
-                id="apt-duration"
-                value={appointmentForm.duration}
-                onChange={(e) =>
-                  setAppointmentForm({ ...appointmentForm, duration: parseInt(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                data-testid="apt-duration-select"
-              >
-                <option value={30}>30 minutes</option>
-                <option value={60}>1 hour</option>
-                <option value={90}>1.5 hours</option>
-                <option value={120}>2 hours</option>
-                <option value={180}>3 hours</option>
-              </select>
-            </div>
-
-            {/* Location */}
-            <div className="space-y-2">
-              <Label htmlFor="apt-location">Location</Label>
-              <Input
-                id="apt-location"
-                value={appointmentForm.location}
-                onChange={(e) =>
-                  setAppointmentForm({ ...appointmentForm, location: e.target.value })
-                }
-                placeholder="Property address"
-                data-testid="apt-location-input"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="apt-description">Notes</Label>
-              <Textarea
-                id="apt-description"
-                value={appointmentForm.description}
-                onChange={(e) =>
-                  setAppointmentForm({ ...appointmentForm, description: e.target.value })
-                }
-                placeholder="Additional details..."
-                rows={3}
-                data-testid="apt-description-input"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowScheduleModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                onClick={handleScheduleAppointment}
-                disabled={schedulingAppointment}
-                data-testid="confirm-schedule-btn"
-              >
-                {schedulingAppointment ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Scheduling...
-                  </>
-                ) : (
-                  <>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ScheduleAppointmentModal
+        open={showScheduleModal}
+        onOpenChange={setShowScheduleModal}
+        appointmentForm={appointmentForm}
+        setAppointmentForm={setAppointmentForm}
+        onSchedule={handleScheduleAppointment}
+        isScheduling={schedulingAppointment}
+      />
 
       {/* Photo Viewer Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
-          {selectedPhoto && (
-            <div className="relative">
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Image */}
-              <div className="relative bg-black flex items-center justify-center min-h-[300px] max-h-[70vh]">
-                <img
-                  src={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image`}
-                  alt={selectedPhoto.room || 'Inspection photo'}
-                  className="max-w-full max-h-[70vh] object-contain"
-                />
-              </div>
-
-              {/* Photo Details */}
-              <div className="p-4 bg-white">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {selectedPhoto.room || 'Inspection Photo'}
-                    </h3>
-                    {selectedPhoto.category && (
-                      <p className="text-sm text-gray-500">{selectedPhoto.category}</p>
-                    )}
-                    {selectedPhoto.created_at && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        Captured {new Date(selectedPhoto.created_at).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={`${API_URL}/api/inspections/photos/${selectedPhoto.id}/image`}
-                      download={`photo-${selectedPhoto.id}.jpg`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </a>
-                  </Button>
-                </div>
-
-                {/* Voice Transcript */}
-                {selectedPhoto.voice_transcript && (
-                  <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-3 h-3 text-white"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        </svg>
-                      </div>
-                      <span className="text-sm font-medium text-purple-700">Voice Note</span>
-                    </div>
-                    <p className="text-sm text-gray-700">{selectedPhoto.voice_transcript}</p>
-                  </div>
-                )}
-
-                {/* AI Tags */}
-                {selectedPhoto.ai_tags && selectedPhoto.ai_tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {selectedPhoto.ai_tags.map((tag, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoViewerModal
+        photo={selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+      />
     </div>
   );
 };
