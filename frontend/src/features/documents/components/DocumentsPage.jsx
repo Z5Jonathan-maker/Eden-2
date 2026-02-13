@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { NAV_ICONS } from '../../../assets/badges';
 import ClaimSelector from './ClaimSelector';
-import { apiPut, apiPost, API_URL } from '@/lib/api';
-const getToken = () => localStorage.getItem('eden_token');
+import { apiGet, apiPut, apiPost, apiDelete, API_URL } from '@/lib/api';
 
 const Documents = () => {
   const [selectedClaimId, setSelectedClaimId] = useState(null);
@@ -128,18 +127,16 @@ const Documents = () => {
 
       setLoading(true);
       try {
-        const headers = { Authorization: `Bearer ${getToken()}` };
         const endpoints = [
-          `${API_URL}/api/claims/${claimId}/files`,
-          `${API_URL}/api/uploads/my-files?claim_id=${claimId}`,
+          `/api/claims/${claimId}/files`,
+          `/api/uploads/my-files?claim_id=${claimId}`,
         ];
 
         let docs = [];
         for (const endpoint of endpoints) {
-          const res = await fetch(endpoint, { headers });
+          const res = await apiGet(endpoint);
           if (!res.ok) continue;
-          const data = await res.json();
-          const rows = Array.isArray(data) ? data : data.files || data.documents || [];
+          const rows = Array.isArray(res.data) ? res.data : res.data.files || res.data.documents || [];
           docs = normalizeDocs(rows);
           break;
         }
@@ -187,8 +184,8 @@ const Documents = () => {
 
         let uploaded = false;
         const endpoints = [
-          `${API_URL}/api/claims/${selectedClaimId}/files/upload`,
-          `${API_URL}/api/uploads/file`,
+          `/api/claims/${selectedClaimId}/files/upload`,
+          `/api/uploads/file`,
         ];
 
         for (const endpoint of endpoints) {
@@ -197,11 +194,7 @@ const Documents = () => {
           payload.append('category', 'Document');
           if (endpoint.includes('/api/uploads/file')) payload.append('claim_id', selectedClaimId);
 
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${getToken()}` },
-            body: payload,
-          });
+          const res = await apiPost(endpoint, payload);
           if (res.ok) {
             uploaded = true;
             break;
@@ -216,20 +209,15 @@ const Documents = () => {
         try {
           const extractionPayload = new FormData();
           extractionPayload.append('file', file);
-          const extractRes = await fetch(
-            `${API_URL}/api/ai/documents/extract?claim_id=${selectedClaimId}`,
-            {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${getToken()}` },
-              body: extractionPayload,
-            }
+          const extractRes = await apiPost(
+            `/api/ai/documents/extract?claim_id=${selectedClaimId}`,
+            extractionPayload
           );
           if (extractRes.ok) {
-            const extractData = await extractRes.json();
             setAiExtractionByName((prev) => ({
               ...prev,
-              [extractionKey]: extractData,
-              [file.name]: extractData,
+              [extractionKey]: extractRes.data,
+              [file.name]: extractRes.data,
             }));
           }
         } catch (extractErr) {
@@ -256,15 +244,14 @@ const Documents = () => {
     if (!docId) return;
 
     try {
-      const headers = { Authorization: `Bearer ${getToken()}` };
       const endpoints = [
-        `${API_URL}/api/claims/${selectedClaimId}/files/${docId}`,
-        `${API_URL}/api/uploads/file/${docId}`,
+        `/api/claims/${selectedClaimId}/files/${docId}`,
+        `/api/uploads/file/${docId}`,
       ];
 
       let deleted = false;
       for (const endpoint of endpoints) {
-        const res = await fetch(endpoint, { method: 'DELETE', headers });
+        const res = await apiDelete(endpoint);
         if (res.ok) {
           deleted = true;
           break;
@@ -299,7 +286,7 @@ const Documents = () => {
     try {
       setExtractingByName((prev) => ({ ...prev, [extractionKey]: true }));
       const downloadRes = await fetch(doc.url, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
       });
       if (!downloadRes.ok) {
         throw new Error('Unable to fetch file for extraction');
@@ -312,21 +299,15 @@ const Documents = () => {
 
       const extractionPayload = new FormData();
       extractionPayload.append('file', file);
-      const extractRes = await fetch(
-        `${API_URL}/api/ai/documents/extract?claim_id=${selectedClaimId}`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: extractionPayload,
-        }
+      const extractRes = await apiPost(
+        `/api/ai/documents/extract?claim_id=${selectedClaimId}`,
+        extractionPayload
       );
       if (!extractRes.ok) {
-        const err = await extractRes.json().catch(() => ({}));
-        throw new Error(err.detail || 'AI extraction failed');
+        throw new Error(extractRes.error?.detail || extractRes.error || 'AI extraction failed');
       }
 
-      const extractData = await extractRes.json();
-      setAiExtractionByName((prev) => ({ ...prev, [extractionKey]: extractData }));
+      setAiExtractionByName((prev) => ({ ...prev, [extractionKey]: extractRes.data }));
       toast.success(`AI extract completed for ${fileName}`);
     } catch (err) {
       toast.error(err?.message || 'AI extraction failed');

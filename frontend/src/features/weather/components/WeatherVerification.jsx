@@ -54,8 +54,6 @@ const WeatherVerification = ({ embedded = false }) => {
   
   // UI state
   const [expandedEvent, setExpandedEvent] = useState(null);
-  
-  const token = localStorage.getItem('eden_token');
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -80,7 +78,7 @@ const WeatherVerification = ({ embedded = false }) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const response = await fetch(url, { ...options, signal: controller.signal });
+        const response = await fetch(url, { ...options, credentials: 'include', signal: controller.signal });
         if (response.ok) {
           return { ok: true, data: await response.json(), response };
         }
