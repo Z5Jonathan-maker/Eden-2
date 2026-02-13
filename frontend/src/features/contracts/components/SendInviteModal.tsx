@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ContractItem } from './types';
+import { ContractItem } from '../types/types';
 
 interface Props {
   open: boolean;

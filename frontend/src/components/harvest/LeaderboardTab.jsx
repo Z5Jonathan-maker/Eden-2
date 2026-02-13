@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Avatar, AvatarFallback } from '../shared/ui/avatar';
+import { Avatar, AvatarFallback } from '../../shared/ui/avatar';
 import { Trophy, Crown, Flame } from 'lucide-react';
 import RankBadge from './RankBadge';
 import './HarvestAnimations.css';

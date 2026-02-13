@@ -3,11 +3,11 @@
  */
 
 import React from 'react';
-import { Button } from '../shared/ui/button';
-import { Input } from '../shared/ui/input';
-import { Label } from '../shared/ui/label';
-import { Textarea } from '../shared/ui/textarea';
-import { Badge } from '../shared/ui/badge';
+import { Button } from '../../shared/ui/button';
+import { Input } from '../../shared/ui/input';
+import { Label } from '../../shared/ui/label';
+import { Textarea } from '../../shared/ui/textarea';
+import { Badge } from '../../shared/ui/badge';
 import { 
   X, Save, Loader2, Upload, FileText, BookOpen, 
   FolderOpen, File, Image, Video, Music, Paperclip, Trash2

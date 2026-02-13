@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Button } from '../shared/ui/button';
+import { Button } from '../../shared/ui/button';
 import { BookOpen, FileText, PlayCircle, Award, FolderOpen } from 'lucide-react';
 
 const TABS = [

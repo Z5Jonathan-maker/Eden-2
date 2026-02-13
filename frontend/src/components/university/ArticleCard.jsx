@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { Card, CardContent } from '../shared/ui/card';
-import { Badge } from '../shared/ui/badge';
+import { Card, CardContent } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { Clock, FileText, ChevronRight, Eye } from 'lucide-react';
 
 export const ArticleCard = ({ article, onClick }) => {

@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent } from '../shared/ui/card';
+import { Card, CardContent } from '../../shared/ui/card';
 import { Award, Trophy, Download } from 'lucide-react';
 
 const CertificateCard = ({ certificate }) => (

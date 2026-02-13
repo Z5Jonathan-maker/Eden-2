@@ -39,7 +39,7 @@ import { Input } from '../../../shared/ui/input';
 import { Label } from '../../../shared/ui/label';
 import { toast } from 'sonner';
 import { useGamma, GAMMA_AUDIENCES } from '../../../hooks/useGamma';
-import ClientStatusPanel from './ClientStatusPanel';
+import ClientStatusPanel from '../../../components/ClientStatusPanel';
 import { FEATURE_ICONS } from '../../../assets/badges';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;

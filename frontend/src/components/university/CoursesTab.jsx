@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../shared/ui/card';
-import { Badge } from '../shared/ui/badge';
-import { Progress } from '../shared/ui/progress';
+import { Card, CardContent } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
+import { Progress } from '../../shared/ui/progress';
 import { Clock, CheckCircle, PlayCircle, ChevronRight } from 'lucide-react';
 
 const CategoryFilter = ({ categoryFilter, setCategoryFilter }) => {

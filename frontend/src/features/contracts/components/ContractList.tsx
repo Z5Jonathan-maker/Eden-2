@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileText, Plus } from 'lucide-react';
 import ContractRow from './ContractRow';
-import { ContractItem } from './types';
+import { ContractItem } from '../types/types';
 
 interface Props {
   contracts: ContractItem[];

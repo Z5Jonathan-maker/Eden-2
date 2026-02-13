@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { ClaimItem } from './types';
+import { ClaimItem } from '../types/types';
 
 interface Props {
   open: boolean;

@@ -4,11 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
-import { Button } from '../shared/ui/button';
-import { Badge } from '../shared/ui/badge';
-import { Progress } from '../shared/ui/progress';
-import { Input } from '../shared/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Button } from '../../shared/ui/button';
+import { Badge } from '../../shared/ui/badge';
+import { Progress } from '../../shared/ui/progress';
+import { Input } from '../../shared/ui/input';
 import {
   Flame,
   Trophy,

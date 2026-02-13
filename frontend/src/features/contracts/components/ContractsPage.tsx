@@ -6,7 +6,7 @@ import ContractDetail from './ContractDetail';
 import CreateContractModal from './CreateContractModal';
 import SendInviteModal from './SendInviteModal';
 import SignOnDeviceModal from './SignOnDeviceModal';
-import { ClaimItem, ContractItem, ContractsStats, CreateContractPayload } from './types';
+import { ClaimItem, ContractItem, ContractsStats, CreateContractPayload } from '../types/types';
 import {
   createContract,
   fetchClaims,
@@ -15,7 +15,7 @@ import {
   getEmbeddedSigningUrl,
   markSigned,
   sendInvite,
-} from './api';
+} from '../api/api';
 
 const ContractsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);

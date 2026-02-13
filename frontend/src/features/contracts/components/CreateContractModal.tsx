@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ClaimItem, ContractMergeFields, CreateContractPayload } from './types';
+import { ClaimItem, ContractMergeFields, CreateContractPayload } from '../types/types';
 import SelectClaimModal from './SelectClaimModal';
-import { fetchClaimPrefill, toMergeFields } from './api';
+import { fetchClaimPrefill, toMergeFields } from '../api/api';
 
 const DEFAULT_FIELDS: ContractMergeFields = {
   client_name: '',

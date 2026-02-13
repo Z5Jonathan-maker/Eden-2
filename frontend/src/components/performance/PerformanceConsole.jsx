@@ -8,9 +8,9 @@
  * Enzy-style ops dashboard for admins/managers.
  */
 import React, { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
-import { Badge } from '../shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { 
   MapPin, Trophy, Settings, Users, Target, 
   Gift, Calendar, BarChart3, Zap, Brain, AlertTriangle, Loader2, Download

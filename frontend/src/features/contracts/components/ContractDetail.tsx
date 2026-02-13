@@ -1,7 +1,7 @@
 import React from 'react';
 import { Download, Mail, MessageSquare, PenSquare, RefreshCcw } from 'lucide-react';
 import StatusChip from './StatusChip';
-import { ContractItem } from './types';
+import { ContractItem } from '../types/types';
 
 interface Props {
   contract: ContractItem | null;

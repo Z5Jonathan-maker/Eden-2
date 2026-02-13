@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
-import { Badge } from '../shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { FileWarning, Shield } from 'lucide-react';
 
 export const ReportsTab = ({ breakReports }) => {

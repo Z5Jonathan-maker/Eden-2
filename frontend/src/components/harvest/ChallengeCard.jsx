@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, Clock, Gift, Lock, Target } from 'lucide-react';
-import { Button } from '../shared/ui/button';
-import { Progress } from '../shared/ui/progress';
+import { Button } from '../../shared/ui/button';
+import { Progress } from '../../shared/ui/progress';
 import RankBadge from './RankBadge';
 import './HarvestAnimations.css';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ContractStatus } from './types';
+import { ContractStatus } from '../types/types';
 
 interface Props {
   status: ContractStatus;

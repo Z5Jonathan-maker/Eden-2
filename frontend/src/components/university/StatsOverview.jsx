@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent } from '../shared/ui/card';
+import { Card, CardContent } from '../../shared/ui/card';
 import { GraduationCap, BookOpen, Award, TrendingUp } from 'lucide-react';
 
 export const StatsOverview = ({ stats, certificates }) => {
