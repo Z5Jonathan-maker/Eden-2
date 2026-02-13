@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: false, // Disabled - light mode only
+  darkMode: 'media', // Respects system preference
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
     "./public/index.html"

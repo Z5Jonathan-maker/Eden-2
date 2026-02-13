@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google Fonts - Eden Tactical Ops Design System */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
 /* ============================================
    GLOBAL DARK TACTICAL THEME ENFORCEMENT
    Overrides ALL light-gray/white Tailwind classes
@@ -95,9 +98,6 @@
   .hover\:bg-red-50:hover     { background-color: hsl(0 84% 60% / 0.15) !important; }
   .hover\:bg-purple-50:hover  { background-color: hsl(271 81% 56% / 0.15) !important; }
 }
-
-/* Google Fonts - Eden Tactical Ops Design System */
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
 
 /* ============================================
    EDEN TACTICAL OPS - GAMING UI SYSTEM
