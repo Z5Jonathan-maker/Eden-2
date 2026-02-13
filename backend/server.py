@@ -51,7 +51,7 @@ from routes.regrid import router as regrid_router
 from routes.knowledge_base import router as knowledge_base_router
 from routes.florida_statutes import router as florida_statutes_router
 from routes.client_status import router as client_status_router
-from routes.harvest_v2 import router as harvest_v2_router
+from routes.harvest import router as harvest_v2_router
 from routes.harvest_territories import router as harvest_territories_router
 from routes.messaging_sms import router as messaging_sms_router
 from routes.bots import router as bots_router
