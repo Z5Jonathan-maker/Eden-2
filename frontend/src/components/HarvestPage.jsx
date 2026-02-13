@@ -37,6 +37,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { FEATURE_ICONS } from '../assets/badges';
+import { apiGet } from '@/lib/api';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -250,8 +251,6 @@ const HarvestPage = () => {
     multiplier: 1.0,
   });
 
-  const token = localStorage.getItem('eden_token');
-
   // Filter options for pins
   const filterOptions = [
     { code: 'NH', label: 'Not Home', color: '#F59E0B' },
@@ -280,36 +279,27 @@ const HarvestPage = () => {
   const fetchLeaderboard = useCallback(async () => {
     setLoadingLeaderboard(true);
     try {
-      const res = await fetch(
-        `${API_URL}/api/canvassing-map/leaderboard?period=${leaderboardPeriod}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await apiGet(`/api/canvassing-map/leaderboard?period=${leaderboardPeriod}`);
       if (res.ok) {
-        const data = await res.json();
-        setLeaderboard(data.leaderboard || data || []);
+        setLeaderboard(res.data.leaderboard || res.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);
     } finally {
       setLoadingLeaderboard(false);
     }
-  }, [leaderboardPeriod, token]);
+  }, [leaderboardPeriod]);
 
   const fetchMyStats = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/canvassing-map/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet('/api/canvassing-map/stats');
       if (res.ok) {
-        const data = await res.json();
-        setMyStats(data);
+        setMyStats(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
-  }, [token]);
+  }, []);
 
   // Load data based on active tab
   useEffect(() => {
