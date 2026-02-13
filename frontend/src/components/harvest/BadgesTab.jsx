@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Badge } from '../ui/badge';
+import { Badge } from '../shared/ui/badge';
 import { Award } from 'lucide-react';
 
 const DEFAULT_BADGES = [

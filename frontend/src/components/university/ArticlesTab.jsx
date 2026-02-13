@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
+import { Card, CardContent } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import { Input } from '../shared/ui/input';
 import { Search, FileText, Clock } from 'lucide-react';
 
 const ArticleCardItem = ({ article, onClick }) => {

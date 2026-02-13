@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Progress } from './ui/progress';
-import { ScrollArea } from './ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Badge } from '../shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
+import { Progress } from '../shared/ui/progress';
+import { ScrollArea } from '../shared/ui/scroll-area';
 import { 
   Scale, Upload, FileText, AlertTriangle, CheckCircle, 
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Sparkles,

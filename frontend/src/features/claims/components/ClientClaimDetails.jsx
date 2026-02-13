@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import ApiService from '../services/ApiService';
+import { useAuth } from '../../../context/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
+import { Button } from '../../../shared/ui/button';
+import { Badge } from '../../../shared/ui/badge';
+import ApiService from '../../../services/ApiService';
 import {
   ArrowLeft,
   User,

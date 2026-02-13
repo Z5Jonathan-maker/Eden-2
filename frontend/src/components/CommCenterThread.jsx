@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Phone, MessageSquare, ArrowLeft, Info, PhoneCall } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet } from '../lib/api';
-import ClaimCommsPanel from './ClaimCommsPanel';
+import ClaimCommsPanel from '../features/claims/components/ClaimCommsPanel';
 import CommCenterDialer from './CommCenterDialer';
 
 const CommCenterThread = () => {

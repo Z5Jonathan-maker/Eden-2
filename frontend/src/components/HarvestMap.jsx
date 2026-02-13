@@ -17,8 +17,8 @@ import {
 import L from 'leaflet';
 import { useGpsWatch } from '../hooks/useGpsWatch';
 import { useHarvestPins, DEFAULT_PIN_STATUSES } from '../hooks/useHarvestPins';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import {
   MapPin,

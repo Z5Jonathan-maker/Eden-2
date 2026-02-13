@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { 
   CheckCircle, XCircle, Loader2, Database, RefreshCw, 
   ExternalLink, AlertCircle, FolderPlus, FileText

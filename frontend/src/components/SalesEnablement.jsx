@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
+import { Button } from '../shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import { Progress } from '../shared/ui/progress';
 import { 
   DoorOpen, ChevronRight, ChevronLeft, Check, MessageSquare, AlertCircle,
   FileText, Calendar, ClipboardCheck, Users, Shield, Target, Sparkles,

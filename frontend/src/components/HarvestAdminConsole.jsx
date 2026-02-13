@@ -9,11 +9,11 @@
  * - Redemption requests (approve/deny/fulfill)
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Progress } from './ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Progress } from '../shared/ui/progress';
 import {
   RefreshCw,
   Trophy,

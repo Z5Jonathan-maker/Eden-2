@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
+import { Badge } from '../shared/ui/badge';
+import { Progress } from '../shared/ui/progress';
 import { Clock, CheckCircle, ChevronRight, PlayCircle, BookOpen, Target } from 'lucide-react';
 
 export const CourseCard = ({ course, onClick }) => {

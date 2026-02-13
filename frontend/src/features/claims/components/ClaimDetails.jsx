@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import ApiService from '../services/ApiService';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
+import { Button } from '../../../shared/ui/button';
+import { Badge } from '../../../shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../shared/ui/dialog';
+import ApiService from '../../../services/ApiService';
 import {
   ArrowLeft,
   Edit,
@@ -34,13 +34,13 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import ClaimCommsPanel from './ClaimCommsPanel';
-import { Textarea } from './ui/textarea';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
+import { Textarea } from '../../../shared/ui/textarea';
+import { Input } from '../../../shared/ui/input';
+import { Label } from '../../../shared/ui/label';
 import { toast } from 'sonner';
-import { useGamma, GAMMA_AUDIENCES } from '../hooks/useGamma';
+import { useGamma, GAMMA_AUDIENCES } from '../../../hooks/useGamma';
 import ClientStatusPanel from './ClientStatusPanel';
-import { FEATURE_ICONS } from '../assets/badges';
+import { FEATURE_ICONS } from '../../../assets/badges';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 

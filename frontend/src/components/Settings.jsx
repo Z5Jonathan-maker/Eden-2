@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Switch } from './ui/switch';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Label } from '../shared/ui/label';
+import { Switch } from '../shared/ui/switch';
 import { useAuth } from '../context/AuthContext';
 import ProfileCard from './settings/ProfileCard';
 import IntegrationCard from './settings/IntegrationCard';

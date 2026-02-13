@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Badge } from '../shared/ui/badge';
 import { 
   FileText, Plus, DollarSign, Clock, CheckCircle, XCircle, 
   AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp, Sparkles, Loader2

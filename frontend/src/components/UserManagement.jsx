@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Badge } from '../shared/ui/badge';
 import { 
   Users, UserPlus, Shield, ShieldCheck, ShieldAlert, 
   Edit, Trash2, Check, X, RefreshCw

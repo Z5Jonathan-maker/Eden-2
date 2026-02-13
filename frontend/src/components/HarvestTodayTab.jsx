@@ -13,10 +13,10 @@
  * - Next Reward progress bar
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import { Button } from '../shared/ui/button';
+import { Progress } from '../shared/ui/progress';
 import {
   Flame,
   RefreshCw,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '../../../shared/ui/button';
+import { Badge } from '../../../shared/ui/badge';
 import {
   Zap,
   Send,
@@ -19,7 +19,7 @@ import {
   File,
   Loader2,
 } from 'lucide-react';
-import { FEATURE_ICONS, PAGE_ICONS } from '../assets/badges';
+import { FEATURE_ICONS, PAGE_ICONS } from '../../../assets/badges';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;

@@ -10,11 +10,11 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Card, CardContent } from './ui/card';
-import { Input } from './ui/input';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
+import { Card, CardContent } from '../shared/ui/card';
+import { Input } from '../shared/ui/input';
 import { toast } from 'sonner';
 import {
   Map,

@@ -12,9 +12,9 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { NAV_ICONS } from '../assets/badges';
+import { NAV_ICONS } from '../../../assets/badges';
 import ClaimSelector from './documents/ClaimSelector';
-import ApiService from '../services/ApiService';
+import ApiService from '../../../services/ApiService';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const getToken = () => localStorage.getItem('eden_token');

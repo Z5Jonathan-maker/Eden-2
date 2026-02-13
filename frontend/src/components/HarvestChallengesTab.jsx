@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
+import { Badge } from '../shared/ui/badge';
+import { Button } from '../shared/ui/button';
+import { Progress } from '../shared/ui/progress';
 import {
   RefreshCw,
   Target,

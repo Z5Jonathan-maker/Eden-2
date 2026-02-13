@@ -11,10 +11,10 @@
  * - Auto-scroll to latest message
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
+import { Button } from '../../../shared/ui/button';
+import { Textarea } from '../../../shared/ui/textarea';
+import { Badge } from '../../../shared/ui/badge';
 import {
   Send,
   MessageSquare,
@@ -28,7 +28,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ApiService from '../services/ApiService';
+import ApiService from '../../../services/ApiService';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const COMMS_PREFS_KEY = 'eden_comms_followup_prefs';

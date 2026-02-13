@@ -11,15 +11,15 @@
  * - Fully configurable - NO HARD-CODED values
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Progress } from './ui/progress';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Textarea } from './ui/textarea';
-import { Switch } from './ui/switch';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
+import { Progress } from '../shared/ui/progress';
+import { Input } from '../shared/ui/input';
+import { Label } from '../shared/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
+import { Textarea } from '../shared/ui/textarea';
+import { Switch } from '../shared/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+} from '../shared/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../shared/ui/select';
 import {
   Trophy,
   Target,

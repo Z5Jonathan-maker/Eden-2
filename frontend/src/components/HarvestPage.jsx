@@ -16,8 +16,8 @@ import HarvestMap from './HarvestMap';
 import HarvestTodayTab from './HarvestTodayTab';
 import HarvestProfileTab from './HarvestProfileTab';
 import HarvestChallengesTab from './HarvestChallengesTab';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
+import { Badge } from '../shared/ui/badge';
+import { Progress } from '../shared/ui/progress';
 import {
   Map as MapIcon,
   Trophy,

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Flame, Gauge, Target, TrendingUp, Zap } from 'lucide-react';
-import { Progress } from '../ui/progress';
+import { Progress } from '../shared/ui/progress';
 import './HarvestAnimations.css';
 
 const safePercent = (value) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);

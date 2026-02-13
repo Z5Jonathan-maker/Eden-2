@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Badge } from '../ui/badge';
+import { Badge } from '../shared/ui/badge';
 import { Database, Wifi, Zap, FileCheck, Lock, Activity } from 'lucide-react';
 
 const COMPONENT_ICONS = {

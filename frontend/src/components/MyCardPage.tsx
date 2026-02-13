@@ -18,9 +18,9 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Textarea } from '../shared/ui/textarea';
 import { PAGE_ICONS } from '../assets/badges';
 import { API_URL } from '../lib/api';
 import {

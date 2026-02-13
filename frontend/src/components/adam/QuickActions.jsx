@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Button } from '../ui/button';
+import { Button } from '../shared/ui/button';
 import { Play, RefreshCw, Eye, Radar, Target, Crosshair } from 'lucide-react';
 
 export const QuickActions = ({

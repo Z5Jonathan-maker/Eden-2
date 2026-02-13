@@ -10,8 +10,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import {
   FileText,

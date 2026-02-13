@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { PhoneCall, Loader2 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Textarea } from '../shared/ui/textarea';
 import { toast } from 'sonner';
 import { apiPost } from '../lib/api';
 

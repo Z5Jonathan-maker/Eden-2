@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from './ui/button';
+import { Button } from '../shared/ui/button';
 import ApiService from '../services/ApiService';
 import { ArrowLeft, Save, Loader2, AlertCircle, Target } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';

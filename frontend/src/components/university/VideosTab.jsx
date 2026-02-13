@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../shared/ui/card';
 import { PlayCircle, ExternalLink } from 'lucide-react';
 
 const VideoCard = ({ video }) => (

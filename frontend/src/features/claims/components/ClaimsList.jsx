@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../services/ApiService';
+import ApiService from '../../../services/ApiService';
 import {
   Search,
   Plus,
@@ -14,7 +14,7 @@ import {
   Target,
   ChevronRight,
 } from 'lucide-react';
-import { NAV_ICONS } from '../assets/badges';
+import { NAV_ICONS } from '../../../assets/badges';
 
 const ClaimsList = () => {
   const navigate = useNavigate();

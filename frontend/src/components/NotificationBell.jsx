@@ -5,7 +5,7 @@ import {
   Wifi, WifiOff, X, Flame, Trophy, MessageSquare, AlertCircle,
   ChevronRight
 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '../shared/ui/button';
 import ApiService from '../services/ApiService';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;

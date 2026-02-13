@@ -15,10 +15,10 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
-import { Textarea } from './ui/textarea';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
+import { Progress } from '../shared/ui/progress';
+import { Textarea } from '../shared/ui/textarea';
 import { toast } from 'sonner';
 import {
   Mic, MicOff, Camera, X, Check, 

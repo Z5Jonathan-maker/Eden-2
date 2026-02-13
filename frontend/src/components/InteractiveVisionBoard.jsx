@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Textarea } from './ui/textarea';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
+import { Textarea } from '../shared/ui/textarea';
 import { apiGet, apiPost, apiPut, apiDelete, API_URL } from '../lib/api';
 import { PAGE_ICONS } from '../assets/badges';
 import { 

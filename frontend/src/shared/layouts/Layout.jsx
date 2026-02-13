@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import AnimatedOutlet from './AnimatedOutlet';
+import AnimatedOutlet from '../../components/AnimatedOutlet';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Button } from './ui/button';
-import NotificationBell from './NotificationBell';
+import { Button } from '../../components/ui/button';
+import NotificationBell from '../../components/NotificationBell';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
 import { APP_LOGO, NAV_ICONS } from '../assets/badges';
 
