@@ -78,25 +78,33 @@ export async function api(endpoint, options = {}) {
   }
   
   try {
-    const res = await fetch(url, config);
-    
+    // Add 30-second timeout to prevent infinite hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const res = await fetch(url, { ...config, signal: controller.signal });
+    clearTimeout(timeoutId);
+
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       return { ok: false, error: errorData.detail || `Error ${res.status}`, status: res.status };
     }
-    
+
     // Handle empty responses
     const text = await res.text();
     const data = text ? JSON.parse(text) : null;
-    
+
     // Cache successful GET responses
     if (method === 'GET' && cacheOption !== false) {
       setCache(url, data);
     }
-    
+
     return { ok: true, data };
   } catch (err) {
     console.error('API error:', err);
+    if (err.name === 'AbortError') {
+      return { ok: false, error: 'Request timeout - backend server may be starting up (Render cold start). Please wait 30-60 seconds and try again.' };
+    }
     return { ok: false, error: err.message || 'Network error' };
   }
 }
