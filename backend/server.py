@@ -501,8 +501,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
-    # Auto-allow all Vercel preview + production deployments for this project
-    allow_origin_regex=r"https://eden2(-[a-z0-9]+)?\.vercel\.app",
+    # Auto-allow all Vercel deployments (production + preview + branch deploys)
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
     expose_headers=["X-RateLimit-Remaining", "Retry-After"],
