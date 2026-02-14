@@ -108,11 +108,14 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
   const fetchJson = async (url, options = {}, timeoutMs = 25000) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const token = getAuthToken();
+    // Only add auth headers for backend API calls, NOT external APIs
+    const apiBase = getApiUrl();
+    const isBackend = url.startsWith('/api') || (apiBase && url.startsWith(apiBase));
+    const token = isBackend ? getAuthToken() : null;
     const authHdr = token ? { Authorization: `Bearer ${token}` } : {};
     try {
       const res = await fetch(url, {
-        credentials: 'include',
+        credentials: isBackend ? 'include' : 'omit',
         ...options,
         headers: { ...authHdr, ...options.headers },
         signal: controller.signal,
