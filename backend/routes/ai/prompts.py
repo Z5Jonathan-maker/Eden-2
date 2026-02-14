@@ -4,6 +4,7 @@ AI Module - Prompts and Knowledge Base
 System prompts, firm context, and knowledge retrieval functions for Eve AI.
 """
 
+from typing import Optional, List
 from dependencies import db
 from datetime import datetime
 import logging
