@@ -112,7 +112,11 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { ...options, credentials: 'include', signal: controller.signal });
+      const res = await fetch(url, {
+        credentials: 'include',
+        ...options,
+        signal: controller.signal,
+      });
       if (!res.ok) return null;
       return await res.json();
     } catch { return null; }
@@ -135,18 +139,58 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
 
   const geocode = async () => {
     const apiUrl = getApiUrl();
+
+    // Strategy 1: Backend geocode (uses cookies for auth)
     if (apiUrl) {
-      const params = new URLSearchParams({ address: address.trim(), city: city.trim(), state: state.trim(), zip_code: zip.trim() });
-      const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
-      const coords = data?.coordinates;
-      if (coords?.latitude && coords?.longitude) return { lat: Number(coords.latitude), lng: Number(coords.longitude) };
+      try {
+        const params = new URLSearchParams({ address: address.trim(), city: city.trim(), state: state.trim(), zip_code: zip.trim() });
+        const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
+        const coords = data?.coordinates;
+        const lat = Number(coords?.latitude);
+        const lng = Number(coords?.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      } catch (err) {
+        console.warn('[PropertyImagery] Backend geocode failed:', err);
+      }
     }
-    // Census fallback
-    const query = `${address}, ${city}, ${state} ${zip}`.trim();
-    const params = new URLSearchParams({ address: query, benchmark: 'Public_AR_Current', format: 'json' });
-    const data = await fetchJson(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`, {}, 15000);
-    const match = data?.result?.addressMatches?.[0]?.coordinates;
-    if (match?.y && match?.x) return { lat: Number(match.y), lng: Number(match.x) };
+
+    // Strategy 2: Backend geocode without city (handles geocode mismatches)
+    if (apiUrl && city.trim()) {
+      try {
+        const params = new URLSearchParams({ address: address.trim(), city: '', state: state.trim(), zip_code: zip.trim() });
+        const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
+        const coords = data?.coordinates;
+        const lat = Number(coords?.latitude);
+        const lng = Number(coords?.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      } catch (err) {
+        console.warn('[PropertyImagery] Backend geocode (no city) failed:', err);
+      }
+    }
+
+    // Strategy 3: Census geocoder (direct browser call, no auth needed)
+    const queries = [
+      `${address}, ${city}, ${state} ${zip}`.trim(),
+      `${address}, ${state} ${zip}`.trim(),
+    ].filter(Boolean);
+
+    for (const query of queries) {
+      try {
+        const params = new URLSearchParams({ address: query, benchmark: 'Public_AR_Current', format: 'json' });
+        const data = await fetchJson(
+          `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`,
+          { credentials: 'omit' }, // Census API doesn't need credentials
+          15000,
+        );
+        const match = data?.result?.addressMatches?.[0]?.coordinates;
+        const lat = Number(match?.y);
+        const lng = Number(match?.x);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      } catch (err) {
+        console.warn('[PropertyImagery] Census geocode failed:', err);
+      }
+    }
+
     return null;
   };
 
