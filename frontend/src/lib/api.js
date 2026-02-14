@@ -6,16 +6,22 @@
  * - Base URL from env
  */
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
+const API_URL =
+  import.meta.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+  '';
 
 // Fail-fast helper (used by login + critical calls)
 export const assertApiUrl = () => {
-  if (!API_URL) {
+  // Re-check at call time in case eden-config.js loaded after module init
+  const url = API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
+  if (!url) {
     throw new Error(
-      "Missing API base URL. Set REACT_APP_BACKEND_URL (preferred) or REACT_APP_API_URL to your backend, then rebuild/redeploy."
+      "Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js"
     );
   }
-  return API_URL;
+  return url;
 };
 
 const defaultHeaders = () => ({
