@@ -30,7 +30,16 @@ EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 
 
 from .models import ChatMessage, ChatRequest, ChatResponse
-from .prompts import EVE_SYSTEM_PROMPT, FIRM_CONTEXT, build_eve_context_with_florida_laws, get_claim_data_for_eve
+from .prompts import (
+    EVE_SYSTEM_PROMPT, FIRM_CONTEXT,
+    build_eve_context_with_florida_laws,
+    get_claim_data_for_eve,
+    get_relevant_expert_insights,
+    get_florida_statute_context,
+    fetch_claim_context,
+    format_claim_context_for_prompt,
+    extract_claim_reference
+)
 
 router = APIRouter()
 

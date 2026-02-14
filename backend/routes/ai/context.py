@@ -28,6 +28,7 @@ from services.ai_routing_policy import (
 # Get the Emergent LLM key
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 
+from .prompts import fetch_claim_context
 
 router = APIRouter()
 

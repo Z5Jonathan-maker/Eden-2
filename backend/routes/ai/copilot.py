@@ -34,7 +34,11 @@ from .models import (
     CommsCopilotRequest, CommsCopilotResponse,
     TeamCommsCopilotRequest, TeamCommsCopilotResponse
 )
-from .prompts import FIRM_CONTEXT
+from .prompts import (
+    FIRM_CONTEXT,
+    fetch_claim_context,
+    format_claim_context_for_prompt
+)
 
 router = APIRouter()
 
