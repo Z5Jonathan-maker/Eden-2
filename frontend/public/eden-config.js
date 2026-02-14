@@ -12,7 +12,7 @@
  */
 (function () {
   window.__EDEN_CONFIG__ = window.__EDEN_CONFIG__ || {};
-  // Empty = same-origin (Vercel proxy). Set full URL only if no proxy.
-  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "";
+  // Direct cross-origin to Render backend (Vercel proxy not reliable)
+  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "https://eden-gsot.onrender.com";
 })();
 
