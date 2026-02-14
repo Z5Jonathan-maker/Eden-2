@@ -1,29 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, useMapEvents } from 'react-leaflet';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Polygon, Polyline, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
-import { Button } from '../shared/ui/button';
-import { Badge } from '../shared/ui/badge';
-import { Input } from '../shared/ui/input';
 import { toast } from 'sonner';
 import {
-  Search,
-  Satellite,
-  Map as MapIcon,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Copy,
-  Cloud,
-  Home,
-  Shield,
-  Loader2,
-  Image as ImageIcon,
-  History,
-  Target,
-  Wind,
-  CloudRain,
+  Search, Satellite, Eye, ChevronLeft, ChevronRight,
+  Loader2, History, Ruler, Trash2, MapPin, CornerDownLeft,
 } from 'lucide-react';
 
 const API_URL =
@@ -32,1192 +13,493 @@ const API_URL =
   (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
   '';
 const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
+
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const WAYBACK_TILE_URL = (releaseId) => `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${encodeURIComponent(releaseId)}`;
-const CENSUS_GEOCODE_URL = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';
+const WAYBACK_TILE_URL = (releaseId) =>
+  `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${encodeURIComponent(releaseId)}`;
 
-const EVENT_BADGES = {
-  W: { label: 'Wind', color: 'bg-orange-500', description: 'Wind event signal' },
-  H: { label: 'Hail', color: 'bg-blue-500', description: 'Hail event signal' },
+// ── Geodesic helpers ────────────────────────────────────────────────
+const DEG_TO_RAD = Math.PI / 180;
+const EARTH_RADIUS_FT = 20_902_231; // mean radius in feet
+
+/** Haversine distance between two lat/lng points in feet */
+const haversineFt = (a, b) => {
+  const dLat = (b[0] - a[0]) * DEG_TO_RAD;
+  const dLng = (b[1] - a[1]) * DEG_TO_RAD;
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h = sinLat * sinLat + Math.cos(a[0] * DEG_TO_RAD) * Math.cos(b[0] * DEG_TO_RAD) * sinLng * sinLng;
+  return 2 * EARTH_RADIUS_FT * Math.asin(Math.sqrt(h));
 };
 
-const confidenceBadgeClass = (confidence) => {
-  if (confidence === 'confirmed' || confidence === 'high') return 'bg-green-500/20 text-green-400 border-green-500/30';
-  if (confidence === 'medium') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-  return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+/** Approximate polygon area in sqft using flat-Earth projection (accurate at building scale) */
+const polygonAreaSqFt = (points) => {
+  if (points.length < 3) return 0;
+  const refLat = points[0][0];
+  const ftPerDegLat = 364_320; // ~111km
+  const ftPerDegLng = ftPerDegLat * Math.cos(refLat * DEG_TO_RAD);
+  // Convert to local XY in feet
+  const xy = points.map(([lat, lng]) => [
+    (lng - points[0][1]) * ftPerDegLng,
+    (lat - points[0][0]) * ftPerDegLat,
+  ]);
+  // Shoelace formula
+  let area = 0;
+  for (let i = 0; i < xy.length; i++) {
+    const j = (i + 1) % xy.length;
+    area += xy[i][0] * xy[j][1];
+    area -= xy[j][0] * xy[i][1];
+  }
+  return Math.abs(area / 2);
 };
 
+/** Perimeter in feet */
+const perimeterFt = (points) => {
+  if (points.length < 2) return 0;
+  let total = 0;
+  for (let i = 0; i < points.length; i++) {
+    total += haversineFt(points[i], points[(i + 1) % points.length]);
+  }
+  return total;
+};
+
+// ── Map interaction handlers ────────────────────────────────────────
 const MapClickHandler = ({ onSelect }) => {
-  useMapEvents({
-    click(event) {
-      if (typeof onSelect === 'function') {
-        onSelect(event.latlng);
-      }
-    },
-  });
+  useMapEvents({ click(e) { if (typeof onSelect === 'function') onSelect(e.latlng); } });
   return null;
 };
 
+// ── Main component ──────────────────────────────────────────────────
 const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('FL');
   const [zip, setZip] = useState('');
-  const [perilMode, setPerilMode] = useState('wind');
 
   const [loading, setLoading] = useState(false);
-  const [propertyData, setPropertyData] = useState(null);
-  const [dolCandidates, setDolCandidates] = useState([]);
-  const [selectedDolCandidate, setSelectedDolCandidate] = useState(null);
-  const [weatherEvents, setWeatherEvents] = useState([]);
-  const [error, setError] = useState(null);
+  const [mapCenter, setMapCenter] = useState(null);
+  const [resolvedAddress, setResolvedAddress] = useState('');
 
   const [viewMode, setViewMode] = useState('satellite');
   const [selectedImageDate, setSelectedImageDate] = useState(0);
   const [imageryReleases, setImageryReleases] = useState([]);
-  const [mapCenter, setMapCenter] = useState(null);
-  const [pinWasAdjusted, setPinWasAdjusted] = useState(false);
 
-  const selectedRelease = useMemo(() => imageryReleases[selectedImageDate] || null, [imageryReleases, selectedImageDate]);
+  // Measurement state
+  const [measureMode, setMeasureMode] = useState(false);
+  const [measurePoints, setMeasurePoints] = useState([]);
+
+  const selectedRelease = useMemo(
+    () => imageryReleases[selectedImageDate] || null,
+    [imageryReleases, selectedImageDate],
+  );
+
+  const canSubmit = Boolean(address?.trim() && state?.trim() && (city?.trim() || zip?.trim()));
 
   // Feed data up to parent for report generation
   useEffect(() => {
     if (typeof onDataChange === 'function') {
       onDataChange({
         images: imageryReleases,
-        candidates: dolCandidates,
         address: `${address} ${city} ${state} ${zip}`.trim(),
-        yearBuilt: propertyData?.year_built,
       });
     }
-  }, [imageryReleases, dolCandidates, address, city, state, zip, propertyData, onDataChange]);
+  }, [imageryReleases, address, city, state, zip, onDataChange]);
 
-  const getResponseErrorDetail = async (response, fallbackMessage) => {
+  // ── Helpers ──────────────────────────────────────────────────────
+
+  const fetchJson = async (url, options = {}, timeoutMs = 25000) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const payload = await response.json();
-      if (typeof payload?.detail === 'string' && payload.detail.trim()) return payload.detail.trim();
-      if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message.trim();
-      if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error.trim();
-      if (Array.isArray(payload?.detail) && payload.detail.length > 0) {
-        const first = payload.detail[0];
-        if (typeof first?.msg === 'string') return first.msg;
-      }
-    } catch (err) {
-      // Ignore JSON parse errors and fall back to status text.
-    }
-
-    const statusText = response.statusText ? `: ${response.statusText}` : '';
-    return `${fallbackMessage} (${response.status}${statusText})`;
-  };
-
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  const fetchJsonWithResilience = async (url, options, fallbackMessage, retries = 2, timeoutMs = 45000) => {
-    let lastError = null;
-
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-      try {
-        const response = await fetch(url, {
-          ...options,
-          credentials: 'include',
-          signal: controller.signal,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return { ok: true, data, response };
-        }
-
-        const detail = await getResponseErrorDetail(response, fallbackMessage);
-        const retryableStatus = [502, 503, 504].includes(response.status);
-        lastError = new Error(detail);
-
-        if (retryableStatus && attempt < retries) {
-          await delay(400 * (attempt + 1));
-          continue;
-        }
-
-        return { ok: false, errorMessage: detail, response };
-      } catch (fetchError) {
-        const retryableNetworkError =
-          fetchError?.name === 'AbortError' ||
-          fetchError?.message === 'Failed to fetch' ||
-          fetchError instanceof TypeError;
-
-        if (retryableNetworkError && attempt < retries) {
-          await delay(500 * (attempt + 1));
-          continue;
-        }
-
-        lastError = new Error('Network issue reaching weather services. Please try again in a moment.');
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    return {
-      ok: false,
-      errorMessage: (lastError && lastError.message) || fallbackMessage,
-      response: null,
-    };
-  };
-
-  const normalizeCoordinate = (value) => {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : null;
+      const res = await fetch(url, { ...options, credentials: 'include', signal: controller.signal });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+    finally { clearTimeout(timeout); }
   };
 
   const parseWaybackDate = (name) => {
-    const match = String(name || '').match(/(\d{4}-\d{2}-\d{2})/);
-    return match ? match[1] : null;
+    const m = String(name || '').match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
   };
 
-  const formatWaybackLabel = (isoDate, fallback) => {
-    if (!isoDate) return fallback || 'Unknown Date';
-    const parsed = new Date(`${isoDate}T00:00:00Z`);
-    if (Number.isNaN(parsed.getTime())) return isoDate;
-    return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formatLabel = (iso) => {
+    if (!iso) return 'Unknown';
+    const d = new Date(`${iso}T00:00:00Z`);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const geocodeAddressCoordinates = async (street, cityName, stateCode, zipCode) => {
-    // Prefer backend geocoding so we avoid browser CORS/rate-limit failures.
-    const tryBackendGeocode = async (cityOverride) => {
-      const backendParams = new URLSearchParams({
-        address: street || '',
-        city: cityOverride || '',
-        state: stateCode || '',
-        zip_code: zipCode || '',
-      });
+  // ── Geocode ──────────────────────────────────────────────────────
 
-      const backendGeoResult = await fetchJsonWithResilience(
-        `${getApiUrl()}/api/weather/stations/nearby?${backendParams.toString()}`,
-        {
-          method: 'GET',
-          headers: {},
-        },
-        'Address geocode unavailable',
-        0,
-        20000,
-      );
-
-      if (!backendGeoResult.ok) return null;
-      const backendCoordinates = backendGeoResult?.data?.coordinates || {};
-      const backendLatitude = normalizeCoordinate(backendCoordinates?.latitude);
-      const backendLongitude = normalizeCoordinate(backendCoordinates?.longitude);
-      if (backendLatitude === null || backendLongitude === null) return null;
-      return { latitude: backendLatitude, longitude: backendLongitude };
-    };
-
-    const primaryBackendCoordinates = await tryBackendGeocode(cityName);
-    if (primaryBackendCoordinates) return primaryBackendCoordinates;
-
-    if (cityName) {
-      const retryWithoutCity = await tryBackendGeocode('');
-      if (retryWithoutCity) return retryWithoutCity;
+  const geocode = async () => {
+    const apiUrl = getApiUrl();
+    if (apiUrl) {
+      const params = new URLSearchParams({ address: address.trim(), city: city.trim(), state: state.trim(), zip_code: zip.trim() });
+      const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
+      const coords = data?.coordinates;
+      if (coords?.latitude && coords?.longitude) return { lat: Number(coords.latitude), lng: Number(coords.longitude) };
     }
-
-    // Secondary fallback for direct browser mode.
-    const censusQueries = [
-      `${street}, ${cityName}, ${stateCode} ${zipCode || ''}`.trim(),
-      `${street}, ${stateCode} ${zipCode || ''}`.trim(),
-      `${street}, ${zipCode || ''}`.trim(),
-    ];
-
-    for (const query of censusQueries) {
-      if (!query) continue;
-      const censusParams = new URLSearchParams({
-        address: query,
-        benchmark: 'Public_AR_Current',
-        format: 'json',
-      });
-
-      const censusGeoResult = await fetchJsonWithResilience(
-        `${CENSUS_GEOCODE_URL}?${censusParams.toString()}`,
-        { method: 'GET' },
-        'Address geocode unavailable',
-        0,
-        15000,
-      );
-
-      if (!censusGeoResult.ok) continue;
-      const matches = censusGeoResult?.data?.result?.addressMatches || [];
-      const coords = matches[0]?.coordinates;
-      if (!coords) continue;
-      const latitude = normalizeCoordinate(coords.y);
-      const longitude = normalizeCoordinate(coords.x);
-      if (latitude !== null && longitude !== null) {
-        return { latitude, longitude };
-      }
-    }
-
+    // Census fallback
+    const query = `${address}, ${city}, ${state} ${zip}`.trim();
+    const params = new URLSearchParams({ address: query, benchmark: 'Public_AR_Current', format: 'json' });
+    const data = await fetchJson(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`, {}, 15000);
+    const match = data?.result?.addressMatches?.[0]?.coordinates;
+    if (match?.y && match?.x) return { lat: Number(match.y), lng: Number(match.x) };
     return null;
   };
 
-  const ensureWaybackReleases = async () => {
-    if (imageryReleases.length > 0) return imageryReleases;
+  // ── Load imagery releases ────────────────────────────────────────
 
-    let releaseResult = await fetchJsonWithResilience(
-      `${getApiUrl()}/api/weather/imagery/releases`,
-      {
-        method: 'GET',
-        headers: {},
-      },
-      'Historical imagery metadata unavailable',
-      1,
-      25000,
-    );
+  const loadReleases = async () => {
+    const apiUrl = getApiUrl();
+    let data = apiUrl ? await fetchJson(`${apiUrl}/api/weather/imagery/releases`, {}, 25000) : null;
+    if (!data) data = await fetchJson(WAYBACK_SELECTION_URL, {}, 20000);
+    if (!data) return [];
 
-    if (!releaseResult.ok) {
-      releaseResult = await fetchJsonWithResilience(
-        WAYBACK_SELECTION_URL,
-        { method: 'GET' },
-        'Historical imagery metadata unavailable',
-        1,
-        20000,
-      );
-      if (!releaseResult.ok) return [];
-    }
-
-    const selection = Array.isArray(releaseResult?.data?.selection)
-      ? releaseResult.data.selection
-      : Array.isArray(releaseResult?.data?.Selection)
-        ? releaseResult.data.Selection
-        : [];
-    const parsedReleases = selection
+    const selection = Array.isArray(data.selection) ? data.selection : Array.isArray(data.Selection) ? data.Selection : [];
+    return selection
       .map((item) => {
         const date = parseWaybackDate(item?.Name);
-        return {
-          id: item?.ID,
-          date,
-          label: formatWaybackLabel(date, item?.Name),
-        };
+        return { id: item?.ID, date, label: formatLabel(date) };
       })
-      .filter((item) => item.id && item.date)
+      .filter((r) => r.id && r.date)
       .slice(0, 60);
-
-    setImageryReleases(parsedReleases);
-    return parsedReleases;
   };
 
-  const findClosestReleaseIndex = (releases, referenceDate) => {
-    if (!referenceDate || releases.length === 0) return 0;
+  // ── Main search action ───────────────────────────────────────────
 
-    const referenceMs = new Date(`${referenceDate}T00:00:00Z`).getTime();
-    if (Number.isNaN(referenceMs)) return 0;
-
-    let bestIndex = 0;
-    let bestDiff = Number.MAX_SAFE_INTEGER;
-    releases.forEach((release, index) => {
-      const releaseMs = new Date(`${release.date}T00:00:00Z`).getTime();
-      if (!Number.isNaN(releaseMs)) {
-        const diff = Math.abs(releaseMs - referenceMs);
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          bestIndex = index;
-        }
-      }
-    });
-
-    return bestIndex;
-  };
-
-  const processWeatherEvents = (candidates, peril) => {
-    return (candidates || [])
-      .map((candidate) => ({
-        date: candidate.candidate_date,
-        signalValue: peril === 'wind' ? (candidate.peak_wind_mph || 0) : (candidate.max_hail_inches || 0),
-        signalUnit: peril === 'wind' ? 'mph' : 'in',
-        evidence: peril === 'wind'
-          ? `${candidate.station_count || 0} station(s), weighted ${candidate.weighted_support_score || 0}`
-          : `${candidate.report_count || 0} report(s), nearest ${candidate.min_distance_miles || 'n/a'} mi`,
-        confidence: candidate.confidence || 'low',
-        eventTypes: [peril === 'wind' ? 'W' : 'H'],
-      }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  };
-
-  const fetchPropertyIntelligence = async () => {
-    if (!address || !state || (!city && !zip)) {
-      toast.error('Please provide street, state, and either city or ZIP');
-      return;
-    }
-
-    const apiUrl = getApiUrl();
-    if (!apiUrl) {
-      toast.error('Backend URL is not configured');
-      return;
-    }
+  const searchImagery = async () => {
+    if (!canSubmit) { toast.error('Enter address, state, and city or ZIP'); return; }
 
     setLoading(true);
-    setError(null);
+    setMapCenter(null);
+    setMeasurePoints([]);
+    setMeasureMode(false);
 
     try {
-      const endDate = new Date().toISOString().split('T')[0];
-      const makeStartDate = (daysBack) => new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const coords = await geocode();
+      if (!coords) { toast.error('Could not geocode address'); return; }
 
-      const baseAddressPayload = {
-        address: address.trim(),
-        city: city.trim(),
-        state: state.trim().toUpperCase(),
-        zip_code: zip.trim(),
-        end_date: endDate,
-        event_type: perilMode,
-      };
+      setMapCenter(coords);
+      setResolvedAddress(`${address}, ${city}, ${state} ${zip}`.trim());
 
-      const candidateStages = [
-        // Keep first-pass windows short to avoid backend overload from multi-year pulls.
-        { label: 'standard', daysBack: 365, top_n: 10, max_distance_miles: 25, min_wind_mph: 30 },
-        { label: 'stability', daysBack: 180, top_n: 10, max_distance_miles: 35, min_wind_mph: perilMode === 'wind' ? 24 : 30 },
-        { label: 'fast-fallback', daysBack: 90, top_n: 8, max_distance_miles: 40, min_wind_mph: perilMode === 'wind' ? 20 : 30 },
-        { label: 'expanded', daysBack: 730, top_n: 12, max_distance_miles: 50, min_wind_mph: perilMode === 'wind' ? 24 : 30 },
-      ];
+      const releases = await loadReleases();
+      setImageryReleases(releases);
 
-      const runCandidateStage = async (stageConfig, allowCityFallback = true) => {
-        const payload = {
-          ...baseAddressPayload,
-          start_date: makeStartDate(stageConfig.daysBack),
-          top_n: stageConfig.top_n,
-          max_distance_miles: stageConfig.max_distance_miles,
-          min_wind_mph: stageConfig.min_wind_mph,
-        };
-
-        const stageResult = await fetchJsonWithResilience(
-          `${getApiUrl()}/api/weather/dol/candidates`,
-          {
-            method: 'POST',
-            headers: {},
-            body: JSON.stringify(payload),
-          },
-          'DOL candidate discovery unavailable',
-          1,
-          55000,
-        );
-
-        if (stageResult.ok) {
-          return { ok: true, data: stageResult.data, payload, cityFallbackUsed: false };
-        }
-
-        const canRetryWithoutCity =
-          allowCityFallback &&
-          payload.city &&
-          String(stageResult.errorMessage || '').toLowerCase().includes('unable to geocode');
-        if (!canRetryWithoutCity) {
-          return { ok: false, errorMessage: stageResult.errorMessage, payload, cityFallbackUsed: false };
-        }
-
-        const retryPayload = { ...payload, city: '' };
-        const retryResult = await fetchJsonWithResilience(
-          `${getApiUrl()}/api/weather/dol/candidates`,
-          {
-            method: 'POST',
-            headers: {},
-            body: JSON.stringify(retryPayload),
-          },
-          'DOL candidate discovery unavailable',
-          0,
-          55000,
-        );
-        if (retryResult.ok) {
-          return { ok: true, data: retryResult.data, payload: retryPayload, cityFallbackUsed: true };
-        }
-        return { ok: false, errorMessage: retryResult.errorMessage || stageResult.errorMessage, payload: retryPayload, cityFallbackUsed: true };
-      };
-
-      let candidateData = null;
-      let candidates = [];
-      let candidateError = null;
-      let selectedStageLabel = null;
-
-      for (const stage of candidateStages) {
-        const stageOutcome = await runCandidateStage(stage);
-        if (!stageOutcome.ok) {
-          candidateError = stageOutcome.errorMessage || 'DOL candidate discovery unavailable';
-          console.warn(`[PropertyIntel] Candidate stage "${stage.label}" failed:`, candidateError);
-          continue;
-        }
-
-        candidateData = stageOutcome.data;
-        candidates = candidateData?.candidates || [];
-        selectedStageLabel = stage.label;
-        candidateError = null;
-        if (stageOutcome.cityFallbackUsed) {
-          toast.message('Address geocode improved by retrying without city label');
-        }
-        if (candidates.length > 0) {
-          break;
-        }
-      }
-
-      setDolCandidates(candidates);
-      setSelectedDolCandidate(candidates[0] || null);
-      if (candidates.length > 0) {
-        setWeatherEvents(processWeatherEvents(candidates, perilMode));
-      }
-
-      if (selectedStageLabel && selectedStageLabel !== 'standard') {
-        toast.message(`Using ${selectedStageLabel} search window to surface claim-grade signals`);
-      }
-
-      const selectedDate = candidates[0]?.candidate_date || endDate;
-      let verifyData = null;
-      let verifyError = null;
-      const weatherNetworkIssue = 'Network issue reaching weather services. Please try again in a moment.';
-      const cappedFallbackStartDate = (() => {
-        const end = new Date(`${endDate}T00:00:00Z`);
-        if (Number.isNaN(end.getTime())) return makeStartDate(30);
-        end.setUTCDate(end.getUTCDate() - 30);
-        return end.toISOString().split('T')[0];
-      })();
-      const verifyStartDate = candidates.length > 0
-        ? selectedDate
-        : cappedFallbackStartDate;
-      const verifyEndDate = candidates.length > 0 ? selectedDate : endDate;
-
-      // Always attempt verification, even if candidate discovery degraded.
-      const verifyResult = await fetchJsonWithResilience(
-        `${getApiUrl()}/api/weather/verify-dol`,
-        {
-          method: 'POST',
-          headers: {},
-            body: JSON.stringify({
-              address: baseAddressPayload.address,
-              city: baseAddressPayload.city,
-              state: baseAddressPayload.state,
-              zip_code: baseAddressPayload.zip_code,
-              start_date: verifyStartDate,
-              end_date: verifyEndDate,
-              event_type: perilMode,
-            }),
-          },
-        'DOL verification failed',
-        1,
-        60000,
-      );
-
-      if (verifyResult.ok) {
-        verifyData = verifyResult.data;
+      if (releases.length > 0) {
+        // Start at most recent
+        setSelectedImageDate(0);
+        setViewMode('aerial');
+        toast.success(`Loaded ${releases.length} historical imagery dates`);
       } else {
-        verifyError = verifyResult.errorMessage || 'DOL verification failed';
-        if (String(verifyError).toLowerCase().includes('unable to geocode')) {
-          const retryResult = await fetchJsonWithResilience(
-            `${getApiUrl()}/api/weather/verify-dol`,
-            {
-              method: 'POST',
-              headers: {},
-              body: JSON.stringify({
-                address: baseAddressPayload.address,
-                city: '',
-                state: baseAddressPayload.state,
-                zip_code: baseAddressPayload.zip_code,
-                start_date: verifyStartDate,
-                end_date: verifyEndDate,
-                event_type: perilMode,
-              }),
-            },
-            'DOL verification failed',
-            0,
-            60000,
-          );
-
-          if (retryResult.ok) {
-            verifyData = retryResult.data;
-            verifyError = null;
-          } else {
-            verifyError = retryResult.errorMessage || verifyError;
-          }
-        }
-      }
-
-      if (!verifyData && !candidates.length) {
-        const fallbackCoordinates = await geocodeAddressCoordinates(
-          baseAddressPayload.address,
-          baseAddressPayload.city,
-          baseAddressPayload.state,
-          baseAddressPayload.zip_code,
-        );
-        const fallbackLat = normalizeCoordinate(fallbackCoordinates?.latitude);
-        const fallbackLng = normalizeCoordinate(fallbackCoordinates?.longitude);
-        if (fallbackLat !== null && fallbackLng !== null) {
-          setMapCenter({ latitude: fallbackLat, longitude: fallbackLng });
-        } else {
-          setMapCenter(null);
-        }
-
-        setPropertyData({
-          address: [address, city, `${state} ${zip}`.trim()].filter(Boolean).join(', '),
-          coordinates: fallbackLat !== null && fallbackLng !== null ? { latitude: fallbackLat, longitude: fallbackLng } : null,
-          verifiedDol: null,
-          confidence: 'unverified',
-          summary: 'Weather services are temporarily unavailable. Imagery mode is active; retry DOL discovery shortly.',
-          lastUpdated: new Date().toISOString(),
-        });
-        toast.warning(verifyError || candidateError || 'Weather services unavailable. Showing imagery mode only.');
-        return;
-      }
-
-      if (!candidates.length && verifyData?.verified_dol) {
-        const topSource = (verifyData.primary_sources || []).reduce((best, src) => {
-          const current = src?.max_wind_mph || 0;
-          const top = best?.max_wind_mph || 0;
-          return current > top ? src : best;
-        }, null);
-
-        const fallbackCandidate = {
-          candidate_date: verifyData.verified_dol,
-          confidence: verifyData.confidence || 'medium',
-          peak_wind_mph: topSource?.max_wind_mph || 0,
-          station_count: (verifyData.primary_sources || []).length || 1,
-          weighted_support_score: (verifyData.primary_sources || []).length || 1,
-        };
-
-        const derivedCandidates = [fallbackCandidate];
-        setDolCandidates(derivedCandidates);
-        setSelectedDolCandidate(fallbackCandidate);
-        setWeatherEvents(processWeatherEvents(derivedCandidates, perilMode));
-      }
-
-      let resolvedCoordinates = verifyData?.location || candidateData?.location || null;
-      let lat = normalizeCoordinate(resolvedCoordinates?.latitude);
-      let lng = normalizeCoordinate(resolvedCoordinates?.longitude);
-
-      if (lat === null || lng === null) {
-        const geocodedCoordinates = await geocodeAddressCoordinates(
-          baseAddressPayload.address,
-          baseAddressPayload.city,
-          baseAddressPayload.state,
-          baseAddressPayload.zip_code,
-        );
-        lat = normalizeCoordinate(geocodedCoordinates?.latitude);
-        lng = normalizeCoordinate(geocodedCoordinates?.longitude);
-        if (lat !== null && lng !== null) {
-          resolvedCoordinates = { latitude: lat, longitude: lng };
-        }
-      }
-
-      if (lat !== null && lng !== null) {
-        setMapCenter({ latitude: lat, longitude: lng });
-        setPinWasAdjusted(false);
-      } else {
-        setMapCenter(null);
-        setPinWasAdjusted(false);
-      }
-
-      const waybackReleases = await ensureWaybackReleases();
-      if (waybackReleases.length > 0) {
-        const releaseReferenceDate = verifyData?.verified_dol || candidates[0]?.candidate_date || endDate;
-        setSelectedImageDate(findClosestReleaseIndex(waybackReleases, releaseReferenceDate));
-      }
-
-      setPropertyData({
-        address: [address, city, `${state} ${zip}`.trim()].filter(Boolean).join(', '),
-        matchedAddress: resolvedCoordinates?.matched_address || null,
-        geocoder: resolvedCoordinates?.geocoder || null,
-        precision: resolvedCoordinates?.precision || null,
-        coordinates: resolvedCoordinates,
-        verifiedDol: verifyData?.verified_dol || candidates[0]?.candidate_date || null,
-        confidence: verifyData?.confidence || candidates[0]?.confidence || 'unverified',
-        summary:
-          verifyData?.event_summary ||
-          candidates[0]?.event_summary ||
-          (candidateError === weatherNetworkIssue
-            ? 'Weather providers are temporarily unreachable. Property imagery is still available.'
-            : null),
-        lastUpdated: new Date().toISOString(),
-      });
-
-      if (candidateError || verifyError) {
-        const partialMessage =
-          candidateError === weatherNetworkIssue || verifyError === weatherNetworkIssue
-            ? 'Weather services temporarily unreachable. Loaded imagery-only mode.'
-            : (candidateError || verifyError || 'Loaded with partial data');
-        toast.warning(partialMessage);
-      } else {
-        toast.success('Property intel loaded with DOL candidates');
+        toast.info('Showing current satellite — historical timeline unavailable');
       }
     } catch (err) {
       console.error(err);
-      const errorMessage = err?.message || 'Failed to fetch property intelligence';
-      setError(errorMessage);
-      setPropertyData(null);
-      setDolCandidates([]);
-      setSelectedDolCandidate(null);
-      setWeatherEvents([]);
-      toast.error(errorMessage);
+      toast.error('Failed to load imagery');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return dateStr || 'N/A';
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-  };
+  // ── Measurement handlers ─────────────────────────────────────────
 
-  const generateReportText = () => {
-    if (!propertyData) return '';
-
-    let report = 'PROPERTY INTEL + DOL DISCOVERY REPORT\n';
-    report += 'Generated by Eden Claims Platform\n';
-    report += '================================\n\n';
-    report += `Property: ${propertyData.address}\n`;
-    if (propertyData.matchedAddress && propertyData.matchedAddress !== propertyData.address) {
-      report += `Geocoded Address: ${propertyData.matchedAddress}\n`;
-    }
-    report += `Report Date: ${new Date().toLocaleDateString()}\n`;
-    report += `Peril Mode: ${perilMode.toUpperCase()}\n`;
-    report += `Selected DOL: ${propertyData.verifiedDol ? formatDate(propertyData.verifiedDol) : 'N/A'}\n`;
-    report += `Confidence: ${(propertyData.confidence || 'unverified').toUpperCase()}\n`;
-    if (propertyData.coordinates) {
-      report += `Coordinates: ${propertyData.coordinates.latitude?.toFixed(6)}, ${propertyData.coordinates.longitude?.toFixed(6)}\n`;
-      report += `Geocoder: ${propertyData.geocoder || 'N/A'}\n`;
-      report += `Precision: ${propertyData.precision || 'N/A'}\n`;
-    }
-    report += '\n';
-
-    report += 'CANDIDATE DATES\n';
-    report += '----------------\n';
-
-    if (dolCandidates.length === 0) {
-      report += 'No candidates found in analysis window.\n';
+  const handleMapClick = useCallback((latlng) => {
+    if (measureMode) {
+      setMeasurePoints((prev) => [...prev, [latlng.lat, latlng.lng]]);
     } else {
-      dolCandidates.slice(0, 10).forEach((candidate, idx) => {
-        report += `${idx + 1}. ${formatDate(candidate.candidate_date)} | ${String(candidate.confidence || 'low').toUpperCase()}\n`;
-        if (perilMode === 'wind') {
-          report += `   Peak Wind: ${candidate.peak_wind_mph || 0} mph\n`;
-          report += `   Stations: ${candidate.station_count || 0}\n`;
-          report += `   Weighted Support: ${candidate.weighted_support_score || 0}\n`;
-        } else {
-          report += `   Max Hail: ${candidate.max_hail_inches || 0} in\n`;
-          report += `   Reports: ${candidate.report_count || 0}\n`;
-          report += `   Nearest Report: ${candidate.min_distance_miles || 'N/A'} mi\n`;
-        }
-      });
+      setMapCenter({ lat: latlng.lat, lng: latlng.lng });
+      toast.success('Pin moved');
     }
+  }, [measureMode]);
 
-    if (propertyData.summary) {
-      report += `\nSUMMARY\n`;
-      report += '--------\n';
-      report += `${propertyData.summary}\n`;
-    }
+  const undoLastPoint = () => setMeasurePoints((prev) => prev.slice(0, -1));
+  const clearMeasurement = () => setMeasurePoints([]);
 
-    report += '\nDATA SOURCES\n';
-    report += '-------------\n';
-    report += 'NWS (National Weather Service)\n';
-    report += 'NOAA (National Oceanic and Atmospheric Administration)\n';
-    report += 'METAR/ASOS (Airport Weather Stations)\n';
-    report += 'IEM LSR (Iowa Environmental Mesonet Local Storm Reports)\n';
-    report += 'ESRI Wayback Satellite Imagery\n';
-    report += '\nThis report is carrier-defensible and source-cited.\n';
-    report += 'Generated via Eden Claims Platform - Property Intelligence Module\n';
+  const area = useMemo(() => polygonAreaSqFt(measurePoints), [measurePoints]);
+  const perimeter = useMemo(() => perimeterFt(measurePoints), [measurePoints]);
 
-    return report;
-  };
-
-  const copyReport = () => {
-    const report = generateReportText();
-    if (!report) return;
-    navigator.clipboard.writeText(report);
-    toast.success('Report copied to clipboard');
-  };
-
-  const downloadReport = () => {
-    const report = generateReportText();
-    if (!report) return;
-
-    const propertyAddress = propertyData?.address?.replace(/[^a-z0-9]/gi, '_') || 'property';
-    const dateStr = new Date().toISOString().split('T')[0];
-    const filename = `Property_Intel_${propertyAddress}_${dateStr}.txt`;
-
-    const blob = new Blob([report], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    toast.success('Report downloaded');
-  };
+  // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <div className={`${embedded ? '' : 'min-h-screen'} bg-gray-50 text-gray-900`}>
-      {!embedded && (
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <Satellite className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Property Intelligence</h1>
-                <p className="text-gray-600 text-sm">Historical imagery first, integrated DOL discovery built in</p>
-              </div>
-            </div>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              <Shield className="w-3 h-3 mr-1" />
-              Carrier-Defensible
-            </Badge>
+    <div className="px-4 sm:px-6 py-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-tactical font-bold text-white tracking-wide">PROPERTY IMAGERY</h2>
+          <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+            Historical aerial footage &amp; roof measurement
+          </p>
+        </div>
+        <span className="px-2.5 py-1 rounded text-[10px] font-mono uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1">
+          <Satellite className="w-3 h-3" /> ESRI Wayback
+        </span>
+      </div>
+
+      {/* Address Form */}
+      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-4 sm:p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="lg:col-span-2">
+            <label className="text-[11px] font-mono text-zinc-500 uppercase">Address</label>
+            <input value={address} onChange={(e) => setAddress(e.target.value)}
+              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              placeholder="123 Main St" />
           </div>
+          <div>
+            <label className="text-[11px] font-mono text-zinc-500 uppercase">City</label>
+            <input value={city} onChange={(e) => setCity(e.target.value)}
+              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              placeholder="Tampa" />
+          </div>
+          <div>
+            <label className="text-[11px] font-mono text-zinc-500 uppercase">State</label>
+            <input value={state} onChange={(e) => setState(e.target.value.toUpperCase())}
+              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              placeholder="FL" maxLength={2} />
+          </div>
+          <div>
+            <label className="text-[11px] font-mono text-zinc-500 uppercase">ZIP</label>
+            <input value={zip} onChange={(e) => setZip(e.target.value)}
+              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              placeholder="33534" />
+          </div>
+        </div>
+        <div className="flex justify-end mt-4">
+          <button onClick={searchImagery} disabled={loading || !canSubmit}
+            className="px-5 py-2 rounded-lg text-sm font-mono uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 transition-all flex items-center gap-2 disabled:opacity-50">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            Load Imagery
+          </button>
+        </div>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center py-10">
+          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-3" />
+          <p className="text-zinc-400 text-sm font-mono">Geocoding &amp; loading imagery releases...</p>
         </div>
       )}
 
-      <div className={`${embedded ? 'p-4' : 'p-6'}`}>
-        <Card className="bg-white border-gray-200 mb-6">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-              <div className="md:col-span-2">
-                <label className="text-xs text-gray-500 mb-1 block">Street Address</label>
-                <Input
-                  placeholder="123 Main St"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">City</label>
-                <Input
-                  placeholder="Tampa"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">State</label>
-                <Input
-                  placeholder="FL"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">ZIP</label>
-                <Input
-                  placeholder="33601"
-                  value={zip}
-                  onChange={(e) => setZip(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Peril</label>
-                <select
-                  value={perilMode}
-                  onChange={(e) => setPerilMode(e.target.value)}
-                  className="w-full h-10 rounded-md bg-gray-800 border border-gray-300 px-3 text-gray-900"
-                >
-                  <option value="wind">Wind</option>
-                  <option value="hail">Hail</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                onClick={fetchPropertyIntelligence}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 px-4"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span className="ml-2">Run Intel + DOL Discovery</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {error && (
-          <Card className="bg-red-50 border-red-200 mb-6">
-            <CardContent className="p-4 text-red-700 text-sm">{error}</CardContent>
-          </Card>
-        )}
-
-        {propertyData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ImageIcon className="w-5 h-5 text-blue-400" />
-                      Property View
-                    </CardTitle>
-                    <div className="flex bg-gray-800 rounded-lg p-1">
-                      {[
-                        { key: 'aerial', label: 'Aerial', icon: Eye },
-                        { key: 'satellite', label: 'Satellite', icon: Satellite },
-                        { key: 'street', label: 'Street', icon: MapIcon },
-                      ].map(({ key, label, icon: Icon }) => (
-                        <button
-                          key={key}
-                          onClick={() => setViewMode(key)}
-                          className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-all ${
-                            viewMode === key
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          <Icon className="w-3 h-3" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative h-64 bg-gray-800 rounded-lg overflow-hidden">
-                    {viewMode === 'street' ? (
-                      <iframe
-                        className="w-full h-full border-0"
-                        src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(propertyData.matchedAddress || propertyData.address)}&maptype=roadmap&zoom=19`}
-                        allowFullScreen
-                        loading="lazy"
-                      />
-                    ) : (
-                      mapCenter?.latitude !== null &&
-                      mapCenter?.latitude !== undefined &&
-                      mapCenter?.longitude !== null &&
-                      mapCenter?.longitude !== undefined ? (
-                        <MapContainer
-                          key={`${viewMode}-${selectedRelease?.id || 'current'}-${mapCenter.latitude}-${mapCenter.longitude}`}
-                          center={[mapCenter.latitude, mapCenter.longitude]}
-                          zoom={19}
-                          className="w-full h-full z-0"
-                          scrollWheelZoom={true}
-                        >
-                          <TileLayer
-                            url={
-                              viewMode === 'aerial' && selectedRelease?.id
-                                ? WAYBACK_TILE_URL(selectedRelease.id)
-                                : ESRI_WORLD_IMAGERY_TILE_URL
-                            }
-                            attribution='&copy; Esri World Imagery / Wayback'
-                            maxZoom={20}
-                          />
-                          <CircleMarker
-                            center={[mapCenter.latitude, mapCenter.longitude]}
-                            radius={8}
-                            pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.8 }}
-                          />
-                          <MapClickHandler
-                            onSelect={(latlng) => {
-                              setMapCenter({ latitude: latlng.lat, longitude: latlng.lng });
-                              setPinWasAdjusted(true);
-                              setPropertyData((prev) => ({
-                                ...prev,
-                                coordinates: {
-                                  ...(prev?.coordinates || {}),
-                                  latitude: latlng.lat,
-                                  longitude: latlng.lng,
-                                  precision: 'manual',
-                                  geocoder: 'manual',
-                                },
-                              }));
-                              toast.success('Pin updated to selected roof point');
-                            }}
-                          />
-                        </MapContainer>
-                      ) : (
-                        <div className="w-full h-full relative">
-                          <iframe
-                            className="w-full h-full border-0"
-                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(propertyData.matchedAddress || propertyData.address)}&maptype=satellite&zoom=19`}
-                            allowFullScreen
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-x-3 bottom-3 rounded-md bg-black/70 px-3 py-2 text-xs text-gray-200">
-                            Precision map overlay unavailable for this address format. Showing satellite fallback.
-                          </div>
-                        </div>
-                      )
-                    )}
-                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur px-3 py-1.5 rounded-lg">
-                      <p className="text-xs text-gray-300">Captured on</p>
-                      <p className="text-sm font-medium text-white">
-                        {viewMode === 'street'
-                          ? 'Street map view'
-                          : viewMode === 'aerial'
-                            ? (selectedRelease?.label || 'Historical imagery')
-                            : 'Current imagery'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-gray-600 flex items-center gap-2">
-                        <History className="w-4 h-4" />
-                        Historical Imagery Timeline
-                      </p>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => {
-                            setSelectedImageDate(Math.max(0, selectedImageDate - 1));
-                            setViewMode('aerial');
-                          }}
-                          className="p-1 text-gray-500 hover:text-gray-900"
-                          disabled={imageryReleases.length === 0}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedImageDate(Math.min(imageryReleases.length - 1, selectedImageDate + 1));
-                            setViewMode('aerial');
-                          }}
-                          className="p-1 text-gray-500 hover:text-gray-900"
-                          disabled={imageryReleases.length === 0}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {imageryReleases.length === 0 ? (
-                      <div className="text-xs text-gray-500 py-2">
-                        Historical release timeline unavailable right now.
-                      </div>
-                    ) : (
-                      <div className="flex gap-2 overflow-x-auto pb-2">
-                        {imageryReleases.map((img, idx) => (
-                          <button
-                            key={img.id}
-                            onClick={() => {
-                              setSelectedImageDate(idx);
-                              setViewMode('aerial');
-                            }}
-                            className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                              selectedImageDate === idx
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                            }`}
-                          >
-                            {img.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {viewMode !== 'aerial' && (
-                      <p className="text-[11px] text-gray-500 mt-1">
-                        Switch to `Aerial` to browse dated imagery releases.
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-gray-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Home className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-900 font-medium">{propertyData.address}</p>
-                      {propertyData.matchedAddress && propertyData.matchedAddress !== propertyData.address && (
-                        <p className="text-xs text-amber-500 mt-1">
-                          Geocoder matched: {propertyData.matchedAddress}
-                        </p>
-                      )}
-                      <p className="text-gray-500 text-sm mt-1">
-                        Last updated: {new Date(propertyData.lastUpdated).toLocaleString()}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <Badge className={confidenceBadgeClass(propertyData.confidence)}>
-                          {(propertyData.confidence || 'unverified').toUpperCase()}
-                        </Badge>
-                        {propertyData.verifiedDol && (
-                          <Badge variant="outline" className="border-blue-300 text-blue-700">
-                            Selected DOL: {formatDate(propertyData.verifiedDol)}
-                          </Badge>
-                        )}
-                        {pinWasAdjusted && (
-                          <Badge variant="outline" className="border-emerald-300 text-emerald-700">
-                            Pin corrected manually
-                          </Badge>
-                        )}
-                        {propertyData.precision === 'postal_code' && (
-                          <Badge variant="outline" className="border-amber-300 text-amber-700">
-                            Approximate geocode
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={copyReport}
-                        className="p-2 text-gray-500 hover:text-gray-900 bg-gray-800 rounded-lg transition-colors"
-                        title="Copy Report"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={downloadReport}
-                        className="p-2 text-gray-500 hover:text-gray-900 bg-gray-800 rounded-lg transition-colors"
-                        title="Download Report"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-4">
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Target className="w-5 h-5 text-emerald-500" />
-                      DOL Discovery Candidates
-                    </CardTitle>
-                    <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
-                      {perilMode.toUpperCase()}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {dolCandidates.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                      No candidates found in this analysis window.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {dolCandidates.slice(0, 6).map((candidate, index) => {
-                        const isSelected = selectedDolCandidate?.candidate_date === candidate.candidate_date;
-                        return (
-                          <button
-                            key={`${candidate.candidate_date}-${index}`}
-                            onClick={() => {
-                              setSelectedDolCandidate(candidate);
-                              setPropertyData((prev) => ({
-                                ...prev,
-                                verifiedDol: candidate.candidate_date,
-                                confidence: candidate.confidence,
-                              }));
-                            }}
-                            className={`w-full text-left p-3 rounded-lg border transition ${
-                              isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-semibold text-gray-900">
-                                #{index + 1} {formatDate(candidate.candidate_date)}
-                              </p>
-                              <Badge className={confidenceBadgeClass(candidate.confidence)}>
-                                {String(candidate.confidence || 'low').toUpperCase()}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {perilMode === 'wind'
-                                ? `${candidate.peak_wind_mph || 0} mph peak, ${candidate.station_count || 0} station(s)`
-                                : `${candidate.max_hail_inches || 0} in hail, ${candidate.report_count || 0} report(s)`}
-                            </p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Cloud className="w-5 h-5 text-blue-400" />
-                      Signal Timeline
-                    </CardTitle>
-                    <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                      {weatherEvents.length} Signals
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-800/50 text-xs font-medium text-gray-500 border-b border-gray-200">
-                    <div className="col-span-4">Date</div>
-                    <div className="col-span-2 flex items-center gap-1">
-                      {perilMode === 'wind' ? <Wind className="w-3 h-3" /> : <CloudRain className="w-3 h-3" />} Signal
-                    </div>
-                    <div className="col-span-4">Evidence</div>
-                    <div className="col-span-2">Type</div>
-                  </div>
-
-                  <div className="max-h-[500px] overflow-y-auto">
-                    {weatherEvents.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Cloud className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-                        <p className="text-gray-500">No discovery signals found</p>
-                        <p className="text-gray-600 text-sm">Run intel for this property to populate timeline</p>
-                      </div>
-                    ) : (
-                      weatherEvents.map((event, idx) => (
-                        <div
-                          key={idx}
-                          className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b border-gray-200/50 hover:bg-gray-800/30 transition-colors"
-                        >
-                          <div className="col-span-4 text-gray-900 font-medium">{formatDate(event.date)}</div>
-                          <div className="col-span-2 text-gray-300">{event.signalValue} {event.signalUnit}</div>
-                          <div className="col-span-4 text-gray-500 text-xs">{event.evidence}</div>
-                          <div className="col-span-2 flex gap-1">
-                            {event.eventTypes.map((type) => (
-                              <span
-                                key={type}
-                                className={`${EVENT_BADGES[type]?.color} text-white text-xs font-bold px-2 py-0.5 rounded`}
-                                title={EVENT_BADGES[type]?.description}
-                              >
-                                {type}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {!propertyData && !loading && (
-          <div className="text-center py-16">
-            <Satellite className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-600 mb-2">Enter Property Address</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              Run one workflow for historical imagery + carrier-defensible DOL discovery signals.
-            </p>
-          </div>
-        )}
-
-        {propertyData && (
-          <div className="mt-6 p-4 bg-gray-900/50 rounded-lg border border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-green-500" />
-              <span className="text-sm font-medium text-gray-300">Verified Data Sources</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {['NWS', 'NOAA', 'METAR/ASOS', 'IEM LSR', 'Satellite Imagery'].map((source) => (
-                <Badge key={source} variant="outline" className="text-gray-600 border-gray-300">
-                  {source}
-                </Badge>
+      {/* Map + Results */}
+      {mapCenter && !loading && (
+        <div className="space-y-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* View toggle */}
+            <div className="flex bg-zinc-900/60 border border-zinc-800/50 rounded-lg p-0.5">
+              {[
+                { key: 'aerial', label: 'Aerial', icon: Eye },
+                { key: 'satellite', label: 'Current', icon: Satellite },
+              ].map(({ key, label, icon: Icon }) => (
+                <button key={key} onClick={() => setViewMode(key)}
+                  className={`px-3 py-1.5 rounded text-xs font-mono uppercase flex items-center gap-1.5 transition-all ${
+                    viewMode === key
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}>
+                  <Icon className="w-3 h-3" /> {label}
+                </button>
               ))}
             </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Property Intel now includes DOL candidate ranking. Use confidence + evidence before claim filing.
-            </p>
+
+            {/* Measure toggle */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setMeasureMode(!measureMode)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase flex items-center gap-1.5 transition-all border ${
+                  measureMode
+                    ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                    : 'text-zinc-500 border-zinc-700/40 hover:text-zinc-300 hover:border-zinc-600'
+                }`}>
+                <Ruler className="w-3.5 h-3.5" />
+                {measureMode ? 'Measuring' : 'Measure Roof'}
+              </button>
+              {measurePoints.length > 0 && (
+                <>
+                  <button onClick={undoLastPoint} title="Undo last point"
+                    className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 border border-zinc-700/40 hover:border-zinc-600 transition-colors">
+                    <CornerDownLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={clearMeasurement} title="Clear measurement"
+                    className="p-1.5 rounded text-zinc-500 hover:text-red-400 border border-zinc-700/40 hover:border-red-500/40 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Map */}
+          <div className="relative rounded-xl overflow-hidden border border-zinc-800/60" style={{ height: 420 }}>
+            <MapContainer
+              key={`${viewMode}-${selectedRelease?.id || 'current'}-${mapCenter.lat}-${mapCenter.lng}`}
+              center={[mapCenter.lat, mapCenter.lng]}
+              zoom={19}
+              className="w-full h-full z-0"
+              scrollWheelZoom={true}
+              style={{ background: '#18181b' }}
+            >
+              <TileLayer
+                url={
+                  viewMode === 'aerial' && selectedRelease?.id
+                    ? WAYBACK_TILE_URL(selectedRelease.id)
+                    : ESRI_WORLD_IMAGERY_TILE_URL
+                }
+                attribution='&copy; Esri World Imagery / Wayback'
+                maxZoom={20}
+              />
+              <CircleMarker
+                center={[mapCenter.lat, mapCenter.lng]}
+                radius={6}
+                pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.9, weight: 2 }}
+              />
+              {/* Measurement polygon */}
+              {measurePoints.length >= 3 && (
+                <Polygon
+                  positions={measurePoints}
+                  pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.15, weight: 2, dashArray: '6 3' }}
+                />
+              )}
+              {measurePoints.length >= 2 && measurePoints.length < 3 && (
+                <Polyline
+                  positions={measurePoints}
+                  pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 3' }}
+                />
+              )}
+              {/* Measurement vertex markers */}
+              {measurePoints.map((pt, i) => (
+                <CircleMarker
+                  key={i}
+                  center={pt}
+                  radius={4}
+                  pathOptions={{ color: '#fff', fillColor: '#f97316', fillOpacity: 1, weight: 2 }}
+                />
+              ))}
+              <MapClickHandler onSelect={handleMapClick} />
+            </MapContainer>
+
+            {/* Overlay: date badge */}
+            <div className="absolute top-3 left-3 bg-black/70 backdrop-blur px-3 py-1.5 rounded-lg z-[1000] pointer-events-none">
+              <p className="text-[10px] text-zinc-400 font-mono uppercase">Captured</p>
+              <p className="text-sm font-mono text-white">
+                {viewMode === 'aerial' ? (selectedRelease?.label || 'Historical') : 'Current imagery'}
+              </p>
+            </div>
+
+            {/* Overlay: measure mode indicator */}
+            {measureMode && (
+              <div className="absolute top-3 right-3 bg-orange-500/20 border border-orange-500/40 backdrop-blur px-3 py-1.5 rounded-lg z-[1000] pointer-events-none">
+                <p className="text-xs font-mono text-orange-300">
+                  {measurePoints.length < 3
+                    ? `Click roof corners (${measurePoints.length}/3+ pts)`
+                    : 'Click to add more points'}
+                </p>
+              </div>
+            )}
+
+            {/* Overlay: measurement results */}
+            {measurePoints.length >= 3 && (
+              <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur border border-orange-500/30 px-4 py-2.5 rounded-lg z-[1000]">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase">Area</p>
+                    <p className="text-lg font-mono font-bold text-orange-300">
+                      {area < 1000 ? `${Math.round(area)} sq ft` : `${(area / 1000).toFixed(1)}k sq ft`}
+                    </p>
+                  </div>
+                  <div className="w-px h-8 bg-zinc-700" />
+                  <div>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase">Perimeter</p>
+                    <p className="text-sm font-mono text-zinc-300">{Math.round(perimeter)} ft</p>
+                  </div>
+                  <div className="w-px h-8 bg-zinc-700" />
+                  <div>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase">Squares</p>
+                    <p className="text-sm font-mono text-zinc-300">{(area / 100).toFixed(1)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Address info */}
+          {resolvedAddress && (
+            <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+              <MapPin className="w-3 h-3" />
+              <span>{resolvedAddress}</span>
+              <span className="text-zinc-700">|</span>
+              <span>{mapCenter.lat.toFixed(6)}, {mapCenter.lng.toFixed(6)}</span>
+            </div>
+          )}
+
+          {/* Historical Timeline */}
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-mono uppercase text-zinc-300 flex items-center gap-2">
+                <History className="w-4 h-4 text-cyan-400" /> Historical Imagery Timeline
+              </h3>
+              <div className="flex gap-1">
+                <button onClick={() => { setSelectedImageDate(Math.max(0, selectedImageDate - 1)); setViewMode('aerial'); }}
+                  disabled={imageryReleases.length === 0}
+                  className="p-1 text-zinc-500 hover:text-zinc-200 disabled:opacity-30">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => { setSelectedImageDate(Math.min(imageryReleases.length - 1, selectedImageDate + 1)); setViewMode('aerial'); }}
+                  disabled={imageryReleases.length === 0}
+                  className="p-1 text-zinc-500 hover:text-zinc-200 disabled:opacity-30">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {imageryReleases.length === 0 ? (
+              <p className="text-xs text-zinc-600 py-2">Historical release timeline unavailable.</p>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                {imageryReleases.map((img, idx) => (
+                  <button key={img.id}
+                    onClick={() => { setSelectedImageDate(idx); setViewMode('aerial'); }}
+                    className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-mono transition-all border ${
+                      selectedImageDate === idx
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                        : 'text-zinc-500 border-zinc-800/40 hover:text-zinc-300 hover:border-zinc-700'
+                    }`}>
+                    {img.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {viewMode !== 'aerial' && imageryReleases.length > 0 && (
+              <p className="text-[11px] text-zinc-600 mt-1">Switch to Aerial view to browse dated imagery.</p>
+            )}
+          </div>
+
+          {/* Measure instructions */}
+          {measureMode && measurePoints.length < 3 && (
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
+              <h4 className="text-sm font-mono text-orange-300 mb-1">Roof Measurement Mode</h4>
+              <p className="text-xs text-zinc-400">
+                Click on the map to place points around the roof perimeter. Place at least 3 points to calculate area.
+                The tool will show area in sq ft and roofing squares (1 square = 100 sq ft).
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!mapCenter && !loading && (
+        <div className="text-center py-14">
+          <Satellite className="w-14 h-14 text-zinc-700 mx-auto mb-4" />
+          <h3 className="text-lg font-mono text-zinc-400 mb-2">Historical Property Imagery</h3>
+          <p className="text-zinc-600 text-sm max-w-lg mx-auto">
+            Enter an address to load ESRI Wayback satellite imagery. Browse historical aerial photos and measure roof area in square feet.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
