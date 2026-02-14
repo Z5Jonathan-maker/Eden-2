@@ -500,8 +500,9 @@ async def websocket_notifications(websocket: WebSocket, token: str = None):
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    # Strict CORS - only allow configured origins. Default to local frontend
     allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
+    # Auto-allow all Vercel preview + production deployments for this project
+    allow_origin_regex=r"https://eden2(-[a-z0-9]+)?\.vercel\.app",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
     expose_headers=["X-RateLimit-Remaining", "Retry-After"],

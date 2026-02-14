@@ -12,8 +12,7 @@
  */
 (function () {
   window.__EDEN_CONFIG__ = window.__EDEN_CONFIG__ || {};
-  // Empty string = same-origin. Vercel routes /api/* → Render backend.
-  // Only set a full URL here if deploying without a reverse proxy.
-  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "";
+  // Render backend URL. Override at deploy-time if needed.
+  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "https://eden-gsot.onrender.com";
 })();
 
