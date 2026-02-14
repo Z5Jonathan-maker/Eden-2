@@ -2,7 +2,13 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Shield, Search, Wind, CloudHail, MapPin, Loader2, ChevronDown, FileText } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL =
+  import.meta.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+  '';
+
+const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
 
 const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const [address, setAddress] = useState('');
@@ -155,11 +161,12 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
 
   const fetchParcel = async (lat, lon) => {
     if (!lat || !lon) return;
-    if (!API_URL) return;
+    const baseUrl = getApiUrl();
+    if (!baseUrl) return;
 
     setParcelLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/regrid/parcel/point?lat=${lat}&lon=${lon}`, {
+      const res = await fetch(`${baseUrl}/api/regrid/parcel/point?lat=${lat}&lon=${lon}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -179,7 +186,8 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   };
 
   const findDefensibleDates = async () => {
-    if (!API_URL) {
+    const apiUrl = getApiUrl();
+    if (!apiUrl) {
       toast.error('Missing backend URL. Set REACT_APP_BACKEND_URL in Vercel/local env.');
       return;
     }
@@ -213,7 +221,7 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
         payload.end_date = endDate;
       }
 
-      const res = await fetch(`${API_URL}/api/weather/dol/discover`, {
+      const res = await fetch(`${apiUrl}/api/weather/dol/discover`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

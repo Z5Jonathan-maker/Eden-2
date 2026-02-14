@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 
 const API_URL =
-  process.env.REACT_APP_BACKEND_URL ||
-  process.env.REACT_APP_API_URL ||
+  import.meta.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.REACT_APP_API_URL ||
   (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
   '';
 

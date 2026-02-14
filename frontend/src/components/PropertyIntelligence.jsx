@@ -26,7 +26,12 @@ import {
   CloudRain,
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL =
+  import.meta.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+  '';
+const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const WAYBACK_TILE_URL = (releaseId) => `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${encodeURIComponent(releaseId)}`;
@@ -189,7 +194,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
       });
 
       const backendGeoResult = await fetchJsonWithResilience(
-        `${API_URL}/api/weather/stations/nearby?${backendParams.toString()}`,
+        `${getApiUrl()}/api/weather/stations/nearby?${backendParams.toString()}`,
         {
           method: 'GET',
           headers: {},
@@ -256,7 +261,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     if (imageryReleases.length > 0) return imageryReleases;
 
     let releaseResult = await fetchJsonWithResilience(
-      `${API_URL}/api/weather/imagery/releases`,
+      `${getApiUrl()}/api/weather/imagery/releases`,
       {
         method: 'GET',
         headers: {},
@@ -341,7 +346,8 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
       return;
     }
 
-    if (!API_URL) {
+    const apiUrl = getApiUrl();
+    if (!apiUrl) {
       toast.error('Backend URL is not configured');
       return;
     }
@@ -380,7 +386,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
         };
 
         const stageResult = await fetchJsonWithResilience(
-          `${API_URL}/api/weather/dol/candidates`,
+          `${getApiUrl()}/api/weather/dol/candidates`,
           {
             method: 'POST',
             headers: {},
@@ -405,7 +411,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
 
         const retryPayload = { ...payload, city: '' };
         const retryResult = await fetchJsonWithResilience(
-          `${API_URL}/api/weather/dol/candidates`,
+          `${getApiUrl()}/api/weather/dol/candidates`,
           {
             method: 'POST',
             headers: {},
@@ -473,7 +479,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
 
       // Always attempt verification, even if candidate discovery degraded.
       const verifyResult = await fetchJsonWithResilience(
-        `${API_URL}/api/weather/verify-dol`,
+        `${getApiUrl()}/api/weather/verify-dol`,
         {
           method: 'POST',
           headers: {},
@@ -498,7 +504,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
         verifyError = verifyResult.errorMessage || 'DOL verification failed';
         if (String(verifyError).toLowerCase().includes('unable to geocode')) {
           const retryResult = await fetchJsonWithResilience(
-            `${API_URL}/api/weather/verify-dol`,
+            `${getApiUrl()}/api/weather/verify-dol`,
             {
               method: 'POST',
               headers: {},
