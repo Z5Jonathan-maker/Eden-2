@@ -12,7 +12,7 @@
  */
 (function () {
   window.__EDEN_CONFIG__ = window.__EDEN_CONFIG__ || {};
-  // Point to Render backend
+  // Render backend - also baked into .env.production at build time
   window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "https://eden-gsot.onrender.com";
 })();
 

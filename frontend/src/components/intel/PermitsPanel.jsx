@@ -5,13 +5,19 @@ import {
   ChevronDown, ChevronUp, FileText, Home, DollarSign,
 } from 'lucide-react';
 
-const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ||
-  import.meta.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+// Empty string = same-origin (valid behind Vercel proxy)
+const _resolveUrl = () =>
+  import.meta.env.REACT_APP_BACKEND_URL ??
+  import.meta.env.REACT_APP_API_URL ??
+  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
   '';
 
-const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
+const API_URL = _resolveUrl();
+
+const getApiUrl = () => {
+  if (typeof API_URL === 'string') return API_URL;
+  return (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ?? '';
+};
 
 const PermitsPanel = ({ onDataChange } = {}) => {
   const [address, setAddress] = useState('');
@@ -37,7 +43,7 @@ const PermitsPanel = ({ onDataChange } = {}) => {
 
   const searchPermits = async () => {
     const apiUrl = getApiUrl();
-    if (!apiUrl) { toast.error('Backend URL not configured'); return; }
+    if (apiUrl == null) { toast.error('Backend URL not configured'); return; }
     if (!canSubmit) { toast.error('Enter address, city/ZIP, and state'); return; }
 
     setLoading(true);

@@ -2,13 +2,20 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Shield, Search, Wind, CloudHail, MapPin, Loader2, ChevronDown, FileText } from 'lucide-react';
 
-const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ||
-  import.meta.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+// Empty string = same-origin (valid behind Vercel proxy)
+const _resolveUrl = () =>
+  import.meta.env.REACT_APP_BACKEND_URL ??
+  import.meta.env.REACT_APP_API_URL ??
+  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
   '';
 
-const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
+const API_URL = _resolveUrl();
+
+// Re-check at call time in case eden-config.js loaded after module init
+const getApiUrl = () => {
+  if (typeof API_URL === 'string') return API_URL;
+  return (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ?? '';
+};
 
 const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const [address, setAddress] = useState('');
@@ -27,8 +34,6 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const [results, setResults] = useState(null);
   const [parcel, setParcel] = useState(null);
   const [parcelLoading, setParcelLoading] = useState(false);
-
-  const token = localStorage.getItem('eden_token');
 
   // Feed data up to parent for report generation
   useEffect(() => {
@@ -162,14 +167,12 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const fetchParcel = async (lat, lon) => {
     if (!lat || !lon) return;
     const baseUrl = getApiUrl();
-    if (!baseUrl) return;
+    if (baseUrl == null) return;
 
     setParcelLoading(true);
     try {
       const res = await fetch(`${baseUrl}/api/regrid/parcel/point?lat=${lat}&lon=${lon}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -187,12 +190,8 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
 
   const findDefensibleDates = async () => {
     const apiUrl = getApiUrl();
-    if (!apiUrl) {
+    if (apiUrl == null) {
       toast.error('Missing backend URL. Set REACT_APP_BACKEND_URL in Vercel/local env.');
-      return;
-    }
-    if (!token) {
-      toast.error('Missing auth token. Please log in again.');
       return;
     }
     if (!canSubmit) {
@@ -223,10 +222,8 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
 
       const res = await fetch(`${apiUrl}/api/weather/dol/discover`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 

@@ -7,12 +7,19 @@ import {
   Loader2, History, Ruler, Trash2, MapPin, CornerDownLeft,
 } from 'lucide-react';
 
-const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ||
-  import.meta.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) ||
+// Empty string = same-origin (valid behind Vercel proxy)
+const _resolveUrl = () =>
+  import.meta.env.REACT_APP_BACKEND_URL ??
+  import.meta.env.REACT_APP_API_URL ??
+  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
   '';
-const getApiUrl = () => API_URL || (typeof window !== 'undefined' && window.__EDEN_CONFIG__?.BACKEND_URL) || '';
+
+const API_URL = _resolveUrl();
+
+const getApiUrl = () => {
+  if (typeof API_URL === 'string') return API_URL;
+  return (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ?? '';
+};
 
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
