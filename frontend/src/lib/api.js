@@ -91,9 +91,9 @@ export async function api(endpoint, options = {}) {
   }
   
   try {
-    // Add 30-second timeout to prevent infinite hanging
+    // 90-second timeout to survive Render cold starts (~30-60s)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
 
     const res = await fetch(url, { ...config, signal: controller.signal });
     clearTimeout(timeoutId);
