@@ -12,8 +12,9 @@ const getApiUrl = () => assertApiUrl();
 
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const WAYBACK_TILE_URL = (releaseId) =>
-  `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${encodeURIComponent(releaseId)}`;
+// Wayback tiles use the numeric "M" value from the Selection metadata, NOT the string ID.
+const WAYBACK_TILE_URL = (releaseNum) =>
+  `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${releaseNum}`;
 
 // ── Geodesic helpers ────────────────────────────────────────────────
 const DEG_TO_RAD = Math.PI / 180;
@@ -134,12 +135,34 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // ── Geocode ──────────────────────────────────────────────────────
+  // ── Geocode (priority: Nominatim > Backend > Census) ─────────────
 
   const geocode = async () => {
     const apiUrl = getApiUrl();
+    const fullQuery = `${address}, ${city}, ${state} ${zip}`.trim();
 
-    // Strategy 1: Backend geocode (uses cookies for auth)
+    // Strategy 1: Nominatim (OpenStreetMap) — free, rooftop-level accuracy
+    try {
+      const params = new URLSearchParams({
+        q: fullQuery,
+        format: 'json',
+        limit: '1',
+        countrycodes: 'us',
+      });
+      const data = await fetchJson(
+        `https://nominatim.openstreetmap.org/search?${params}`,
+        { credentials: 'omit', headers: { 'User-Agent': 'EdenClaimsApp/1.0' } },
+        10000,
+      );
+      const hit = Array.isArray(data) ? data[0] : null;
+      const lat = Number(hit?.lat);
+      const lng = Number(hit?.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+    } catch (err) {
+      console.warn('[PropertyImagery] Nominatim geocode failed:', err);
+    }
+
+    // Strategy 2: Backend geocode
     if (apiUrl != null) {
       try {
         const params = new URLSearchParams({ address: address.trim(), city: city.trim(), state: state.trim(), zip_code: zip.trim() });
@@ -153,32 +176,14 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
       }
     }
 
-    // Strategy 2: Backend geocode without city (handles geocode mismatches)
-    if (apiUrl != null && city.trim()) {
-      try {
-        const params = new URLSearchParams({ address: address.trim(), city: '', state: state.trim(), zip_code: zip.trim() });
-        const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
-        const coords = data?.coordinates;
-        const lat = Number(coords?.latitude);
-        const lng = Number(coords?.longitude);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
-      } catch (err) {
-        console.warn('[PropertyImagery] Backend geocode (no city) failed:', err);
-      }
-    }
-
-    // Strategy 3: Census geocoder (direct browser call, no auth needed)
-    const queries = [
-      `${address}, ${city}, ${state} ${zip}`.trim(),
-      `${address}, ${state} ${zip}`.trim(),
-    ].filter(Boolean);
-
+    // Strategy 3: Census geocoder (reliable fallback)
+    const queries = [fullQuery, `${address}, ${state} ${zip}`.trim()].filter(Boolean);
     for (const query of queries) {
       try {
         const params = new URLSearchParams({ address: query, benchmark: 'Public_AR_Current', format: 'json' });
         const data = await fetchJson(
           `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`,
-          { credentials: 'omit' }, // Census API doesn't need credentials
+          { credentials: 'omit' },
           15000,
         );
         const match = data?.result?.addressMatches?.[0]?.coordinates;
@@ -205,9 +210,9 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     return selection
       .map((item) => {
         const date = parseWaybackDate(item?.Name);
-        return { id: item?.ID, date, label: formatLabel(date) };
+        return { id: item?.ID, m: item?.M, date, label: formatLabel(date) };
       })
-      .filter((r) => r.id && r.date)
+      .filter((r) => r.m && r.date)
       .slice(0, 60);
   };
 
@@ -377,7 +382,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
           {/* Map */}
           <div className="relative rounded-xl overflow-hidden border border-zinc-800/60" style={{ height: 420 }}>
             <MapContainer
-              key={`${viewMode}-${selectedRelease?.id || 'current'}-${mapCenter.lat}-${mapCenter.lng}`}
+              key={`${viewMode}-${selectedRelease?.m || 'current'}-${mapCenter.lat}-${mapCenter.lng}`}
               center={[mapCenter.lat, mapCenter.lng]}
               zoom={19}
               className="w-full h-full z-0"
@@ -386,8 +391,8 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
             >
               <TileLayer
                 url={
-                  viewMode === 'aerial' && selectedRelease?.id
-                    ? WAYBACK_TILE_URL(selectedRelease.id)
+                  viewMode === 'aerial' && selectedRelease?.m
+                    ? WAYBACK_TILE_URL(selectedRelease.m)
                     : ESRI_WORLD_IMAGERY_TILE_URL
                 }
                 attribution='&copy; Esri World Imagery / Wayback'
