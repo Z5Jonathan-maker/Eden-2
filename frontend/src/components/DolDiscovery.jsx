@@ -220,7 +220,7 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
         payload.end_date = endDate;
       }
 
-      const res = await fetch(`${apiUrl}/api/weather/dol/discover`, {
+      const res = await fetch(`${apiUrl}/api/weather/dol/candidates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
