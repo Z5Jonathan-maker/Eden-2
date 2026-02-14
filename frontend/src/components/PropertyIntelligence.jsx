@@ -6,20 +6,9 @@ import {
   Search, Satellite, Eye, ChevronLeft, ChevronRight,
   Loader2, History, Ruler, Trash2, MapPin, CornerDownLeft,
 } from 'lucide-react';
+import { assertApiUrl, getAuthToken } from '../lib/api';
 
-// Empty string = same-origin (valid behind Vercel proxy)
-const _resolveUrl = () =>
-  import.meta.env.REACT_APP_BACKEND_URL ??
-  import.meta.env.REACT_APP_API_URL ??
-  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
-  '';
-
-const API_URL = _resolveUrl();
-
-const getApiUrl = () => {
-  if (typeof API_URL === 'string') return API_URL;
-  return (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ?? '';
-};
+const getApiUrl = () => assertApiUrl();
 
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
@@ -118,10 +107,13 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
   const fetchJson = async (url, options = {}, timeoutMs = 25000) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const token = getAuthToken();
+    const authHdr = token ? { Authorization: `Bearer ${token}` } : {};
     try {
       const res = await fetch(url, {
         credentials: 'include',
         ...options,
+        headers: { ...authHdr, ...options.headers },
         signal: controller.signal,
       });
       if (!res.ok) return null;

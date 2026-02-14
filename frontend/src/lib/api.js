@@ -1,28 +1,22 @@
 /**
  * Centralized API client for Eden
- * - Uses httpOnly cookies for authentication (secure against XSS)
+ * - Dual auth: httpOnly cookies (primary) + Bearer token fallback
  * - Consistent error handling
  * - Simple in-memory caching
  * - Base URL from env
  */
 
-// Empty string = same-origin (Vercel/nginx proxy forwards /api/* to backend).
-// Use ?? (nullish coalescing) so empty string "" is NOT treated as missing.
 const API_URL =
   import.meta.env.REACT_APP_BACKEND_URL ??
   import.meta.env.REACT_APP_API_URL ??
   (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
   '';
 
-// Fail-fast helper (used by login + critical calls)
 export const assertApiUrl = () => {
-  // Re-check at call time in case eden-config.js loaded after module init
   const url =
     API_URL ??
     (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
     '';
-  // Empty string is valid — means same-origin behind a proxy.
-  // Only null/undefined means genuinely unconfigured.
   if (url == null) {
     throw new Error(
       "Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js"
@@ -31,13 +25,37 @@ export const assertApiUrl = () => {
   return url;
 };
 
-const defaultHeaders = () => ({
-  'Content-Type': 'application/json',
-});
+// ── Bearer token storage (localStorage) ──────────────────────────
+// Backend accepts both cookies AND Authorization: Bearer headers.
+// Storing the token explicitly makes cross-origin auth bulletproof
+// regardless of browser cookie policies.
+const TOKEN_KEY = 'eden_token';
+
+export const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+};
+
+export const getAuthToken = () => localStorage.getItem(TOKEN_KEY);
+
+export const clearAuthToken = () => localStorage.removeItem(TOKEN_KEY);
+
+// Build headers with auth token when available
+const buildHeaders = (isFormData) => {
+  const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 // Simple in-memory cache with TTL
 const cache = new Map();
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 30000;
 
 const getCached = (key) => {
   const cached = cache.get(key);
@@ -54,9 +72,6 @@ const setCache = (key, data) => {
 
 /**
  * Make an authenticated API request
- * @param {string} endpoint - API endpoint (e.g., '/api/claims/')
- * @param {object} options - fetch options (method, body, etc.)
- * @returns {Promise<{ok: boolean, data?: any, error?: string}>}
  */
 export async function api(endpoint, options = {}) {
   const baseUrl = assertApiUrl();
@@ -64,34 +79,30 @@ export async function api(endpoint, options = {}) {
   const method = options.method || 'GET';
   const cacheOption = options.cache;
   const { cache: _cache, ...restOptions } = options;
-  
-  // Check cache for GET requests
+
   if (method === 'GET' && cacheOption !== false) {
     const cached = getCached(url);
     if (cached) return { ok: true, data: cached, cached: true };
   }
-  
+
   const config = {
     method,
-    headers: options.formData ? {} : defaultHeaders(),
-    credentials: 'include', // Always include httpOnly cookies
+    headers: buildHeaders(options.formData),
+    credentials: 'include',
     ...restOptions,
   };
 
-  // Normalize legacy `cache: false` usage to valid Fetch semantics.
   if (cacheOption === false) {
     config.cache = 'no-store';
   } else if (typeof cacheOption === 'string') {
     config.cache = cacheOption;
   }
 
-  // Don't stringify FormData
   if (options.body && !(options.body instanceof FormData)) {
     config.body = JSON.stringify(options.body);
   }
-  
+
   try {
-    // 90-second timeout to survive Render cold starts (~30-60s)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000);
 
@@ -103,11 +114,9 @@ export async function api(endpoint, options = {}) {
       return { ok: false, error: errorData.detail || `Error ${res.status}`, status: res.status };
     }
 
-    // Handle empty responses
     const text = await res.text();
     const data = text ? JSON.parse(text) : null;
 
-    // Cache successful GET responses
     if (method === 'GET' && cacheOption !== false) {
       setCache(url, data);
     }
@@ -129,14 +138,12 @@ export const apiPut = (endpoint, body) => api(endpoint, { method: 'PUT', body })
 export const apiPatch = (endpoint, body) => api(endpoint, { method: 'PATCH', body });
 export const apiDelete = (endpoint) => api(endpoint, { method: 'DELETE' });
 
-// Form data upload
-export const apiUpload = (endpoint, formData) => api(endpoint, { 
-  method: 'POST', 
+export const apiUpload = (endpoint, formData) => api(endpoint, {
+  method: 'POST',
   body: formData,
-  formData: true 
+  formData: true
 });
 
-// Cache invalidation
 export const clearCache = (pattern) => {
   if (!pattern) {
     cache.clear();

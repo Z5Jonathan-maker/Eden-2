@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSentryUser, clearSentryUser } from '../lib/sentry';
-import { apiGet, apiPost } from '../lib/api';
+import { apiGet, apiPost, setAuthToken, clearAuthToken } from '../lib/api';
 
 // Empty string = same-origin (behind Vercel/nginx proxy). Use ?? so "" isn't skipped.
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? import.meta.env.REACT_APP_API_URL ?? '';
@@ -62,13 +62,16 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errorMessage);
       }
 
-      // Validate user data (token is now in httpOnly cookie, not in response)
       if (!response.data.user) {
         console.error('[Auth] Missing user in response:', response.data);
         throw new Error('Server returned invalid user format');
       }
 
-      // Store user data in state (no token storage needed - it's in httpOnly cookie)
+      // Store Bearer token for cross-origin auth (cookie is primary, this is fallback)
+      if (response.data.access_token) {
+        setAuthToken(response.data.access_token);
+      }
+
       setUser(response.data.user);
       setSentryUser(response.data.user); // Track user in Sentry
 
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       console.error('[Auth] Logout request failed:', error);
       // Continue with local logout even if backend call fails
     } finally {
-      // Clear local state and Sentry tracking
+      clearAuthToken();
       clearSentryUser();
       setUser(null);
     }

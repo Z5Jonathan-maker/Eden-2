@@ -4,20 +4,9 @@ import {
   Building2, Search, Loader2, Calendar, MapPin, Shield,
   ChevronDown, ChevronUp, FileText, Home, DollarSign,
 } from 'lucide-react';
+import { assertApiUrl, getAuthToken } from '../../lib/api';
 
-// Empty string = same-origin (valid behind Vercel proxy)
-const _resolveUrl = () =>
-  import.meta.env.REACT_APP_BACKEND_URL ??
-  import.meta.env.REACT_APP_API_URL ??
-  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
-  '';
-
-const API_URL = _resolveUrl();
-
-const getApiUrl = () => {
-  if (typeof API_URL === 'string') return API_URL;
-  return (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ?? '';
-};
+const getApiUrl = () => assertApiUrl();
 
 const PermitsPanel = ({ onDataChange } = {}) => {
   const [address, setAddress] = useState('');
@@ -55,9 +44,10 @@ const PermitsPanel = ({ onDataChange } = {}) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 45000);
 
+      const token = getAuthToken();
       const res = await fetch(`${apiUrl}/api/weather/permits`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         credentials: 'include',
         signal: controller.signal,
         body: JSON.stringify({
