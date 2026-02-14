@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSentryUser, clearSentryUser } from '../lib/sentry';
 import { apiGet, apiPost } from '../lib/api';
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
+// Empty string = same-origin (behind Vercel/nginx proxy). Use ?? so "" isn't skipped.
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? import.meta.env.REACT_APP_API_URL ?? '';
 
 const missingApiUrlMessage = "Missing API base URL. Set REACT_APP_BACKEND_URL (preferred) or REACT_APP_API_URL to your backend, then rebuild/redeploy.";
 
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     // The httpOnly cookie will be sent automatically
     const checkAuth = async () => {
       try {
-        if (!API_URL) {
+        if (API_URL == null) {
           setLoading(false);
           return;
         }
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      if (!API_URL) throw new Error(missingApiUrlMessage);
+      if (API_URL == null) throw new Error(missingApiUrlMessage);
 
       const response = await apiPost('/api/auth/login', { email, password });
 
@@ -80,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, fullName, role = 'adjuster') => {
     try {
-      if (!API_URL) throw new Error(missingApiUrlMessage);
+      if (API_URL == null) throw new Error(missingApiUrlMessage);
 
       const response = await apiPost('/api/auth/register', {
         email,

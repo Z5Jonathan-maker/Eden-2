@@ -101,7 +101,7 @@ const BattlePassPage: React.FC = () => {
 
     const hydrate = async () => {
       try {
-        if (!API_URL) return;
+        if (API_URL == null) return;
         const [progressRes, missionsRes, leaderboardRes] = await Promise.all([
           apiGet('/api/battle-pass/progress'),
           apiGet('/api/battle-pass/missions'),
@@ -171,7 +171,7 @@ const BattlePassPage: React.FC = () => {
     };
 
     hydrate();
-    if (!API_URL) setLoading(false);
+    if (API_URL == null) setLoading(false);
     return () => {
       alive = false;
     };

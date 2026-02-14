@@ -148,7 +148,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     const apiUrl = getApiUrl();
 
     // Strategy 1: Backend geocode (uses cookies for auth)
-    if (apiUrl) {
+    if (apiUrl != null) {
       try {
         const params = new URLSearchParams({ address: address.trim(), city: city.trim(), state: state.trim(), zip_code: zip.trim() });
         const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
@@ -162,7 +162,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
     }
 
     // Strategy 2: Backend geocode without city (handles geocode mismatches)
-    if (apiUrl && city.trim()) {
+    if (apiUrl != null && city.trim()) {
       try {
         const params = new URLSearchParams({ address: address.trim(), city: '', state: state.trim(), zip_code: zip.trim() });
         const data = await fetchJson(`${apiUrl}/api/weather/stations/nearby?${params}`, { method: 'GET' }, 20000);
@@ -205,7 +205,7 @@ const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
 
   const loadReleases = async () => {
     const apiUrl = getApiUrl();
-    let data = apiUrl ? await fetchJson(`${apiUrl}/api/weather/imagery/releases`, {}, 25000) : null;
+    let data = apiUrl != null ? await fetchJson(`${apiUrl}/api/weather/imagery/releases`, {}, 25000) : null;
     if (!data) data = await fetchJson(WAYBACK_SELECTION_URL, {}, 20000);
     if (!data) return [];
 
