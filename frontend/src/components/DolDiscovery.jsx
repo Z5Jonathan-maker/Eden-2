@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Shield, Search, Wind, CloudHail, MapPin, Loader2, ChevronDown, FileText } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-const DolDiscovery = ({ embedded = false }) => {
+const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('FL');
@@ -23,6 +23,17 @@ const DolDiscovery = ({ embedded = false }) => {
   const [parcelLoading, setParcelLoading] = useState(false);
 
   const token = localStorage.getItem('eden_token');
+
+  // Feed data up to parent for report generation
+  useEffect(() => {
+    if (typeof onDataChange === 'function') {
+      onDataChange({
+        candidates: results?.candidates || [],
+        location: results?.location || {},
+        address: `${address} ${city} ${state} ${zip}`.trim(),
+      });
+    }
+  }, [results, address, city, state, zip, onDataChange]);
 
   const canSubmit = useMemo(() => {
     return Boolean(address?.trim() && city?.trim() && state?.trim() && zip?.trim());

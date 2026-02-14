@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
@@ -26,7 +26,7 @@ import {
   CloudRain,
 } from 'lucide-react';
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 const WAYBACK_SELECTION_URL = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?f=pjson';
 const ESRI_WORLD_IMAGERY_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const WAYBACK_TILE_URL = (releaseId) => `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false&release=${encodeURIComponent(releaseId)}`;
@@ -54,7 +54,7 @@ const MapClickHandler = ({ onSelect }) => {
   return null;
 };
 
-const PropertyIntelligence = ({ embedded = false }) => {
+const PropertyIntelligence = ({ embedded = false, onDataChange } = {}) => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('FL');
@@ -75,6 +75,18 @@ const PropertyIntelligence = ({ embedded = false }) => {
   const [pinWasAdjusted, setPinWasAdjusted] = useState(false);
 
   const selectedRelease = useMemo(() => imageryReleases[selectedImageDate] || null, [imageryReleases, selectedImageDate]);
+
+  // Feed data up to parent for report generation
+  useEffect(() => {
+    if (typeof onDataChange === 'function') {
+      onDataChange({
+        images: imageryReleases,
+        candidates: dolCandidates,
+        address: `${address} ${city} ${state} ${zip}`.trim(),
+        yearBuilt: propertyData?.year_built,
+      });
+    }
+  }, [imageryReleases, dolCandidates, address, city, state, zip, propertyData, onDataChange]);
 
   const getResponseErrorDetail = async (response, fallbackMessage) => {
     try {

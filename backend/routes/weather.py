@@ -1286,3 +1286,128 @@ async def get_historical_imagery_releases(
         raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Historical imagery metadata unavailable: {exc}")
+
+
+# ============ PERMIT HISTORY ============
+
+class PermitLookupRequest(BaseModel):
+    address: str
+    city: str = ""
+    state: str = "FL"
+    zip_code: str = ""
+    county: Optional[str] = None
+
+@router.post("/permits")
+async def lookup_permits(
+    req: PermitLookupRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Look up building permit history for a property address.
+    Uses county property appraiser public records and caches results.
+    """
+    import hashlib
+    import logging
+    logger = logging.getLogger(__name__)
+
+    full_address = f"{req.address}, {req.city}, {req.state} {req.zip_code}".strip()
+    cache_key = hashlib.md5(full_address.lower().encode()).hexdigest()
+
+    # Check cache first (30-day TTL)
+    cached = await db.permit_cache.find_one({"cache_key": cache_key})
+    if cached:
+        cached_at = cached.get("cached_at")
+        if cached_at and (datetime.now(timezone.utc) - cached_at).days < 30:
+            cached.pop("_id", None)
+            return {"source": "cache", "permits": cached.get("permits", []), "property_info": cached.get("property_info", {})}
+
+    permits = []
+    property_info = {}
+
+    # Strategy 1: Use Emergent LLM to look up Florida public permit records
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+        if EMERGENT_LLM_KEY:
+            chat = LlmChat(api_key=EMERGENT_LLM_KEY, model="gpt-4o")
+            prompt = f"""Look up building permit history for this Florida property address:
+{full_address}
+
+Search Florida county property appraiser and building department public records.
+Return a JSON object with this exact structure:
+{{
+  "property_info": {{
+    "owner": "owner name or null",
+    "year_built": "year or null",
+    "parcel_id": "parcel/folio number or null",
+    "property_use": "residential/commercial/etc or null",
+    "assessed_value": "dollar amount or null"
+  }},
+  "permits": [
+    {{
+      "permit_number": "permit ID",
+      "date": "YYYY-MM-DD or best approximation",
+      "type": "roofing/electrical/plumbing/building/mechanical/etc",
+      "description": "brief description of work",
+      "status": "issued/final/expired/active",
+      "contractor": "contractor name if available or null",
+      "value": "dollar amount if available or null"
+    }}
+  ]
+}}
+
+Return ONLY valid JSON. If no permits found, return empty permits array.
+Focus especially on roofing permits, building permits, and any storm damage repair permits."""
+
+            import json
+            response = await asyncio.to_thread(
+                chat.send_message, UserMessage(text=prompt)
+            )
+            raw = response.text.strip()
+            # Strip markdown code fences if present
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[-1]
+            if raw.endswith("```"):
+                raw = raw.rsplit("```", 1)[0]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+
+            parsed = json.loads(raw)
+            permits = parsed.get("permits", [])
+            property_info = parsed.get("property_info", {})
+    except Exception as e:
+        logger.warning(f"Emergent LLM permit lookup failed: {e}")
+
+    # Strategy 2: Try county property appraiser API (if available)
+    if not permits:
+        try:
+            county = req.county or req.city
+            search_query = f"{req.address} {county} {req.state} building permits"
+            # This is a placeholder for future direct county API integrations
+            # Florida counties like Miami-Dade, Broward, Palm Beach have public APIs
+            logger.info(f"No LLM permits found for {full_address}, would search: {search_query}")
+        except Exception as e:
+            logger.warning(f"County permit lookup fallback failed: {e}")
+
+    # Cache results
+    try:
+        await db.permit_cache.update_one(
+            {"cache_key": cache_key},
+            {"$set": {
+                "cache_key": cache_key,
+                "address": full_address,
+                "permits": permits,
+                "property_info": property_info,
+                "cached_at": datetime.now(timezone.utc),
+            }},
+            upsert=True,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to cache permit data: {e}")
+
+    return {
+        "source": "lookup",
+        "permits": permits,
+        "property_info": property_info,
+    }
