@@ -198,21 +198,23 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
     setParcel(null);
 
     try {
+      // Backend requires start_date and end_date; compute from window_days if not set
+      const today = new Date();
+      const daysBack = Number(windowDays) || 365;
+      const computedEnd = today.toISOString().slice(0, 10);
+      const computedStart = new Date(today.getTime() - daysBack * 86400000).toISOString().slice(0, 10);
+
       const payload = {
         address,
         city,
         state,
         zip_code: zip,
+        start_date: startDate || computedStart,
+        end_date: endDate || computedEnd,
         peril_mode: perilMode,
-        window_days: Number(windowDays) || 365,
         min_wind_mph: Number(minWind) || 30,
         max_distance_miles: Number(maxDistance) || 50,
       };
-      // optional advanced override
-      if (startDate && endDate) {
-        payload.start_date = startDate;
-        payload.end_date = endDate;
-      }
 
       const res = await fetch(`${apiUrl}/api/weather/dol/candidates`, {
         method: 'POST',
