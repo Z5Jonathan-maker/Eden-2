@@ -55,8 +55,9 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
         ? `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=13&size=900x360&markers=${lat},${lon},red-pushpin`
         : '';
 
-      const stations = Array.isArray(candidate.stations_used) ? candidate.stations_used : [];
-      const rebuttals = Array.isArray(candidate.denial_rebuttal_bullets) ? candidate.denial_rebuttal_bullets : [];
+      // stations_used is at the top-level response, not per-candidate
+      const stations = Array.isArray(results?.stations_used) ? results.stations_used.map(id => ({ station_id: id })) : [];
+      const rebuttals = [];
 
       const stationRows = stations.map(s => {
         const dist = (s?.distance_miles != null) ? `${Number(s.distance_miles).toFixed(1)} mi` : '—';
@@ -100,8 +101,8 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   </div>
 
   <h1>Evidence Packet — ${candidate.candidate_date} <span class="pill">${perilMode.toUpperCase()}</span></h1>
-  <div class="muted">${loc.address || ''}${loc.city ? `, ${loc.city}` : ''}${loc.state ? `, ${loc.state}` : ''} ${loc.zip_code || ''}</div>
-  <div class="muted">Analysis window: ${results.analysis_start_date} → ${results.analysis_end_date}</div>
+  <div class="muted">${loc.matched_address || `${address}, ${city}, ${state} ${zip}`}</div>
+  <div class="muted">Analysis window: ${results.analysis_window?.start_date || '—'} → ${results.analysis_window?.end_date || '—'}</div>
 
   ${mapUrl ? `<div style="margin-top:14px"><img class="map" src="${mapUrl}" alt="Map" /></div>` : ''}
 
@@ -109,18 +110,18 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
     <div class="card">
       <h2>Event Summary</h2>
       <div class="kpi">
-        <div><b>Peak window</b><br/>${candidate.peak_window_start || '—'} → ${candidate.peak_window_end || '—'}</div>
-        ${perilMode === 'wind' ? `<div><b>Peak gust</b><br/>${candidate.max_gust_mph ? `${Math.round(candidate.max_gust_mph)} mph` : '—'}</div>` : ''}
-        ${perilMode === 'hail' ? `<div><b>Hail reports</b><br/>${candidate.hail_reports ?? 0}</div>` : ''}
-        ${perilMode === 'hail' ? `<div><b>Max hail</b><br/>${candidate.max_hail_in ? `${candidate.max_hail_in}"` : '—'}</div>` : ''}
+        <div><b>Date</b><br/>${candidate.candidate_date || '—'}</div>
+        ${perilMode === 'wind' ? `<div><b>Peak gust</b><br/>${candidate.peak_wind_mph ? `${Math.round(candidate.peak_wind_mph)} mph` : '—'}</div>` : ''}
+        ${perilMode === 'hail' ? `<div><b>Hail reports</b><br/>${candidate.report_count ?? 0}</div>` : ''}
+        ${perilMode === 'hail' ? `<div><b>Max hail</b><br/>${candidate.max_hail_inches ? `${candidate.max_hail_inches}"` : '—'}</div>` : ''}
         <div><b>Confidence</b><br/>${candidate.confidence}</div>
       </div>
 
-      <h2 style="margin-top:14px">Why defensible</h2>
-      <div style="font-size:13px; line-height:1.45">${candidate.explanation || ''}</div>
+      <h2 style="margin-top:14px">Event Summary</h2>
+      <div style="font-size:13px; line-height:1.45">${candidate.event_summary || ''}</div>
 
-      <h2 style="margin-top:14px">Common denial rebuttals</h2>
-      ${rebuttals.length ? `<ul>${rebuttals.map(b => `<li>${b}</li>`).join('')}</ul>` : `<div class="muted">No rebuttal bullets returned for this candidate.</div>`}
+      <h2 style="margin-top:14px">Station Coverage</h2>
+      <div class="muted">${candidate.station_count || 0} station(s) corroborated this event${candidate.min_distance_miles != null ? `, closest at ${candidate.min_distance_miles} mi` : ''}.</div>
     </div>
 
     <div class="card">
@@ -211,7 +212,7 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
         zip_code: zip,
         start_date: startDate || computedStart,
         end_date: endDate || computedEnd,
-        peril_mode: perilMode,
+        event_type: perilMode,
         min_wind_mph: Number(minWind) || 30,
         max_distance_miles: Number(maxDistance) || 50,
       };
@@ -404,13 +405,15 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
                 <MapPin className="w-4 h-4 text-orange-400" /> Property Context
               </h3>
               <div className="mt-3 space-y-2 text-sm">
-                <div className="text-zinc-200">{results?.location?.address}</div>
-                <div className="text-zinc-500">{results?.location?.city}, {results?.location?.state} {results?.location?.zip_code}</div>
+                <div className="text-zinc-200">{results?.location?.matched_address || `${address}, ${city}, ${state} ${zip}`}</div>
                 <div className="text-zinc-500 text-xs font-mono">
                   Lat/Lon: {Number(results?.location?.latitude || 0).toFixed(5)}, {Number(results?.location?.longitude || 0).toFixed(5)}
                 </div>
                 <div className="text-zinc-500 text-xs font-mono">
-                  Window: {results?.analysis_start_date} → {results?.analysis_end_date}
+                  Window: {results?.analysis_window?.start_date} → {results?.analysis_window?.end_date}
+                </div>
+                <div className="text-zinc-500 text-xs font-mono">
+                  Stations: {results?.station_count || 0} · Observations: {results?.observation_count || 0}
                 </div>
               </div>
 
@@ -463,22 +466,16 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
                     <div className="mt-2 text-sm text-zinc-300">
                       {perilMode === 'wind' && (
                         <div className="text-xs font-mono text-zinc-400">
-                          Peak gust: {c.max_gust_mph ? `${Math.round(c.max_gust_mph)} mph` : '—'} · Stations: {(c.stations_used || []).length}
+                          Peak gust: {c.peak_wind_mph ? `${Math.round(c.peak_wind_mph)} mph` : '—'} · Stations: {c.station_count || 0}
+                          {c.min_distance_miles != null && ` · Closest: ${c.min_distance_miles} mi`}
                         </div>
                       )}
                       {perilMode === 'hail' && (
                         <div className="text-xs font-mono text-zinc-400">
-                          Reports: {c.hail_reports ?? 0} · Closest: {c.min_report_distance_miles ? `${Math.round(c.min_report_distance_miles)} mi` : '—'} · Max size: {c.max_hail_in ? `${c.max_hail_in}"` : '—'}
+                          Reports: {c.report_count ?? 0} · Closest: {c.min_distance_miles ? `${c.min_distance_miles} mi` : '—'} · Max size: {c.max_hail_inches ? `${c.max_hail_inches}"` : '—'}
                         </div>
                       )}
-                      <div className="mt-2 text-sm text-zinc-200">{c.explanation}</div>
-                      {(c.denial_rebuttal_bullets || []).length > 0 && (
-                        <ul className="mt-2 list-disc pl-5 text-sm text-zinc-300 space-y-1">
-                          {c.denial_rebuttal_bullets.map((b, i) => (
-                            <li key={i}>{b}</li>
-                          ))}
-                        </ul>
-                      )}
+                      <div className="mt-2 text-sm text-zinc-200">{c.event_summary}</div>
                     </div>
                   </div>
                 ))}
