@@ -59,7 +59,7 @@ export const useGamma = () => {
     setError(null);
 
     try {
-      const res = await apiPost(`/api/gamma/presentation/${audience}?claim_id=${claimId}`, {});
+      const res = await apiPost(`/api/integrations/gamma/generate-presentation`, { title: `Claim ${claimId}`, content: `Claim ID: ${claimId}\nAudience: ${audience}` });
 
       if (!res.ok) {
         throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
@@ -90,7 +90,7 @@ export const useGamma = () => {
         template: 'presentation'
       };
 
-      const res = await apiPost('/api/gamma/presentation', payload);
+      const res = await apiPost('/api/integrations/gamma/generate-presentation', payload);
 
       if (!res.ok) {
         throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
