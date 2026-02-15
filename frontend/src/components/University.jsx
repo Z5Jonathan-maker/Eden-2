@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import UniversityHeader from './university/UniversityHeader';
@@ -90,7 +91,7 @@ function University() {
         setUniversityName(editedName);
         setIsEditingName(false);
       } else {
-        alert('Failed to save university name');
+        toast.error('Failed to save university name');
       }
     } catch {
       alert('Failed to save university name');
@@ -198,7 +199,7 @@ function University() {
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error creating content: ' + err.message);
+      toast.error('Error creating content: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -219,7 +220,7 @@ function University() {
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error deleting: ' + err.message);
+      toast.error('Error deleting: ' + err.message);
     }
   };
 
@@ -236,7 +237,7 @@ function University() {
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error updating: ' + err.message);
+      toast.error('Error updating: ' + err.message);
     }
   };
 
@@ -246,7 +247,7 @@ function University() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('File too large. Maximum size is 50MB.');
+      toast.error('File too large. Maximum size is 50MB.');
       return;
     }
 
@@ -266,7 +267,7 @@ function University() {
         url: API_URL + res.data.url
       }]);
     } catch (err) {
-      alert('Error uploading file: ' + err.message);
+      toast.error('Error uploading file: ' + err.message);
     } finally {
       setUploadingFile(false);
       e.target.value = '';

@@ -171,15 +171,39 @@ function AppRoutes() {
           <Route index element={<RepHome />} />
           <Route
             path="competitions"
-            element={<div className="p-4 text-white">Competitions view coming soon</div>}
+            element={
+              <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+                <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">🏆</span>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Competitions</h2>
+                <p className="text-zinc-400 text-sm max-w-sm">Team competitions and leaderboard challenges are being built. Check back soon.</p>
+              </div>
+            }
           />
           <Route
             path="competitions/:id"
-            element={<div className="p-4 text-white">Competition detail coming soon</div>}
+            element={
+              <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+                <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">🏆</span>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Competition Detail</h2>
+                <p className="text-zinc-400 text-sm max-w-sm">Competition details view is being built. Check back soon.</p>
+              </div>
+            }
           />
           <Route
             path="profile"
-            element={<div className="p-4 text-white">Rep profile coming soon</div>}
+            element={
+              <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">👤</span>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Rep Profile</h2>
+                <p className="text-zinc-400 text-sm max-w-sm">Your field rep profile and stats are being built. Check back soon.</p>
+              </div>
+            }
           />
         </Route>
 

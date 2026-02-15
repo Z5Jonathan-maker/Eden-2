@@ -9,6 +9,7 @@
  * - Redemption requests (approve/deny/fulfill)
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { Badge } from '../shared/ui/badge';
 import { Button } from '../shared/ui/button';
@@ -414,7 +415,7 @@ const TemplatesTab = () => {
         {}
       );
       if (res.ok) {
-        alert('Campaign created successfully!');
+        toast.success('Campaign created successfully!');
       }
     } catch (err) {
       console.error('Failed to create from template:', err);
@@ -1167,7 +1168,7 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
       if (res.ok) {
         onSuccess();
       } else {
-        alert(res.error?.detail || 'Failed to create territory');
+        toast.error(res.error?.detail || 'Failed to create territory');
       }
     } catch (err) {
       console.error('Failed to create territory:', err);
@@ -1390,7 +1391,7 @@ const SettingsTab = () => {
       const res = await apiPut('/api/harvest/v2/daily-goals', dailyGoals);
 
       if (res.ok) {
-        alert('Daily goals updated!');
+        toast.success('Daily goals updated!');
       }
     } catch (err) {
       console.error('Failed to save goals:', err);

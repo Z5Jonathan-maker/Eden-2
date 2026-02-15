@@ -704,12 +704,14 @@ def build_wind_candidates(
         min_distance = round(min(distances), 1) if distances else None
 
         confidence = score_candidate_confidence(peak_wind, station_count)
+        total_obs = sum(bucket["station_observation_counts"].values())
         candidates.append(
             {
                 "candidate_date": date_key,
                 "confidence": confidence,
                 "peak_wind_mph": round(peak_wind, 1),
                 "station_count": station_count,
+                "observation_count": total_obs,
                 "weighted_support_score": weighted_score,
                 "min_distance_miles": min_distance,
                 "event_summary": (
@@ -766,6 +768,163 @@ def generate_citation(verification: Dict) -> str:
         return header + "\n".join(citations)
     
     return "Insufficient data for citation generation."
+
+
+# ============ COMPOSITE DOL SCORING ============
+
+def _compute_composite_score(
+    peak_wind_mph, station_count, min_distance_miles,
+    observation_count, candidate_date, analysis_end_date,
+    weights=None,
+):
+    """Three-pillar composite: Wind Credibility (0.45) + Verification (0.30) + Recency (0.25)."""
+    w = weights or {"wind_credibility": 0.45, "verification_strength": 0.30, "recency": 0.25}
+
+    wind_norm = min(1.0, float(peak_wind_mph) / 100.0)
+    wind_credibility = min(1.0, wind_norm + 0.105)  # ~0.7 avg QC * 0.15
+
+    station_factor = min(1.0, float(station_count) / 3.0)
+    dist = float(min_distance_miles) if min_distance_miles is not None else 25.0
+    distance_factor = max(0.0, 1.0 - (dist / 50.0))
+    obs_density = min(1.0, float(observation_count) / 20.0)
+    verification_strength = (station_factor * 0.5) + (distance_factor * 0.3) + (obs_density * 0.2)
+
+    try:
+        event_dt = datetime.strptime(candidate_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(analysis_end_date, "%Y-%m-%d")
+        days_ago = max(0, (end_dt - event_dt).days)
+        recency = max(0.0, 1.0 - (days_ago / 730.0))
+    except (ValueError, TypeError):
+        recency = 0.5
+
+    composite = (
+        wind_credibility * w["wind_credibility"]
+        + verification_strength * w["verification_strength"]
+        + recency * w["recency"]
+    )
+    return {
+        "composite_score": round(composite, 4),
+        "wind_credibility": round(wind_credibility, 4),
+        "verification_strength": round(verification_strength, 4),
+        "recency": round(recency, 4),
+    }
+
+
+def _composite_confidence(composite_score, peak_wind_mph, station_count):
+    """Map composite score to carrier-defensible confidence label."""
+    if composite_score >= 0.70 and station_count >= 2 and peak_wind_mph >= 58:
+        return "confirmed"
+    if composite_score >= 0.50 and station_count >= 2 and peak_wind_mph >= 40:
+        return "high"
+    if composite_score >= 0.30 and peak_wind_mph >= 30:
+        return "medium"
+    if composite_score >= 0.15:
+        return "low"
+    return "unverified"
+
+
+def _generate_why_bullets(candidate):
+    """Generate per-candidate 'Why this date' explanation bullets."""
+    bullets = []
+    peak = float(candidate.get("peak_wind_mph") or 0)
+    count = int(candidate.get("station_count") or 0)
+    min_dist = candidate.get("min_distance_miles")
+    obs_count = int(candidate.get("observation_count") or 0)
+
+    if peak >= 75:
+        bullets.append(f"Hurricane-force winds recorded: {round(peak)} mph peak gust")
+    elif peak >= 58:
+        bullets.append(f"Severe wind event: {round(peak)} mph peak gust (exceeds NWS 58 mph severe threshold)")
+    elif peak >= 40:
+        bullets.append(f"Significant wind event: {round(peak)} mph peak gust")
+    elif peak >= 30:
+        bullets.append(f"Moderate wind activity: {round(peak)} mph peak gust")
+
+    if count >= 3:
+        bullets.append(f"Corroborated by {count} independent weather stations \u2014 strong multi-source verification")
+    elif count >= 2:
+        bullets.append(f"Confirmed at {count} weather stations \u2014 dual-station verification")
+    elif count == 1:
+        bullets.append("Recorded at 1 weather station")
+
+    if min_dist is not None:
+        if min_dist <= 5:
+            bullets.append(f"Closest station only {min_dist} miles from property \u2014 high geographic relevance")
+        elif min_dist <= 15:
+            bullets.append(f"Nearest station {min_dist} miles from property")
+        else:
+            bullets.append(f"Nearest station {min_dist} miles from property")
+
+    if obs_count >= 10:
+        bullets.append(f"{obs_count} total observations analyzed across the event window")
+
+    sc = candidate.get("score_components")
+    if sc:
+        pct = round(sc.get("composite_score", 0) * 100)
+        bullets.append(f"Composite recommendation score: {pct}%")
+
+    return bullets
+
+
+def _generate_carrier_response(candidate, location, analysis_window):
+    """Generate a copy-paste carrier response paragraph for a DOL candidate."""
+    address = location.get("matched_address") or "the insured property"
+    date = candidate.get("candidate_date", "the referenced date")
+    peak = float(candidate.get("peak_wind_mph") or 0)
+    count = int(candidate.get("station_count") or 0)
+    conf = candidate.get("confidence", "unverified")
+    min_dist = candidate.get("min_distance_miles")
+
+    if peak >= 75:
+        severity = "hurricane-force"
+    elif peak >= 58:
+        severity = "severe (exceeding the NWS severe threshold of 58 mph)"
+    elif peak >= 40:
+        severity = "significant"
+    else:
+        severity = "notable"
+
+    station_word = "station" if count == 1 else "stations"
+    dist_text = (
+        f", with the closest station located {min_dist} miles from the insured property"
+        if min_dist is not None else ""
+    )
+
+    return (
+        f"Based on analysis of certified weather station data from the National Weather Service "
+        f"observation network, {severity} wind activity was recorded near {address} "
+        f"on {date}. Peak wind gusts of {round(peak)} mph were documented by "
+        f"{count} FAA-certified ASOS/METAR {station_word}{dist_text}. "
+        f"This data is sourced from the FAA-certified Automated Surface Observing System (ASOS) "
+        f"and Automated Weather Observing System (AWOS) network, which provides the authoritative "
+        f"ground-truth weather record accepted by the National Weather Service. "
+        f"The analysis window covered {analysis_window.get('start_date', 'N/A')} through "
+        f"{analysis_window.get('end_date', 'N/A')}. "
+        f"Confidence level: {conf.upper()}."
+    )
+
+
+def _enrich_candidates(candidates, location, analysis_window):
+    """Add composite score, why bullets, and carrier response to each candidate."""
+    for c in candidates:
+        sc = _compute_composite_score(
+            peak_wind_mph=c.get("peak_wind_mph", 0),
+            station_count=c.get("station_count", 0),
+            min_distance_miles=c.get("min_distance_miles"),
+            observation_count=c.get("observation_count", 0),
+            candidate_date=c.get("candidate_date", ""),
+            analysis_end_date=analysis_window.get("end_date", ""),
+        )
+        c["score_components"] = sc
+        c["composite_score"] = sc["composite_score"]
+        c["confidence"] = _composite_confidence(
+            sc["composite_score"],
+            float(c.get("peak_wind_mph") or 0),
+            int(c.get("station_count") or 0),
+        )
+        c["why_bullets"] = _generate_why_bullets(c)
+        c["carrier_response"] = _generate_carrier_response(c, location, analysis_window)
+    candidates.sort(key=lambda x: x.get("composite_score", 0), reverse=True)
 
 
 # ============ API ENDPOINTS ============
@@ -886,25 +1045,75 @@ async def discover_dol_candidates(
             request.top_n,
         )
 
+    location = {
+        "latitude": lat,
+        "longitude": lng,
+        "matched_address": geo.get("matched_address"),
+        "geocoder": geo.get("geocoder"),
+        "precision": geo.get("precision", "address"),
+    }
+    analysis_window = {
+        "start_date": request.start_date,
+        "end_date": request.end_date,
+        "event_type": request.event_type or "wind",
+        "min_wind_mph": request.min_wind_mph,
+        "max_distance_miles": request.max_distance_miles,
+    }
+
+    # Enrich wind candidates with composite scoring, explanations, carrier response
+    if (request.event_type or "wind") != "hail":
+        _enrich_candidates(candidates, location, analysis_window)
+
+    # Build station detail table for frontend
+    station_details = []
+    for batch in station_batches:
+        station = batch.get("station") or {}
+        sid = batch.get("station_id")
+        obs = batch.get("observations") or []
+        if not sid:
+            continue
+        peak = 0.0
+        for o in obs:
+            peak = max(peak, o.get("wind_gust_mph") or 0, o.get("wind_speed_mph") or 0, o.get("peak_wind_gust_mph") or 0)
+        station_details.append({
+            "station_id": sid,
+            "station_name": station.get("station_name", ""),
+            "distance_miles": station.get("distance_miles"),
+            "observation_count": len(obs),
+            "peak_wind_mph": round(peak, 1),
+        })
+
+    # Cache result for future lookups (best-effort)
+    import hashlib
+    cache_key = hashlib.md5(
+        f"{request.address}|{request.city}|{request.state}|{request.zip_code}|"
+        f"{request.start_date}|{request.end_date}|{request.event_type}".lower().encode()
+    ).hexdigest()
+    try:
+        await db.dol_cache.update_one(
+            {"cache_key": cache_key},
+            {"$set": {
+                "cache_key": cache_key,
+                "address": f"{request.address}, {request.city}, {request.state} {request.zip_code}",
+                "candidates": candidates,
+                "station_details": station_details,
+                "location": location,
+                "analysis_window": analysis_window,
+                "cached_at": datetime.now(timezone.utc),
+            }},
+            upsert=True,
+        )
+    except Exception:
+        pass  # Cache is best-effort
+
     return {
-        "location": {
-            "latitude": lat,
-            "longitude": lng,
-            "matched_address": geo.get("matched_address"),
-            "geocoder": geo.get("geocoder"),
-            "precision": geo.get("precision", "address"),
-        },
+        "location": location,
         "candidates": candidates,
         "stations_used": stations_used,
+        "station_details": station_details,
         "station_count": len(stations_used),
         "observation_count": len(all_observations),
-        "analysis_window": {
-            "start_date": request.start_date,
-            "end_date": request.end_date,
-            "event_type": request.event_type or "wind",
-            "min_wind_mph": request.min_wind_mph,
-            "max_distance_miles": request.max_distance_miles,
-        },
+        "analysis_window": analysis_window,
     }
 
 

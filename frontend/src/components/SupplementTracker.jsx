@@ -101,7 +101,7 @@ function SupplementTracker() {
 
   async function createSupplement() {
     if (!newSupplement.title || newSupplement.line_items.length === 0) {
-      alert('Please add a title and at least one line item');
+      toast.error('Please add a title and at least one line item');
       return;
     }
 

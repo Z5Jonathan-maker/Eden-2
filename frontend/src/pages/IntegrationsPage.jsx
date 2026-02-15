@@ -261,7 +261,21 @@ const IntegrationsPage = () => {
             icon={PenTool}
             connected={status?.signnow?.connected}
             oauthRequired={true}
-            onConnect={() => toast.info('SignNow OAuth not yet implemented')}
+            onConnect={async () => {
+              setActionLoading(prev => ({ ...prev, signnow: true }));
+              try {
+                const res = await apiGet('/api/oauth/signnow/connect');
+                if (res.ok && res.data?.auth_url) {
+                  window.location.href = res.data.auth_url;
+                } else {
+                  toast.error(res.error || 'SignNow OAuth not configured. Contact administrator.');
+                }
+              } catch (err) {
+                toast.error('Failed to connect SignNow');
+              } finally {
+                setActionLoading(prev => ({ ...prev, signnow: false }));
+              }
+            }}
             onDisconnect={() => handleDisconnect('signnow')}
             loading={actionLoading.signnow}
             description="Electronic signatures for contracts and agreements"
@@ -285,7 +299,7 @@ const IntegrationsPage = () => {
           <ul className="text-sm text-amber-800 space-y-1">
             <li>• <strong>Google:</strong> Connects Calendar, Drive, and Slides with one OAuth flow</li>
             <li>• <strong>Gamma:</strong> Requires API key in server environment (GAMMA_API_KEY)</li>
-            <li>• <strong>SignNow:</strong> Full OAuth implementation coming soon</li>
+            <li>• <strong>SignNow:</strong> OAuth connect requires SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET in server environment</li>
             <li>• <strong>Stripe:</strong> Requires API keys in server environment</li>
           </ul>
         </div>
