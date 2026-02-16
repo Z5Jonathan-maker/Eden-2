@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import NotificationBell from '../../components/NotificationBell';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
 import { APP_LOGO, NAV_ICONS } from '../../assets/badges';
+import useUnreadCount from '../../hooks/useUnreadCount';
 
 var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
@@ -29,6 +30,7 @@ const Layout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
+  const commsUnread = useUnreadCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userPermissions, setUserPermissions] = useState([]);
   const [navQuery, setNavQuery] = useState('');
@@ -240,7 +242,15 @@ const Layout = () => {
                       >
                         <NavIcon src={item.icon} isActive={isActive(item.path)} />
                         <span className="font-medium text-sm font-tactical tracking-wide">{item.label}</span>
-                        {isActive(item.path) && (
+                        {item.path === '/comms/chat' && commsUnread > 0 && (
+                          <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1 animate-scale-pulse">
+                            {commsUnread > 99 ? '99+' : commsUnread}
+                          </span>
+                        )}
+                        {isActive(item.path) && item.path !== '/comms/chat' && (
+                          <ChevronRight className="ml-auto w-4 h-4 text-orange-500 animate-fade-in-left" />
+                        )}
+                        {isActive(item.path) && item.path === '/comms/chat' && commsUnread === 0 && (
                           <ChevronRight className="ml-auto w-4 h-4 text-orange-500 animate-fade-in-left" />
                         )}
                       </button>

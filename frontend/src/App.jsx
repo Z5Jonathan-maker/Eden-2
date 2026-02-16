@@ -52,7 +52,7 @@ const FloridaLaws = lazy(() => import('./components/FloridaLaws'));
 const BattlePass = lazy(() => import('./features/incentives/components/BattlePass'));
 const MyCard = lazy(() => import('./components/MyCard'));
 const PublicCard = lazy(() => import('./components/PublicCard'));
-const CommCenterChat = lazy(() => import('./components/CommCenterChat'));
+const ChatLayout = lazy(() => import('./components/chat/ChatLayout'));
 const CommCenterThread = lazy(() => import('./components/CommCenterThread'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
@@ -257,7 +257,8 @@ function AppRoutes() {
           <Route path="florida-laws" element={<FloridaLaws />} />
           <Route path="battle-pass" element={<BattlePass />} />
           <Route path="mycard" element={<MyCard />} />
-          <Route path="comms/chat" element={<CommCenterChat />} />
+          <Route path="comms/chat" element={<ChatLayout />} />
+          <Route path="comms/chat/:channelId" element={<ChatLayout />} />
           <Route path="comms/claim/:claimId" element={<CommCenterThread />} />
         </Route>
         {/* Public Routes (no auth required) */}

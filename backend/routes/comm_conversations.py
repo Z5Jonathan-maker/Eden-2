@@ -561,6 +561,21 @@ async def send_channel_message(
         metadata={"type": "message"},
     )
 
+    # Parse @mentions and send notifications
+    mentioned_ids = await _parse_and_notify_mentions(
+        payload.body.strip(), channel_id, current_user, message_doc["id"]
+    )
+    if mentioned_ids:
+        message_doc["mentions"] = mentioned_ids
+        await db.comms_messages.update_one(
+            {"id": message_doc["id"]}, {"$set": {"mentions": mentioned_ids}}
+        )
+
+    # Broadcast to channel members via WebSocket
+    await _broadcast_chat_event(channel_id, "chat_message", {
+        "channel_id": channel_id, "message": message_doc,
+    })
+
     return {"message": message_doc}
 
 
@@ -597,6 +612,12 @@ async def send_channel_gif_message(
         actor=current_user,
         metadata={"type": "gif"},
     )
+
+    # Broadcast to channel members via WebSocket
+    await _broadcast_chat_event(channel_id, "chat_message", {
+        "channel_id": channel_id, "message": message_doc,
+    })
+
     return {"message": message_doc}
 
 
@@ -662,6 +683,12 @@ async def upload_channel_attachment(
         actor=current_user,
         metadata={"type": "attachment", "attachment_id": attachment_id},
     )
+
+    # Broadcast to channel members via WebSocket
+    await _broadcast_chat_event(channel_id, "chat_message", {
+        "channel_id": channel_id, "message": message_doc,
+    })
+
     return {
         "attachment": {
             "id": attachment_id,
@@ -884,3 +911,270 @@ async def acknowledge_announcement(
         upsert=True,
     )
     return {"message": "Acknowledged"}
+
+
+# ── Reactions ────────────────────────────────────────────────────
+
+class ToggleReactionRequest(BaseModel):
+    emoji: str = Field(min_length=1, max_length=16)
+
+
+@router.post("/channels/{channel_id}/messages/{message_id}/reactions")
+async def toggle_reaction(
+    channel_id: str,
+    message_id: str,
+    payload: ToggleReactionRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    await _ensure_channel_access(channel_id, current_user)
+    message = await db.comms_messages.find_one(
+        {"id": message_id, "channel_id": channel_id, "is_deleted": {"$ne": True}},
+        {"_id": 0},
+    )
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    user_id = current_user.get("id")
+    user_name = current_user.get("full_name") or current_user.get("email")
+    reactions = message.get("reactions") or []
+
+    existing_idx = next(
+        (i for i, r in enumerate(reactions) if r.get("emoji") == payload.emoji and r.get("user_id") == user_id),
+        None,
+    )
+    if existing_idx is not None:
+        reactions.pop(existing_idx)
+    else:
+        reactions.append({"emoji": payload.emoji, "user_id": user_id, "user_name": user_name, "created_at": _utc_now()})
+
+    await db.comms_messages.update_one(
+        {"id": message_id, "channel_id": channel_id},
+        {"$set": {"reactions": reactions}},
+    )
+
+    # Broadcast reaction update via WebSocket
+    try:
+        from websocket_manager import manager
+        member_ids = [m["user_id"] async for m in db.comms_channel_memberships.find(
+            {"channel_id": channel_id, "is_active": True}, {"_id": 0, "user_id": 1}
+        )]
+        await manager.broadcast_to_users(member_ids, {
+            "type": "chat_reaction",
+            "data": {"channel_id": channel_id, "message_id": message_id, "reactions": reactions},
+        })
+    except Exception:
+        pass
+
+    return {"reactions": reactions}
+
+
+# ── Threads ──────────────────────────────────────────────────────
+
+@router.get("/channels/{channel_id}/messages/{message_id}/thread")
+async def get_message_thread(
+    channel_id: str,
+    message_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    await _ensure_channel_access(channel_id, current_user)
+    parent = await db.comms_messages.find_one(
+        {"id": message_id, "channel_id": channel_id},
+        {"_id": 0},
+    )
+    if not parent:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    replies = await db.comms_messages.find(
+        {"channel_id": channel_id, "reply_to_message_id": message_id},
+        {"_id": 0},
+    ).sort("created_at", 1).to_list(200)
+
+    return {"parent": parent, "replies": replies, "reply_count": len(replies)}
+
+
+# ── Search ───────────────────────────────────────────────────────
+
+@router.get("/search")
+async def search_messages(
+    q: str = "",
+    channel_id: Optional[str] = None,
+    sender: Optional[str] = None,
+    has_file: bool = False,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    limit: int = 30,
+    current_user: dict = Depends(get_current_active_user),
+):
+    user_id = current_user.get("id")
+    if not q and not channel_id and not sender and not has_file:
+        return {"results": []}
+
+    # Get channels the user has access to
+    if _can_manage_channels(current_user):
+        accessible_channel_ids = [c["id"] async for c in db.comms_channels.find(
+            {"is_archived": {"$ne": True}}, {"_id": 0, "id": 1}
+        )]
+    else:
+        accessible_channel_ids = [m["channel_id"] async for m in db.comms_channel_memberships.find(
+            {"user_id": user_id, "is_active": True}, {"_id": 0, "channel_id": 1}
+        )]
+
+    if not accessible_channel_ids:
+        return {"results": []}
+
+    query = {"channel_id": {"$in": accessible_channel_ids}, "is_deleted": {"$ne": True}}
+    if q:
+        import re
+        query["body"] = {"$regex": re.escape(q), "$options": "i"}
+    if channel_id:
+        query["channel_id"] = channel_id
+    if sender:
+        query["sender_name"] = {"$regex": sender, "$options": "i"}
+    if has_file:
+        query["type"] = "attachment"
+    if from_date:
+        query.setdefault("created_at", {})["$gte"] = from_date
+    if to_date:
+        query.setdefault("created_at", {})["$lte"] = to_date
+
+    safe_limit = max(1, min(limit, 50))
+    messages = await db.comms_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(safe_limit).to_list(safe_limit)
+
+    # Enrich with channel names
+    channel_names = {}
+    channel_ids_in_results = set(m.get("channel_id") for m in messages if m.get("channel_id"))
+    if channel_ids_in_results:
+        channels = await db.comms_channels.find(
+            {"id": {"$in": list(channel_ids_in_results)}}, {"_id": 0, "id": 1, "name": 1}
+        ).to_list(100)
+        channel_names = {c["id"]: c.get("name", "Unknown") for c in channels}
+
+    for msg in messages:
+        msg["channel_name"] = channel_names.get(msg.get("channel_id"), "Unknown")
+
+    return {"results": messages, "count": len(messages)}
+
+
+# ── Direct Messages ──────────────────────────────────────────────
+
+class CreateDMRequest(BaseModel):
+    user_id: str
+
+
+@router.post("/dm")
+async def create_or_find_dm(
+    payload: CreateDMRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    my_id = current_user.get("id")
+    target_id = payload.user_id
+    if my_id == target_id:
+        raise HTTPException(status_code=400, detail="Cannot DM yourself")
+
+    # Check target user exists
+    target_user = await db.users.find_one({"id": target_id}, {"_id": 0, "id": 1, "full_name": 1, "email": 1})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Look for existing DM channel between these two users
+    pair_key = "__".join(sorted([my_id, target_id]))
+    existing = await db.comms_channels.find_one(
+        {"dm_pair_key": pair_key, "is_archived": {"$ne": True}},
+        {"_id": 0},
+    )
+    if existing:
+        return {"channel": existing, "created": False}
+
+    # Create new DM channel
+    my_name = current_user.get("full_name") or current_user.get("email") or "Unknown"
+    target_name = target_user.get("full_name") or target_user.get("email") or "Unknown"
+    channel_id = str(uuid.uuid4())
+    now = _utc_now()
+
+    channel_doc = {
+        "id": channel_id,
+        "name": f"{my_name} & {target_name}",
+        "type": "internal_private",
+        "description": "",
+        "posting_policy": "all_members",
+        "dm_pair_key": pair_key,
+        "is_dm": True,
+        "created_by_user_id": my_id,
+        "created_at": now,
+        "updated_at": now,
+        "is_archived": False,
+    }
+    await db.comms_channels.insert_one(channel_doc)
+
+    membership_docs = [
+        {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": my_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
+        {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": target_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
+    ]
+    await db.comms_channel_memberships.insert_many(membership_docs)
+
+    return {"channel": channel_doc, "created": True}
+
+
+# ── WebSocket broadcast helper ───────────────────────────────────
+
+async def _broadcast_chat_event(channel_id: str, event_type: str, data: dict):
+    """Broadcast a chat event to all members of a channel via WebSocket."""
+    try:
+        from websocket_manager import manager
+        member_ids = [m["user_id"] async for m in db.comms_channel_memberships.find(
+            {"channel_id": channel_id, "is_active": True}, {"_id": 0, "user_id": 1}
+        )]
+        await manager.broadcast_to_users(member_ids, {"type": event_type, "data": data})
+    except Exception:
+        pass
+
+
+async def _parse_and_notify_mentions(body: str, channel_id: str, sender: dict, message_id: str):
+    """Parse @mentions from message body and send notifications."""
+    import re
+    mention_pattern = re.findall(r"@(\w[\w ]*\w|\w+)", body)
+    if not mention_pattern:
+        return []
+
+    members = await db.comms_channel_memberships.find(
+        {"channel_id": channel_id, "is_active": True}, {"_id": 0, "user_id": 1}
+    ).to_list(500)
+    member_user_ids = [m["user_id"] for m in members]
+
+    users = await db.users.find(
+        {"id": {"$in": member_user_ids}},
+        {"_id": 0, "id": 1, "full_name": 1, "email": 1},
+    ).to_list(500)
+
+    mentioned_ids = []
+    sender_id = sender.get("id")
+    sender_name = sender.get("full_name") or sender.get("email") or "Someone"
+
+    for mention_text in mention_pattern:
+        mention_lower = mention_text.lower()
+        for u in users:
+            name = (u.get("full_name") or "").lower()
+            email_prefix = (u.get("email") or "").split("@")[0].lower()
+            if u["id"] != sender_id and (mention_lower in name or mention_lower == email_prefix):
+                if u["id"] not in mentioned_ids:
+                    mentioned_ids.append(u["id"])
+
+    # Create notifications for mentioned users
+    for uid in mentioned_ids:
+        try:
+            from routes.notifications import create_notification
+            channel = await db.comms_channels.find_one({"id": channel_id}, {"_id": 0, "name": 1})
+            ch_name = (channel or {}).get("name", "a channel")
+            await create_notification(
+                user_id=uid,
+                type="comms_bot",
+                title=f"{sender_name} mentioned you",
+                body=f"in #{ch_name}: {body[:120]}",
+                cta_label="View Message",
+                cta_route=f"/comms/chat/{channel_id}",
+                data={"channel_id": channel_id, "message_id": message_id},
+            )
+        except Exception:
+            pass
+
+    return mentioned_ids
