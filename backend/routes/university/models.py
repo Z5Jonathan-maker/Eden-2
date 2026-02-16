@@ -23,13 +23,23 @@ class Lesson(BaseModel):
     video_url: Optional[str] = None
     duration_minutes: int = 10
     order: int = 0
+    teaching_beats: List[str] = []
+    carrier_move: Optional[str] = None
+    our_move: Optional[str] = None
+    completion_criteria: Optional[str] = None
 
 class Course(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str
     category: str
+    track: Optional[str] = None  # "foundation", "operator", "advanced-elite"
+    difficulty: Optional[int] = None  # 1-5
+    est_minutes: Optional[int] = None
+    tags: List[str] = []
     thumbnail: Optional[str] = None
+    why_this_matters: Optional[str] = None
+    outcomes: List[str] = []
     lessons: List[Lesson] = []
     quiz: List[QuizQuestion] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

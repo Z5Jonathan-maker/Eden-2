@@ -13,9 +13,22 @@ import {
   ChevronRight,
   FileText,
   AlertCircle,
+  Target,
+  Shield,
+  Crosshair,
+  Zap,
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { apiGet, apiPost } from '@/lib/api';
+
+const TRACK_LABELS = {
+  foundation: 'Foundation',
+  operator: 'Operator',
+  'advanced-elite': 'Advanced-Elite',
+  training: 'Training',
+  industry: 'Industry',
+  advanced: 'Advanced',
+};
 
 function CourseDetail() {
   var params = useParams();
@@ -166,6 +179,8 @@ function CourseDetail() {
     );
   }
 
+  var trackLabel = TRACK_LABELS[course.track] || TRACK_LABELS[course.category] || course.category;
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-6">
@@ -182,9 +197,17 @@ function CourseDetail() {
 
         <div className="flex items-start justify-between">
           <div>
-            <Badge variant="outline" className="mb-2">
-              {course.category === 'training' ? 'Training' : 'Industry'}
-            </Badge>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="outline">{trackLabel}</Badge>
+              {course.category && course.track && (
+                <Badge variant="outline" className="text-xs text-gray-500">
+                  {course.category}
+                </Badge>
+              )}
+              {course.difficulty && (
+                <span className="text-orange-500 text-sm">{'★'.repeat(course.difficulty)}</span>
+              )}
+            </div>
             <h1 className="text-3xl font-tactical font-bold text-white tracking-wide">
               {course.title}
             </h1>
@@ -197,6 +220,39 @@ function CourseDetail() {
             </Badge>
           )}
         </div>
+
+        {/* Why This Matters + Outcomes */}
+        {(course.why_this_matters || (course.outcomes && course.outcomes.length > 0)) && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {course.why_this_matters && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-orange-800 flex items-center mb-2">
+                  <Target className="w-4 h-4 mr-1.5" />
+                  Why This Matters
+                </h4>
+                <p className="text-sm text-orange-900/80">{course.why_this_matters}</p>
+              </div>
+            )}
+            {course.outcomes && course.outcomes.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-2">
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
+                  What You'll Learn
+                </h4>
+                <ul className="space-y-1">
+                  {course.outcomes.map(function (outcome, i) {
+                    return (
+                      <li key={i} className="text-sm text-blue-900/80 flex items-start">
+                        <span className="text-blue-500 mr-2 mt-0.5">→</span>
+                        {outcome}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-4">
           <div className="flex justify-between text-sm text-gray-600 mb-1">
@@ -292,7 +348,60 @@ function CourseDetail() {
                 <p className="text-gray-600 text-sm">{activeLesson.description}</p>
               </CardHeader>
               <CardContent>
+                {/* Teaching Beats */}
+                {activeLesson.teaching_beats && activeLesson.teaching_beats.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                      Key Takeaways
+                    </h4>
+                    <ul className="space-y-1.5">
+                      {activeLesson.teaching_beats.map(function (beat, i) {
+                        return (
+                          <li key={i} className="text-sm text-gray-700 flex items-start">
+                            <Zap className="w-3.5 h-3.5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                            {beat}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="prose max-w-none whitespace-pre-wrap">{activeLesson.content}</div>
+
+                {/* Carrier Move / Our Move */}
+                {(activeLesson.carrier_move || activeLesson.our_move) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {activeLesson.carrier_move && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wider flex items-center mb-2">
+                          <Shield className="w-3.5 h-3.5 mr-1.5" />
+                          Carrier Move
+                        </h4>
+                        <p className="text-sm text-red-900/80">{activeLesson.carrier_move}</p>
+                      </div>
+                    )}
+                    {activeLesson.our_move && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wider flex items-center mb-2">
+                          <Crosshair className="w-3.5 h-3.5 mr-1.5" />
+                          Our Move
+                        </h4>
+                        <p className="text-sm text-green-900/80">{activeLesson.our_move}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Completion Criteria */}
+                {activeLesson.completion_criteria && (
+                  <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                    <p className="text-xs text-purple-700">
+                      <span className="font-semibold uppercase tracking-wider">To complete:</span>{' '}
+                      {activeLesson.completion_criteria}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between mt-8 pt-6 border-t">
                   {!isLessonComplete(activeLesson.id) ? (
