@@ -5,13 +5,14 @@
 
 import React from 'react';
 import { Button } from '../../shared/ui/button';
-import { BookOpen, FileText, PlayCircle, Award, FolderOpen } from 'lucide-react';
+import { BookOpen, FileText, PlayCircle, Award, FolderOpen, Library } from 'lucide-react';
 
 const TABS = [
   { id: 'courses', label: 'Courses', icon: BookOpen },
   { id: 'articles', label: 'Articles', icon: FileText },
   { id: 'videos', label: 'Videos', icon: PlayCircle },
-  { id: 'certificates', label: 'My Certificates', icon: Award }
+  { id: 'certificates', label: 'My Certificates', icon: Award },
+  { id: 'library', label: 'Library', icon: Library }
 ];
 
 export const TabNavigation = ({ activeTab, setActiveTab, onTabChange, showFirmContent }) => {

@@ -18,6 +18,8 @@ import VideosTab from './university/VideosTab';
 import CertificatesTab from './university/CertificatesTab';
 import FirmContentTab from './university/FirmContentTab';
 import CreateContentModal from './university/CreateContentModal';
+import LibraryTab from './university/LibraryTab';
+import AddBookModal from './university/AddBookModal';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -37,6 +39,9 @@ function University() {
   const [certificates, setCertificates] = useState([]);
   const [videoSources, setVideoSources] = useState({ sources: [], playlists: [] });
   const [customContent, setCustomContent] = useState({ courses: [], articles: [], documents: [] });
+  const [libraryBooks, setLibraryBooks] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [showAddBookModal, setShowAddBookModal] = useState(false);
   
   // University Name State
   const [companyName, setCompanyName] = useState('');
@@ -135,6 +140,18 @@ function University() {
       if (res.ok) setCustomContent(res.data);
     } catch (err) {
       console.error('Failed to fetch custom content:', err);
+    }
+  }, []);
+
+  const fetchLibraryBooks = useCallback(async () => {
+    setLibraryLoading(true);
+    try {
+      const res = await apiGet('/api/university/library/books');
+      if (res.ok) setLibraryBooks(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch library books:', err);
+    } finally {
+      setLibraryLoading(false);
     }
   }, []);
 
@@ -302,6 +319,7 @@ function University() {
   const handleTabChange = (tabId) => {
     if (tabId === 'videos') fetchVideoSources();
     if (tabId === 'firm') fetchCustomContent();
+    if (tabId === 'library') fetchLibraryBooks();
   };
 
   // Loading state
@@ -373,6 +391,22 @@ function University() {
           onDelete={handleDeleteContent}
         />
       )}
+
+      {activeTab === 'library' && (
+        <LibraryTab
+          books={libraryBooks}
+          loading={libraryLoading}
+          onAddClick={() => setShowAddBookModal(true)}
+          canEdit={canEdit}
+        />
+      )}
+
+      {/* Add Book Modal */}
+      <AddBookModal
+        show={showAddBookModal}
+        onClose={() => setShowAddBookModal(false)}
+        onBookAdded={fetchLibraryBooks}
+      />
 
       {/* Create Content Modal */}
       <CreateContentModal

@@ -21,7 +21,7 @@ UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BACKEND_DIR / "uploads"))
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_EXTENSIONS = {
     "image": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
-    "document": [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"],
+    "document": [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md", ".epub"],
     "video": [".mp4", ".webm", ".mov", ".avi"],
     "audio": [".mp3", ".wav", ".ogg", ".m4a"]
 }
