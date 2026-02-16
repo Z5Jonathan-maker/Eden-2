@@ -5,7 +5,6 @@ import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
 import {
   ArrowLeft,
-  PlayCircle,
   CheckCircle,
   Clock,
   BookOpen,
@@ -17,8 +16,9 @@ import {
   Shield,
   Crosshair,
   Zap,
+  Lock,
 } from 'lucide-react';
-import { NAV_ICONS } from '../assets/badges';
+import { toast } from 'sonner';
 import { apiGet, apiPost } from '@/lib/api';
 
 const TRACK_LABELS = {
@@ -123,48 +123,26 @@ function CourseDetail() {
     return course.user_progress.completed_lessons.length >= course.lessons.length;
   }
 
-  function getQuizClassName() {
-    var base = 'p-4 cursor-pointer';
-    if (showQuiz) {
-      base = base + ' bg-orange-50 border-l-4 border-orange-600';
-    } else {
-      base = base + ' hover:bg-gray-50';
-    }
-    if (!allLessonsComplete()) {
-      base = base + ' opacity-50';
-    }
-    return base;
-  }
-
-  function getLessonClassName(isActive) {
-    if (isActive) {
-      return 'p-4 cursor-pointer bg-orange-50 border-l-4 border-orange-600';
-    }
-    return 'p-4 cursor-pointer hover:bg-gray-50';
-  }
-
-  function getIconClassName(isComplete) {
-    if (isComplete) {
-      return 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-green-100 text-green-600';
-    }
-    return 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-gray-100 text-gray-600';
+  function completedLessonCount() {
+    if (!course || !course.user_progress || !course.user_progress.completed_lessons) return 0;
+    return course.user_progress.completed_lessons.length;
   }
 
   if (loading) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      <div className="p-8 min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen">
-        <Card>
+      <div className="p-8 min-h-screen">
+        <Card className="border-zinc-700">
           <CardContent className="p-12 text-center">
-            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold">Course not found</h3>
+            <AlertCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-zinc-200">Course not found</h3>
             <Button
               className="mt-4"
               onClick={function () {
@@ -180,16 +158,17 @@ function CourseDetail() {
   }
 
   var trackLabel = TRACK_LABELS[course.track] || TRACK_LABELS[course.category] || course.category;
+  var lessonsReady = allLessonsComplete();
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
       <div className="mb-6">
         <Button
           variant="ghost"
           onClick={function () {
             navigate('/university');
           }}
-          className="mb-4"
+          className="mb-4 text-zinc-400 hover:text-zinc-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to University
@@ -198,9 +177,9 @@ function CourseDetail() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline">{trackLabel}</Badge>
+              <Badge variant="outline" className="border-orange-500/40 text-orange-400">{trackLabel}</Badge>
               {course.category && course.track && (
-                <Badge variant="outline" className="text-xs text-gray-500">
+                <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-700">
                   {course.category}
                 </Badge>
               )}
@@ -211,7 +190,7 @@ function CourseDetail() {
             <h1 className="text-3xl font-tactical font-bold text-white tracking-wide">
               {course.title}
             </h1>
-            <p className="text-gray-600 mt-2">{course.description}</p>
+            <p className="text-zinc-400 mt-2">{course.description}</p>
           </div>
           {course.user_progress && course.user_progress.quiz_passed && (
             <Badge className="bg-green-600 text-lg px-4 py-2">
@@ -225,25 +204,25 @@ function CourseDetail() {
         {(course.why_this_matters || (course.outcomes && course.outcomes.length > 0)) && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {course.why_this_matters && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-orange-800 flex items-center mb-2">
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-orange-300 flex items-center mb-2">
                   <Target className="w-4 h-4 mr-1.5" />
                   Why This Matters
                 </h4>
-                <p className="text-sm text-orange-900/80">{course.why_this_matters}</p>
+                <p className="text-sm text-orange-200/80">{course.why_this_matters}</p>
               </div>
             )}
             {course.outcomes && course.outcomes.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-2">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-300 flex items-center mb-2">
                   <CheckCircle className="w-4 h-4 mr-1.5" />
                   What You'll Learn
                 </h4>
                 <ul className="space-y-1">
                   {course.outcomes.map(function (outcome, i) {
                     return (
-                      <li key={i} className="text-sm text-blue-900/80 flex items-start">
-                        <span className="text-blue-500 mr-2 mt-0.5">→</span>
+                      <li key={i} className="text-sm text-blue-200/80 flex items-start">
+                        <span className="text-blue-400 mr-2 mt-0.5">→</span>
                         {outcome}
                       </li>
                     );
@@ -255,13 +234,13 @@ function CourseDetail() {
         )}
 
         <div className="mt-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
+          <div className="flex justify-between text-sm text-zinc-400 mb-1">
             <span>Progress</span>
             <span>{getProgress()}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-zinc-800 rounded-full h-3">
             <div
-              className="bg-orange-600 h-3 rounded-full"
+              className="bg-orange-500 h-3 rounded-full transition-all"
               style={{ width: getProgress() + '%' }}
             ></div>
           </div>
@@ -270,15 +249,15 @@ function CourseDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="border-zinc-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <BookOpen className="w-5 h-5 mr-2" />
+              <CardTitle className="flex items-center text-zinc-200">
+                <BookOpen className="w-5 h-5 mr-2 text-orange-400" />
                 Lessons
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y divide-zinc-800">
                 {course.lessons &&
                   course.lessons.map(function (lesson, index) {
                     var isComplete = isLessonComplete(lesson.id);
@@ -287,14 +266,24 @@ function CourseDetail() {
                     return (
                       <div
                         key={lesson.id}
-                        className={getLessonClassName(isActive)}
+                        className={
+                          isActive
+                            ? 'p-4 cursor-pointer bg-orange-500/10 border-l-4 border-orange-500'
+                            : 'p-4 cursor-pointer hover:bg-zinc-800/50'
+                        }
                         onClick={function () {
                           setActiveLesson(lesson);
                           setShowQuiz(false);
                         }}
                       >
                         <div className="flex items-center">
-                          <div className={getIconClassName(isComplete)}>
+                          <div
+                            className={
+                              isComplete
+                                ? 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-green-500/20 text-green-400'
+                                : 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-zinc-800 text-zinc-400'
+                            }
+                          >
                             {isComplete ? (
                               <CheckCircle className="w-5 h-5" />
                             ) : (
@@ -302,35 +291,57 @@ function CourseDetail() {
                             )}
                           </div>
                           <div>
-                            <p className={isActive ? 'font-medium text-orange-600' : 'font-medium'}>
+                            <p className={isActive ? 'font-medium text-orange-400' : 'font-medium text-zinc-200'}>
                               {lesson.title}
                             </p>
-                            <p className="text-xs text-gray-500">{lesson.duration_minutes} min</p>
+                            <p className="text-xs text-zinc-500">{lesson.duration_minutes} min</p>
                           </div>
                         </div>
                       </div>
                     );
                   })}
 
+                {/* Quiz Entry */}
                 {course.quiz && course.quiz.length > 0 && (
                   <div
-                    className={getQuizClassName()}
+                    className={
+                      showQuiz
+                        ? 'p-4 cursor-pointer bg-orange-500/10 border-l-4 border-orange-500'
+                        : lessonsReady
+                          ? 'p-4 cursor-pointer hover:bg-zinc-800/50'
+                          : 'p-4 cursor-pointer hover:bg-zinc-800/50 opacity-60'
+                    }
                     onClick={function () {
-                      if (allLessonsComplete()) {
+                      if (lessonsReady) {
                         setShowQuiz(true);
                         setActiveLesson(null);
+                      } else {
+                        var remaining = (course.lessons?.length || 0) - completedLessonCount();
+                        toast.info('Complete all lessons to unlock the quiz (' + remaining + ' remaining)');
                       }
                     }}
                   >
                     <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-purple-100 text-purple-600">
-                        <FileText className="w-5 h-5" />
+                      <div className={
+                        lessonsReady
+                          ? 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-purple-500/20 text-purple-400'
+                          : 'w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-zinc-800 text-zinc-500'
+                      }>
+                        {lessonsReady ? (
+                          <FileText className="w-5 h-5" />
+                        ) : (
+                          <Lock className="w-4 h-4" />
+                        )}
                       </div>
                       <div>
-                        <p className={showQuiz ? 'font-medium text-orange-600' : 'font-medium'}>
+                        <p className={showQuiz ? 'font-medium text-orange-400' : 'font-medium text-zinc-200'}>
                           Final Quiz
                         </p>
-                        <p className="text-xs text-gray-500">{course.quiz.length} questions</p>
+                        <p className="text-xs text-zinc-500">
+                          {lessonsReady
+                            ? course.quiz.length + ' questions'
+                            : 'Complete all lessons to unlock'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -341,23 +352,24 @@ function CourseDetail() {
         </div>
 
         <div className="lg:col-span-2">
+          {/* Lesson Content */}
           {activeLesson && !showQuiz && (
-            <Card>
+            <Card className="border-zinc-700">
               <CardHeader>
-                <CardTitle>{activeLesson.title}</CardTitle>
-                <p className="text-gray-600 text-sm">{activeLesson.description}</p>
+                <CardTitle className="text-zinc-100">{activeLesson.title}</CardTitle>
+                <p className="text-zinc-400 text-sm">{activeLesson.description}</p>
               </CardHeader>
               <CardContent>
                 {/* Teaching Beats */}
                 {activeLesson.teaching_beats && activeLesson.teaching_beats.length > 0 && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 mb-6">
+                    <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
                       Key Takeaways
                     </h4>
                     <ul className="space-y-1.5">
                       {activeLesson.teaching_beats.map(function (beat, i) {
                         return (
-                          <li key={i} className="text-sm text-gray-700 flex items-start">
+                          <li key={i} className="text-sm text-zinc-300 flex items-start">
                             <Zap className="w-3.5 h-3.5 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
                             {beat}
                           </li>
@@ -367,27 +379,29 @@ function CourseDetail() {
                   </div>
                 )}
 
-                <div className="prose max-w-none whitespace-pre-wrap">{activeLesson.content}</div>
+                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-300 leading-relaxed">
+                  {activeLesson.content}
+                </div>
 
                 {/* Carrier Move / Our Move */}
                 {(activeLesson.carrier_move || activeLesson.our_move) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                     {activeLesson.carrier_move && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wider flex items-center mb-2">
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                        <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider flex items-center mb-2">
                           <Shield className="w-3.5 h-3.5 mr-1.5" />
                           Carrier Move
                         </h4>
-                        <p className="text-sm text-red-900/80">{activeLesson.carrier_move}</p>
+                        <p className="text-sm text-red-200/80">{activeLesson.carrier_move}</p>
                       </div>
                     )}
                     {activeLesson.our_move && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wider flex items-center mb-2">
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                        <h4 className="text-xs font-semibold text-green-400 uppercase tracking-wider flex items-center mb-2">
                           <Crosshair className="w-3.5 h-3.5 mr-1.5" />
                           Our Move
                         </h4>
-                        <p className="text-sm text-green-900/80">{activeLesson.our_move}</p>
+                        <p className="text-sm text-green-200/80">{activeLesson.our_move}</p>
                       </div>
                     )}
                   </div>
@@ -395,15 +409,15 @@ function CourseDetail() {
 
                 {/* Completion Criteria */}
                 {activeLesson.completion_criteria && (
-                  <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
-                    <p className="text-xs text-purple-700">
+                  <div className="mt-4 bg-purple-500/10 border border-purple-500/30 rounded-lg px-4 py-3">
+                    <p className="text-xs text-purple-300">
                       <span className="font-semibold uppercase tracking-wider">To complete:</span>{' '}
                       {activeLesson.completion_criteria}
                     </p>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mt-8 pt-6 border-t">
+                <div className="flex items-center justify-between mt-8 pt-6 border-t border-zinc-700">
                   {!isLessonComplete(activeLesson.id) ? (
                     <Button
                       className="bg-green-600 hover:bg-green-700"
@@ -415,53 +429,93 @@ function CourseDetail() {
                       Mark Complete
                     </Button>
                   ) : (
-                    <Badge className="bg-green-100 text-green-700 px-4 py-2">
+                    <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 px-4 py-2">
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Completed
                     </Badge>
                   )}
+
+                  {/* Next lesson button */}
+                  {course.lessons && (() => {
+                    var currentIdx = course.lessons.findIndex(l => l.id === activeLesson.id);
+                    var nextLesson = currentIdx >= 0 && currentIdx < course.lessons.length - 1
+                      ? course.lessons[currentIdx + 1]
+                      : null;
+                    if (!nextLesson) return null;
+                    return (
+                      <Button
+                        variant="outline"
+                        className="border-zinc-700 text-zinc-300 hover:text-white"
+                        onClick={function () {
+                          setActiveLesson(nextLesson);
+                        }}
+                      >
+                        Next: {nextLesson.title}
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
           )}
 
+          {/* Quiz */}
           {showQuiz && (
-            <Card>
+            <Card className="border-zinc-700">
               <CardHeader>
-                <CardTitle>Final Quiz</CardTitle>
-                <p className="text-gray-600">70% required to pass</p>
+                <CardTitle className="text-zinc-100">Final Quiz</CardTitle>
+                <p className="text-zinc-400">Score 70% or higher to earn your certificate</p>
               </CardHeader>
               <CardContent>
                 {quizResult ? (
                   <div className="text-center py-8">
                     {quizResult.passed ? (
                       <div>
-                        <Award className="w-20 h-20 text-green-600 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-green-600 mb-2">Congratulations!</h3>
-                        <p className="text-gray-600 mb-4">You scored {quizResult.score}%</p>
+                        <Award className="w-20 h-20 text-green-400 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-green-400 mb-2">Congratulations!</h3>
+                        <p className="text-zinc-400 mb-2">You scored {quizResult.score}%</p>
+                        <p className="text-zinc-500 text-sm mb-6">Certificate earned. You can view it in the Certificates tab.</p>
                         <Button
                           className="bg-orange-600 hover:bg-orange-700"
                           onClick={function () {
                             navigate('/university');
                           }}
                         >
+                          <Award className="w-4 h-4 mr-2" />
                           View Certificates
                         </Button>
                       </div>
                     ) : (
                       <div>
-                        <AlertCircle className="w-20 h-20 text-red-600 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-red-600 mb-2">Try Again</h3>
-                        <p className="text-gray-600 mb-4">You scored {quizResult.score}%</p>
-                        <Button
-                          variant="outline"
-                          onClick={function () {
-                            setQuizResult(null);
-                            setQuizAnswers(new Array(course.quiz.length).fill(-1));
-                          }}
-                        >
-                          Retry
-                        </Button>
+                        <AlertCircle className="w-20 h-20 text-red-400 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-red-400 mb-2">Not Quite</h3>
+                        <p className="text-zinc-400 mb-2">You scored {quizResult.score}% (70% required)</p>
+                        <p className="text-zinc-500 text-sm mb-6">Review the lessons and try again.</p>
+                        <div className="flex gap-3 justify-center">
+                          <Button
+                            variant="outline"
+                            className="border-zinc-700"
+                            onClick={function () {
+                              setQuizResult(null);
+                              setQuizAnswers(new Array(course.quiz.length).fill(-1));
+                            }}
+                          >
+                            Retry Quiz
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="border-zinc-700"
+                            onClick={function () {
+                              setShowQuiz(false);
+                              if (course.lessons && course.lessons.length > 0) {
+                                setActiveLesson(course.lessons[0]);
+                              }
+                            }}
+                          >
+                            Review Lessons
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -470,22 +524,26 @@ function CourseDetail() {
                     {course.quiz &&
                       course.quiz.map(function (question, qIndex) {
                         return (
-                          <div key={question.id} className="p-4 bg-gray-50 rounded-lg">
-                            <p className="font-medium text-gray-900 mb-3">
+                          <div key={question.id} className="p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                            <p className="font-medium text-zinc-100 mb-3">
                               {qIndex + 1}. {question.question}
                             </p>
                             <div className="space-y-2">
                               {question.options.map(function (option, oIndex) {
-                                var optClass =
-                                  quizAnswers[qIndex] === oIndex
-                                    ? 'flex items-center p-3 rounded-lg cursor-pointer bg-orange-100 border-2 border-orange-500'
-                                    : 'flex items-center p-3 rounded-lg cursor-pointer bg-white border-2 border-gray-200';
+                                var isSelected = quizAnswers[qIndex] === oIndex;
                                 return (
-                                  <label key={oIndex} className={optClass}>
+                                  <label
+                                    key={oIndex}
+                                    className={
+                                      isSelected
+                                        ? 'flex items-center p-3 rounded-lg cursor-pointer bg-orange-500/15 border-2 border-orange-500 text-orange-200'
+                                        : 'flex items-center p-3 rounded-lg cursor-pointer bg-zinc-900 border-2 border-zinc-700 text-zinc-300 hover:border-zinc-500'
+                                    }
+                                  >
                                     <input
                                       type="radio"
                                       name={'q' + qIndex}
-                                      checked={quizAnswers[qIndex] === oIndex}
+                                      checked={isSelected}
                                       onChange={function () {
                                         var newAnswers = quizAnswers.slice();
                                         newAnswers[qIndex] = oIndex;
@@ -493,6 +551,13 @@ function CourseDetail() {
                                       }}
                                       className="sr-only"
                                     />
+                                    <div className={
+                                      isSelected
+                                        ? 'w-5 h-5 rounded-full border-2 border-orange-500 bg-orange-500 mr-3 flex-shrink-0 flex items-center justify-center'
+                                        : 'w-5 h-5 rounded-full border-2 border-zinc-600 mr-3 flex-shrink-0'
+                                    }>
+                                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                    </div>
                                     <span>{option}</span>
                                   </label>
                                 );
@@ -502,14 +567,25 @@ function CourseDetail() {
                         );
                       })}
                     <Button
-                      className="w-full bg-orange-600 hover:bg-orange-700"
+                      className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                       onClick={submitQuiz}
                       disabled={quizAnswers.indexOf(-1) !== -1}
                     >
-                      Submit Quiz
+                      Submit Quiz ({quizAnswers.filter(a => a !== -1).length}/{course.quiz.length} answered)
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Empty state when no lesson or quiz selected */}
+          {!activeLesson && !showQuiz && (
+            <Card className="border-zinc-700 border-dashed">
+              <CardContent className="p-12 text-center">
+                <BookOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-zinc-300">Select a lesson to begin</h3>
+                <p className="text-zinc-500 mt-1">Choose a lesson from the sidebar to start learning</p>
               </CardContent>
             </Card>
           )}

@@ -1724,7 +1724,7 @@ If denied, request specific written reason. Apply the structured rebuttal framew
             category="Policy Mastery",
             track="operator",
             difficulty=3,
-            est_minutes=30,
+            est_minutes=55,
             tags=["depreciation", "RCV", "ACV", "recovery", "labor"],
             why_this_matters="The difference between ACV and RCV is 20-40% of the claim. Most policyholders leave recoverable depreciation on the table. Don't.",
             outcomes=["Calculate and track recoverable depreciation", "Identify improper depreciation (including labor)", "Submit depreciation recovery claims within policy time limits"],
@@ -1735,79 +1735,203 @@ If denied, request specific written reason. Apply the structured rebuttal framew
                     description="How depreciation holdback works",
                     content="""# ACV vs. RCV Mechanics
 
-## The Process
-1. Carrier estimates Replacement Cost Value (RCV)
-2. Carrier calculates depreciation based on age/condition
-3. Initial payment = RCV minus depreciation (this is ACV)
-4. After repairs, you submit for depreciation recovery
-5. Carrier pays the withheld depreciation
+Understanding the difference between Actual Cash Value (ACV) and Replacement Cost Value (RCV) is fundamental to every property claim. This is where carriers routinely leave tens of thousands of dollars on the table — and count on you not knowing.
+
+## The Two-Payment Process
+
+Most property insurance policies use a two-payment structure:
+
+### Payment 1: ACV (Initial Payment)
+1. Carrier estimates the full Replacement Cost Value (RCV) — what it costs to repair/replace with like kind and quality
+2. Carrier calculates depreciation based on age, condition, and expected lifespan
+3. Carrier subtracts depreciation from RCV to arrive at Actual Cash Value (ACV)
+4. Carrier subtracts your deductible
+5. You receive: ACV minus deductible
+
+### Payment 2: Recoverable Depreciation (After Repairs)
+1. You complete repairs (or substantially begin them)
+2. You submit proof of repair costs incurred
+3. Carrier pays the withheld depreciation amount
+
+## Real-World Example
+
+| Component | Amount |
+|-----------|--------|
+| RCV (full replacement cost) | $85,000 |
+| Depreciation (20-year roof, 50% life used) | -$25,500 |
+| **ACV** | **$59,500** |
+| Deductible | -$2,500 |
+| **Initial payment** | **$57,000** |
+| **Recoverable depreciation** | **$25,500** |
+
+The $25,500 is yours — but only if you claim it.
 
 ## The Trap
-Many policyholders accept the ACV payment and never claim the holdback. This can be 20-40% of the total claim value.
 
-## Time Limits
-Most policies set a deadline for depreciation recovery (often 180 days to 2 years). Miss the deadline, lose the money. Know your policy's timeline.""",
-                    duration_minutes=10,
+Many policyholders accept the ACV payment and never claim the holdback. Carriers know this. They count on it. On a portfolio of thousands of claims, unclaimed depreciation is pure profit.
+
+### Why Policyholders Miss It
+- They don't understand the two-payment process
+- They think the initial check is "the settlement"
+- They cash the check and assume the claim is closed
+- They miss the policy deadline for recovery
+- The carrier never proactively reminds them
+
+## Time Limits — Critical
+
+Most policies set strict deadlines for depreciation recovery. Common timeframes:
+- **180 days** from initial payment (some carriers)
+- **1 year** from date of loss (many Florida policies)
+- **2 years** from date of loss (some policies)
+- **Within the policy period** (vague — pushback if denied)
+
+**Read your specific policy.** The deadline is usually in the Conditions section under "Loss Settlement" or "How We Pay."
+
+Miss the deadline = lose the money. No exceptions. Set calendar reminders the day you receive the ACV payment.""",
+                    duration_minutes=20,
                     order=1,
-                    teaching_beats=["RCV minus depreciation = ACV (initial payment)", "Depreciation holdback is recoverable after repairs", "Strict time limits apply — know your policy's deadline"],
-                    carrier_move="Pay ACV and hope you never claim the holdback",
-                    our_move="Track every dollar of depreciation withheld and submit recovery before the deadline",
-                    completion_criteria="Can calculate depreciation holdback and identify the recovery deadline"
+                    teaching_beats=["RCV minus depreciation = ACV (initial payment)", "Depreciation holdback is recoverable after repairs — it's YOUR money", "Strict time limits apply — set calendar reminders immediately", "Carriers profit from unclaimed depreciation — don't let them"],
+                    carrier_move="Pay ACV and hope you never claim the holdback. Never proactively remind you of the deadline.",
+                    our_move="Track every dollar of depreciation withheld, set deadline reminders, and submit recovery before the policy deadline",
+                    completion_criteria="Can calculate depreciation holdback and identify the recovery deadline in a real policy"
                 ),
                 Lesson(
                     title="Improper Depreciation",
                     description="What carriers depreciate that they shouldn't",
                     content="""# Improper Depreciation
 
-## Labor Depreciation
-In Florida and many states, depreciating labor costs is prohibited by statute. Labor doesn't "wear out" — only materials do. If the carrier depreciates labor, challenge it.
+Carriers routinely depreciate items they legally or logically should not. Catching these errors can recover thousands of additional dollars per claim.
 
-## Items That Don't Depreciate
-- Labor and installation costs (in most jurisdictions)
-- Items that don't deteriorate with use
-- Recently replaced materials (still within useful life)
+## Labor Depreciation — The Biggest Error
 
-## Aggressive Depreciation
-Carriers sometimes apply excessive depreciation rates or depreciate materials beyond their actual condition. Compare their depreciation schedule against manufacturer lifespans and actual condition evidence.
+### The Law
+In Florida (and many other states), depreciating labor costs is prohibited. The legal reasoning is straightforward: labor doesn't "wear out" or deteriorate over time. A roofer's labor to install shingles today costs the same whether the roof is 5 years old or 20 years old.
 
-## Your Response
-"Carrier has applied depreciation to labor costs. Per [state statute], labor is not subject to depreciation. We request revised calculation excluding labor depreciation." """,
-                    duration_minutes=10,
+### Florida-Specific
+Florida courts have consistently held that labor is not subject to depreciation. The landmark case is *Plaintiff v. Security First Insurance Company* — but the principle is now well-established in Florida insurance practice.
+
+### How to Catch It
+Open the carrier's Xactimate estimate. Look at each line item. If the depreciation column shows depreciation applied to labor-only line items (like "Remove and Reset," "Haul Debris," or any "Labor Only" entries), flag it.
+
+### The Math Impact
+On a typical $80,000 roof claim:
+- Total labor component: ~$30,000 (roughly 35-40% of estimate)
+- If carrier depreciates labor at 40%: $12,000 improperly withheld
+- That's $12,000 you're owed that never should have been deducted
+
+## Other Improperly Depreciated Items
+
+### Items That Don't Depreciate
+- **Labor and installation costs** — In most jurisdictions, labor is not depreciable
+- **Recently replaced materials** — A 2-year-old HVAC system shouldn't be depreciated like a 15-year-old one. Demand age-specific depreciation.
+- **Items with indefinite lifespans** — Concrete, stone, brick don't "wear out" in the same way as a roof
+- **Code-required upgrades** — If current code requires a more expensive installation, that's not depreciation — it's a code upgrade
+
+### Excessive Depreciation Rates
+Carriers sometimes apply depreciation rates that exceed the material's actual wear:
+- Depreciating a 25-year shingle at 60% when it's only 10 years into its lifespan (should be ~40%)
+- Applying flat depreciation rates without considering actual condition
+- Using "composite" depreciation that overstates wear on individual components
+
+### How to Challenge
+1. Identify the manufacturer and product
+2. Look up the expected lifespan (manufacturer warranty is a good proxy)
+3. Calculate the appropriate depreciation: (Age / Expected Lifespan) × Material Cost
+4. Compare to carrier's depreciation
+5. Submit correction with your calculation and manufacturer documentation
+
+## Your Response Template
+
+"Review of the carrier's estimate reveals depreciation has been applied to labor costs on lines [X, Y, Z]. Per Florida statute and established case law, labor costs are not subject to depreciation as labor does not deteriorate with age. We request a revised depreciation calculation excluding all labor depreciation. Additionally, the depreciation rate of [X%] applied to [material] exceeds the appropriate rate based on the product's [Y]-year expected lifespan and its current age of [Z] years. Revised depreciation for this item should be [corrected rate]%."
+
+## The Audit Checklist
+For every carrier estimate, verify:
+- [ ] No depreciation applied to labor line items
+- [ ] Depreciation rates match material age vs. expected lifespan
+- [ ] Recently replaced items depreciated at appropriate (lower) rates
+- [ ] No depreciation on items with indefinite lifespans
+- [ ] No depreciation on code upgrade components""",
+                    duration_minutes=20,
                     order=2,
-                    teaching_beats=["Labor depreciation is prohibited in Florida and many states", "Challenge excessive depreciation rates with manufacturer data", "Depreciating non-depreciable items is a common carrier error"],
-                    carrier_move="Depreciate labor, apply excessive rates, and hope you don't check",
-                    our_move="Audit every depreciation calculation. Challenge labor depreciation and excessive rates.",
-                    completion_criteria="Can identify 3 types of improper depreciation in a carrier estimate"
+                    teaching_beats=["Labor depreciation is prohibited in Florida — this error alone can be worth $10K+", "Challenge excessive depreciation rates with manufacturer lifespan data", "Audit every carrier estimate line-by-line for improper depreciation", "Recently replaced materials must be depreciated at their actual age, not the structure's age"],
+                    carrier_move="Depreciate labor, apply excessive rates, use composite depreciation, and hope you don't check",
+                    our_move="Audit every depreciation calculation line by line. Challenge labor depreciation and excessive rates with specific data.",
+                    completion_criteria="Can audit a carrier estimate and identify all instances of improper depreciation"
                 ),
                 Lesson(
                     title="The Recovery Process",
                     description="Claiming what's owed after repairs",
                     content="""# The Recovery Process
 
+Recovering withheld depreciation is a mechanical process — but most policyholders either skip it entirely or do it wrong. Here's how to do it right, every time.
+
 ## When to Submit
-After repairs are complete or substantially underway, submit for depreciation recovery.
 
-## Required Documentation
-- Proof of repair completion (invoices, receipts, photos)
-- Original carrier estimate showing depreciation withheld
-- Calculation of amount owed
-- Request with deadline for payment
+### The Trigger
+Submit your depreciation recovery claim when:
+- Repairs are **complete**, OR
+- Repairs are **substantially underway** (most policies don't require 100% completion)
+- You have **documentation of costs incurred**
 
-## Track the Numbers
-- Total RCV per carrier estimate
-- Total depreciation withheld
-- Total ACV paid
-- Recoverable depreciation owed
-- Deadline for recovery submission
+### Don't Wait Until the Last Minute
+If your policy gives you 180 days, don't wait until day 175. Submit as soon as repairs are sufficiently documented. This gives you buffer time if the carrier raises questions.
 
-## Don't Leave Money on the Table
-On a $100,000 claim with 30% depreciation, that's $30,000 sitting unclaimed. This is your money. Claim it.""",
-                    duration_minutes=10,
+### Can You Recover Before Repairs Start?
+Generally no. Most policies require you to "incur" the replacement cost. However, signing a contract with a contractor and making a deposit may qualify as "incurring" the cost in some jurisdictions. Check your policy language.
+
+## The Recovery Package
+
+### Required Documentation
+1. **Proof of repair completion** — Before and after photos, contractor invoices, final inspection reports
+2. **Contractor invoices/receipts** — Itemized, showing costs that meet or exceed the RCV
+3. **Original carrier estimate** — Highlighting the depreciation withheld per line item
+4. **Your depreciation recovery calculation** — Clear spreadsheet showing what's owed
+5. **Written request** — Formal letter with specific amount requested and response deadline
+
+### Sample Recovery Letter
+"Per the terms of the policy, we have completed repairs to the covered property and hereby request payment of recoverable depreciation in the amount of $[AMOUNT]. Enclosed please find:
+- Contractor invoices showing repair costs of $[TOTAL] incurred
+- Photos documenting completed repairs
+- Depreciation recovery calculation referencing your estimate dated [DATE]
+Please remit payment within 30 days. If you require additional information, please specify in writing within 14 days."
+
+## Track the Numbers — The Depreciation Ledger
+
+Maintain a simple tracking sheet for every claim:
+
+| Field | Value |
+|-------|-------|
+| Total RCV per carrier estimate | $_____ |
+| Total depreciation withheld | $_____ |
+| Total ACV paid | $_____ |
+| Deductible applied | $_____ |
+| Recoverable depreciation owed | $_____ |
+| Improper depreciation identified | $_____ |
+| Total recovery amount | $_____ |
+| Policy deadline for recovery | ___/___/_____ |
+| Date recovery submitted | ___/___/_____ |
+| Date recovery paid | ___/___/_____ |
+
+## Common Carrier Pushback
+
+### "We need more documentation"
+Response: "Please specify in writing exactly what additional documentation you require. We will provide it promptly."
+
+### "The repairs don't match our estimate"
+Response: "The policy provides replacement cost coverage. Our repairs restore the property to pre-loss condition. The cost to do so is documented in the enclosed invoices."
+
+### "Your deadline has passed"
+Response: Verify against the actual policy language. Carriers sometimes cite internal deadlines that aren't in the policy. If the policy deadline truly passed, you may have limited options — which is why tracking deadlines from day one is critical.
+
+## The Bottom Line
+
+On a $100,000 claim with 30% depreciation, that's **$30,000** sitting unclaimed. Across a firm handling 50 claims per year, that's potentially **$1.5 million** in recovery that would otherwise be left on the table. This is not optional work — it's core to the job.""",
+                    duration_minutes=15,
                     order=3,
-                    teaching_beats=["Submit recovery after repairs with proof of completion", "Track: RCV, depreciation withheld, ACV paid, amount owed, deadline", "Recoverable depreciation can be 20-40% of the claim — never leave it"],
-                    carrier_move="Make the recovery process confusing or slow to discourage claims",
-                    our_move="Submit organized recovery package with all documentation and a clear deadline",
-                    completion_criteria="Can calculate and submit a depreciation recovery claim"
+                    teaching_beats=["Submit recovery as soon as repairs are documented — don't wait until the deadline", "Include: invoices, photos, original estimate, calculation, formal request letter", "Maintain a depreciation ledger for every single claim", "On a $100K claim with 30% depreciation, that's $30K — never leave it"],
+                    carrier_move="Make the recovery process confusing, request excessive documentation, or cite internal deadlines",
+                    our_move="Submit organized recovery package with all documentation, a clear calculation, and a specific payment deadline",
+                    completion_criteria="Can assemble and submit a complete depreciation recovery package for a real claim"
                 )
             ],
             quiz=[
@@ -1824,7 +1948,7 @@ On a $100,000 claim with 30% depreciation, that's $30,000 sitting unclaimed. Thi
             category="Estimating",
             track="operator",
             difficulty=3,
-            est_minutes=30,
+            est_minutes=55,
             tags=["code upgrades", "ordinance", "law", "building codes"],
             why_this_matters="Code upgrades can add 15-25% to a claim. Carriers routinely exclude them unless you specifically claim them with documentation.",
             outcomes=["Identify when code upgrades apply to a repair", "Document code requirements for supplement submission", "Leverage Ordinance & Law coverage endorsements"],
@@ -1835,74 +1959,208 @@ On a $100,000 claim with 30% depreciation, that's $30,000 sitting unclaimed. Thi
                     description="Triggers for code upgrade claims",
                     content="""# When Codes Apply
 
-Building codes evolve. When a repair triggers compliance with current codes, the difference between old and new may be a covered cost.
+Building codes are not static. They evolve continuously — Florida alone updates its building code every three years. When a covered repair triggers compliance with current codes that differ from the original construction, the cost difference may be a covered expense. This is one of the most commonly missed recovery opportunities in property claims.
 
-## Common Triggers
-- Roof replacement that must meet current wind-uplift requirements
-- Electrical work requiring updated panel/wiring standards
-- Plumbing repairs triggering current code compliance
-- Structural repairs requiring hurricane strapping or tie-downs
-- Energy code compliance for replacement windows/doors
+## The Fundamental Principle
+
+Insurance policies generally promise to "repair or replace" with materials of "like kind and quality." But when current building codes require a HIGHER standard than what was originally installed, "like kind and quality" may not be legally permissible. The carrier cannot authorize repairs that violate building codes. This creates a gap between what the policy says and what the law requires — and that gap is often covered.
+
+## Common Code Upgrade Triggers
+
+### Roofing — Wind Uplift (Most Common in Florida)
+- Original roof installed to 90 mph wind resistance
+- Current Florida Building Code requires 150+ mph in most coastal zones
+- **Cost impact:** Enhanced underlayment, ring-shank nails, additional fasteners, hurricane clips — can add $3,000-$15,000 to a roof replacement
+- Florida Building Code Section 1609 specifies wind speed requirements by zone
+
+### Electrical
+- Original 100-amp service panel now requires 200-amp per current code
+- GFCI protection now required in kitchens, bathrooms, garages, outdoor areas (may not have existed when home was built)
+- Arc-fault circuit interrupters (AFCI) now required in bedrooms
+- **Cost impact:** Panel upgrade alone can be $2,000-$4,000
+
+### Plumbing
+- Polybutylene pipes (common in 1980s-90s homes) must be replaced with current-standard materials when touched
+- Backflow prevention devices now required
+- Water heater platforms, expansion tanks, or earthquake strapping depending on jurisdiction
+
+### Structural
+- Hurricane strapping and tie-downs required in Florida for roof-to-wall connections
+- Impact-resistant windows in certain wind zones
+- Reinforced garage doors to current wind load requirements
+- **Cost impact:** Hurricane strapping a full roof structure can add $5,000-$10,000
+
+### Energy Code
+- Replacement windows must meet current energy efficiency standards (U-factor, SHGC ratings)
+- Insulation must meet current R-value requirements when walls/ceilings are opened
+- HVAC replacement may trigger current SEER rating requirements
 
 ## The Key Question
-"Does this repair require compliance with a building code that is different from what was originally installed?" If yes, the upgrade cost may be covered.""",
-                    duration_minutes=10,
+
+For every repair item, ask: "Does this repair require compliance with a building code that is different from what was originally installed?" If the answer is yes, document the difference and claim the upgrade cost.
+
+## When to Check
+Research codes BEFORE the carrier's estimate, not after. If you identify code upgrades first, you control the narrative.""",
+                    duration_minutes=20,
                     order=1,
-                    teaching_beats=["Code upgrades trigger when repairs must meet current standards", "Common triggers: wind uplift, electrical, plumbing, structural, energy", "Ask: does this repair require compliance with a newer code?"],
-                    carrier_move="Estimate to old code standards, ignoring current requirements",
-                    our_move="Research current local codes and document upgrade requirements",
-                    completion_criteria="Can identify code upgrade triggers for the 5 most common repair types"
+                    teaching_beats=["Code upgrades trigger when repairs must meet current standards that differ from original construction", "Most common: roofing wind uplift, electrical panels, structural strapping — can add $3K-$15K per item", "Ask for every repair: does current code require something different from original?", "Research codes BEFORE the carrier estimate — control the narrative"],
+                    carrier_move="Estimate to old code standards, ignoring current requirements. Hope you don't know the difference.",
+                    our_move="Research current local codes BEFORE carrier inspection. Document upgrade requirements with specific code sections.",
+                    completion_criteria="Can identify code upgrade triggers for the 5 most common repair types and cite the applicable code sections"
                 ),
                 Lesson(
                     title="Ordinance & Law Coverage",
                     description="Using the O&L endorsement",
                     content="""# Ordinance & Law Coverage
 
-Many policies include Ordinance & Law (O&L) coverage — but you have to invoke it.
+Many property insurance policies include an Ordinance & Law (O&L) endorsement — but it's separate from the base coverage, and you must specifically invoke it. Carriers will never volunteer this coverage. If you don't claim it, you don't get it.
 
-## What O&L Covers
-- **Coverage A**: Cost to demolish undamaged portions that must be rebuilt to code
-- **Coverage B**: Cost of increased construction to meet current codes
-- **Coverage C**: Cost of demolition and debris removal due to code requirements
+## What O&L Coverage Provides
 
-## Important
-O&L coverage is usually a separate limit (often 25% of Coverage A). It won't appear in the base estimate — you must specifically claim it.
+O&L coverage has three distinct components:
+
+### Coverage A — Loss to the Undamaged Portion
+When building codes require demolition of undamaged portions of the structure because the damaged portion can't be repaired to code separately.
+
+**Example:** A building has 60% of its roof damaged. Local code requires full roof replacement if more than 50% is damaged. Coverage A pays for the demolition and replacement of the undamaged 40%.
+
+### Coverage B — Increased Cost of Construction
+The additional cost to rebuild or repair to current code standards when those standards exceed the original construction.
+
+**Example:** Original roof used standard underlayment. Current Florida code requires peel-and-stick underlayment in the first 4 feet from the eave. Coverage B pays the cost difference between the old and new standard.
+
+### Coverage C — Demolition and Debris Removal
+When code compliance creates additional demolition or debris removal costs beyond what the base policy covers.
+
+**Example:** Code requires removal of all existing underlayment before new installation (no overlay allowed). The extra labor and disposal cost is covered under Coverage C.
+
+## Finding O&L in the Policy
+
+### Where to Look
+- Check the Declarations page for "Ordinance or Law" endorsement
+- Look for a separate limit (commonly 10-25% of Coverage A)
+- Read the endorsement language carefully — some are broader than others
+
+### Common Limits
+- **10% of Coverage A** — Minimum on most Florida policies
+- **25% of Coverage A** — Better policies
+- **50% of Coverage A** — Best coverage available
+
+### The Math
+If Coverage A limit is $300,000 and O&L is 25%:
+- **O&L available limit: $75,000**
+- This is a separate pot of money from the base claim
+- It doesn't reduce your Coverage A limit
+
+## Why Carriers Don't Volunteer This
+
+O&L coverage is:
+1. A separate line item carriers must pay in addition to the base claim
+2. Often overlooked by policyholders and even some adjusters
+3. Significant money — 15-25% additional on many claims
+4. Pure profit for carriers when unclaimed
 
 ## Documentation Required
-- Current local building code requirements
-- Comparison: what was installed vs. what code now requires
-- Cost difference between old standard and current code
-- Permit requirements showing code compliance is mandatory""",
-                    duration_minutes=10,
+
+To claim O&L coverage, you need:
+- The specific building code section that applies
+- What was originally installed (photos, permits, or reasonable inference from age)
+- What current code requires for this repair
+- The cost difference between old standard and current code
+- Permit application or building department confirmation showing code compliance is mandatory
+
+## Real-World Impact
+
+On a $200,000 roof claim where code upgrades add $35,000:
+- Without O&L claim: You get $200,000 (base coverage only, code costs come out of your pocket or base claim)
+- With O&L claim: You get $200,000 + $35,000 = $235,000
+- **That $35,000 was sitting there the whole time. You just had to claim it.**""",
+                    duration_minutes=20,
                     order=2,
-                    teaching_beats=["O&L coverage is separate from base coverage — you must invoke it", "Three components: demolition, increased construction, debris removal", "Document: current code, old installation, cost difference, permits"],
-                    carrier_move="Ignore O&L coverage unless you specifically claim it",
-                    our_move="Review every policy for O&L endorsement and claim it when code upgrades apply",
-                    completion_criteria="Can identify O&L coverage in a policy and calculate the available limit"
+                    teaching_beats=["O&L coverage is separate from base coverage — a separate pot of money you must invoke", "Three components: undamaged portion, increased construction cost, demolition/debris", "O&L limits are typically 10-25% of Coverage A — can be $30K-$75K on a large claim", "Carriers never volunteer this coverage. If you don't claim it, you don't get it."],
+                    carrier_move="Never mention O&L coverage. Ignore code upgrade costs in the base estimate.",
+                    our_move="Review every policy for O&L endorsement on day one. Claim it on every eligible repair.",
+                    completion_criteria="Can identify O&L coverage in a policy, calculate the available limit, and distinguish the three coverage components"
                 ),
                 Lesson(
                     title="Building the Code Upgrade Claim",
                     description="Documentation that supports code-related supplements",
                     content="""# Building the Code Upgrade Claim
 
+A code upgrade claim is one of the strongest supplement positions you can have — because building codes are law, not opinion. The carrier cannot argue with the building department. Here's how to build an airtight code upgrade submission.
+
 ## The Submission Package
-1. Current local building code citation (specific section)
-2. Description of what was originally installed
-3. What current code requires for this repair
-4. Line-item cost difference between old and current standard
-5. Permit application or inspector confirmation (if available)
 
-## Example
-"Current Florida Building Code [section] requires wind-uplift resistance of [X] for roof replacement in this wind zone. Original installation was to [older standard]. Cost to meet current code exceeds original specification by [amount]. Per O&L endorsement, we request coverage for code upgrade costs."
+### 1. Specific Code Citation
+Not "current codes require better materials" — but the exact section:
+"Florida Building Code 7th Edition, Section 1507.2.8.1 requires self-adhering polymer modified bitumen underlayment for the first course from the eave, per High-Velocity Hurricane Zone requirements."
 
-## The Leverage
-Code requirements are not negotiable — they're law. The carrier cannot authorize repairs that violate building codes.""",
-                    duration_minutes=10,
+### 2. Original Installation Standard
+What was installed at the time of original construction:
+"Per permit records from [year], the original roof was installed under the [edition] Florida Building Code, which required [older standard]."
+
+If no permits exist, you can establish the original standard based on the home's construction year and the code in effect at that time.
+
+### 3. Current Code Requirement
+What the code now requires for this type of repair:
+"Current code requires [specific requirement]. This differs from the original installation standard in the following ways: [list differences]."
+
+### 4. Cost Difference
+Line-item breakdown showing the cost difference between old and new standard:
+
+| Item | Original Standard | Current Code | Difference |
+|------|------------------|--------------|------------|
+| Underlayment | 15# felt, $0.12/SF | Peel-and-stick, $0.85/SF | +$0.73/SF |
+| Fasteners | Standard staples | Ring-shank nails | +$0.08/SF |
+| Hurricane clips | None required | Simpson H2.5 at every truss | +$3,500 |
+
+### 5. Permit or Inspector Confirmation
+- Permit application showing code compliance is mandatory
+- Building department letter confirming current code requirements
+- Inspector's report noting code deficiencies that must be addressed
+
+## Sample Submission Language
+
+"Per the terms of the Ordinance or Law endorsement (25% of Coverage A), we submit the following code upgrade costs incurred in connection with the covered loss:
+
+Current Florida Building Code 7th Edition, Section [X], requires [specific requirement] for roof replacement in Wind Zone [X]. The original roof, permitted in [year], was installed to the [edition] code standard, which required [older standard].
+
+The cost to comply with current code exceeds the cost to replace to the original standard by $[AMOUNT], detailed in the attached line-item comparison.
+
+We request payment of $[AMOUNT] under the Ordinance or Law endorsement. Please respond within 30 days with payment or written explanation of any disputed items."
+
+## The Leverage Position
+
+### Why This Is Strong
+- Building codes are **law** — not opinion, not preference, not upgrades
+- The carrier cannot authorize repairs that violate current building codes
+- The building department will not issue a permit for non-compliant work
+- If the carrier refuses, they're essentially asking you to break the law
+
+### The Killer Question
+If the carrier pushes back: "Are you instructing us to perform repairs that violate the current Florida Building Code? We need that instruction in writing."
+
+No carrier will put that in writing. This is your leverage.
+
+## Common Carrier Objections
+
+### "That's betterment, not covered"
+**Response:** "Code compliance is not betterment. Betterment is an upgrade beyond what's required. Code compliance is the minimum legal standard. The policy covers the cost to repair — and the cost to repair legally includes code compliance."
+
+### "Code upgrades aren't in our estimate"
+**Response:** "Your estimate reflects replacement to the original standard. Current code requires a different standard. The difference is a covered cost under the Ordinance & Law endorsement, which provides a separate limit of [X]% of Coverage A."
+
+### "We need a contractor to confirm"
+**Response:** "The building department confirms code requirements — not contractors. Attached is the relevant code section and permit requirements."
+
+## Pro Tip: Build a Code Reference Library
+For your most common repair types, maintain a reference sheet of current code requirements with specific section numbers. This lets you identify code upgrade opportunities in minutes, not hours.""",
+                    duration_minutes=15,
                     order=3,
-                    teaching_beats=["Code claims need: code citation, old vs new spec, cost difference, permit evidence", "Code requirements are law — carriers cannot authorize non-compliant repairs", "Always reference specific code sections, not general statements"],
-                    carrier_move="Argue code upgrades are policyholder responsibility or not covered",
-                    our_move="Submit code citation + cost difference + O&L endorsement reference. Codes are law, not optional.",
-                    completion_criteria="Can build a code upgrade supplement package with supporting documentation"
+                    teaching_beats=["Build the package: specific code citation, original standard, current requirement, cost difference, permit evidence", "Code requirements are LAW — carriers cannot authorize non-compliant repairs", "The killer question: 'Are you instructing us to violate building code? Put that in writing.'", "Maintain a code reference library for common repair types to identify opportunities fast"],
+                    carrier_move="Call code upgrades 'betterment,' argue they're not covered, or simply ignore them",
+                    our_move="Submit specific code citations + cost difference + O&L endorsement reference. Ask carrier to put any code-violation instruction in writing.",
+                    completion_criteria="Can build a complete code upgrade supplement with specific code citations, cost comparisons, and O&L endorsement reference"
                 )
             ],
             quiz=[
