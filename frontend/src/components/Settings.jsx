@@ -21,7 +21,7 @@ import ProfileCard from './settings/ProfileCard';
 import IntegrationCard from './settings/IntegrationCard';
 import StatusBadge from './settings/StatusBadge';
 import './settings/settings.css';
-import { apiGet, apiPut, apiDelete } from '@/lib/api';
+import { apiGet, apiPut, apiDelete, getAuthToken } from '@/lib/api';
 
 const DEFAULT_OAUTH_STATUS = {
   google: { connected: false, user_email: null, scopes: [] },
