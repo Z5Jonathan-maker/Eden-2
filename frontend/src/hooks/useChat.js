@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiGet, apiPost, apiPatch, apiDelete, assertApiUrl, getAuthToken } from '@/lib/api';
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload, assertApiUrl, getAuthToken } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 const POLL_INTERVAL = 15_000;
@@ -236,7 +236,7 @@ export default function useChat(initialChannelId = null) {
     if (!activeChannelId || !file) return null;
     const formData = new FormData();
     formData.append('upload', file);
-    const res = await apiPost(`/api/comm/channels/${activeChannelId}/attachments`, formData);
+    const res = await apiUpload(`/api/comm/channels/${activeChannelId}/attachments`, formData);
     if (res.ok && res.data?.message) {
       setMessages((prev) => {
         if (prev.some((m) => m.id === res.data.message.id)) return prev;
@@ -309,14 +309,14 @@ export default function useChat(initialChannelId = null) {
 
   const postAnnouncement = useCallback(async (title, body) => {
     if (!activeChannelId) return null;
-    const res = await apiPost(`/api/comm/channels/${activeChannelId}/announcements`, { title, body });
+    const res = await apiPost(`/api/comm/channels/${activeChannelId}/announcement`, { title, body });
     if (res.ok) loadMessages(activeChannelId);
     return res;
   }, [activeChannelId, loadMessages]);
 
   const ackAnnouncement = useCallback(async (messageId) => {
     if (!activeChannelId) return null;
-    return apiPost(`/api/comm/channels/${activeChannelId}/messages/${messageId}/acknowledge`, {});
+    return apiPost(`/api/comm/channels/${activeChannelId}/announcement/${messageId}/ack`, {});
   }, [activeChannelId]);
 
   // ── Threads ────────────────────────────────────────────────────
