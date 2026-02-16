@@ -434,6 +434,118 @@ INDUSTRY_EXPERTS = {
                 "Discipline equals freedom",
                 "Decentralize command - empower your team"
             ]
+        },
+        {
+            "id": "alex-hormozi",
+            "name": "Alex Hormozi",
+            "category": "Business Growth",
+            "bio": "Entrepreneur, investor, and author who scaled multiple businesses past $100M+. Founder of Acquisition.com, a portfolio of companies generating $200M+ annually. Known for his frameworks on offers, lead generation, and scaling service businesses. His no-BS approach to business building resonates with operators who want to grow fast and profitably.",
+            "relevance": "Offer creation, lead generation, scaling a service-based firm, pricing strategy, and client acquisition for public adjusting",
+            "books": [
+                {
+                    "title": "$100M Offers: How to Make Offers So Good People Feel Stupid Saying No",
+                    "url": "https://www.amazon.com/100M-Offers-People-Stupid-Saying/dp/1737475731",
+                    "excerpt": "How to create Grand Slam Offers that are so compelling your prospects feel stupid saying no."
+                },
+                {
+                    "title": "$100M Leads: How to Get Strangers to Want to Buy Your Stuff",
+                    "url": "https://www.amazon.com/100M-Leads-Strangers-Want-Your/dp/1737475774",
+                    "excerpt": "The advertising playbook that generated $200M+ in revenue."
+                }
+            ],
+            "resources": [
+                {"type": "YouTube", "url": "https://www.youtube.com/@AlexHormozi", "description": "Business growth tactics, free education on scaling"},
+                {"type": "Website", "url": "https://www.acquisition.com/", "description": "Portfolio company and business resources"}
+            ],
+            "key_insights": [
+                "Make your offer so good people feel stupid saying no",
+                "Volume negates luck - take more shots",
+                "Price on value delivered, not time spent",
+                "The best marketing is a great product with happy customers",
+                "Speed to lead is everything in service businesses"
+            ]
+        },
+        {
+            "id": "dan-martell",
+            "name": "Dan Martell",
+            "category": "Business Growth",
+            "bio": "SaaS entrepreneur, angel investor, and bestselling author. Founder of SaaS Academy, the #1 coaching community for B2B SaaS founders. Built and sold multiple companies including Clarity.fm. Known for teaching founders to 'buy back their time' by building systems and delegating effectively. His frameworks apply to any service business looking to scale beyond the founder.",
+            "relevance": "Time management, delegation, building systems, scaling operations, and avoiding founder burnout in a growing PA firm",
+            "books": [
+                {
+                    "title": "Buy Back Your Time: Get Unstuck, Reclaim Your Freedom, and Build Your Empire",
+                    "url": "https://www.amazon.com/Buy-Back-Your-Time-Unstuck/dp/0593422783",
+                    "excerpt": "How to delegate effectively and build systems so you can focus on what matters most."
+                }
+            ],
+            "resources": [
+                {"type": "YouTube", "url": "https://www.youtube.com/@DanMartell", "description": "Scaling businesses, time management, leadership"},
+                {"type": "Website", "url": "https://www.danmartell.com/", "description": "SaaS Academy and business coaching"}
+            ],
+            "key_insights": [
+                "Buy back your time - delegate everything below your hourly rate",
+                "If you can't replace yourself, you can't scale",
+                "Build the playbook before you hire the player",
+                "Energy audit: eliminate, delegate, or automate low-value tasks",
+                "Pain of staying the same must exceed the pain of change"
+            ]
+        },
+        {
+            "id": "pastor-miguel-delgado",
+            "name": "Pastor Miguel Delgado",
+            "category": "Faith & Purpose",
+            "bio": "CEO of Zone 5, pastor, and visionary leader. Combines faith-driven purpose with entrepreneurial execution. His leadership centers on building people up, creating culture, and operating with integrity in everything. A mentor who models that business success and spiritual grounding are not in conflict — they amplify each other.",
+            "relevance": "Purpose-driven leadership, culture building, integrity in business, and leading a team with conviction",
+            "books": [],
+            "resources": [],
+            "key_insights": [
+                "Lead with purpose and the results will follow",
+                "Build people first, then they build the business",
+                "Culture is not what you say — it's what you tolerate",
+                "Integrity is doing the right thing when no one is watching"
+            ]
+        },
+        {
+            "id": "dr-rodney-howard-browne",
+            "name": "Dr. Rodney Howard-Browne",
+            "category": "Faith & Purpose",
+            "bio": "Founder and senior pastor of The River at Tampa Bay Church and Revival Ministries International. A globally recognized evangelist and author who has ministered in over 40 countries. Known for bold faith, revival culture, and building one of the largest churches in the Tampa Bay area. His teachings on faith, perseverance, and vision inspire leaders to think bigger and never settle.",
+            "relevance": "Bold faith, perseverance through adversity, vision casting, and building something that outlasts you",
+            "books": [
+                {
+                    "title": "The Touch of God",
+                    "excerpt": "Foundational teaching on experiencing God's presence and power."
+                },
+                {
+                    "title": "Seeing Jesus As He Really Is",
+                    "excerpt": "A fresh look at the person of Christ and what it means for daily life."
+                }
+            ],
+            "resources": [
+                {"type": "Website", "url": "https://www.revival.com/", "description": "Revival Ministries International"},
+                {"type": "Church", "url": "https://www.theriver.org/", "description": "The River at Tampa Bay Church"}
+            ],
+            "key_insights": [
+                "Faith without action is dead — move boldly",
+                "Build something that outlasts your lifetime",
+                "Never let circumstances dictate your vision",
+                "Perseverance through adversity is what separates dreamers from builders"
+            ]
+        },
+        {
+            "id": "pastor-alex-burgos",
+            "name": "Pastor Alex Burgos",
+            "category": "Faith & Purpose",
+            "bio": "Pastor at The River Orlando, a faith leader committed to building community, developing leaders, and empowering people to walk in their calling. His approach to ministry mirrors great business leadership — invest in people, create systems of discipleship, and lead by example. A mentor who demonstrates that serving others is the highest form of leadership.",
+            "relevance": "Servant leadership, community building, investing in people, and leading by example",
+            "books": [],
+            "resources": [],
+            "key_insights": [
+                "Serve first, lead second",
+                "Your calling is bigger than your comfort zone",
+                "Invest in people and they will invest in the mission",
+                "Consistency builds trust — show up every day"
+            ]
         }
     ]
 }

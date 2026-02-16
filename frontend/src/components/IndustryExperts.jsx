@@ -28,6 +28,8 @@ import {
   Scale,
   Home,
   Sparkles,
+  TrendingUp,
+  Heart,
 } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 
@@ -47,6 +49,10 @@ const getCategoryIcon = (category) => {
       return <Sparkles className="w-4 h-4" />;
     case 'Leadership':
       return <User className="w-4 h-4" />;
+    case 'Business Growth':
+      return <TrendingUp className="w-4 h-4" />;
+    case 'Faith & Purpose':
+      return <Heart className="w-4 h-4" />;
     default:
       return <BookOpen className="w-4 h-4" />;
   }
@@ -61,6 +67,8 @@ const getCategoryColor = (category) => {
     'Insurance Appraisal': 'bg-yellow-100 text-yellow-700 border-yellow-200',
     'Public Adjusting Business': 'bg-pink-100 text-pink-700 border-pink-200',
     Leadership: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    'Business Growth': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'Faith & Purpose': 'bg-rose-100 text-rose-700 border-rose-200',
   };
   return colors[category] || 'bg-gray-100 text-zinc-300 border-gray-200';
 };
