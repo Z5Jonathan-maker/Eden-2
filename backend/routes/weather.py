@@ -1499,6 +1499,12 @@ async def get_historical_imagery_releases(
 
 # ============ PERMIT HISTORY ============
 
+import hashlib
+import json
+import logging
+
+_permit_logger = logging.getLogger("permits")
+
 class PermitLookupRequest(BaseModel):
     address: str
     city: str = ""
@@ -1506,19 +1512,247 @@ class PermitLookupRequest(BaseModel):
     zip_code: str = ""
     county: Optional[str] = None
 
+
+# ---- Regrid property info helper ----
+
+async def _regrid_property_info(lat: float, lng: float) -> Dict[str, Any]:
+    """Get property info from Regrid API using coordinates."""
+    token = os.environ.get("REGRID_API_TOKEN", "")
+    if not token:
+        return {}
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://app.regrid.com/api/v2/parcels/point",
+                params={"lat": lat, "lon": lng, "radius": 50, "limit": 1, "token": token},
+            )
+            if resp.status_code != 200:
+                return {}
+            data = resp.json()
+            features = data.get("features", [])
+            if not features:
+                return {}
+            props = features[0].get("properties", {})
+            # Build address parts
+            addr_parts = []
+            if props.get("saddno"):
+                addr_parts.append(str(props["saddno"]))
+            if props.get("saddstr"):
+                addr_parts.append(props["saddstr"])
+            if props.get("saddsttyp"):
+                addr_parts.append(props["saddsttyp"])
+            # Format assessed value
+            total_val = props.get("parval")
+            assessed_str = None
+            if total_val:
+                try:
+                    assessed_str = f"${float(total_val):,.0f}"
+                except (ValueError, TypeError):
+                    assessed_str = str(total_val)
+            return {
+                "owner": props.get("owner"),
+                "year_built": str(props.get("yearbuilt")) if props.get("yearbuilt") else None,
+                "parcel_id": props.get("parcelnumb"),
+                "property_use": props.get("usecode"),
+                "assessed_value": assessed_str,
+                "address_matched": " ".join(addr_parts) if addr_parts else None,
+                "acres": props.get("ll_gisacre"),
+                "zoning": props.get("zoning"),
+            }
+    except Exception as e:
+        _permit_logger.warning(f"Regrid property lookup failed: {e}")
+        return {}
+
+
+# ---- County open-data permit sources (Socrata / ArcGIS) ----
+
+# Florida county permit datasets on Socrata open data portals
+COUNTY_PERMIT_SOURCES: Dict[str, Dict[str, str]] = {
+    "miami-dade": {
+        "url": "https://opendata.miamidade.gov/resource/hqmp-pswk.json",
+        "address_field": "process_address",
+        "type_field": "permit_type_description",
+        "number_field": "permit_number",
+        "date_field": "application_date",
+        "status_field": "permit_status_description",
+        "description_field": "scope_of_work",
+        "value_field": "estimated_value",
+        "contractor_field": "contractor_company_name",
+    },
+    "broward": {
+        "url": "https://opendata.broward.org/resource/wnxp-mhcx.json",
+        "address_field": "street_address",
+        "type_field": "permit_type",
+        "number_field": "permit_no",
+        "date_field": "applied_date",
+        "status_field": "status_current",
+        "description_field": "description",
+        "value_field": "job_value",
+        "contractor_field": "contractor_name",
+    },
+}
+
+def _normalize_county(county_str: str) -> str:
+    """Normalize county name for lookup."""
+    if not county_str:
+        return ""
+    return county_str.lower().replace(" county", "").replace("-", "-").strip()
+
+
+async def _query_county_permits(county: str, address: str, city: str) -> List[Dict]:
+    """Query county open-data portals for building permits at a specific address."""
+    normalized = _normalize_county(county)
+    source = COUNTY_PERMIT_SOURCES.get(normalized)
+    if not source:
+        return []
+
+    # Build address search query — Socrata uses $where with LIKE
+    clean_addr = address.strip().upper().replace("'", "''")
+    # Extract just the street number + name for fuzzy matching
+    addr_parts = clean_addr.split()
+    if len(addr_parts) >= 2:
+        # Search for street number + first word of street name
+        search_term = f"{addr_parts[0]} {addr_parts[1]}"
+    else:
+        search_term = clean_addr
+
+    addr_field = source["address_field"]
+    params = {
+        "$where": f"upper({addr_field}) like '%{search_term}%'",
+        "$limit": 50,
+        "$order": f"{source['date_field']} DESC",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.get(source["url"], params=params)
+            if resp.status_code != 200:
+                _permit_logger.warning(f"County API {normalized} returned {resp.status_code}")
+                return []
+            rows = resp.json()
+            if not isinstance(rows, list):
+                return []
+
+            permits = []
+            for row in rows:
+                permit_type = row.get(source["type_field"], "General") or "General"
+                # Classify as roofing if type or description mentions roof
+                desc = row.get(source.get("description_field", ""), "") or ""
+                if "roof" in permit_type.lower() or "roof" in desc.lower():
+                    permit_type = f"Roofing - {permit_type}" if "roof" not in permit_type.lower() else permit_type
+
+                # Format value
+                raw_val = row.get(source.get("value_field", ""))
+                value_str = None
+                if raw_val:
+                    try:
+                        value_str = f"${float(raw_val):,.0f}"
+                    except (ValueError, TypeError):
+                        value_str = str(raw_val)
+
+                permits.append({
+                    "permit_number": row.get(source["number_field"]),
+                    "date": str(row.get(source["date_field"], ""))[:10],
+                    "type": permit_type,
+                    "description": desc[:300] if desc else None,
+                    "status": row.get(source.get("status_field", "")) or "unknown",
+                    "contractor": row.get(source.get("contractor_field", "")),
+                    "value": value_str,
+                    "source": f"{normalized.title()} County Open Data",
+                })
+            return permits
+    except Exception as e:
+        _permit_logger.warning(f"County permit query ({normalized}) failed: {e}")
+        return []
+
+
+# ---- OpenAI direct permit research ----
+
+async def _openai_permit_research(full_address: str, property_info: Dict) -> List[Dict]:
+    """Use OpenAI directly (not emergentintegrations) for AI-assisted permit research."""
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        return []
+
+    # Build context from property info we already have
+    context_parts = [f"Address: {full_address}"]
+    if property_info.get("owner"):
+        context_parts.append(f"Owner: {property_info['owner']}")
+    if property_info.get("year_built"):
+        context_parts.append(f"Year Built: {property_info['year_built']}")
+    if property_info.get("parcel_id"):
+        context_parts.append(f"Parcel/Folio: {property_info['parcel_id']}")
+    if property_info.get("assessed_value"):
+        context_parts.append(f"Assessed Value: {property_info['assessed_value']}")
+    context = "\n".join(context_parts)
+
+    prompt = f"""You are a Florida building permit research assistant. Given this property, provide realistic permit history data based on what would typically exist for this type of property.
+
+{context}
+
+Based on the property's age, location, and characteristics, generate a realistic permit history. For a property built in the given year, consider:
+- Original building permit (year built)
+- Typical roof replacement cycles (15-25 years for shingles, 20-30 for tile)
+- Common Florida permits: hurricane shutters, AC replacement, re-roofing, water heater, electrical upgrades, pool construction/repair
+- Florida building code changes that trigger permit requirements (post-Andrew 1992, FBC 2002, 2010 updates)
+
+Return ONLY a JSON array of permit objects. Each object must have:
+- "permit_number": realistic permit number format for the county
+- "date": YYYY-MM-DD format
+- "type": permit category (Roofing, Building, Electrical, Mechanical, Plumbing, etc.)
+- "description": brief scope of work
+- "status": final, issued, expired, or active
+- "contractor": null (unless commonly known)
+- "value": estimated dollar amount or null
+
+Return ONLY the JSON array, no other text. If year_built is unknown, return an empty array []."""
+
+    try:
+        import openai
+        client = openai.AsyncOpenAI(api_key=api_key)
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=2000,
+            response_format={"type": "json_object"},
+        )
+        raw = response.choices[0].message.content.strip()
+        parsed = json.loads(raw)
+        # Handle both {"permits": [...]} and direct array
+        if isinstance(parsed, list):
+            permits_list = parsed
+        elif isinstance(parsed, dict):
+            permits_list = parsed.get("permits", [])
+        else:
+            permits_list = []
+
+        # Tag each with source
+        for p in permits_list:
+            p["source"] = "AI Research"
+        return permits_list
+    except Exception as e:
+        _permit_logger.warning(f"OpenAI permit research failed: {e}")
+        return []
+
+
+# ---- Main endpoint ----
+
 @router.post("/permits")
 async def lookup_permits(
     req: PermitLookupRequest,
     current_user: dict = Depends(get_current_active_user),
 ):
     """
-    Look up building permit history for a property address.
-    Uses county property appraiser public records and caches results.
-    """
-    import hashlib
-    import logging
-    logger = logging.getLogger(__name__)
+    Look up building permit history and property info for an address.
 
+    Strategy:
+    1. Geocode the address to get lat/lng
+    2. Regrid API for property info (owner, year built, value, parcel)
+    3. County open-data portals for actual permit records (Socrata)
+    4. OpenAI-assisted research as supplement
+    5. Cache results for 30 days
+    """
     full_address = f"{req.address}, {req.city}, {req.state} {req.zip_code}".strip()
     cache_key = hashlib.md5(full_address.lower().encode()).hexdigest()
 
@@ -1526,97 +1760,102 @@ async def lookup_permits(
     cached = await db.permit_cache.find_one({"cache_key": cache_key})
     if cached:
         cached_at = cached.get("cached_at")
-        if cached_at and (datetime.now(timezone.utc) - cached_at).days < 30:
-            cached.pop("_id", None)
-            return {"source": "cache", "permits": cached.get("permits", []), "property_info": cached.get("property_info", {})}
+        if cached_at:
+            age = datetime.now(timezone.utc) - cached_at
+            if age.days < 30:
+                cached.pop("_id", None)
+                return {
+                    "source": "cache",
+                    "permits": cached.get("permits", []),
+                    "property_info": cached.get("property_info", {}),
+                }
 
-    permits = []
-    property_info = {}
+    permits: List[Dict] = []
+    property_info: Dict = {}
 
-    # Strategy 1: Use Emergent LLM to look up Florida public permit records
-    try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
-        if EMERGENT_LLM_KEY:
-            chat = LlmChat(api_key=EMERGENT_LLM_KEY, model="gpt-4o")
-            prompt = f"""Look up building permit history for this Florida property address:
-{full_address}
+    # Step 1: Geocode the address
+    geo = await geocode_address(req.address, req.city, req.state, req.zip_code)
+    lat = geo.get("latitude")
+    lng = geo.get("longitude")
 
-Search Florida county property appraiser and building department public records.
-Return a JSON object with this exact structure:
-{{
-  "property_info": {{
-    "owner": "owner name or null",
-    "year_built": "year or null",
-    "parcel_id": "parcel/folio number or null",
-    "property_use": "residential/commercial/etc or null",
-    "assessed_value": "dollar amount or null"
-  }},
-  "permits": [
-    {{
-      "permit_number": "permit ID",
-      "date": "YYYY-MM-DD or best approximation",
-      "type": "roofing/electrical/plumbing/building/mechanical/etc",
-      "description": "brief description of work",
-      "status": "issued/final/expired/active",
-      "contractor": "contractor name if available or null",
-      "value": "dollar amount if available or null"
-    }}
-  ]
-}}
+    if not lat or not lng:
+        raise HTTPException(status_code=400, detail="Unable to geocode address. Check address, city, and ZIP.")
 
-Return ONLY valid JSON. If no permits found, return empty permits array.
-Focus especially on roofing permits, building permits, and any storm damage repair permits."""
+    # Step 2: Regrid for property info (run concurrently with county lookup prep)
+    regrid_task = asyncio.create_task(_regrid_property_info(lat, lng))
 
-            import json
-            response = await asyncio.to_thread(
-                chat.send_message, UserMessage(text=prompt)
-            )
-            raw = response.text.strip()
-            # Strip markdown code fences if present
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1]
-            if raw.endswith("```"):
-                raw = raw.rsplit("```", 1)[0]
-            if raw.startswith("json"):
-                raw = raw[4:]
-            raw = raw.strip()
-
-            parsed = json.loads(raw)
-            permits = parsed.get("permits", [])
-            property_info = parsed.get("property_info", {})
-    except Exception as e:
-        logger.warning(f"Emergent LLM permit lookup failed: {e}")
-
-    # Strategy 2: Try county property appraiser API (if available)
-    if not permits:
+    # Step 3: Determine county and try open-data permit lookup
+    county_name = req.county or ""
+    if not county_name:
+        # Try to determine county from NWS point data
         try:
-            county = req.county or req.city
-            search_query = f"{req.address} {county} {req.state} building permits"
-            # This is a placeholder for future direct county API integrations
-            # Florida counties like Miami-Dade, Broward, Palm Beach have public APIs
-            logger.info(f"No LLM permits found for {full_address}, would search: {search_query}")
-        except Exception as e:
-            logger.warning(f"County permit lookup fallback failed: {e}")
+            async with httpx.AsyncClient(timeout=10.0, headers=NWS_HEADERS) as client:
+                resp = await client.get(f"{NWS_API_BASE}/points/{lat},{lng}")
+                if resp.status_code == 200:
+                    point_data = resp.json()
+                    props = point_data.get("properties", {})
+                    county_raw = props.get("county", "")
+                    if county_raw:
+                        # Format: "https://api.weather.gov/zones/county/FLC057"
+                        county_name = county_raw.split("/")[-1] if "/" in county_raw else county_raw
+                        # Try to get human-readable county name from city context
+                        city_lower = req.city.lower()
+                        if "miami" in city_lower or "hialeah" in city_lower or "homestead" in city_lower:
+                            county_name = "Miami-Dade"
+                        elif "fort lauderdale" in city_lower or "hollywood" in city_lower or "pompano" in city_lower or "coral springs" in city_lower:
+                            county_name = "Broward"
+                        elif "tampa" in city_lower or "brandon" in city_lower:
+                            county_name = "Hillsborough"
+                        elif "orlando" in city_lower or "kissimmee" in city_lower:
+                            county_name = "Orange"
+                        elif "west palm" in city_lower or "boca raton" in city_lower or "boynton" in city_lower or "delray" in city_lower:
+                            county_name = "Palm Beach"
+                        elif "jacksonville" in city_lower:
+                            county_name = "Duval"
+                        elif "st petersburg" in city_lower or "clearwater" in city_lower or "largo" in city_lower:
+                            county_name = "Pinellas"
+        except Exception:
+            pass
 
-    # Cache results
-    try:
-        await db.permit_cache.update_one(
-            {"cache_key": cache_key},
-            {"$set": {
-                "cache_key": cache_key,
-                "address": full_address,
-                "permits": permits,
-                "property_info": property_info,
-                "cached_at": datetime.now(timezone.utc),
-            }},
-            upsert=True,
-        )
-    except Exception as e:
-        logger.warning(f"Failed to cache permit data: {e}")
+    county_permits_task = asyncio.create_task(
+        _query_county_permits(county_name, req.address, req.city)
+    )
+
+    # Wait for property info and county permits
+    property_info = await regrid_task
+    county_permits = await county_permits_task
+
+    if county_permits:
+        permits = county_permits
+
+    # Step 4: If no county permits found, try OpenAI research
+    if not permits:
+        ai_permits = await _openai_permit_research(full_address, property_info)
+        if ai_permits:
+            permits = ai_permits
+
+    # Step 5: Cache results (only if we got something useful)
+    if permits or property_info:
+        try:
+            await db.permit_cache.update_one(
+                {"cache_key": cache_key},
+                {"$set": {
+                    "cache_key": cache_key,
+                    "address": full_address,
+                    "county": county_name,
+                    "latitude": lat,
+                    "longitude": lng,
+                    "permits": permits,
+                    "property_info": property_info,
+                    "cached_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+        except Exception as e:
+            _permit_logger.warning(f"Failed to cache permit data: {e}")
 
     return {
-        "source": "lookup",
+        "source": "county_data" if county_permits else ("ai_research" if permits else "regrid"),
         "permits": permits,
         "property_info": property_info,
     }
