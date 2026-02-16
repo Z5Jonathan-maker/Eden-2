@@ -43,9 +43,12 @@ class StatuteResponse(BaseModel):
     section_number: str
     heading: str
     body_text: str
+    history: Optional[str] = ""
     source_url: str
-    created_at: Optional[str]
-    last_verified: Optional[str]
+    status: Optional[str] = "complete"
+    body_length: Optional[int] = 0
+    created_at: Optional[str] = None
+    last_verified: Optional[str] = None
 
 
 class StatuteSearchResult(BaseModel):
@@ -112,35 +115,45 @@ async def fetch_statute_from_online_sunshine(section_number: str, year: int = 20
                 # Extract section heading from the content
                 pass
             
-            # Look for the statute caption/heading in the content
-            heading_match = re.search(r'626\.\d+[a-zA-Z]?\s+(.+?)(?:—|\.—|\.\(1\))', response.text)
-            if heading_match:
-                heading = heading_match.group(1).strip()
-            
             # Find the Section div - this is where the actual statute text is
             section_div = soup.find('div', class_='Section')
-            
+
             if not section_div:
                 logger.warning(f"Could not find Section div for {section_number}")
                 return None
-            
-            # Get all text content from the section, preserving structure
-            text_parts = []
-            for elem in section_div.find_all(['p', 'div'], recursive=True):
-                t = elem.get_text(separator=' ', strip=True)
-                if t and len(t) > 5:  # Skip tiny fragments
-                    text_parts.append(t)
-            
-            body_text = "\n\n".join(text_parts)
-            
+
+            # Extract heading from Catchline span
+            catchline = section_div.find('span', class_='Catchline')
+            if catchline:
+                heading = catchline.get_text(strip=True).strip('\u2014\u2014 .—')
+            else:
+                heading_match = re.search(r'\d+\.\d+[a-zA-Z]?\s+(.+?)(?:\u2014|\.—|\.\(1\))', response.text)
+                if heading_match:
+                    heading = heading_match.group(1).strip()
+
+            # Extract the FULL statute body from SectionBody span
+            body_span = section_div.find('span', class_='SectionBody')
+            if body_span:
+                body_text = body_span.get_text(separator='\n', strip=True)
+            else:
+                # Fallback: get all text from section div excluding History
+                history_div = section_div.find('div', class_='History')
+                if history_div:
+                    history_div.extract()
+                body_text = section_div.get_text(separator='\n', strip=True)
+
+            # Extract history separately
+            history_text = ""
+            history_div = section_div.find('div', class_='History')
+            if history_div:
+                history_text = history_div.get_text(strip=True)
+
             if not body_text or len(body_text) < 50:
-                logger.warning(f"Body text too short for {section_number}")
+                logger.warning(f"Body text too short for {section_number}: {len(body_text) if body_text else 0} chars")
                 return None
-            
+
             # If no heading found, create one from section number
             if not heading:
-                # Try to extract from first line
-                first_line = body_text.split('\n')[0][:100] if body_text else ""
                 heading = f"§{section_number}"
             
             # Determine title and chapter names
@@ -150,6 +163,13 @@ async def fetch_statute_from_online_sunshine(section_number: str, year: int = 20
                 "627": "Chapter 627 - Insurance Rates and Contracts"
             }.get(chapter, f"Chapter {chapter}")
             
+            # Determine integrity status
+            status = "complete"
+            if not body_text or len(body_text) < 100:
+                status = "incomplete"
+            elif body_text.strip().startswith("History"):
+                status = "history_only"
+
             return {
                 "jurisdiction": "Florida",
                 "year": year,
@@ -158,7 +178,10 @@ async def fetch_statute_from_online_sunshine(section_number: str, year: int = 20
                 "section_number": section_number,
                 "heading": heading,
                 "body_text": body_text,  # EXACT TEXT - NEVER MODIFY
-                "source_url": url
+                "history": history_text,
+                "source_url": url,
+                "status": status,
+                "body_length": len(body_text)
             }
             
     except Exception as e:
@@ -227,10 +250,10 @@ async def list_statutes(chapter: Optional[str] = None, year: int = 2025, skip: i
     if chapter:
         query["chapter"] = {"$regex": f"Chapter {chapter}", "$options": "i"}
     
-    statutes = await db.florida_statutes.find(query, {"_id": 1, "section_number": 1, "heading": 1, "year": 1, "source_url": 1, "last_verified": 1}).sort("section_number", 1).skip(skip).limit(limit).to_list(limit)
-    
+    statutes = await db.florida_statutes.find(query, {"_id": 1, "section_number": 1, "heading": 1, "year": 1, "source_url": 1, "last_verified": 1, "status": 1, "body_length": 1}).sort("section_number", 1).skip(skip).limit(limit).to_list(limit)
+
     total = await db.florida_statutes.count_documents(query)
-    
+
     # Convert ObjectId to string
     result_statutes = []
     for s in statutes:
@@ -240,7 +263,9 @@ async def list_statutes(chapter: Optional[str] = None, year: int = 2025, skip: i
             "heading": s.get("heading"),
             "year": s.get("year"),
             "source_url": s.get("source_url"),
-            "last_verified": s.get("last_verified")
+            "last_verified": s.get("last_verified"),
+            "status": s.get("status", "unknown"),
+            "body_length": s.get("body_length", 0)
         }
         result_statutes.append(statute_dict)
     
@@ -445,13 +470,25 @@ async def get_scrape_status():
         })
         by_chapter[chapter] = count
     
+    # Count integrity stats
+    complete_count = await db.florida_statutes.count_documents({"body_length": {"$gt": 200}})
+    incomplete_count = await db.florida_statutes.count_documents({"$or": [
+        {"status": "history_only"},
+        {"body_length": {"$lt": 100, "$gt": 0}}
+    ]})
+
     return {
         "total_statutes": total,
         "by_chapter": by_chapter,
         "target_sections": {ch: len(secs) for ch, secs in TARGET_SECTIONS.items()},
         "coverage": {
-            ch: f"{by_chapter.get(ch, 0)}/{len(secs)}" 
+            ch: f"{by_chapter.get(ch, 0)}/{len(secs)}"
             for ch, secs in TARGET_SECTIONS.items()
+        },
+        "integrity": {
+            "complete": complete_count,
+            "incomplete": incomplete_count,
+            "total_target": sum(len(secs) for secs in TARGET_SECTIONS.values())
         }
     }
 

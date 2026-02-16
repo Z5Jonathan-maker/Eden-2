@@ -32,9 +32,110 @@ import {
   Database,
   Copy,
   Check,
+  Wrench,
+  ChevronRight,
+  Target,
+  Crosshair,
+  Hammer,
+  Droplets,
+  Zap,
+  ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet, apiPost } from '@/lib/api';
+
+// ==================== TOOLKITS DATA ====================
+// Scenario-based statute bundles for new adjusters
+// Operational relevance notes only — NOT legal advice.
+const TOOLKITS = [
+  {
+    id: 'roof-replacement',
+    title: 'Roof Replacement / Scope Disputes',
+    icon: Hammer,
+    color: 'orange',
+    why: 'When the carrier agrees there is roof damage but disputes full replacement vs. repair.',
+    carrierMove: 'Approve partial repair, deny full replacement, argue "matching" not required.',
+    ourMove: 'Cite statutes requiring uniform appearance and full scope. Document with photos + measurements.',
+    statutes: ['626.854', '627.70152', '627.7011', '627.702'],
+    tags: ['roof', 'scope', 'replacement', 'matching'],
+  },
+  {
+    id: 'matching-appearance',
+    title: 'Matching / Uniform Appearance',
+    icon: Target,
+    color: 'blue',
+    why: 'When the carrier replaces damaged areas but refuses to match adjacent undamaged areas.',
+    carrierMove: 'Pay to replace only damaged shingles/siding, creating mismatched appearance.',
+    ourMove: 'Florida statutes require uniform and reasonably consistent appearance. Document the mismatch.',
+    statutes: ['627.70152', '627.7011', '627.702'],
+    tags: ['matching', 'uniform', 'appearance', 'cosmetic'],
+  },
+  {
+    id: 'ordinance-law',
+    title: 'Ordinance & Law / Code Upgrades',
+    icon: Gavel,
+    color: 'purple',
+    why: 'When repairs trigger building code compliance that exceeds the original construction standard.',
+    carrierMove: 'Estimate to old code standards, deny code upgrade costs as "betterment."',
+    ourMove: 'Invoke Ordinance & Law coverage. Document current code requirements vs. original installation.',
+    statutes: ['627.7011', '627.702', '627.706'],
+    tags: ['code', 'ordinance', 'law', 'upgrade', 'betterment'],
+  },
+  {
+    id: 'delay-no-response',
+    title: 'Delay / No Coverage Determination',
+    icon: Clock,
+    color: 'red',
+    why: 'When the carrier fails to acknowledge, investigate, or make a coverage determination within statutory timelines.',
+    carrierMove: 'Delay acknowledgment, extend investigation indefinitely, ignore deadlines.',
+    ourMove: 'Reference statutory timelines (7/14/60/90 days). Document every missed deadline.',
+    statutes: ['627.70131', '627.70132', '627.7015', '626.854'],
+    tags: ['delay', 'timeline', 'deadline', 'no response', 'acknowledgment'],
+  },
+  {
+    id: 'underpayment-scope',
+    title: 'Underpayment / Missing Scope Items',
+    icon: DollarSign,
+    color: 'green',
+    why: 'When the carrier\'s estimate is missing line items or using below-market pricing.',
+    carrierMove: 'Issue incomplete estimate, use carrier-modified pricing below market.',
+    ourMove: 'Submit supplement with evidence-aligned line items. Track owed vs. paid.',
+    statutes: ['627.7011', '627.702', '627.7015', '626.8796'],
+    tags: ['underpayment', 'scope', 'pricing', 'supplement', 'estimate'],
+  },
+  {
+    id: 'water-damage',
+    title: 'Water Damage / Tear-Out',
+    icon: Droplets,
+    color: 'cyan',
+    why: 'When the carrier limits water damage scope, denies tear-out, or argues maintenance exclusion.',
+    carrierMove: 'Limit scope to visible damage, deny exploratory tear-out, claim maintenance.',
+    ourMove: 'Document moisture readings, establish cause with Tier 1 evidence, avoid exclusion-trigger language.',
+    statutes: ['627.7011', '627.702', '627.70131', '627.70132'],
+    tags: ['water', 'moisture', 'tear-out', 'mold', 'remediation'],
+  },
+  {
+    id: 'pa-compliance',
+    title: 'Public Adjuster Compliance',
+    icon: Shield,
+    color: 'zinc',
+    why: 'Know the rules that govern your license, fees, contracts, and conduct.',
+    carrierMove: 'Challenge PA authority, question contract validity, allege fee violations.',
+    ourMove: 'Maintain strict compliance: proper contracts, fee limits, bond requirements, ethical conduct.',
+    statutes: ['626.854', '626.865', '626.8651', '626.8795', '626.8796'],
+    tags: ['compliance', 'license', 'fee', 'contract', 'ethics', 'bond'],
+  },
+];
+
+const TOOLKIT_COLORS = {
+  orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-300', badge: 'bg-orange-500/20 text-orange-300' },
+  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-300', badge: 'bg-blue-500/20 text-blue-300' },
+  purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-300', badge: 'bg-purple-500/20 text-purple-300' },
+  red: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-300', badge: 'bg-red-500/20 text-red-300' },
+  green: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-300', badge: 'bg-green-500/20 text-green-300' },
+  cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-300', badge: 'bg-cyan-500/20 text-cyan-300' },
+  zinc: { bg: 'bg-zinc-500/10', border: 'border-zinc-500/30', text: 'text-zinc-300', badge: 'bg-zinc-500/20 text-zinc-300' },
+};
 
 const FloridaLaws = () => {
   // Static data state
@@ -51,8 +152,17 @@ const FloridaLaws = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
-  const [activeTab, setActiveTab] = useState('database');
+  const [activeTab, setActiveTab] = useState('toolkits');
   const [copied, setCopied] = useState(false);
+  const [selectedToolkit, setSelectedToolkit] = useState(null);
+
+  // Argument Builder state
+  const [argGoal, setArgGoal] = useState('');
+  const [argEvidence, setArgEvidence] = useState({ photos: false, aerials: false, moisture: false, contractor: false, weather: false });
+  const [argCarrierMove, setArgCarrierMove] = useState('');
+  const [argOurMove, setArgOurMove] = useState('');
+  const [argDeadline, setArgDeadline] = useState('');
+  const [argOutput, setArgOutput] = useState('');
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -123,7 +233,15 @@ const FloridaLaws = () => {
     try {
       const res = await apiGet(`/api/statutes/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        setSearchResults(res.data.results);
+        // Enrich results with toolkit tags
+        const enriched = (res.data.results || []).map(result => {
+          const matchingToolkits = TOOLKITS.filter(tk =>
+            tk.statutes.includes(result.section_number) ||
+            tk.tags.some(tag => searchQuery.toLowerCase().includes(tag))
+          );
+          return { ...result, toolkitTags: matchingToolkits.map(tk => tk.title) };
+        });
+        setSearchResults(enriched);
       }
     } catch (err) {
       console.error('Search failed:', err);
@@ -275,31 +393,40 @@ const FloridaLaws = () => {
 
       {/* Search Results */}
       {searchResults && (
-        <Card className="border-orange-200">
+        <Card className="border-orange-500/30">
           <CardHeader>
-            <CardTitle className="text-lg">Search Results for "{searchQuery}"</CardTitle>
+            <CardTitle className="text-lg text-zinc-100">Search Results for "{searchQuery}"</CardTitle>
           </CardHeader>
           <CardContent>
             {searchResults.length === 0 ? (
-              <p className="text-zinc-500">No results found in database</p>
+              <p className="text-zinc-500">No results found in database. Try different keywords or check the Toolkits tab for scenario-based search.</p>
             ) : (
               <div className="space-y-3">
                 {searchResults.map((result, i) => (
                   <div
                     key={i}
-                    className="flex items-start justify-between p-3 border rounded-lg hover:bg-orange-50 cursor-pointer"
+                    className="flex items-start justify-between p-3 border border-zinc-700 rounded-lg hover:border-blue-500/40 cursor-pointer transition-all"
                     onClick={() => fetchStatuteDetail(result.section_number)}
                   >
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-400">
-                          Sec. {result.section_number}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          §{result.section_number}
                         </Badge>
-                        <span className="font-medium">{result.heading}</span>
+                        <span className="font-medium text-zinc-200">{result.heading}</span>
                       </div>
                       <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{result.excerpt}</p>
+                      {result.toolkitTags?.length > 0 && (
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {result.toolkitTags.map((tag, j) => (
+                            <Badge key={j} className="bg-orange-500/10 text-orange-300 text-[10px] border border-orange-500/20">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <Badge variant="outline">Score: {result.score?.toFixed(1)}</Badge>
+                    <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 mt-1" />
                   </div>
                 ))}
               </div>
@@ -318,52 +445,102 @@ const FloridaLaws = () => {
 
       {/* Statute Detail View */}
       {selectedStatute ? (
-        <Card className="border-blue-200">
+        <Card className="border-zinc-700">
           <CardHeader>
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <Badge className="bg-blue-100 text-blue-400 mb-2">
-                  Sec. {selectedStatute.section_number}, {selectedStatute.year} Fla. Stat.
-                </Badge>
-                <CardTitle>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    §{selectedStatute.section_number}, {selectedStatute.year} Fla. Stat.
+                  </Badge>
+                  {/* Integrity status chip */}
+                  {selectedStatute.status === 'complete' || (selectedStatute.body_length > 200) ? (
+                    <Badge className="bg-green-500/20 text-green-300 border border-green-500/30">
+                      <CheckCircle className="w-3 h-3 mr-1" /> Complete
+                    </Badge>
+                  ) : selectedStatute.status === 'history_only' || (selectedStatute.body_length < 100 && selectedStatute.body_text?.startsWith('History')) ? (
+                    <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
+                      <AlertCircle className="w-3 h-3 mr-1" /> Incomplete — History Only
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                      <AlertTriangle className="w-3 h-3 mr-1" /> Partial
+                    </Badge>
+                  )}
+                </div>
+                <CardTitle className="text-zinc-100">
                   {selectedStatute.heading || `Section ${selectedStatute.section_number}`}
                 </CardTitle>
                 <CardDescription>{selectedStatute.chapter}</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => copyStatuteText(selectedStatute.body_text)}
+                  className="border-zinc-700"
                 >
                   {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-                  {copied ? 'Copied!' : 'Copy Text'}
+                  {copied ? 'Copied!' : 'Copy Verbatim'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedStatute(null)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyStatuteText(`§${selectedStatute.section_number}, ${selectedStatute.year} Fla. Stat.`)}
+                  className="border-zinc-700"
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Citation
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedStatute(null)} className="border-zinc-700">
                   Back
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Verbatim Text Warning */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
-              <div className="flex items-center gap-2 text-yellow-800 font-medium">
-                <AlertCircle className="w-4 h-4" />
+            {/* Verbatim integrity warning if incomplete */}
+            {(selectedStatute.status === 'history_only' || (selectedStatute.body_length < 100)) && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm">
+                <div className="flex items-center gap-2 text-red-300 font-medium">
+                  <AlertCircle className="w-4 h-4" />
+                  INCOMPLETE STATUTE TEXT
+                </div>
+                <p className="text-red-300/80 mt-1">
+                  This statute may only contain the History line. Click "Scrape All Statutes" to re-fetch the full text.
+                </p>
+              </div>
+            )}
+
+            {/* Verbatim label */}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm">
+              <div className="flex items-center gap-2 text-yellow-300 font-medium">
+                <Scale className="w-4 h-4" />
                 VERBATIM STATUTE TEXT
               </div>
-              <p className="text-yellow-700 mt-1">
-                This is the exact text as published by the Florida Legislature. Do not modify for
-                legal citations.
+              <p className="text-yellow-300/70 mt-1">
+                Exact text as published by the Florida Legislature. Not legal advice — operational reference only.
               </p>
             </div>
 
             {/* Body Text */}
-            <ScrollArea className="h-[400px] border rounded-lg p-4 bg-zinc-800/30">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+            <ScrollArea className="h-[500px] border border-zinc-700 rounded-lg p-4 bg-zinc-950/50">
+              <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-mono leading-relaxed">
                 {selectedStatute.body_text}
               </pre>
             </ScrollArea>
+
+            {/* History (collapsible) */}
+            {selectedStatute.history && (
+              <details className="border border-zinc-700 rounded-lg">
+                <summary className="px-4 py-2 text-sm text-zinc-400 cursor-pointer hover:text-zinc-200 font-mono uppercase">
+                  History
+                </summary>
+                <div className="px-4 pb-3 text-xs text-zinc-500 font-mono">
+                  {selectedStatute.history}
+                </div>
+              </details>
+            )}
 
             {/* Metadata */}
             <div className="flex items-center gap-4 text-sm text-zinc-500 flex-wrap">
@@ -378,6 +555,12 @@ const FloridaLaws = () => {
                   ? new Date(selectedStatute.last_verified).toLocaleDateString()
                   : 'N/A'}
               </span>
+              {selectedStatute.body_length > 0 && (
+                <span className="flex items-center gap-1">
+                  <FileText className="w-4 h-4" />
+                  {selectedStatute.body_length?.toLocaleString()} chars
+                </span>
+              )}
               {selectedStatute.source_url && (
                 <a
                   href={selectedStatute.source_url}
@@ -386,7 +569,7 @@ const FloridaLaws = () => {
                   className="flex items-center gap-1 text-blue-400 hover:underline"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Official Source (Online Sunshine)
+                  Online Sunshine
                 </a>
               )}
             </div>
@@ -395,19 +578,130 @@ const FloridaLaws = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
+            <TabsTrigger value="toolkits" data-testid="tab-toolkits">
+              <Wrench className="w-4 h-4 mr-2" />
+              Toolkits
+            </TabsTrigger>
             <TabsTrigger value="database" data-testid="tab-database">
               <Database className="w-4 h-4 mr-2" />
-              Statute Database ({dbStatutes.length})
+              All Statutes ({dbStatutes.length})
             </TabsTrigger>
             <TabsTrigger value="overview" data-testid="tab-overview">
               <Hash className="w-4 h-4 mr-2" />
               Key Numbers
+            </TabsTrigger>
+            <TabsTrigger value="builder" data-testid="tab-builder">
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Argument Builder
             </TabsTrigger>
             <TabsTrigger value="updates" data-testid="tab-updates">
               <AlertTriangle className="w-4 h-4 mr-2" />
               2026 Updates ({updates.length})
             </TabsTrigger>
           </TabsList>
+
+          {/* Toolkits Tab - Scenario-Based Entry */}
+          <TabsContent value="toolkits" className="mt-6">
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-4">
+              Operational relevance notes. Not legal advice.
+            </p>
+
+            {selectedToolkit ? (
+              <div className="space-y-4">
+                <Button variant="outline" size="sm" onClick={() => setSelectedToolkit(null)} className="border-zinc-700 mb-2">
+                  ← All Toolkits
+                </Button>
+                {(() => {
+                  const tk = TOOLKITS.find(t => t.id === selectedToolkit);
+                  if (!tk) return null;
+                  const colors = TOOLKIT_COLORS[tk.color];
+                  const Icon = tk.icon;
+                  return (
+                    <Card className={`${colors.border} border`}>
+                      <CardHeader>
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${colors.bg}`}>
+                            <Icon className={`w-6 h-6 ${colors.text}`} />
+                          </div>
+                          <div>
+                            <CardTitle className="text-zinc-100">{tk.title}</CardTitle>
+                            <CardDescription>{tk.why}</CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3">
+                            <p className="text-[10px] font-mono uppercase text-red-400 mb-1">Common Carrier Move</p>
+                            <p className="text-sm text-zinc-300">{tk.carrierMove}</p>
+                          </div>
+                          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
+                            <p className="text-[10px] font-mono uppercase text-green-400 mb-1">Our Move</p>
+                            <p className="text-sm text-zinc-300">{tk.ourMove}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-mono uppercase text-zinc-500 mb-2">Relevant Statutes</p>
+                          <div className="space-y-2">
+                            {tk.statutes.map(sn => (
+                              <div
+                                key={sn}
+                                className="flex items-center justify-between p-3 border border-zinc-700 rounded-lg hover:border-blue-500/40 cursor-pointer transition-all"
+                                onClick={() => {
+                                  fetchStatuteDetail(sn);
+                                  setSelectedToolkit(null);
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">§{sn}</Badge>
+                                  <span className="text-sm text-zinc-300">
+                                    {dbStatutes.find(s => s.section_number === sn)?.heading || 'View statute'}
+                                  </span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-zinc-600" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {TOOLKITS.map(tk => {
+                  const colors = TOOLKIT_COLORS[tk.color];
+                  const Icon = tk.icon;
+                  return (
+                    <Card
+                      key={tk.id}
+                      className={`cursor-pointer hover:shadow-lg transition-all border-zinc-700 hover:${colors.border}`}
+                      onClick={() => setSelectedToolkit(tk.id)}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${colors.bg}`}>
+                            <Icon className={`w-5 h-5 ${colors.text}`} />
+                          </div>
+                          <CardTitle className="text-base text-zinc-200">{tk.title}</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-zinc-400 mb-3">{tk.why}</p>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                          <Scale className="w-3 h-3" />
+                          {tk.statutes.length} statutes
+                          <ChevronRight className="w-3 h-3 ml-auto" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           {/* Database Tab - Verbatim Statutes */}
           <TabsContent value="database" className="mt-6">
@@ -432,36 +726,52 @@ const FloridaLaws = () => {
                   Legislature.
                 </p>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {dbStatutes.map((statute) => (
-                    <Card
-                      key={statute.id}
-                      className="cursor-pointer hover:shadow-md transition-all hover:border-blue-300"
-                      onClick={() => fetchStatuteDetail(statute.section_number)}
-                      data-testid={`db-statute-${statute.section_number}`}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <Badge className="bg-blue-100 text-blue-400 mb-1">
-                              Sec. {statute.section_number}
-                            </Badge>
-                            <CardTitle className="text-base">
-                              {statute.heading || 'View Statute'}
-                            </CardTitle>
+                  {dbStatutes.map((statute) => {
+                    const isComplete = statute.status === 'complete' || (statute.body_length > 200);
+                    const isHistoryOnly = statute.status === 'history_only' || (statute.body_length > 0 && statute.body_length < 100);
+                    return (
+                      <Card
+                        key={statute.id}
+                        className={`cursor-pointer hover:shadow-md transition-all ${isHistoryOnly ? 'border-red-500/30 hover:border-red-500/50' : 'border-zinc-700 hover:border-blue-500/40'}`}
+                        onClick={() => fetchStatuteDetail(statute.section_number)}
+                        data-testid={`db-statute-${statute.section_number}`}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                  §{statute.section_number}
+                                </Badge>
+                                {isComplete && (
+                                  <Badge className="bg-green-500/20 text-green-300 text-[10px] px-1.5 py-0">
+                                    <CheckCircle className="w-2.5 h-2.5 mr-0.5" /> OK
+                                  </Badge>
+                                )}
+                                {isHistoryOnly && (
+                                  <Badge className="bg-red-500/20 text-red-300 text-[10px] px-1.5 py-0">
+                                    <AlertCircle className="w-2.5 h-2.5 mr-0.5" /> Incomplete
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardTitle className="text-base text-zinc-200">
+                                {statute.heading || 'View Statute'}
+                              </CardTitle>
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                           </div>
-                          <ExternalLink className="w-4 h-4 text-gray-400" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-xs text-zinc-500">
-                          Verified:{' '}
-                          {statute.last_verified
-                            ? new Date(statute.last_verified).toLocaleDateString()
-                            : 'N/A'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-xs text-zinc-500">
+                            Verified:{' '}
+                            {statute.last_verified
+                              ? new Date(statute.last_verified).toLocaleDateString()
+                              : 'N/A'}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -550,6 +860,152 @@ const FloridaLaws = () => {
                 </Card>
               </>
             )}
+          </TabsContent>
+
+          {/* Argument Builder Tab */}
+          <TabsContent value="builder" className="mt-6">
+            <Card className="border-zinc-700">
+              <CardHeader>
+                <CardTitle className="text-zinc-100 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-orange-400" />
+                  Internal Argument Builder
+                </CardTitle>
+                <CardDescription>
+                  Structure an internal claim note or email skeleton. No legal citations or statute interpretation.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-mono text-zinc-500 uppercase">Goal</label>
+                  <Input
+                    value={argGoal}
+                    onChange={e => setArgGoal(e.target.value)}
+                    placeholder="e.g., Support full roof replacement, recover withheld depreciation..."
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-zinc-500 uppercase mb-2 block">Evidence Checklist</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {[
+                      { key: 'photos', label: 'Damage Photos (3-angle)' },
+                      { key: 'aerials', label: 'Historical Aerials' },
+                      { key: 'moisture', label: 'Moisture Readings' },
+                      { key: 'contractor', label: 'Contractor Estimate' },
+                      { key: 'weather', label: 'Weather Data / NOAA' },
+                    ].map(item => (
+                      <label key={item.key} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={argEvidence[item.key]}
+                          onChange={e => setArgEvidence(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                          className="accent-orange-500"
+                        />
+                        {item.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-500 uppercase">Carrier Move</label>
+                    <Input
+                      value={argCarrierMove}
+                      onChange={e => setArgCarrierMove(e.target.value)}
+                      placeholder="e.g., Denied full replacement, approved repair only..."
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-mono text-zinc-500 uppercase">Our Move</label>
+                    <Input
+                      value={argOurMove}
+                      onChange={e => setArgOurMove(e.target.value)}
+                      placeholder="e.g., Submit supplement with evidence-aligned scope..."
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-zinc-500 uppercase">Response Deadline</label>
+                  <Input
+                    type="date"
+                    value={argDeadline}
+                    onChange={e => setArgDeadline(e.target.value)}
+                    className="mt-1 w-48"
+                  />
+                </div>
+
+                <Button
+                  className="bg-orange-500/15 text-orange-300 border border-orange-500/30 hover:bg-orange-500/25"
+                  onClick={() => {
+                    const checkedEvidence = Object.entries(argEvidence)
+                      .filter(([, v]) => v)
+                      .map(([k]) => ({
+                        photos: 'Damage photos (3-angle documentation)',
+                        aerials: 'Historical aerial imagery',
+                        moisture: 'Moisture readings with dry standard comparison',
+                        contractor: 'Contractor estimate / scope',
+                        weather: 'Weather data / NOAA reports',
+                      }[k]));
+
+                    const note = [
+                      `INTERNAL CLAIM NOTE`,
+                      `Date: ${new Date().toLocaleDateString()}`,
+                      ``,
+                      `GOAL: ${argGoal || '[Not specified]'}`,
+                      ``,
+                      `EVIDENCE ON FILE:`,
+                      ...(checkedEvidence.length > 0 ? checkedEvidence.map(e => `  ✓ ${e}`) : ['  [No evidence checked]']),
+                      ``,
+                      `CARRIER POSITION: ${argCarrierMove || '[Not specified]'}`,
+                      ``,
+                      `OUR POSITION: ${argOurMove || '[Not specified]'}`,
+                      ``,
+                      `DEADLINE: ${argDeadline ? new Date(argDeadline).toLocaleDateString() : '[Not set]'}`,
+                      ``,
+                      `NEXT STEPS:`,
+                      `  1. Verify all evidence is documented and organized`,
+                      `  2. Submit structured supplement / response by deadline`,
+                      `  3. If no response by deadline, escalate per doctrine`,
+                      ``,
+                      `---`,
+                      `This is an internal operational note. Not legal advice.`,
+                    ].join('\n');
+
+                    setArgOutput(note);
+                  }}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Generate Note
+                </Button>
+
+                {argOutput && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-mono text-zinc-500 uppercase">Generated Note</label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-zinc-700"
+                        onClick={() => {
+                          navigator.clipboard.writeText(argOutput);
+                          toast.success('Note copied to clipboard');
+                        }}
+                      >
+                        <Copy className="w-3 h-3 mr-1" /> Copy
+                      </Button>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-mono leading-relaxed bg-zinc-950/50 border border-zinc-700 rounded-lg p-4">
+                      {argOutput}
+                    </pre>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Updates Tab */}
