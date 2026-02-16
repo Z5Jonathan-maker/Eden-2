@@ -473,6 +473,54 @@ async def list_channel_members(
     return {"members": enriched}
 
 
+@router.delete("/channels/{channel_id}/members/{user_id}")
+async def remove_channel_member(
+    channel_id: str,
+    user_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Remove a member from a channel. Admin/manager or channel owner/admin only."""
+    channel, membership = await _ensure_channel_access(channel_id, current_user)
+    if not (_can_manage_channels(current_user) or membership.get("role") in {"owner", "admin"}):
+        raise HTTPException(status_code=403, detail="Only channel owner/admin can remove members")
+    if user_id == current_user.get("id"):
+        raise HTTPException(status_code=400, detail="Cannot remove yourself — leave the channel instead")
+
+    result = await db.comms_channel_memberships.update_one(
+        {"channel_id": channel_id, "user_id": user_id, "is_active": True},
+        {"$set": {"is_active": False, "removed_at": _utc_now(), "removed_by": current_user.get("id")}},
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Member not found in channel")
+    return {"message": "Member removed"}
+
+
+@router.delete("/channels/{channel_id}")
+async def delete_channel(
+    channel_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Archive (soft-delete) a channel. Admin/manager only."""
+    if not _can_manage_channels(current_user):
+        raise HTTPException(status_code=403, detail="Only admin/manager can delete channels")
+
+    channel = await _get_channel_or_404(channel_id)
+    if channel.get("is_archived"):
+        return {"message": "Channel already deleted"}
+
+    now = _utc_now()
+    await db.comms_channels.update_one(
+        {"id": channel_id},
+        {"$set": {"is_archived": True, "archived_at": now, "archived_by": current_user.get("id")}},
+    )
+    # Deactivate all memberships
+    await db.comms_channel_memberships.update_many(
+        {"channel_id": channel_id, "is_active": True},
+        {"$set": {"is_active": False, "removed_at": now}},
+    )
+    return {"message": "Channel deleted"}
+
+
 @router.get("/channels/{channel_id}/messages")
 async def get_channel_messages(
     channel_id: str,

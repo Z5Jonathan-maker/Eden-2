@@ -10,7 +10,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   Search, Users, Settings, Menu, X, Hash, Lock, Megaphone,
-  MessageCircle, ChevronRight,
+  MessageCircle, ChevronRight, Trash2, UserMinus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import useChat from '@/hooks/useChat';
@@ -75,6 +75,27 @@ const ChatLayout = () => {
   const handleDelete = useCallback((messageId) => {
     if (window.confirm('Delete this message?')) {
       chat.deleteMessage(messageId);
+    }
+  }, [chat]);
+
+  const handleDeleteChannel = useCallback(async () => {
+    if (!chat.activeChannel) return;
+    if (!window.confirm(`Delete #${chat.activeChannel.name}? This cannot be undone.`)) return;
+    const res = await chat.deleteChannel();
+    if (res?.ok) {
+      toast.success('Channel deleted');
+    } else {
+      toast.error(res?.error || 'Failed to delete channel');
+    }
+  }, [chat]);
+
+  const handleRemoveMember = useCallback(async (userId, userName) => {
+    if (!window.confirm(`Remove ${userName} from this channel?`)) return;
+    const res = await chat.removeMember(userId);
+    if (res?.ok) {
+      toast.success(`${userName} removed`);
+    } else {
+      toast.error(res?.error || 'Failed to remove member');
     }
   }, [chat]);
 
@@ -170,15 +191,26 @@ const ChatLayout = () => {
               <Search className="w-4 h-4" />
             </button>
             {chat.activeChannel && (
-              <button
-                onClick={() => setShowMembers(!showMembers)}
-                className={`p-2 rounded-lg transition-colors ${
-                  showMembers ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                }`}
-                title="Members"
-              >
-                <Users className="w-4 h-4" />
-              </button>
+              <>
+                <button
+                  onClick={() => setShowMembers(!showMembers)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showMembers ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                  }`}
+                  title="Members"
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+                {chat.canManage && !chat.activeChannel.is_dm && (
+                  <button
+                    onClick={handleDeleteChannel}
+                    className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Delete channel"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -248,17 +280,31 @@ const ChatLayout = () => {
                 </h3>
               </div>
               <div className="py-1">
-                {chat.members.map((m) => (
-                  <div key={m.user_id || m.id} className="flex items-center gap-2 px-3 py-1.5">
-                    <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
-                      {(m.user_name || m.full_name || '?').slice(0, 2).toUpperCase()}
+                {chat.members.map((m) => {
+                  const memberId = m.user_id || m.user?.id;
+                  const memberName = m.user_name || m.full_name || m.user?.full_name || 'Unknown';
+                  const isMe = memberId === userId;
+                  return (
+                    <div key={memberId || m.id} className="flex items-center gap-2 px-3 py-1.5 group">
+                      <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
+                        {memberName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-zinc-300 truncate">{memberName}{isMe ? ' (you)' : ''}</p>
+                      </div>
+                      <span className="text-[9px] font-mono text-zinc-600">{m.role}</span>
+                      {chat.canManage && !isMe && (
+                        <button
+                          onClick={() => handleRemoveMember(memberId, memberName)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-zinc-600 hover:text-red-400 transition-all"
+                          title={`Remove ${memberName}`}
+                        >
+                          <UserMinus className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-300 truncate">{m.user_name || m.full_name}</p>
-                    </div>
-                    <span className="text-[9px] font-mono text-zinc-600">{m.role}</span>
-                  </div>
-                ))}
+                  );
+                })}
                 {chat.members.length === 0 && (
                   <p className="text-xs text-zinc-600 text-center py-4">No members</p>
                 )}

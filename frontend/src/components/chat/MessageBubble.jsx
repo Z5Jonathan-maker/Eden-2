@@ -243,17 +243,15 @@ const MessageBubble = memo(({
             >
               <Reply className="w-3.5 h-3.5" />
             </button>
-            {canManage && (
+            {(canManage || message.sender_user_id === userId) && (
               <>
-                {message.sender_user_id === userId && (
-                  <button
-                    onClick={() => onEdit?.(message)}
-                    className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200 transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => onEdit?.(message)}
+                  className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200 transition-colors"
+                  title="Edit"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => onDelete?.(message.id)}
                   className="p-1 hover:bg-red-500/10 rounded text-zinc-400 hover:text-red-400 transition-colors"

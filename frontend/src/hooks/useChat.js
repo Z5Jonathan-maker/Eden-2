@@ -288,6 +288,17 @@ export default function useChat(initialChannelId = null) {
     return res;
   }, [loadInboxAndChannels]);
 
+  const deleteChannel = useCallback(async (channelId) => {
+    const id = channelId || activeChannelId;
+    if (!id) return null;
+    const res = await apiDelete(`/api/comm/channels/${id}`);
+    if (res.ok) {
+      if (id === activeChannelId) setActiveChannelId(null);
+      await loadInboxAndChannels();
+    }
+    return res;
+  }, [activeChannelId, loadInboxAndChannels]);
+
   const createDM = useCallback(async (targetUserId) => {
     const res = await apiPost('/api/comm/dm', { user_id: targetUserId });
     if (res.ok) {
@@ -303,6 +314,13 @@ export default function useChat(initialChannelId = null) {
       user_id: userId,
       role,
     });
+    if (res.ok) loadMembers(activeChannelId);
+    return res;
+  }, [activeChannelId, loadMembers]);
+
+  const removeMember = useCallback(async (userId) => {
+    if (!activeChannelId) return null;
+    const res = await apiDelete(`/api/comm/channels/${activeChannelId}/members/${userId}`);
     if (res.ok) loadMembers(activeChannelId);
     return res;
   }, [activeChannelId, loadMembers]);
@@ -402,8 +420,10 @@ export default function useChat(initialChannelId = null) {
     deleteMessage,
     toggleReaction,
     createChannel,
+    deleteChannel,
     createDM,
     addMember,
+    removeMember,
     postAnnouncement,
     ackAnnouncement,
     openThread,
