@@ -16,6 +16,10 @@ GAMMA_API_TOKEN = os.environ.get("GAMMA_API_TOKEN")
 GAMMA_API_URL = "https://api.gamma.com/v1"
 GAMMA_VERSION = "2022-06-28"
 
+# Gamma Presentation API (separate from Notion-style workspace API)
+GAMMA_API_KEY = os.environ.get("GAMMA_API_KEY") or GAMMA_API_TOKEN
+GAMMA_PRESENTATION_API_URL = "https://api.gamma.app/v1/create"
+
 
 def get_gamma_headers():
     """Get headers for Gamma API requests"""
@@ -811,14 +815,84 @@ async def get_claim_strategy_page(
         {"claim_id": claim_id},
         {"_id": 0}
     )
-    
+
     if not page:
         return {"exists": False}
-    
+
     return {
         "exists": True,
         "page_id": page.get("gamma_page_id"),
         "url": page.get("gamma_url"),
         "created_at": page.get("created_at")
     }
+
+
+# ============ GAMMA PRESENTATION GENERATION ============
+
+class GammaPresentationRequest(BaseModel):
+    title: str
+    content: str
+    audience: str = "client_update"
+    template: str = "presentation"
+
+
+@router.post("/presentation")
+async def create_gamma_presentation(
+    request: GammaPresentationRequest,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Create a Gamma presentation deck from content.
+    Returns edit_url, share_url, and pdf_url."""
+    if not GAMMA_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Gamma presentation API not configured. Set GAMMA_API_KEY in .env."
+        )
+
+    payload = {
+        "title": request.title,
+        "mode": "generate",
+        "prompt": request.content,
+        "options": {"images": True, "language": "en"},
+    }
+    headers = {
+        "Authorization": f"Bearer {GAMMA_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=90) as client:
+            response = await client.post(
+                GAMMA_PRESENTATION_API_URL,
+                json=payload,
+                headers=headers,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        gamma_id = data.get("id")
+        if not gamma_id:
+            logger.warning(f"Gamma API returned no id: {data}")
+            raise HTTPException(status_code=502, detail="Gamma API returned an unexpected response")
+
+        return {
+            "gamma_id": gamma_id,
+            "edit_url": f"https://gamma.app/edit/{gamma_id}",
+            "share_url": f"https://gamma.app/{gamma_id}",
+            "url": f"https://gamma.app/{gamma_id}",
+            "pdf_url": f"https://gamma.app/export/{gamma_id}/pdf",
+            "audience": request.audience,
+            "status": "created",
+        }
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Gamma presentation API error: {e}")
+        detail = str(e)
+        try:
+            detail = e.response.json().get("error", str(e))
+        except Exception:
+            pass
+        raise HTTPException(status_code=502, detail=f"Gamma API error: {detail}")
+    except httpx.RequestError as e:
+        logger.error(f"Gamma presentation request failed: {e}")
+        raise HTTPException(status_code=503, detail="Unable to reach Gamma service")
 

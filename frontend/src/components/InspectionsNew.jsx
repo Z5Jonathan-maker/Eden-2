@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
 import RapidCapture from './RapidCapture';
 import InspectionReportPanel from './InspectionReportPanel';
+import InspectionPhotoGallery from './InspectionPhotoGallery';
 import { api, API_URL } from '../lib/api';
 import { formatDate, formatRelativeTime } from '../lib/core';
 
@@ -419,6 +420,14 @@ const InspectionsNew = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Photo Gallery for Selected Claim */}
+                {selectedClaim && (
+                  <InspectionPhotoGallery
+                    claimId={selectedClaim.id}
+                    sessionId={selectedSession?.id}
+                  />
+                )}
 
                 {/* Report Panel for Selected Session */}
                 {selectedSession && (

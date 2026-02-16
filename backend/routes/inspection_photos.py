@@ -5,6 +5,8 @@ Competitive with CompanyCam features
 import os
 import uuid
 import json
+import asyncio
+import base64
 from datetime import datetime, timezone
 from typing import Optional, List
 from pathlib import Path
@@ -223,6 +225,51 @@ async def complete_inspection_session(
     return {"message": "Inspection completed"}
 
 
+# ========== AI CAPTION (background) ==========
+
+async def _generate_ai_caption(photo_id: str, file_path: str):
+    """Background task: generate AI caption for a photo using GPT-4o-mini vision."""
+    try:
+        from openai import OpenAI
+
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return
+
+        with open(file_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode("utf-8")
+
+        client = OpenAI(api_key=api_key)
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "You are an insurance property inspector. Describe this photo in 1-2 sentences "
+                            "for a claims report. Focus on: what room/area is shown, any visible damage or "
+                            "conditions, and damage type if applicable. Be concise and professional."
+                        ),
+                    },
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}", "detail": "low"}},
+                ],
+            }],
+            max_tokens=150,
+        )
+
+        caption = response.choices[0].message.content.strip()
+        await db.inspection_photos.update_one(
+            {"id": photo_id},
+            {"$set": {"ai_caption": caption}},
+        )
+        print(f"[AI Caption] {photo_id[:8]}… → {caption[:80]}")
+    except Exception as e:
+        print(f"[AI Caption] Error for {photo_id[:8]}…: {e}")
+
+
 # ========== PHOTO UPLOAD & MANAGEMENT ==========
 
 @router.post("/photos")
@@ -322,11 +369,14 @@ async def upload_inspection_photo(
         await db.inspection_sessions.update_one({"id": session_id}, update_ops)
     
     await db.inspection_photos.insert_one(metadata_dict)
-    
+
+    # Fire-and-forget: generate AI caption in background
+    asyncio.ensure_future(_generate_ai_caption(photo_id, file_path))
+
     # Build full image URL
     base_url = os.environ.get("BASE_URL", "")
     image_url = f"{base_url}/api/inspections/photos/{photo_id}/image"
-    
+
     return {
         "id": photo_id,
         "url": f"/api/inspections/photos/{photo_id}/image",
@@ -389,10 +439,59 @@ async def get_photo_image(
 @router.get("/photos/{photo_id}/thumbnail")
 async def get_photo_thumbnail(
     photo_id: str,
+    token: Optional[str] = Query(None),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    """Get photo thumbnail (for now, returns full image - can add resize later). Requires Bearer token."""
-    return await get_photo_image(photo_id, token=None, credentials=credentials)
+    """Get photo thumbnail (300px max dimension, generated on-demand with Pillow)."""
+    user = None
+    if credentials:
+        try:
+            payload = decode_access_token(credentials.credentials)
+            if payload:
+                user_id = payload.get("sub")
+                if user_id:
+                    user = await db.users.find_one({"id": user_id})
+        except:
+            pass
+    if not user and token:
+        user = await get_user_from_token_param(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    photo = await db.inspection_photos.find_one({"id": photo_id})
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Build file paths
+    if photo.get("claim_id"):
+        original_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
+        thumb_dir = os.path.join(PHOTO_DIR, photo["claim_id"], "thumbnails")
+    else:
+        original_path = os.path.join(PHOTO_DIR, photo["filename"])
+        thumb_dir = os.path.join(PHOTO_DIR, "thumbnails")
+
+    thumb_path = os.path.join(thumb_dir, photo["filename"])
+
+    # Generate thumbnail on-demand if missing
+    if not os.path.exists(thumb_path):
+        if not os.path.exists(original_path):
+            raise HTTPException(status_code=404, detail="Photo file not found")
+        try:
+            from PIL import Image as PILImage
+            os.makedirs(thumb_dir, exist_ok=True)
+            img = PILImage.open(original_path)
+            img.thumbnail((300, 300), PILImage.LANCZOS)
+            # Preserve format; default to JPEG
+            fmt = "JPEG"
+            if photo.get("mime_type") == "image/png":
+                fmt = "PNG"
+            img.save(thumb_path, format=fmt, quality=85)
+        except Exception as e:
+            print(f"[Thumbnail] Generation failed for {photo_id}: {e}")
+            # Fallback: serve full image
+            return FileResponse(original_path, media_type=photo.get("mime_type", "image/jpeg"))
+
+    return FileResponse(thumb_path, media_type=photo.get("mime_type", "image/jpeg"))
 
 
 @router.get("/photos/{photo_id}")
@@ -603,6 +702,187 @@ async def get_claim_photo_timeline(
     return {"timeline": timeline, "total": len(photos)}
 
 
+# ========== BULK PHOTO ACTIONS ==========
+
+class BulkPhotoAction(BaseModel):
+    action: str  # "delete" | "recategorize" | "move_room"
+    photo_ids: List[str]
+    room: Optional[str] = None
+    category: Optional[str] = None
+
+
+@router.post("/photos/bulk")
+async def bulk_photo_action(
+    data: BulkPhotoAction,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Bulk operations on photos: delete, re-categorize, or move to room."""
+    if not data.photo_ids:
+        raise HTTPException(status_code=400, detail="No photo IDs provided")
+
+    affected = 0
+
+    if data.action == "delete":
+        for pid in data.photo_ids:
+            photo = await db.inspection_photos.find_one({"id": pid})
+            if not photo:
+                continue
+            # Delete file
+            if photo.get("claim_id"):
+                fp = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
+            else:
+                fp = os.path.join(PHOTO_DIR, photo["filename"])
+            if os.path.exists(fp):
+                os.remove(fp)
+            # Delete thumbnail too
+            thumb_dir = os.path.join(PHOTO_DIR, photo.get("claim_id", ""), "thumbnails") if photo.get("claim_id") else os.path.join(PHOTO_DIR, "thumbnails")
+            thumb_fp = os.path.join(thumb_dir, photo["filename"])
+            if os.path.exists(thumb_fp):
+                os.remove(thumb_fp)
+            # Update session count
+            if photo.get("session_id"):
+                await db.inspection_sessions.update_one(
+                    {"id": photo["session_id"]}, {"$inc": {"photo_count": -1}}
+                )
+            await db.inspection_photos.delete_one({"id": pid})
+            affected += 1
+        return {"message": f"{affected} photos deleted", "affected": affected}
+
+    elif data.action == "recategorize":
+        if not data.category:
+            raise HTTPException(status_code=400, detail="category required for recategorize")
+        result = await db.inspection_photos.update_many(
+            {"id": {"$in": data.photo_ids}},
+            {"$set": {"category": data.category}},
+        )
+        return {"message": f"{result.modified_count} photos re-categorized", "affected": result.modified_count}
+
+    elif data.action == "move_room":
+        if not data.room:
+            raise HTTPException(status_code=400, detail="room required for move_room")
+        result = await db.inspection_photos.update_many(
+            {"id": {"$in": data.photo_ids}},
+            {"$set": {"room": data.room}},
+        )
+        return {"message": f"{result.modified_count} photos moved", "affected": result.modified_count}
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown action: {data.action}")
+
+
+# ========== PHOTO PDF EXPORT ==========
+
+@router.get("/claim/{claim_id}/export-pdf")
+async def export_claim_photos_pdf(
+    claim_id: str,
+    token: Optional[str] = Query(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+):
+    """Export all claim photos as a PDF report grouped by room with captions.
+    Accepts Bearer token or ?token= query param (for browser GET in new tab)."""
+    user = None
+    if credentials:
+        try:
+            payload = decode_access_token(credentials.credentials)
+            if payload:
+                uid = payload.get("sub")
+                if uid:
+                    user = await db.users.find_one({"id": uid})
+        except:
+            pass
+    if not user and token:
+        user = await get_user_from_token_param(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    import io
+
+    # Get claim info
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Get photos grouped by room
+    photos = await db.inspection_photos.find(
+        {"claim_id": claim_id}, {"_id": 0, "annotations": 0}
+    ).sort("captured_at", 1).to_list(500)
+
+    if not photos:
+        raise HTTPException(status_code=404, detail="No photos found for this claim")
+
+    by_room = {}
+    for p in photos:
+        room_name = p.get("room") or "Uncategorized"
+        by_room.setdefault(room_name, []).append(p)
+
+    # Build PDF in memory
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=0.5 * inch, bottomMargin=0.5 * inch)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("Title2", parent=styles["Title"], fontSize=18, spaceAfter=6)
+    subtitle_style = ParagraphStyle("Subtitle2", parent=styles["Normal"], fontSize=10, textColor=colors.grey)
+    room_style = ParagraphStyle("RoomHeader", parent=styles["Heading2"], fontSize=14, spaceBefore=12, spaceAfter=6, textColor=colors.HexColor("#EA580C"))
+    caption_style = ParagraphStyle("Caption", parent=styles["Normal"], fontSize=9, textColor=colors.grey, spaceAfter=4)
+
+    elements = []
+
+    # Cover page
+    client_name = claim.get("client_name") or claim.get("insured_name") or "Unknown"
+    address = claim.get("property_address") or claim.get("loss_location") or "Unknown"
+    elements.append(Paragraph(f"Inspection Photo Report", title_style))
+    elements.append(Paragraph(f"{client_name} — {address}", subtitle_style))
+    elements.append(Paragraph(f"Claim #{claim.get('claim_number', 'N/A')} | {len(photos)} photos | {len(by_room)} rooms", subtitle_style))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    for room_name, room_photos in by_room.items():
+        elements.append(Paragraph(f"{room_name} ({len(room_photos)} photos)", room_style))
+
+        for photo in room_photos:
+            # Try to add photo image
+            if photo.get("claim_id"):
+                fp = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
+            else:
+                fp = os.path.join(PHOTO_DIR, photo["filename"])
+
+            if os.path.exists(fp):
+                try:
+                    img = RLImage(fp, width=4.5 * inch, height=3 * inch, kind="proportional")
+                    elements.append(img)
+                except Exception:
+                    elements.append(Paragraph("[Image could not be loaded]", caption_style))
+            else:
+                elements.append(Paragraph("[Image file missing]", caption_style))
+
+            # Caption line
+            parts = []
+            if photo.get("ai_caption"):
+                parts.append(photo["ai_caption"])
+            if photo.get("category"):
+                parts.append(f"Category: {photo['category']}")
+            if photo.get("voice_snippet"):
+                parts.append(f'Voice: "{photo["voice_snippet"][:120]}"')
+            cap_text = " | ".join(parts) if parts else photo.get("original_name", "")
+            elements.append(Paragraph(cap_text, caption_style))
+            elements.append(Spacer(1, 0.15 * inch))
+
+        elements.append(Spacer(1, 0.1 * inch))
+
+    doc.build(elements)
+    buf.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    filename = f"inspection_{claim_id[:8]}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 # ========== ROOM PRESETS ==========
 
 ROOM_PRESETS = [
@@ -683,8 +963,7 @@ async def get_inspection_stats(
 
 # ========== VOICE RECORDING & TRANSCRIPTION ==========
 
-import os
-AUDIO_DIR = os.environ.get("AUDIO_DIR", "/tmp/audio")
+AUDIO_DIR = os.environ.get("AUDIO_DIR", str(BACKEND_DIR / "uploads" / "audio"))
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 
@@ -698,9 +977,6 @@ async def upload_session_voice(
     Upload voice recording for an inspection session and transcribe with Whisper.
     Audio is matched to photos by timestamp after transcription.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
-    
     # Validate session exists
     session = await db.inspection_sessions.find_one({"id": session_id})
     if not session:
@@ -736,29 +1012,30 @@ async def upload_session_voice(
         }}
     )
     
-    # Transcribe with Whisper
+    # Transcribe with Whisper (direct OpenAI API)
     transcript_text = None
     try:
-        from emergentintegrations.llm.openai import OpenAISpeechToText
-        
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        from openai import OpenAI
+
+        api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
-        
-        stt = OpenAISpeechToText(api_key=api_key)
-        
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+
+        client = OpenAI(api_key=api_key)
+
         with open(file_path, "rb") as audio_file:
-            response = await stt.transcribe(
-                file=audio_file,
+            response = await asyncio.to_thread(
+                client.audio.transcriptions.create,
                 model="whisper-1",
+                file=audio_file,
                 response_format="verbose_json",
                 language="en",
                 prompt="This is an insurance property inspection. The speaker is describing damage, rooms, and conditions they observe.",
-                timestamp_granularities=["segment"]
+                timestamp_granularities=["segment"],
             )
-        
+
         transcript_text = response.text
-        
+
         # Store transcript
         await db.inspection_sessions.update_one(
             {"id": session_id},
@@ -767,10 +1044,10 @@ async def upload_session_voice(
                 "voice_transcribed_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        
+
         # Attach voice snippets to photos
         await attach_voice_snippets_to_photos(session_id, response)
-        
+
     except Exception as e:
         print(f"[Whisper] Transcription error: {e}")
         # Don't fail the upload if transcription fails
@@ -1315,9 +1592,6 @@ async def generate_inspection_report(
     Generate an AI inspection report from session data.
     Returns both structured JSON and rendered markdown.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
-    
     # Get session
     session = await db.inspection_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
@@ -1340,29 +1614,30 @@ async def generate_inspection_report(
     # Build prompt using the template
     user_prompt = build_inspection_report_prompt(claim, session, photos, transcript)
     
-    # Generate report with Eve
+    # Generate report with Eve (direct OpenAI)
     try:
-        from emergentintegrations.llm.openai import LlmChat, UserMessage
-        
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        from openai import OpenAI
+
+        api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
-        
-        # Use unique session for each report generation
-        llm_session_id = f"report_{session_id}_{datetime.now().timestamp()}"
-        
-        llm = LlmChat(
-            api_key=api_key,
-            session_id=llm_session_id,
-            system_message=INSPECTION_REPORT_SYSTEM_PROMPT
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+
+        client = OpenAI(api_key=api_key)
+        llm_response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": INSPECTION_REPORT_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
         )
-        llm = llm.with_model(provider="openai", model="gpt-4o")
-        
-        response = await llm.send_message(UserMessage(text=user_prompt))
-        
+        response_text_raw = llm_response.choices[0].message.content or ""
+
         # Parse JSON from response
         report_json = None
-        response_text = response.strip()
+        response_text = response_text_raw.strip()
         
         # Try to extract JSON from response
         if response_text.startswith("{"):

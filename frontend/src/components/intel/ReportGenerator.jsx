@@ -151,12 +151,17 @@ function buildContent(context, reportKey, data, address) {
     const topCandidate = candidates[0];
     let lines = [`Property: ${addr}`];
     if (topCandidate) {
-      lines.push(`Recommended DOL: ${topCandidate.date || 'N/A'}`);
+      lines.push(`Recommended DOL: ${topCandidate.candidate_date || topCandidate.date || 'N/A'}`);
       lines.push(`Confidence: ${topCandidate.confidence || 'N/A'}`);
-      lines.push(`Explanation: ${topCandidate.explanation || ''}`);
+      lines.push(`Peak Wind: ${topCandidate.peak_wind_mph ? `${Math.round(topCandidate.peak_wind_mph)} mph` : 'N/A'}`);
+      lines.push(`Stations: ${topCandidate.station_count || 0}`);
+      lines.push(`Summary: ${topCandidate.event_summary || topCandidate.explanation || ''}`);
+      if (topCandidate.carrier_response) {
+        lines.push(`Carrier Response: ${topCandidate.carrier_response}`);
+      }
     }
     if (candidates.length > 1) {
-      lines.push(`\nAlternate candidates: ${candidates.slice(1).map(c => c.date).join(', ')}`);
+      lines.push(`\nAlternate candidates: ${candidates.slice(1).map(c => c.candidate_date || c.date).join(', ')}`);
     }
     if (carrier) {
       lines.push('\nPresentation should emphasize data sources, weather station distances, and carrier-defensible evidence.');
@@ -280,15 +285,33 @@ function buildDolBody(data, addr, carrier) {
   if (location.latitude) html += `<div class="field"><span class="label">Coordinates</span><span class="value">${location.latitude}, ${location.longitude}</span></div>`;
   html += `</div>`;
   if (top) {
+    const topDate = top.candidate_date || top.date || 'N/A';
+    const topSummary = top.event_summary || top.explanation || '';
+    const sc = top.score_components;
     html += `<div class="section"><h2>Recommended Date of Loss</h2>
-      <div class="field"><span class="label">Date</span><span class="value" style="font-size:16px;font-weight:700;color:#ea580c">${top.date || 'N/A'}</span></div>
-      <div class="field"><span class="label">Confidence</span><span class="value"><span class="badge badge-green">${top.confidence || 'N/A'}</span></span></div>
-      <div class="field"><span class="label">Explanation</span><span class="value">${top.explanation || ''}</span></div>
-    </div>`;
+      <div class="field"><span class="label">Date</span><span class="value" style="font-size:16px;font-weight:700;color:#ea580c">${topDate}</span></div>
+      <div class="field"><span class="label">Confidence</span><span class="value"><span class="badge badge-green">${(top.confidence || 'N/A').toUpperCase()}</span></span></div>`;
+    if (top.peak_wind_mph) html += `<div class="field"><span class="label">Peak Wind</span><span class="value">${Math.round(top.peak_wind_mph)} mph</span></div>`;
+    if (top.station_count) html += `<div class="field"><span class="label">Stations</span><span class="value">${top.station_count}</span></div>`;
+    if (sc) html += `<div class="field"><span class="label">Composite Score</span><span class="value">${Math.round((sc.composite_score || 0) * 100)}%</span></div>`;
+    html += `<div class="field"><span class="label">Summary</span><span class="value">${topSummary}</span></div>`;
+    if (top.carrier_response) {
+      html += `<div class="field"><span class="label">Carrier Response</span><span class="value">${top.carrier_response}</span></div>`;
+    }
+    html += `</div>`;
+    if (top.why_bullets?.length > 0) {
+      html += `<div class="section"><h2>Supporting Evidence</h2><ul style="margin:8px 0 0 18px">`;
+      top.why_bullets.forEach(b => { html += `<li style="margin-bottom:4px;font-size:13px">${b}</li>`; });
+      html += `</ul></div>`;
+    }
   }
   if (candidates.length > 1) {
-    html += `<div class="section"><h2>Alternate Candidates</h2><table><thead><tr><th>Date</th><th>Confidence</th><th>Explanation</th></tr></thead><tbody>`;
-    candidates.slice(1).forEach(c => { html += `<tr><td>${c.date || 'N/A'}</td><td><span class="badge badge-blue">${c.confidence || 'N/A'}</span></td><td>${c.explanation || ''}</td></tr>`; });
+    html += `<div class="section"><h2>Alternate Candidates</h2><table><thead><tr><th>Date</th><th>Confidence</th><th>Peak Wind</th><th>Summary</th></tr></thead><tbody>`;
+    candidates.slice(1).forEach(c => {
+      const d = c.candidate_date || c.date || 'N/A';
+      const wind = c.peak_wind_mph ? `${Math.round(c.peak_wind_mph)} mph` : '—';
+      html += `<tr><td>${d}</td><td><span class="badge badge-blue">${(c.confidence || 'N/A').toUpperCase()}</span></td><td>${wind}</td><td>${c.event_summary || c.explanation || ''}</td></tr>`;
+    });
     html += `</tbody></table></div>`;
   }
   return html;

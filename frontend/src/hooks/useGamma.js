@@ -59,14 +59,17 @@ export const useGamma = () => {
     setError(null);
 
     try {
-      const res = await apiPost(`/api/integrations/gamma/generate-presentation`, { title: `Claim ${claimId}`, content: `Claim ID: ${claimId}\nAudience: ${audience}` });
+      const res = await apiPost(`/api/gamma/presentation/${audience}?claim_id=${claimId}`, {});
 
       if (!res.ok) {
         throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
       }
 
       setLoading(false);
-      return res.data;
+      // Normalize response: backend returns edit_url/share_url
+      const data = res.data || {};
+      if (!data.url) data.url = data.share_url || data.edit_url || null;
+      return data;
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -90,14 +93,17 @@ export const useGamma = () => {
         template: 'presentation'
       };
 
-      const res = await apiPost('/api/integrations/gamma/generate-presentation', payload);
+      const res = await apiPost('/api/gamma/presentation', payload);
 
       if (!res.ok) {
         throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
       }
 
       setLoading(false);
-      return res.data;
+      // Normalize response: backend returns edit_url/share_url
+      const data = res.data || {};
+      if (!data.url) data.url = data.share_url || data.edit_url || null;
+      return data;
     } catch (err) {
       setError(err.message);
       setLoading(false);

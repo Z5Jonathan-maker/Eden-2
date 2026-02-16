@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { api, apiUpload, apiDelete, API_URL, clearCache } from '../../../lib/api';
+import { api, apiPost, apiUpload, apiDelete, API_URL, getAuthToken, clearCache } from '../../../lib/api';
 
 /**
  * useInspectionPhotos Hook
@@ -38,7 +38,7 @@ export function useInspectionPhotos(options = {}) {
   const formatPhotoUrl = useCallback((photo) => {
     if (!photo) return photo;
     
-    const token = getToken();
+    const token = getAuthToken();
     const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
     
     return {
@@ -310,13 +310,50 @@ export function useInspectionPhotos(options = {}) {
     return Array.from(rooms);
   }, [photos]);
   
+  /**
+   * Bulk photo action (delete, recategorize, move_room)
+   */
+  const bulkAction = useCallback(async (action, photoIds, opts = {}) => {
+    if (!photoIds?.length) return null;
+    try {
+      const { ok, data, error: apiError } = await apiPost('/api/inspections/photos/bulk', {
+        action,
+        photo_ids: photoIds,
+        room: opts.room || null,
+        category: opts.category || null,
+      });
+      if (ok) {
+        // Refresh photos after bulk action
+        await fetchPhotos();
+        clearCache('/api/inspections');
+        return data;
+      }
+      setError(apiError || 'Bulk action failed');
+      return null;
+    } catch (err) {
+      console.error('[useInspectionPhotos] Bulk action error:', err);
+      setError(err.message);
+      return null;
+    }
+  }, [fetchPhotos]);
+
+  /**
+   * Get PDF export URL for a claim
+   */
+  const getExportPdfUrl = useCallback((claimIdOverride = null) => {
+    const cid = claimIdOverride || claimId;
+    if (!cid) return null;
+    const token = getAuthToken();
+    return `${API_URL}/api/inspections/claim/${cid}/export-pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  }, [claimId]);
+
   // Auto-fetch on mount if claimId is provided
   useEffect(() => {
     if (autoFetch && claimId) {
       fetchPhotos();
     }
   }, [autoFetch, claimId, fetchPhotos]);
-  
+
   return {
     // State
     photos,
@@ -338,7 +375,9 @@ export function useInspectionPhotos(options = {}) {
     getPhotosByRoom,
     getRooms,
     formatPhotoUrl,
-    
+    bulkAction,
+    getExportPdfUrl,
+
     // Computed
     photoCount: photos.length,
     hasPhotos: photos.length > 0
