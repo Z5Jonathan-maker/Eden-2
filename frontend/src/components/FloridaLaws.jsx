@@ -55,9 +55,13 @@ const TOOLKITS = [
     color: 'orange',
     why: 'When the carrier agrees there is roof damage but disputes full replacement vs. repair.',
     carrierMove: 'Approve partial repair, deny full replacement, argue "matching" not required.',
-    ourMove: 'Cite statutes requiring uniform appearance and full scope. Document with photos + measurements.',
-    statutes: ['626.854', '627.70152', '627.7011', '627.702'],
-    tags: ['roof', 'scope', 'replacement', 'matching'],
+    ourMove: 'Cite statutes requiring uniform appearance, duty to inspect, and roof coverage provisions. Document with photos + measurements.',
+    statutes: [
+      { section: '627.70152', name: 'Uniform & Consistent Repairs (Matching)' },
+      { section: '627.712', name: 'Residential Roof Coverage' },
+      { section: '627.70151', name: 'Insurer Duty to Inspect Property' },
+      { section: '627.7011', name: 'Insurer Duties to Policyholders' },
+    ],
   },
   {
     id: 'matching-appearance',
@@ -66,9 +70,12 @@ const TOOLKITS = [
     color: 'blue',
     why: 'When the carrier replaces damaged areas but refuses to match adjacent undamaged areas.',
     carrierMove: 'Pay to replace only damaged shingles/siding, creating mismatched appearance.',
-    ourMove: 'Florida statutes require uniform and reasonably consistent appearance. Document the mismatch.',
-    statutes: ['627.70152', '627.7011', '627.702'],
-    tags: ['matching', 'uniform', 'appearance', 'cosmetic'],
+    ourMove: 'Florida Statute 627.70152 requires repairs that are uniform and reasonably consistent in appearance. Document the mismatch with side-by-side photos.',
+    statutes: [
+      { section: '627.70152', name: 'Uniform & Consistent Repairs (Matching)' },
+      { section: '627.70151', name: 'Insurer Duty to Inspect Property' },
+      { section: '627.7011', name: 'Insurer Duties to Policyholders' },
+    ],
   },
   {
     id: 'ordinance-law',
@@ -77,9 +84,12 @@ const TOOLKITS = [
     color: 'purple',
     why: 'When repairs trigger building code compliance that exceeds the original construction standard.',
     carrierMove: 'Estimate to old code standards, deny code upgrade costs as "betterment."',
-    ourMove: 'Invoke Ordinance & Law coverage. Document current code requirements vs. original installation.',
-    statutes: ['627.7011', '627.702', '627.706'],
-    tags: ['code', 'ordinance', 'law', 'upgrade', 'betterment'],
+    ourMove: 'Invoke Ordinance & Law coverage under 627.706. Document current code requirements vs. original installation.',
+    statutes: [
+      { section: '627.706', name: 'Ordinance or Law Coverage' },
+      { section: '627.7065', name: 'Building Code Compliance' },
+      { section: '627.7011', name: 'Insurer Duties to Policyholders' },
+    ],
   },
   {
     id: 'delay-no-response',
@@ -88,9 +98,13 @@ const TOOLKITS = [
     color: 'red',
     why: 'When the carrier fails to acknowledge, investigate, or make a coverage determination within statutory timelines.',
     carrierMove: 'Delay acknowledgment, extend investigation indefinitely, ignore deadlines.',
-    ourMove: 'Reference statutory timelines (7/14/60/90 days). Document every missed deadline.',
-    statutes: ['627.70131', '627.70132', '627.7015', '626.854'],
-    tags: ['delay', 'timeline', 'deadline', 'no response', 'acknowledgment'],
+    ourMove: 'Reference statutory timelines: 7-day acknowledgment (627.70131), 14-day updates, 60/90-day pay/deny (627.70132). Document every missed deadline.',
+    statutes: [
+      { section: '627.70131', name: 'Duty to Acknowledge Claims (7 days)' },
+      { section: '627.70132', name: 'Processing & Pay/Deny Deadlines (60/90 days)' },
+      { section: '627.7015', name: 'Unfair Claim Settlement Practices' },
+      { section: '627.7017', name: 'Notice of Claim Requirements' },
+    ],
   },
   {
     id: 'underpayment-scope',
@@ -99,9 +113,13 @@ const TOOLKITS = [
     color: 'green',
     why: 'When the carrier\'s estimate is missing line items or using below-market pricing.',
     carrierMove: 'Issue incomplete estimate, use carrier-modified pricing below market.',
-    ourMove: 'Submit supplement with evidence-aligned line items. Track owed vs. paid.',
-    statutes: ['627.7011', '627.702', '627.7015', '626.8796'],
-    tags: ['underpayment', 'scope', 'pricing', 'supplement', 'estimate'],
+    ourMove: 'Submit supplement under 627.70153. Track owed vs. paid. Cite unfair settlement practices if carrier ignores evidence.',
+    statutes: [
+      { section: '627.70153', name: 'Supplemental Claims' },
+      { section: '627.7015', name: 'Unfair Claim Settlement Practices' },
+      { section: '627.7011', name: 'Insurer Duties to Policyholders' },
+      { section: '627.70152', name: 'Uniform & Consistent Repairs (Matching)' },
+    ],
   },
   {
     id: 'water-damage',
@@ -110,9 +128,13 @@ const TOOLKITS = [
     color: 'cyan',
     why: 'When the carrier limits water damage scope, denies tear-out, or argues maintenance exclusion.',
     carrierMove: 'Limit scope to visible damage, deny exploratory tear-out, claim maintenance.',
-    ourMove: 'Document moisture readings, establish cause with Tier 1 evidence, avoid exclusion-trigger language.',
-    statutes: ['627.7011', '627.702', '627.70131', '627.70132'],
-    tags: ['water', 'moisture', 'tear-out', 'mold', 'remediation'],
+    ourMove: 'Document moisture readings, establish cause with Tier 1 evidence. Cite duty to inspect (627.70151) and temporary repair coverage (627.708).',
+    statutes: [
+      { section: '627.70151', name: 'Insurer Duty to Inspect Property' },
+      { section: '627.708', name: 'Coverage for Temporary Repairs' },
+      { section: '627.70153', name: 'Supplemental Claims' },
+      { section: '627.7011', name: 'Insurer Duties to Policyholders' },
+    ],
   },
   {
     id: 'pa-compliance',
@@ -121,9 +143,14 @@ const TOOLKITS = [
     color: 'zinc',
     why: 'Know the rules that govern your license, fees, contracts, and conduct.',
     carrierMove: 'Challenge PA authority, question contract validity, allege fee violations.',
-    ourMove: 'Maintain strict compliance: proper contracts, fee limits, bond requirements, ethical conduct.',
-    statutes: ['626.854', '626.865', '626.8651', '626.8795', '626.8796'],
-    tags: ['compliance', 'license', 'fee', 'contract', 'ethics', 'bond'],
+    ourMove: 'Maintain strict compliance: proper contracts (626.8796), fee limits (626.854), bond requirements (626.865), ethical conduct (626.8795).',
+    statutes: [
+      { section: '626.854', name: 'PA Definition, Prohibitions & Fee Caps' },
+      { section: '626.8796', name: 'PA Contract Requirements' },
+      { section: '626.865', name: 'PA Qualifications & $50k Bond' },
+      { section: '626.8795', name: 'Conflict of Interest Prohibition' },
+      { section: '626.8651', name: 'PA Apprentice Requirements' },
+    ],
   },
 ];
 
@@ -233,11 +260,10 @@ const FloridaLaws = () => {
     try {
       const res = await apiGet(`/api/statutes/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        // Enrich results with toolkit tags
+        // Enrich results with toolkit tags (only match by statute number, not loose keywords)
         const enriched = (res.data.results || []).map(result => {
           const matchingToolkits = TOOLKITS.filter(tk =>
-            tk.statutes.includes(result.section_number) ||
-            tk.tags.some(tag => searchQuery.toLowerCase().includes(tag))
+            tk.statutes.some(s => s.section === result.section_number)
           );
           return { ...result, toolkitTags: matchingToolkits.map(tk => tk.title) };
         });
@@ -644,20 +670,18 @@ const FloridaLaws = () => {
                         <div>
                           <p className="text-[10px] font-mono uppercase text-zinc-500 mb-2">Relevant Statutes</p>
                           <div className="space-y-2">
-                            {tk.statutes.map(sn => (
+                            {tk.statutes.map(s => (
                               <div
-                                key={sn}
+                                key={s.section}
                                 className="flex items-center justify-between p-3 border border-zinc-700 rounded-lg hover:border-blue-500/40 cursor-pointer transition-all"
                                 onClick={() => {
-                                  fetchStatuteDetail(sn);
+                                  fetchStatuteDetail(s.section);
                                   setSelectedToolkit(null);
                                 }}
                               >
                                 <div className="flex items-center gap-2">
-                                  <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">§{sn}</Badge>
-                                  <span className="text-sm text-zinc-300">
-                                    {dbStatutes.find(s => s.section_number === sn)?.heading || 'View statute'}
-                                  </span>
+                                  <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">§{s.section}</Badge>
+                                  <span className="text-sm text-zinc-300">{s.name}</span>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-zinc-600" />
                               </div>
