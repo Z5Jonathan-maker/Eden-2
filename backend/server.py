@@ -63,6 +63,7 @@ from routes.battle_pass import router as battle_pass_router
 from routes.mycard import router as mycard_router
 from routes.comm_conversations import router as comm_conversations_router
 from routes.integrations import router as integrations_services_router
+from routes.imagery import router as imagery_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -383,6 +384,7 @@ app.include_router(integrations_router)
 app.include_router(integrations_services_router)
 app.include_router(google_router)
 app.include_router(signnow_router)
+app.include_router(imagery_router)
 
 # Startup event to seed data
 @app.on_event("startup")
