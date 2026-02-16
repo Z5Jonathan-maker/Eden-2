@@ -918,7 +918,7 @@ For every damage area:
 - All slopes/areas documented, not just damaged ones
 
 ## The Standard
-Not "water damage in bedroom" but "Active water intrusion at ceiling/wall junction, NE corner of master bedroom. Drywall soft to touch, visible staining extending 18 inches from corner. Moisture reading 42% (dry standard 12%)."""",
+Not "water damage in bedroom" but "Active water intrusion at ceiling/wall junction, NE corner of master bedroom. Drywall soft to touch, visible staining extending 18 inches from corner. Moisture reading 42% (dry standard 12%).\"""",
                     duration_minutes=11,
                     order=3,
                     teaching_beats=["Three-shot rule: wide, medium, close-up for every damage area", "Always include date stamps and measurement references", "Specific descriptions defeat vague observations"],
