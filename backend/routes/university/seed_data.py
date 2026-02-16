@@ -675,6 +675,7 @@ The difference between ACV and RCV can be 20-40% of the claim. Don't surrender i
             tags=["core promise", "indemnification", "fundamentals"],
             why_this_matters="Full indemnification is not a negotiating position — it is the contractual obligation. Understanding this shifts you from asking favors to claiming what is owed.",
             outcomes=["Define full indemnification and its contractual basis", "Explain why carriers structurally underpay", "Apply the core promise to any claim scenario"],
+            thumbnail="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400",
             lessons=[
                 Lesson(
                     title="What Full Indemnification Means",
@@ -760,6 +761,7 @@ Claims are won by structure, not arguing. We don't inflate. We don't guess. We d
             tags=["structure", "documentation", "process", "file building"],
             why_this_matters="The adjuster with the better file wins. Period. Structure is not busywork — it is the single greatest predictor of claim outcome.",
             outcomes=["Build a claim file that supports your position independently", "Organize evidence by the hierarchy that compels payment", "Create documentation a neutral third party would find persuasive"],
+            thumbnail="https://images.unsplash.com/photo-1507925921958-8a62f3d1a50d?w=400",
             lessons=[
                 Lesson(
                     title="Why Structure Beats Arguing",
@@ -851,6 +853,7 @@ Every submission must be clean, organized, and self-supporting. If you wouldn't 
             tags=["evidence", "documentation", "photos", "proof"],
             why_this_matters="Carriers dismiss weak evidence and respect strong evidence. Knowing the hierarchy means you build the right file from day one.",
             outcomes=["Rank evidence by the 5-tier hierarchy", "Prioritize objective proof over opinions", "Document every claim to the standard that compels payment"],
+            thumbnail="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400",
             lessons=[
                 Lesson(
                     title="The Five Tiers of Evidence",
@@ -945,6 +948,7 @@ Not "water damage in bedroom" but "Active water intrusion at ceiling/wall juncti
             tags=["scope", "estimating", "line items", "discipline"],
             why_this_matters="Inflated or sloppy scopes give carriers ammunition. Disciplined scoping builds credibility that pays dividends across every claim.",
             outcomes=["Write scope items that are individually defensible", "Avoid language that triggers exclusions", "Distinguish between recoverable damage and maintenance"],
+            thumbnail="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400",
             lessons=[
                 Lesson(
                     title="Defensible Line Items",
@@ -1034,6 +1038,7 @@ Would an independent appraiser reviewing this scope find it fair, accurate, and 
             tags=["communication", "deadlines", "professional", "written"],
             why_this_matters="Phone calls buy time. Written communication creates accountability. Every unwritten conversation is a missed opportunity to build your file.",
             outcomes=["Default to written communication for all claim interactions", "Set effective deadlines that create carrier accountability", "Maintain professional posture that supports escalation if needed"],
+            thumbnail="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400",
             lessons=[
                 Lesson(
                     title="Written Over Verbal",
@@ -1129,6 +1134,7 @@ Log every deadline set, the carrier's response (or non-response), and the action
             tags=["negotiation", "posture", "deadlines", "professional"],
             why_this_matters="Your posture determines how the carrier treats you. Too aggressive and they lawyer up. Too passive and they walk over you. The doctrine posture commands respect and results.",
             outcomes=["Execute the educated-professional-amicable posture in any claim scenario", "Set deadlines that create real accountability", "Transition from amicable to escalation without losing credibility"],
+            thumbnail="https://images.unsplash.com/photo-1552664730-d307ca884978?w=400",
             lessons=[
                 Lesson(
                     title="The Doctrine Posture",
@@ -1224,6 +1230,7 @@ You don't announce escalation — you execute it. Each level follows naturally f
             tags=["supplements", "rebuttals", "tracking", "recovery"],
             why_this_matters="Most adjusters leave 30-40% on the table because they don't know how to structure supplement submissions. This course teaches the system that recovers every dollar owed.",
             outcomes=["Write structured rebuttals that address carrier objections point-by-point", "Align evidence to estimate line items for maximum credibility", "Track supplements systematically to expose carrier patterns"],
+            thumbnail="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400",
             lessons=[
                 Lesson(
                     title="Structured Rebuttals",
@@ -1318,6 +1325,7 @@ Maintain a running dollar figure: total documented owed minus total paid. This n
             tags=["carrier psychology", "tactics", "documentation", "leverage"],
             why_this_matters="Carriers aren't random. They follow predictable patterns. When you understand the psychology, you can anticipate moves and prepare counters before they happen.",
             outcomes=["Predict carrier behavior based on claim characteristics", "Identify when carriers exploit ambiguity or delay", "Document moving goalposts to build the bad faith file"],
+            thumbnail="https://images.unsplash.com/photo-1529699211952-734e80c4d42b?w=400",
             lessons=[
                 Lesson(
                     title="How Carriers Think",
@@ -1418,6 +1426,7 @@ A documented pattern of moving goalposts is powerful evidence of bad faith. It s
             tags=["escalation", "DOI", "appraisal", "management", "mediation"],
             why_this_matters="Escalation without documentation is noise. Escalation with a documented pattern of carrier failure is leverage. The ladder gives you the sequence.",
             outcomes=["Execute all 5 levels of the escalation ladder", "Know when to escalate vs. when to continue negotiating", "Build the file at each level that supports the next"],
+            thumbnail="https://images.unsplash.com/photo-1533750516457-a7f992034fec?w=400",
             lessons=[
                 Lesson(
                     title="The Five Levels",
@@ -1520,6 +1529,7 @@ A well-built escalation file often resolves the claim before you need to use it.
             tags=["dispute resolution", "mediation", "appraisal", "strategy"],
             why_this_matters="Not every dispute needs litigation. Choosing the right resolution mechanism saves time, money, and gets results faster — but only when the file is strong.",
             outcomes=["Distinguish mediation from appraisal and know when each applies", "Evaluate file strength before committing to formal dispute resolution", "Select the optimal resolution path for any claim dispute"],
+            thumbnail="https://images.unsplash.com/photo-1593115057322-e94b77572f20?w=400",
             lessons=[
                 Lesson(
                     title="Mediation vs. Appraisal",
@@ -1628,6 +1638,7 @@ Entering dispute resolution with a weak file can result in a binding outcome tha
             tags=["O&P", "overhead", "profit", "three-trade", "general contractor"],
             why_this_matters="O&P adds 20% to claim value. Carriers deny it by default. Knowing when it's owed and how to claim it is one of the highest-value skills in adjusting.",
             outcomes=["Apply the three-trade rule to determine O&P eligibility", "Counter common carrier objections to O&P", "Document GC necessity for any qualifying claim"],
+            thumbnail="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400",
             lessons=[
                 Lesson(
                     title="When O&P Is Owed",
@@ -1717,6 +1728,7 @@ If denied, request specific written reason. Apply the structured rebuttal framew
             tags=["depreciation", "RCV", "ACV", "recovery", "labor"],
             why_this_matters="The difference between ACV and RCV is 20-40% of the claim. Most policyholders leave recoverable depreciation on the table. Don't.",
             outcomes=["Calculate and track recoverable depreciation", "Identify improper depreciation (including labor)", "Submit depreciation recovery claims within policy time limits"],
+            thumbnail="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400",
             lessons=[
                 Lesson(
                     title="ACV vs. RCV Mechanics",
@@ -1816,6 +1828,7 @@ On a $100,000 claim with 30% depreciation, that's $30,000 sitting unclaimed. Thi
             tags=["code upgrades", "ordinance", "law", "building codes"],
             why_this_matters="Code upgrades can add 15-25% to a claim. Carriers routinely exclude them unless you specifically claim them with documentation.",
             outcomes=["Identify when code upgrades apply to a repair", "Document code requirements for supplement submission", "Leverage Ordinance & Law coverage endorsements"],
+            thumbnail="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400",
             lessons=[
                 Lesson(
                     title="When Codes Apply",
@@ -1910,6 +1923,7 @@ Code requirements are not negotiable — they're law. The carrier cannot authori
             tags=["pattern recognition", "mentor lens", "analysis", "damage patterns"],
             why_this_matters="The best adjusters don't just see damage — they see patterns. Patterns in how damage presents, how carriers respond, and how claims resolve. This lens trains that skill.",
             outcomes=["Recognize common damage patterns across property types", "Identify carrier behavior patterns that predict outcomes", "Use pattern recognition to anticipate and prepare for claim developments"],
+            thumbnail="https://images.unsplash.com/photo-1453847668862-487637052f8a?w=400",
             lessons=[
                 Lesson(
                     title="Damage Pattern Recognition",
@@ -2016,6 +2030,7 @@ Claim outcomes are not random. They follow the patterns established in the first
             tags=["field inspection", "photos", "moisture", "measurements", "documentation"],
             why_this_matters="Everything starts in the field. Poor field documentation cannot be fixed later. Excellent field documentation makes every subsequent step easier.",
             outcomes=["Execute the complete field documentation protocol", "Take photos that prove causation and extent", "Record moisture readings and measurements to professional standards"],
+            thumbnail="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400",
             lessons=[
                 Lesson(
                     title="The Field Documentation Protocol",
@@ -2410,6 +2425,7 @@ Remember: The attorney works FOR you. Stay engaged. Ask questions. Understand th
             tags=["carrier systems", "authority", "reserves", "internal process"],
             why_this_matters="Understanding how the carrier operates internally gives you an information advantage. You stop reacting and start anticipating.",
             outcomes=["Understand carrier authority structures and escalation triggers", "Recognize how reserves drive adjuster behavior", "Navigate carrier internal processes to your advantage"],
+            thumbnail="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400",
             lessons=[
                 Lesson(
                     title="Carrier Authority Structures",
@@ -2504,6 +2520,7 @@ Don't fight the process — navigate it. Know what triggers each internal step, 
             tags=["total loss", "valued policy", "demolition", "debris removal"],
             why_this_matters="A total loss in a valued policy state means the carrier must pay the full Coverage A limit — period. Missing this can cost the policyholder hundreds of thousands.",
             outcomes=["Identify when valued policy law applies", "Calculate total loss recovery including demolition and debris", "Navigate the total loss claim from declaration through settlement"],
+            thumbnail="https://images.unsplash.com/photo-1573126617899-41f1dffb196c?w=400",
             lessons=[
                 Lesson(
                     title="Valued Policy Law",
@@ -2602,6 +2619,7 @@ Coverage A + debris removal + demolition + code upgrade + Coverage B + C + D = t
             tags=["multi-peril", "causation", "concurrent cause", "anti-concurrent"],
             why_this_matters="Most complex claims involve multiple perils. Carriers use causation confusion to deny coverage. Understanding multi-peril analysis is what separates operators from elite adjusters.",
             outcomes=["Analyze claims with multiple contributing causes", "Navigate anti-concurrent causation clauses", "Document each peril's independent contribution to the loss"],
+            thumbnail="https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400",
             lessons=[
                 Lesson(
                     title="Multiple Causes of Loss",
@@ -2701,6 +2719,7 @@ Never give the carrier a reason to blend causes.""",
             tags=["coverage", "policy analysis", "mentor lens", "endorsements", "exclusions"],
             why_this_matters="The policy is a layered document. Most adjusters read the surface. Elite adjusters dig through definitions, endorsements, exceptions to exclusions, and ensuing loss provisions to find coverage the carrier hopes you'll miss.",
             outcomes=["Analyze policy language at the endorsement and definition level", "Find exceptions to exclusions that restore coverage", "Apply the ensuing loss doctrine to complex claims"],
+            thumbnail="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400",
             lessons=[
                 Lesson(
                     title="Reading Below the Surface",
@@ -2803,6 +2822,7 @@ Carriers may invoke anti-concurrent causation. Your response: ensuing loss is se
             tags=["Xactimate", "estimating", "pricing", "mentor lens", "line items"],
             why_this_matters="Carriers use Xactimate pricing that may lag behind market reality. If you don't understand the platform, you can't challenge their numbers. Mastering Xactimate is mastering the financial language of claims.",
             outcomes=["Navigate Xactimate pricing and identify below-market rates", "Challenge carrier estimates with industry-standard line items", "Build supplements using proper Xactimate methodology"],
+            thumbnail="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400",
             lessons=[
                 Lesson(
                     title="Understanding Xactimate Pricing",
@@ -2906,6 +2926,7 @@ Every supplement line item must be defensible. If you can't prove it, don't incl
             tags=["negotiation", "complex claims", "strategy", "leverage", "closing"],
             why_this_matters="Complex claims require more than good documentation. They require strategic negotiation that understands leverage, timing, and the carrier's decision calculus.",
             outcomes=["Assess leverage position before entering negotiation", "Time negotiation moves for maximum impact", "Close complex claims using the carrier's own decision calculus"],
+            thumbnail="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400",
             lessons=[
                 Lesson(
                     title="Leverage Assessment",
@@ -3015,6 +3036,7 @@ Never bluff. Every stated alternative must be real. Your credibility is your mos
             tags=["integration", "training outcomes", "mastery", "operating framework"],
             why_this_matters="Knowledge without application is academic. This course integrates every doctrine principle into a unified framework you can execute on any claim, any carrier, any situation.",
             outcomes=["Execute the complete doctrine framework on any claim", "Self-assess performance against doctrine standards", "Train and mentor others using the doctrine methodology"],
+            thumbnail="https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=400",
             lessons=[
                 Lesson(
                     title="The Unified Framework",
