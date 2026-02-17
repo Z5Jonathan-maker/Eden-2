@@ -56,8 +56,11 @@ async def get_integrations_status(current_user: dict = Depends(get_current_activ
     # Check Gamma (API key based)
     gamma_connected = bool(os.environ.get("GAMMA_API_KEY"))
 
-    # Check SignNow: direct API token OR OAuth token
-    signnow_connected = bool(os.environ.get("SIGNNOW_ACCESS_TOKEN"))
+    # Check SignNow: direct API token, client credentials, OR OAuth token
+    signnow_connected = bool(
+        os.environ.get("SIGNNOW_ACCESS_TOKEN")
+        or (os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET"))
+    )
     if not signnow_connected:
         signnow_token = await db.oauth_tokens.find_one(
             {"user_id": user_id, "provider": "signnow"},
