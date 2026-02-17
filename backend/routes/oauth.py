@@ -23,6 +23,7 @@ GAMMA_CLIENT_SECRET = os.environ.get("GAMMA_CLIENT_SECRET", "")
 
 # Get base URL from environment
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8001")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 class OAuthStatus(BaseModel):
     provider: str
@@ -199,8 +200,8 @@ async def google_oauth_callback(code: str, state: str):
         upsert=True
     )
     
-    # Redirect back to settings page
-    return RedirectResponse(url="/settings?oauth=google&status=success")
+    # Redirect back to frontend settings page
+    return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=success")
 
 # ============ SIGNNOW OAUTH ============
 
@@ -274,7 +275,7 @@ async def signnow_oauth_callback(code: str, state: str):
         upsert=True
     )
     
-    return RedirectResponse(url="/settings?oauth=signnow&status=success")
+    return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=signnow&status=success")
 
 # ============ GAMMA OAUTH ============
 
@@ -353,7 +354,7 @@ async def notion_oauth_callback(code: str, state: str):
         upsert=True
     )
     
-    return RedirectResponse(url="/settings?oauth=notion&status=success")
+    return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=notion&status=success")
 
 # ============ DISCONNECT ============
 
