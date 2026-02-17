@@ -18,6 +18,16 @@ from services.signnow_service import SignNowService
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 logger = logging.getLogger(__name__)
 
+
+async def _get_signnow_token():
+    """Get SignNow token via client credentials if configured"""
+    try:
+        from integrations.signnow_client import get_signnow_access_token
+        return await get_signnow_access_token()
+    except Exception:
+        return None
+
+
 # Import game event bus helper
 async def _emit_contract_event(user_id: str, event_type: str, contract_id: str):
     """Emit game event for contract activities"""
@@ -372,7 +382,7 @@ async def send_contract_for_signature(
         raise HTTPException(status_code=404, detail="Contract not found")
     
     # Check if SignNow is configured
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     if not signnow_token:
         # Return info about manual process if SignNow not configured
         return {
@@ -448,7 +458,7 @@ async def get_contract_signature_status(
     if not doc_id:
         return {"status": contract.get("status", "draft")}
     
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     if not signnow_token:
         return {"status": contract.get("status", "draft")}
     
@@ -483,7 +493,7 @@ async def download_contract(
         raise HTTPException(status_code=404, detail="Contract not found")
     
     doc_id = contract.get("signnow_document_id")
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     
     if doc_id and signnow_token:
         try:

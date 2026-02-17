@@ -9,7 +9,7 @@ class SignNowService:
     def __init__(self, access_token: Optional[str] = None):
         """Initialize SignNow service with access token"""
         self.access_token = access_token or os.getenv('SIGNNOW_ACCESS_TOKEN')
-        self.api_base = os.getenv('SIGNNOW_API_BASE', 'https://api.signnow.com')
+        self.api_base = os.getenv('SIGNNOW_API_URL', os.getenv('SIGNNOW_API_BASE', 'https://api.signnow.com'))
     
     def get_auth_headers(self):
         """Get authorization headers"""
