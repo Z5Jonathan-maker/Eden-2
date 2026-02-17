@@ -116,6 +116,16 @@ async def startup_event():
     logger.info(f"JWT Algorithm: {os.environ.get('JWT_ALGORITHM', 'HS256')}")
     logger.info(f"CORS Origins: {os.environ.get('CORS_ORIGINS', 'not configured')}")
     logger.info(f"Frontend URL: {os.environ.get('FRONTEND_URL', 'not configured')}")
+    logger.info(f"Base URL: {os.environ.get('BASE_URL', 'not configured')}")
+    logger.info("-"*70)
+    logger.info("INTEGRATION CONFIG:")
+    logger.info(f"  GOOGLE_CLIENT_ID: {'SET ✓' if os.environ.get('GOOGLE_CLIENT_ID') else 'MISSING ✗'}")
+    logger.info(f"  GOOGLE_CLIENT_SECRET: {'SET ✓' if os.environ.get('GOOGLE_CLIENT_SECRET') else 'MISSING ✗'}")
+    logger.info(f"  SIGNNOW_CLIENT_ID: {'SET ✓' if os.environ.get('SIGNNOW_CLIENT_ID') else 'MISSING ✗'}")
+    logger.info(f"  SIGNNOW_CLIENT_SECRET: {'SET ✓' if os.environ.get('SIGNNOW_CLIENT_SECRET') else 'MISSING ✗'}")
+    logger.info(f"  GAMMA_API_KEY: {'SET ✓' if os.environ.get('GAMMA_API_KEY') else 'MISSING ✗'}")
+    logger.info(f"  STRIPE_SECRET_KEY: {'SET ✓' if os.environ.get('STRIPE_SECRET_KEY') else 'MISSING ✗'}")
+    logger.info(f"  OPENAI_API_KEY: {'SET ✓' if os.environ.get('OPENAI_API_KEY') else 'MISSING ✗'}")
     logger.info("="*70)
 
 
@@ -224,6 +234,13 @@ async def health_check():
         "checks": {
             "database": db_status,
             "storage": storage_status
+        },
+        "integrations": {
+            "google_oauth": bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET")),
+            "signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET")),
+            "gamma": bool(os.environ.get("GAMMA_API_KEY")),
+            "stripe": bool(os.environ.get("STRIPE_SECRET_KEY")),
+            "openai": bool(os.environ.get("OPENAI_API_KEY")),
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }

@@ -72,9 +72,14 @@ async def get_integrations_status(current_user: dict = Depends(get_current_activ
     # Check Stripe (API key based)
     stripe_connected = bool(os.environ.get("STRIPE_SECRET_KEY"))
 
+    # Check if OAuth providers are configured (env vars present)
+    google_configured = bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"))
+    signnow_configured = bool(os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET"))
+
     return {
         "google": {
             "connected": google_connected,
+            "configured": google_configured,
             "scopes": google_scopes,
             "available_scopes": ["calendar", "drive", "gmail"],
             "oauth_required": True
@@ -86,6 +91,7 @@ async def get_integrations_status(current_user: dict = Depends(get_current_activ
         },
         "signnow": {
             "connected": signnow_connected,
+            "configured": signnow_configured,
             "oauth_required": True
         },
         "stripe": {

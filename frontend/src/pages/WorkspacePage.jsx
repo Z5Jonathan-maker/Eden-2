@@ -42,10 +42,11 @@ const WorkspacePage = () => {
       if (res.ok && res.data?.auth_url) {
         window.location.href = res.data.auth_url;
       } else {
-        toast.error('Google OAuth not configured. Contact administrator.');
+        toast.error(res.error || 'Google OAuth not configured. Contact administrator.');
       }
-    } catch {
-      toast.error('Failed to connect Google');
+    } catch (err) {
+      console.error('Google connect error:', err);
+      toast.error('Failed to connect Google — check browser console');
     } finally {
       setConnecting(false);
     }
