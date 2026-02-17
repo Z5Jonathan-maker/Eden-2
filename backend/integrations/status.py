@@ -56,14 +56,15 @@ async def get_integrations_status(current_user: dict = Depends(get_current_activ
     # Check Gamma (API key based)
     gamma_connected = bool(os.environ.get("GAMMA_API_KEY"))
 
-    # Check SignNow OAuth connection (oauth_tokens, user_id based)
-    signnow_connected = False
-    signnow_token = await db.oauth_tokens.find_one(
-        {"user_id": user_id, "provider": "signnow"},
-        {"_id": 0}
-    )
-    if signnow_token and signnow_token.get("access_token"):
-        signnow_connected = True
+    # Check SignNow: direct API token OR OAuth token
+    signnow_connected = bool(os.environ.get("SIGNNOW_ACCESS_TOKEN"))
+    if not signnow_connected:
+        signnow_token = await db.oauth_tokens.find_one(
+            {"user_id": user_id, "provider": "signnow"},
+            {"_id": 0}
+        )
+        if signnow_token and signnow_token.get("access_token"):
+            signnow_connected = True
 
     # Check Stripe (API key based)
     stripe_connected = bool(os.environ.get("STRIPE_SECRET_KEY"))

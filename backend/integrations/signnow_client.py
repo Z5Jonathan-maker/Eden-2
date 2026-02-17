@@ -34,6 +34,7 @@ router = APIRouter(prefix="/api/integrations/signnow", tags=["SignNow Integratio
 SIGNNOW_API_BASE = os.environ.get("SIGNNOW_API_URL", "https://api.signnow.com")
 SIGNNOW_CLIENT_ID = os.environ.get("SIGNNOW_CLIENT_ID")
 SIGNNOW_CLIENT_SECRET = os.environ.get("SIGNNOW_CLIENT_SECRET")
+SIGNNOW_ACCESS_TOKEN = os.environ.get("SIGNNOW_ACCESS_TOKEN")
 
 
 # ============================================
@@ -63,36 +64,38 @@ class SigningLinkResponse(BaseModel):
 async def get_signnow_access_token(user_email: str = None) -> Optional[str]:
     """
     Get a valid SignNow access token.
-    First checks for user-specific OAuth token, then falls back to app-level credentials.
+    Priority: 1) Direct API token from env, 2) User OAuth token, 3) App-level credentials.
     """
-    # Check for user-specific token
+    # Priority 1: Direct API token from environment
+    if SIGNNOW_ACCESS_TOKEN:
+        return SIGNNOW_ACCESS_TOKEN
+
+    # Priority 2: User-specific OAuth token
     if user_email:
         token_doc = await db.integration_tokens.find_one({
             "user_email": user_email,
             "provider": "signnow"
         })
-        
+
         if token_doc and token_doc.get("access_token"):
-            # Check expiration
             expires_at = token_doc.get("expires_at")
             if expires_at:
                 if isinstance(expires_at, str):
                     expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
                 if expires_at.tzinfo is None:
                     expires_at = expires_at.replace(tzinfo=timezone.utc)
-                
+
                 if expires_at > datetime.now(timezone.utc):
                     return token_doc["access_token"]
                 else:
-                    # Token expired, try to refresh
                     refreshed = await refresh_signnow_token(user_email, token_doc.get("refresh_token"))
                     if refreshed:
                         return refreshed
-    
-    # Fall back to app-level OAuth (client credentials)
+
+    # Priority 3: App-level OAuth (client credentials)
     if SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET:
         return await get_app_level_token()
-    
+
     return None
 
 
@@ -337,24 +340,28 @@ async def create_in_person_invite(
 
 async def upload_contract_to_signnow(access_token: str, contract: dict, signer_email: str) -> Optional[str]:
     """Upload a contract document to SignNow"""
-    # For now, create a simple document
-    # In production, you'd upload the actual PDF
-    
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
-    
+    headers = {"Authorization": f"Bearer {access_token}"}
+
     try:
-        # Create document from template or upload
-        # This is simplified - real implementation would upload the contract PDF
-        async with httpx.AsyncClient() as client:
-            # For demo, we'll just return None to trigger mock
-            # Real implementation would upload the contract file
-            pass
+        file_path = contract.get("file_path") or contract.get("pdf_path")
+        if file_path and os.path.exists(file_path):
+            async with httpx.AsyncClient() as client:
+                with open(file_path, "rb") as f:
+                    files = {"file": (os.path.basename(file_path), f, "application/pdf")}
+                    resp = await client.post(
+                        f"{SIGNNOW_API_BASE}/document",
+                        files=files,
+                        headers=headers,
+                        timeout=30.0
+                    )
+                    if resp.status_code in [200, 201]:
+                        return resp.json().get("id")
+                    print(f"[SignNow] Upload failed: {resp.status_code} {resp.text}")
+        else:
+            print(f"[SignNow] No local file for contract {contract.get('id')}")
     except Exception as e:
         print(f"[SignNow] Document upload error: {e}")
-    
+
     return None
 
 
@@ -453,6 +460,9 @@ class SignNowClient:
     
     async def is_connected(self) -> bool:
         """Check if SignNow is configured and connected"""
+        if SIGNNOW_ACCESS_TOKEN:
+            return True
+
         if self.user_email:
             token = await db.integration_tokens.find_one({
                 "user_email": self.user_email,
@@ -460,8 +470,7 @@ class SignNowClient:
             })
             if token and token.get("access_token"):
                 return True
-        
-        # Check app-level credentials
+
         return bool(SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET)
     
     async def create_in_person_signing_link(
