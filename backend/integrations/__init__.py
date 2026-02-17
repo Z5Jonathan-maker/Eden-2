@@ -18,13 +18,11 @@ Services:
 """
 
 from .status import router as integrations_router
-from .google_client import GoogleClient
 from .gamma_client import GammaClient
 from .signnow_client import SignNowClient
 
 __all__ = [
     'integrations_router',
-    'GoogleClient', 
     'GammaClient',
     'SignNowClient'
 ]
