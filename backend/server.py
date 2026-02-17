@@ -242,6 +242,20 @@ async def health_check():
             "stripe": bool(os.environ.get("STRIPE_SECRET_KEY")),
             "openai": bool(os.environ.get("OPENAI_API_KEY")),
         },
+        "env_debug": {
+            k: (v[:4] + "..." if v else "NOT SET")
+            for k, v in {
+                "GOOGLE_CLIENT_ID": os.environ.get("GOOGLE_CLIENT_ID", ""),
+                "GOOGLE_CLIENT_SECRET": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+                "SIGNNOW_CLIENT_ID": os.environ.get("SIGNNOW_CLIENT_ID", ""),
+                "SIGNNOW_CLIENT_SECRET": os.environ.get("SIGNNOW_CLIENT_SECRET", ""),
+                "GAMMA_API_KEY": os.environ.get("GAMMA_API_KEY", ""),
+                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+                "BASE_URL": os.environ.get("BASE_URL", ""),
+                "FRONTEND_URL": os.environ.get("FRONTEND_URL", ""),
+                "CORS_ORIGINS": os.environ.get("CORS_ORIGINS", ""),
+            }.items()
+        },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
