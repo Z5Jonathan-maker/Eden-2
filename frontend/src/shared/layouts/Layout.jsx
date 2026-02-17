@@ -83,6 +83,7 @@ const Layout = () => {
     { icon: NAV_ICONS.documents, label: 'Docs', path: '/documents' },
     { icon: NAV_ICONS.contracts, label: 'Contracts', path: '/contracts' },
     { icon: NAV_ICONS.voice_assistant, label: 'Comms', path: '/comms/chat' },
+    { icon: NAV_ICONS.workspace, label: 'Workspace', path: '/workspace' },
   ];
 
   const intelligenceItems = [

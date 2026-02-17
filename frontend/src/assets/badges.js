@@ -67,6 +67,7 @@ export const NAV_ICONS = {
   claim_detail: '/icons/garden.png',
   harvest_admin: '/icons/harvest.png',
   property_intel: '/icons/intel_hub.png',
+  workspace: '/icons/command_center.png',
 };
 
 // Tier Badge Images - ALL with transparent backgrounds

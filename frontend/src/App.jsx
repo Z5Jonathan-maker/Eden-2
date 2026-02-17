@@ -55,6 +55,7 @@ const PublicCard = lazy(() => import('./components/PublicCard'));
 const ChatLayout = lazy(() => import('./components/chat/ChatLayout'));
 const CommCenterThread = lazy(() => import('./components/CommCenterThread'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
+const WorkspacePage = lazy(() => import('./pages/WorkspacePage'));
 const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
 const RepHome = lazy(() => import('./components/rep/RepHome'));
 const PerformanceConsole = lazy(() => import('./components/performance/PerformanceConsole'));
@@ -257,6 +258,7 @@ function AppRoutes() {
           <Route path="florida-laws" element={<FloridaLaws />} />
           <Route path="battle-pass" element={<BattlePass />} />
           <Route path="mycard" element={<MyCard />} />
+          <Route path="workspace" element={<WorkspacePage />} />
           <Route path="comms/chat" element={<ChatLayout />} />
           <Route path="comms/chat/:channelId" element={<ChatLayout />} />
           <Route path="comms/claim/:claimId" element={<CommCenterThread />} />

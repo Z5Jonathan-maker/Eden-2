@@ -148,23 +148,17 @@ const IntegrationsPage = () => {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Handle Google Connect
+  // Handle Google Connect — uses the real OAuth flow from /api/oauth/google/connect
   const handleGoogleConnect = async () => {
     setActionLoading(prev => ({ ...prev, google: true }));
 
     try {
-      // Get auth URL from backend
-      const redirectUri = `${window.location.origin}/settings/integrations/callback`;
+      const res = await apiGet('/api/oauth/google/connect');
 
-      const res = await apiGet(
-        `/api/integrations/google/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}&scopes=calendar,drive`
-      );
-
-      if (res.ok) {
-        // Redirect to OAuth URL
+      if (res.ok && res.data?.auth_url) {
         window.location.href = res.data.auth_url;
       } else {
-        toast.error('Failed to get auth URL');
+        toast.error(res.error || 'Google OAuth not configured. Contact administrator.');
       }
     } catch (err) {
       console.error('Google connect error:', err);

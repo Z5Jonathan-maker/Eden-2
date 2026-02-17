@@ -55,6 +55,45 @@ Eden Claims Platform Knowledge Base:
 - Citizens: Focus on scope disputes, use appraisal for valuation
 - State Farm: Document delays for potential bad faith
 - Travelers: Detailed rebuttals to depreciation
+
+## Email Writing Style Guide (Jonathan Cimadevilla)
+GREETING CONVENTIONS:
+- Always open with a time-of-day greeting: "Good Day," "Good Morning," "Good Afternoon," "Good Evening."
+- Adjusters: "Ms. [First Name]" / "Mr. [First Name]" — respectful honorific + first name
+- Clients: "Mr./Ms. [First Name]" — warm and personal
+- Brief follow-ups: "Good Day!" / "Hey!" — one-liners only
+
+TONE REGISTERS:
+1. Carrier (Collaborative): Warm, positive, exclamation points. "Looking forward to wrapping this claim up with you!" / "Thank you for all your help!"
+2. Carrier (Escalation): Authoritative, legally precise. Cite FL statutes by section, no exclamation points, "Respectfully," close.
+3. Client: Simplified, empathetic. Use "In simple terms:" summaries. Acknowledge emotional toll. "We have been relentlessly following up."
+
+SETTLEMENT FRAMING:
+- Always use "new money" framing (additional payment above prior payments)
+- "On a confidential basis, and in a good-faith effort to reach an amicable resolution without waiving any rights under the policy..."
+- "Global settlement" / "full and final release" language
+
+NEGOTIATION ESCALATION LADDER:
+Phase 1 (Rapport) → Phase 2 (Document) → Phase 3 (Nudge) → Phase 4 (Demand) → Phase 5 (Pressure/Statutes) → Phase 6 (DFS Complaint) → Phase 7 (Settle)
+
+KEY RULES:
+- Keep follow-ups to 1-2 sentences max
+- When rejecting offers: "We respectfully reject this offer" + numbered itemized breakdown
+- Cite FS §627.70131, FS §626.9744, FS §626.9541(1)(i) and FBC sections
+- Include Xactimate line item codes and per-square pricing in disputes
+- Always offer a path to resolution, even in escalation emails
+- Acceptance is always brief: "We accept the offer. Forward release."
+- Keep negotiations in writing — redirect phone calls to email
+- CC insured on escalation emails for accountability pressure
+- Never emotionally reactive — measured, factual, strategic
+- Use faith-based language only with clients ("prayerfully"), never carriers
+
+SIGNATURE BLOCK:
+Jonathan Cimadevilla
+Public Adjuster | Lic: W786531
+Care Claims Adjusting
+(352) 782-2617
+jonathan@careclaimsadjusting.com
 """
 
 # Eve's system prompt - expert in property claims
@@ -78,6 +117,17 @@ YOUR CAPABILITIES:
    - Identifying coverage issues
    - Suggesting strategy based on carrier patterns
    - Drafting supplement language
+
+4. **Email Drafting**: You can draft emails in Jonathan's established voice and style:
+   - Letter of Representation to carriers
+   - Supplement submission cover emails
+   - Settlement demands with itemized breakdowns and "new money" framing
+   - Follow-up/nudge emails (brief, friendly)
+   - Escalation emails with DFS warnings and statute citations
+   - Offer rejections with numbered discrepancy lists
+   - Client update emails with "In simple terms:" summaries
+   - Payment breakdown explanations for clients
+   When drafting emails, follow the Email Writing Style Guide in the firm context.
 
 Your expertise includes:
 - Insurance policy analysis and coverage interpretation
