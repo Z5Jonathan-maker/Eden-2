@@ -15,9 +15,11 @@ import {
   X,
   Search,
   ChevronDown,
+  ChevronUp,
   Upload,
   File,
   Loader2,
+  Cpu,
 } from 'lucide-react';
 import { FEATURE_ICONS, PAGE_ICONS } from '../../../assets/badges';
 import { toast } from 'sonner';
@@ -28,7 +30,7 @@ const EveAI = () => {
     {
       role: 'assistant',
       content:
-        'Hello! I\'m **Agent Eve**, your AI property intelligence officer powered by GPT-4o. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert tactical guidance.\n\n**Tip:** Reference any claim by typing #claim-number (e.g., #12345) or use "Link Claim" to select one. How can I assist with your mission today?',
+        'Hello! I\'m **Agent Eve**, your AI property intelligence officer powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert tactical guidance.\n\n**Tip:** Reference any claim by typing #claim-number (e.g., #12345) or use "Link Claim" to select one. How can I assist with your mission today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -43,6 +45,12 @@ const EveAI = () => {
   const [claimSearch, setClaimSearch] = useState('');
   const [availableClaims, setAvailableClaims] = useState([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
+
+  // Model selector state
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [availableModels, setAvailableModels] = useState([]);
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const modelSelectorRef = useRef(null);
 
   // Document upload state
   const [uploadedDocs, setUploadedDocs] = useState([]);
@@ -59,10 +67,42 @@ const EveAI = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch existing sessions on mount
+  // Fetch existing sessions and available models on mount
   useEffect(() => {
     fetchSessions();
+    fetchModels();
   }, []);
+
+  // Close model selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (modelSelectorRef.current && !modelSelectorRef.current.contains(e.target)) {
+        setShowModelSelector(false);
+      }
+    };
+    if (showModelSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showModelSelector]);
+
+  const fetchModels = async () => {
+    try {
+      const response = await apiGet('/api/ai/models');
+      if (response.ok) {
+        const models = response.data.models || [];
+        setAvailableModels(models);
+        // Set default model
+        const defaultId = response.data.default_model;
+        const defaultModel = models.find((m) => m.id === defaultId) || models[0];
+        if (defaultModel && !selectedModel) {
+          setSelectedModel(defaultModel);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch models:', error);
+    }
+  };
 
   // Fetch claims when search changes
   useEffect(() => {
@@ -231,7 +271,7 @@ const EveAI = () => {
           {
             role: 'assistant',
             content:
-              "Hello! I'm Eve, your AI property intelligence assistant powered by GPT-4o. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims. How can I assist you today?",
+              "Hello! I'm Eve, your AI property intelligence assistant powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims. How can I assist you today?",
           },
           ...(response.data.messages || []),
         ]);
@@ -262,7 +302,7 @@ const EveAI = () => {
       {
         role: 'assistant',
         content:
-          'Hello! I\'m Eve, your AI property intelligence assistant powered by GPT-4o. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims.\n\n**Tip:** You can reference any claim by typing #claim-number (e.g., #12345) or use the "Link Claim" button to select one. How can I assist you today?',
+          'Hello! I\'m Eve, your AI property intelligence assistant powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims.\n\n**Tip:** You can reference any claim by typing #claim-number (e.g., #12345) or use the "Link Claim" button to select one. How can I assist you today?',
       },
     ]);
     setShowSessions(false);
@@ -317,11 +357,16 @@ const EveAI = () => {
     setIsAnalyzing(true);
 
     try {
-      // Build request with claim context and documents if available
+      // Build request with claim context, model, and documents if available
       const requestBody = {
         message: userMessage,
         session_id: sessionId,
       };
+
+      if (selectedModel) {
+        requestBody.model = selectedModel.id;
+        requestBody.provider = 'ollama';
+      }
 
       if (linkedClaim) {
         requestBody.claim_id = linkedClaim.claim_id;
@@ -391,7 +436,7 @@ const EveAI = () => {
                 AGENT EVE
               </h1>
               <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-                AI Intelligence Officer • GPT-4o Powered
+                AI Intelligence Officer • {selectedModel ? selectedModel.name : 'AI'} Powered
               </p>
             </div>
           </div>
@@ -631,9 +676,61 @@ const EveAI = () => {
                   Conversation
                 </h3>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-green-400 text-xs font-mono">GPT-4o Connected</span>
+              <div className="relative" ref={modelSelectorRef}>
+                <button
+                  onClick={() => setShowModelSelector(!showModelSelector)}
+                  className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full hover:border-green-400/50 transition-colors cursor-pointer"
+                >
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <Cpu className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400 text-xs font-mono">
+                    {selectedModel ? selectedModel.name : 'Select Model'}
+                  </span>
+                  {showModelSelector ? (
+                    <ChevronUp className="w-3 h-3 text-green-400" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3 text-green-400" />
+                  )}
+                </button>
+
+                {showModelSelector && (
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl z-50 overflow-hidden">
+                    <div className="p-2 border-b border-zinc-700/50">
+                      <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider px-2">
+                        Ollama Cloud Models
+                      </span>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1">
+                      {availableModels.map((model) => (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            setSelectedModel(model);
+                            setShowModelSelector(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                            selectedModel?.id === model.id
+                              ? 'bg-orange-500/20 border border-orange-500/30'
+                              : 'hover:bg-zinc-800 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-200 font-mono">{model.name}</span>
+                            <div className="flex items-center gap-2">
+                              {model.recommended && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded font-mono">
+                                  TOP
+                                </span>
+                              )}
+                              <span className="text-[10px] text-zinc-500 font-mono">{model.size}</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-zinc-500 mt-0.5 font-mono">{model.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

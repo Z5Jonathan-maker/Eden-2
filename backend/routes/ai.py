@@ -598,6 +598,19 @@ class TeamCommsCopilotResponse(BaseModel):
 
 
 SUPPORTED_PROVIDERS = {"ollama", "openai", "anthropic"}
+
+# Curated Ollama Cloud models — fast, capable, and free
+OLLAMA_CLOUD_MODELS = [
+    {"id": "deepseek-v3.2", "name": "DeepSeek V3.2", "size": "671B", "description": "Powerful reasoning model with chain-of-thought", "recommended": True},
+    {"id": "gemma3:27b", "name": "Gemma 3 27B", "size": "27B", "description": "Google's balanced model — good quality, fast"},
+    {"id": "gemma3:12b", "name": "Gemma 3 12B", "size": "12B", "description": "Fastest general-purpose model"},
+    {"id": "qwen3.5:397b", "name": "Qwen 3.5", "size": "397B", "description": "Alibaba's latest large model"},
+    {"id": "mistral-large-3:675b", "name": "Mistral Large 3", "size": "675B", "description": "Mistral's flagship model"},
+    {"id": "deepseek-v3.1:671b", "name": "DeepSeek V3.1", "size": "671B", "description": "Previous DeepSeek version"},
+    {"id": "gemma3:4b", "name": "Gemma 3 4B", "size": "4B", "description": "Ultra-fast lightweight model"},
+    {"id": "ministral-3:8b", "name": "Ministral 3 8B", "size": "8B", "description": "Mistral's small efficient model"},
+]
+
 OLLAMA_MODEL_DEFAULT = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
 OPENAI_MODEL_DEFAULT = os.environ.get("OPENAI_MODEL", "gpt-4o")
 ANTHROPIC_MODEL_DEFAULT = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
@@ -1047,6 +1060,40 @@ def _build_team_comms_fallback(request: TeamCommsCopilotRequest) -> dict:
         "suggested_title": None,
         "suggested_body": "Quick sync: we are on track for the next milestone. Please confirm your assigned piece and flag blockers within the next 30 minutes.",
         "confidence": "medium",
+    }
+
+
+@router.get("/models")
+async def get_available_models(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get available AI models for Eve chat"""
+    import httpx
+
+    ollama_key = os.environ.get("OLLAMA_API_KEY", "")
+    ollama_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
+
+    # Try to fetch live model list from Ollama Cloud
+    live_models = []
+    try:
+        headers = {}
+        if ollama_key:
+            headers["Authorization"] = f"Bearer {ollama_key}"
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{ollama_url}/api/tags", headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                live_ids = {m["name"] for m in data.get("models", [])}
+                # Filter curated list to only models actually available
+                live_models = [m for m in OLLAMA_CLOUD_MODELS if m["id"] in live_ids]
+    except Exception:
+        pass
+
+    models = live_models or OLLAMA_CLOUD_MODELS
+    return {
+        "default_model": OLLAMA_MODEL_DEFAULT,
+        "provider": "ollama",
+        "models": models,
     }
 
 
