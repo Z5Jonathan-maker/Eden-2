@@ -592,11 +592,13 @@ class TeamCommsCopilotResponse(BaseModel):
     confidence: str
 
 
-SUPPORTED_PROVIDERS = {"openai", "anthropic"}
+SUPPORTED_PROVIDERS = {"ollama", "openai", "anthropic"}
+OLLAMA_MODEL_DEFAULT = os.environ.get("OLLAMA_MODEL", "llama3.1")
 OPENAI_MODEL_DEFAULT = os.environ.get("OPENAI_MODEL", "gpt-4o")
 ANTHROPIC_MODEL_DEFAULT = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 AI_DAILY_BUDGET_USD = float(os.environ.get("AI_DAILY_BUDGET_USD", "25"))
 AI_COST_PER_1K_TOKENS = {
+    "ollama": 0.0,  # Free
     "openai": float(os.environ.get("OPENAI_COST_PER_1K_TOKENS", "0.01")),
     "anthropic": float(os.environ.get("ANTHROPIC_COST_PER_1K_TOKENS", "0.012")),
 }
@@ -618,6 +620,16 @@ def _get_task_daily_budget_usd(task_type: str) -> Optional[float]:
     return parsed if parsed >= 0 else None
 
 
+def _default_model_for_provider(provider: str, preferred_model: Optional[str] = None) -> str:
+    if preferred_model:
+        return preferred_model
+    return {
+        "ollama": OLLAMA_MODEL_DEFAULT,
+        "openai": OPENAI_MODEL_DEFAULT,
+        "anthropic": ANTHROPIC_MODEL_DEFAULT,
+    }.get(provider, OLLAMA_MODEL_DEFAULT)
+
+
 def _select_provider_and_model(
     task_type: str,
     preferred_provider: Optional[str] = None,
@@ -626,20 +638,15 @@ def _select_provider_and_model(
 ):
     provider = (preferred_provider or "").strip().lower()
     if provider in SUPPORTED_PROVIDERS:
-        model = preferred_model or (OPENAI_MODEL_DEFAULT if provider == "openai" else ANTHROPIC_MODEL_DEFAULT)
-        return provider, model
+        return provider, _default_model_for_provider(provider, preferred_model)
 
     ordered_supported = [p for p in (provider_order or []) if p in SUPPORTED_PROVIDERS]
     if ordered_supported:
         provider = ordered_supported[0]
-        model = preferred_model or (OPENAI_MODEL_DEFAULT if provider == "openai" else ANTHROPIC_MODEL_DEFAULT)
-        return provider, model
+        return provider, _default_model_for_provider(provider, preferred_model)
 
-    high_reasoning_tasks = {"claims_copilot", "legal_analysis", "strategy_memo", "reasoning"}
-    if (task_type or "").strip().lower() in high_reasoning_tasks:
-        return "anthropic", ANTHROPIC_MODEL_DEFAULT
-
-    return "openai", OPENAI_MODEL_DEFAULT
+    # Default to ollama (free tier)
+    return "ollama", OLLAMA_MODEL_DEFAULT
 
 
 def _redact_prompt_text(text: str) -> str:
@@ -761,9 +768,7 @@ async def _send_via_ai_gateway(*, user_id: str, session_key: str, system_message
             raise
 
         fallback_provider = provider_order[1]
-        fallback_model = OPENAI_MODEL_DEFAULT
-        if fallback_provider == "anthropic":
-            fallback_model = ANTHROPIC_MODEL_DEFAULT
+        fallback_model = _default_model_for_provider(fallback_provider)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"{session_key}-fallback",

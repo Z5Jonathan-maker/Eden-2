@@ -228,21 +228,18 @@ async def complete_inspection_session(
 # ========== AI CAPTION (background) ==========
 
 async def _generate_ai_caption(photo_id: str, file_path: str):
-    """Background task: generate AI caption for a photo using GPT-4o-mini vision."""
+    """Background task: generate AI caption for a photo using vision model."""
     try:
-        from openai import OpenAI
+        from emergentintegrations.llm.openai import get_openai_client, get_vision_model
 
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            return
+        client = get_openai_client()
 
         with open(file_path, "rb") as f:
             image_data = base64.b64encode(f.read()).decode("utf-8")
 
-        client = OpenAI(api_key=api_key)
         response = await asyncio.to_thread(
             client.chat.completions.create,
-            model="gpt-4o-mini",
+            model=get_vision_model(),
             messages=[{
                 "role": "user",
                 "content": [
@@ -1614,18 +1611,14 @@ async def generate_inspection_report(
     # Build prompt using the template
     user_prompt = build_inspection_report_prompt(claim, session, photos, transcript)
     
-    # Generate report with Eve (direct OpenAI)
+    # Generate report with LLM (Ollama/OpenAI)
     try:
-        from openai import OpenAI
+        from emergentintegrations.llm.openai import get_openai_client, get_default_model
 
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
-
-        client = OpenAI(api_key=api_key)
+        client = get_openai_client()
         llm_response = await asyncio.to_thread(
             client.chat.completions.create,
-            model="gpt-4o",
+            model=get_default_model(),
             messages=[
                 {"role": "system", "content": INSPECTION_REPORT_SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},

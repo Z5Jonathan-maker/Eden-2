@@ -18,15 +18,17 @@ logger = logging.getLogger(__name__)
 _llm_client = None
 
 def get_llm_client():
-    """Get or create LLM client"""
+    """Get or create LLM client — defaults to Ollama (free), falls back to OpenAI"""
     global _llm_client
     if _llm_client is None:
         try:
             from emergentintegrations.llm.chat import LlmChat
             _llm_client = LlmChat(
-                api_key=os.environ.get("EMERGENT_LLM_KEY"),
-                model="gpt-4o"
+                api_key=os.environ.get("OLLAMA_API_KEY") or os.environ.get("EMERGENT_LLM_KEY"),
+                model=os.environ.get("OLLAMA_MODEL", "llama3.1")
             )
+            # Auto-select best available provider
+            _llm_client._resolve_default_provider()
         except Exception as e:
             logger.error(f"Failed to initialize LLM client: {e}")
             raise

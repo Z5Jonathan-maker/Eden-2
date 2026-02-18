@@ -359,9 +359,9 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
         if not openai_key:
             return None
         try:
-            from openai import OpenAI
+            from emergentintegrations.llm.openai import get_openai_client
 
-            client = OpenAI(api_key=openai_key)
+            client = get_openai_client()
             model = openai_model
             response = client.chat.completions.create(
                 model=model,

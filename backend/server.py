@@ -124,6 +124,8 @@ async def log_startup_config():
     logger.info(f"  SIGNNOW_CLIENT_SECRET: {'SET' if os.environ.get('SIGNNOW_CLIENT_SECRET') else 'MISSING'}")
     logger.info(f"  GAMMA_API_KEY: {'SET' if os.environ.get('GAMMA_API_KEY') else 'MISSING'}")
     logger.info(f"  STRIPE_SECRET_KEY: {'SET' if os.environ.get('STRIPE_SECRET_KEY') else 'MISSING'}")
+    logger.info(f"  OLLAMA_API_KEY: {'SET' if os.environ.get('OLLAMA_API_KEY') else 'MISSING'}")
+    logger.info(f"  OLLAMA_BASE_URL: {os.environ.get('OLLAMA_BASE_URL', 'not set')}")
     logger.info(f"  OPENAI_API_KEY: {'SET' if os.environ.get('OPENAI_API_KEY') else 'MISSING'}")
     logger.info("="*70)
 
@@ -239,6 +241,7 @@ async def health_check():
             "signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET")),
             "gamma": bool(os.environ.get("GAMMA_API_KEY")),
             "stripe": bool(os.environ.get("STRIPE_SECRET_KEY")),
+            "ollama": bool(os.environ.get("OLLAMA_API_KEY")),
             "openai": bool(os.environ.get("OPENAI_API_KEY")),
         },
         "env_debug": {
@@ -249,6 +252,8 @@ async def health_check():
                 "SIGNNOW_CLIENT_ID": os.environ.get("SIGNNOW_CLIENT_ID", ""),
                 "SIGNNOW_CLIENT_SECRET": os.environ.get("SIGNNOW_CLIENT_SECRET", ""),
                 "GAMMA_API_KEY": os.environ.get("GAMMA_API_KEY", ""),
+                "OLLAMA_API_KEY": os.environ.get("OLLAMA_API_KEY", ""),
+                "OLLAMA_BASE_URL": os.environ.get("OLLAMA_BASE_URL", ""),
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
                 "BASE_URL": os.environ.get("BASE_URL", ""),
                 "FRONTEND_URL": os.environ.get("FRONTEND_URL", ""),

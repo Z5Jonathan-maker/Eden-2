@@ -1670,7 +1670,7 @@ async def _query_county_permits(county: str, address: str, city: str) -> List[Di
 
 async def _openai_permit_research(full_address: str, property_info: Dict) -> List[Dict]:
     """Use OpenAI directly (not emergentintegrations) for AI-assisted permit research."""
-    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("EMERGENT_LLM_KEY")
+    api_key = os.environ.get("OLLAMA_API_KEY") or os.environ.get("OPENAI_API_KEY") or os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         return []
 
@@ -1708,10 +1708,10 @@ Return ONLY a JSON array of permit objects. Each object must have:
 Return ONLY the JSON array, no other text. If year_built is unknown, return an empty array []."""
 
     try:
-        import openai
-        client = openai.AsyncOpenAI(api_key=api_key)
+        from emergentintegrations.llm.openai import get_openai_client, get_default_model
+        client = get_openai_client(async_client=True)
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=get_default_model(),
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=2000,
