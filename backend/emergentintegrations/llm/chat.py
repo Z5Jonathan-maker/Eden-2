@@ -1,7 +1,6 @@
 """
 LLM Chat abstraction layer.
-Routes to Ollama (free, default), OpenAI, or Anthropic based on provider config.
-All providers use OpenAI-compatible API format where possible.
+Routes to Ollama Cloud (free, default), OpenAI, or Anthropic.
 """
 
 import os
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Provider configs loaded from env
 PROVIDER_CONFIGS = {
     "ollama": {
-        "base_url": os.environ.get("OLLAMA_BASE_URL", "https://api.ollama.com/v1"),
+        "base_url": os.environ.get("OLLAMA_BASE_URL", "https://ollama.com"),
         "api_key": os.environ.get("OLLAMA_API_KEY", ""),
         "default_model": os.environ.get("OLLAMA_MODEL", "llama3.1"),
     },
@@ -40,7 +39,7 @@ class UserMessage:
 class LlmChat:
     """
     Multi-provider LLM client.
-    Supports Ollama, OpenAI, and Anthropic via OpenAI-compatible API format.
+    Supports Ollama Cloud, OpenAI, and Anthropic.
 
     Usage (routes/ai.py style):
         chat = LlmChat(api_key=key, session_id="abc", system_message="You are Eve.")
@@ -69,10 +68,8 @@ class LlmChat:
         cfg = PROVIDER_CONFIGS.get(self._provider, {})
         self._base_url = cfg.get("base_url")
 
-        # Use provider-specific API key if the generic one is a placeholder
-        if not cfg.get("api_key") and self._api_key:
-            pass  # use the api_key from constructor
-        elif cfg.get("api_key"):
+        # Use provider-specific API key if available
+        if cfg.get("api_key"):
             self._api_key = cfg["api_key"]
 
         return self
@@ -94,20 +91,56 @@ class LlmChat:
         return {"content": response_text}
 
     async def _call_completion(self, messages: list) -> str:
-        """Make the actual API call to the provider's chat completions endpoint."""
+        """Route to the correct provider API."""
         provider = self._provider or self._resolve_default_provider()
         cfg = PROVIDER_CONFIGS.get(provider, PROVIDER_CONFIGS.get("ollama", {}))
         base_url = self._base_url or cfg.get("base_url", "")
         api_key = self._api_key or cfg.get("api_key", "")
         model = self._model or cfg.get("default_model", "llama3.1")
 
-        if provider == "anthropic" and "anthropic.com" in base_url:
+        if provider == "ollama":
+            return await self._call_ollama(base_url, api_key, model, messages)
+        elif provider == "anthropic":
             return await self._call_anthropic(base_url, api_key, model, messages)
         else:
-            return await self._call_openai_compatible(base_url, api_key, model, messages)
+            return await self._call_openai(base_url, api_key, model, messages)
 
-    async def _call_openai_compatible(self, base_url: str, api_key: str, model: str, messages: list) -> str:
-        """Call OpenAI-compatible endpoint (works for OpenAI, Ollama, and many others)."""
+    async def _call_ollama(self, base_url: str, api_key: str, model: str, messages: list) -> str:
+        """Call Ollama Cloud API (native format: /api/chat)."""
+        url = f"{base_url.rstrip('/')}/api/chat"
+
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": False,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+
+                if resp.status_code != 200:
+                    error_detail = resp.text[:500]
+                    logger.error(f"Ollama API error ({resp.status_code}): {error_detail}")
+                    raise Exception(f"Ollama API returned {resp.status_code}: {error_detail}")
+
+                data = resp.json()
+                # Ollama response: {"message": {"role": "assistant", "content": "..."}}
+                return data["message"]["content"]
+
+        except httpx.TimeoutException:
+            logger.error(f"Ollama API timeout ({model}@{base_url})")
+            raise Exception("Ollama request timed out. Try again.")
+        except KeyError as e:
+            logger.error(f"Unexpected Ollama response format: {e}")
+            raise Exception(f"Unexpected response from Ollama: {e}")
+
+    async def _call_openai(self, base_url: str, api_key: str, model: str, messages: list) -> str:
+        """Call OpenAI API (/v1/chat/completions)."""
         url = f"{base_url.rstrip('/')}/chat/completions"
 
         headers = {"Content-Type": "application/json"}
@@ -127,21 +160,21 @@ class LlmChat:
 
                 if resp.status_code != 200:
                     error_detail = resp.text[:500]
-                    logger.error(f"LLM API error ({resp.status_code}): {error_detail}")
-                    raise Exception(f"LLM API returned {resp.status_code}: {error_detail}")
+                    logger.error(f"OpenAI API error ({resp.status_code}): {error_detail}")
+                    raise Exception(f"OpenAI API returned {resp.status_code}: {error_detail}")
 
                 data = resp.json()
                 return data["choices"][0]["message"]["content"]
 
         except httpx.TimeoutException:
-            logger.error(f"LLM API timeout ({model}@{base_url})")
-            raise Exception("LLM request timed out. Try again.")
+            logger.error(f"OpenAI API timeout ({model}@{base_url})")
+            raise Exception("OpenAI request timed out. Try again.")
         except KeyError as e:
-            logger.error(f"Unexpected LLM response format: {e}")
-            raise Exception(f"Unexpected response from LLM provider: {e}")
+            logger.error(f"Unexpected OpenAI response format: {e}")
+            raise Exception(f"Unexpected response from OpenAI: {e}")
 
     async def _call_anthropic(self, base_url: str, api_key: str, model: str, messages: list) -> str:
-        """Call Anthropic's native API (different format from OpenAI)."""
+        """Call Anthropic API (/v1/messages)."""
         url = f"{base_url.rstrip('/')}/messages"
 
         # Extract system message
@@ -153,7 +186,6 @@ class LlmChat:
             else:
                 chat_messages.append({"role": msg["role"], "content": msg["content"]})
 
-        # Ensure messages alternate user/assistant
         if not chat_messages or chat_messages[0]["role"] != "user":
             chat_messages.insert(0, {"role": "user", "content": "Hello"})
 
@@ -189,7 +221,6 @@ class LlmChat:
 
     def _resolve_default_provider(self) -> str:
         """Pick the best available provider based on configured API keys."""
-        # Priority: Ollama (free) > OpenAI > Anthropic
         for provider in ["ollama", "openai", "anthropic"]:
             cfg = PROVIDER_CONFIGS.get(provider, {})
             if cfg.get("api_key"):
@@ -199,7 +230,7 @@ class LlmChat:
                     self._model = cfg["default_model"]
                 return provider
 
-        # Fallback: try ollama anyway (some setups don't need a key)
+        # Fallback to ollama
         self._provider = "ollama"
         self._base_url = PROVIDER_CONFIGS["ollama"]["base_url"]
         if not self._model:

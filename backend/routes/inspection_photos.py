@@ -233,6 +233,8 @@ async def _generate_ai_caption(photo_id: str, file_path: str):
         from emergentintegrations.llm.openai import get_openai_client, get_vision_model
 
         client = get_openai_client()
+        if not client:
+            return  # Vision features require OpenAI API key
 
         with open(file_path, "rb") as f:
             image_data = base64.b64encode(f.read()).decode("utf-8")
@@ -1611,22 +1613,13 @@ async def generate_inspection_report(
     # Build prompt using the template
     user_prompt = build_inspection_report_prompt(claim, session, photos, transcript)
     
-    # Generate report with LLM (Ollama/OpenAI)
+    # Generate report with LLM (Ollama/OpenAI/Anthropic)
     try:
-        from emergentintegrations.llm.openai import get_openai_client, get_default_model
+        from emergentintegrations.llm.chat import LlmChat
 
-        client = get_openai_client()
-        llm_response = await asyncio.to_thread(
-            client.chat.completions.create,
-            model=get_default_model(),
-            messages=[
-                {"role": "system", "content": INSPECTION_REPORT_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.3,
-        )
-        response_text_raw = llm_response.choices[0].message.content or ""
+        chat = LlmChat(system_message=INSPECTION_REPORT_SYSTEM_PROMPT)
+        chat._resolve_default_provider()
+        response_text_raw = await chat.send_message(type('Msg', (), {'text': user_prompt, 'content': user_prompt})())
 
         # Parse JSON from response
         report_json = None

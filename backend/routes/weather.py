@@ -1708,16 +1708,11 @@ Return ONLY a JSON array of permit objects. Each object must have:
 Return ONLY the JSON array, no other text. If year_built is unknown, return an empty array []."""
 
     try:
-        from emergentintegrations.llm.openai import get_openai_client, get_default_model
-        client = get_openai_client(async_client=True)
-        response = await client.chat.completions.create(
-            model=get_default_model(),
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=2000,
-            response_format={"type": "json_object"},
-        )
-        raw = response.choices[0].message.content.strip()
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        chat = LlmChat()
+        chat._resolve_default_provider()
+        response = await chat.send_message(UserMessage(text=prompt))
+        raw = response.strip()
         parsed = json.loads(raw)
         # Handle both {"permits": [...]} and direct array
         if isinstance(parsed, list):
