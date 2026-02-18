@@ -327,7 +327,7 @@ const HarvestPage = () => {
   ];
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-zinc-900" data-testid="harvest-page">
+    <div className="h-[calc(100dvh-64px)] flex flex-col bg-zinc-900" data-testid="harvest-page">
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative">
         {/* Map Tab */}
@@ -408,39 +408,19 @@ const HarvestPage = () => {
               <HarvestMap onPinStatusChange={fetchMyStats} activeFilters={activeFilters} />
             </div>
 
-            {/* Stats Footer - Tactical Style */}
-            <div className="absolute bottom-20 left-3 right-3 z-[1000]">
-              <div className="bg-zinc-900/90 backdrop-blur-lg rounded-xl p-3 border border-zinc-700/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-zinc-500 font-mono uppercase">Today:</span>
-                      <span className="font-tactical font-bold text-white">
-                        {myStats.today || 0}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-zinc-500 font-mono uppercase">Week:</span>
-                      <span className="font-tactical font-bold text-white">
-                        {myStats.week || 0}
-                      </span>
-                    </div>
-                  </div>
+            {/* Stats Footer - Compact Tactical Style */}
+            <div className="absolute bottom-14 left-2 right-2 z-[1000]">
+              <div className="bg-zinc-900/85 backdrop-blur-md rounded-lg px-3 py-1.5 border border-zinc-700/40">
+                <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
+                    <span className="text-zinc-500 font-mono">TODAY <span className="text-white font-bold">{myStats.today || 0}</span></span>
+                    <span className="text-zinc-500 font-mono">WEEK <span className="text-white font-bold">{myStats.week || 0}</span></span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     {myStats.streak > 0 && (
-                      <div className="px-2 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
-                        <span className="harvest-flame">🔥</span>
-                        <span className="text-orange-400 font-tactical font-bold">
-                          {myStats.streak}
-                        </span>
-                      </div>
+                      <span className="text-orange-400 font-bold">🔥{myStats.streak}</span>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-zinc-500 font-mono uppercase">Signed:</span>
-                      <span className="font-tactical font-bold text-green-400">
-                        {myStats.signed || 0}
-                      </span>
-                    </div>
+                    <span className="text-zinc-500 font-mono">SIGNED <span className="text-green-400 font-bold">{myStats.signed || 0}</span></span>
                   </div>
                 </div>
               </div>
@@ -469,9 +449,9 @@ const HarvestPage = () => {
         {activeTab === 'profile' && <HarvestProfileTab />}
       </div>
 
-      {/* Bottom Navigation - Tactical Style */}
-      <div className="bg-zinc-900 border-t border-zinc-700/50 px-2 py-2 safe-area-inset-bottom">
-        <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
+      {/* Bottom Navigation - Compact */}
+      <div className="bg-zinc-900 border-t border-zinc-700/50 px-1 py-1 safe-area-inset-bottom">
+        <div className="grid grid-cols-5 max-w-lg mx-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -480,16 +460,16 @@ const HarvestPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex flex-col items-center justify-center py-2 rounded-lg transition-all ${
+                className={`relative flex flex-col items-center justify-center py-1.5 rounded-lg transition-all ${
                   isActive
                     ? 'bg-orange-500/10 text-orange-400'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
                 data-testid={`harvest-${tab.id}-tab`}
               >
-                <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-orange-400' : ''}`} />
+                <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-orange-400' : ''}`} />
                 <span
-                  className={`text-[10px] font-mono uppercase tracking-wider ${isActive ? 'text-orange-400' : ''}`}
+                  className={`text-[9px] font-mono uppercase tracking-wider ${isActive ? 'text-orange-400' : ''}`}
                 >
                   {tab.label}
                 </span>

@@ -77,6 +77,7 @@ const IndustryExperts = () => {
   const [experts, setExperts] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [selectedExpert, setSelectedExpert] = useState(null);
+  const [selectedMentor, setSelectedMentor] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -495,73 +496,185 @@ const IndustryExperts = () => {
           </TabsContent>
 
           <TabsContent value="mentors" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              {mentors.map((mentor) => (
-                <Card
-                  key={mentor.id}
-                  className="hover:shadow-lg transition-all hover:border-indigo-300"
-                  data-testid={`mentor-card-${mentor.id}`}
-                >
+            {selectedMentor ? (
+              <div className="space-y-6" data-testid="mentor-detail-view">
+                {/* Header */}
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                    {selectedMentor.name.split(' ').map((n) => n[0]).join('')}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">{selectedMentor.name}</h2>
+                    <Badge className="bg-indigo-100 text-indigo-700 mt-2">
+                      {getCategoryIcon(selectedMentor.category)}
+                      <span className="ml-1">{selectedMentor.category}</span>
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <Card>
                   <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                        {mentor.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </div>
-                      <div>
-                        <CardTitle>{mentor.name}</CardTitle>
-                        <Badge className="bg-indigo-100 text-indigo-700 mt-1">
-                          {mentor.category}
-                        </Badge>
-                      </div>
-                    </div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="w-5 h-5 text-indigo-500" />
+                      About
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-zinc-400">{mentor.bio}</p>
-
-                    {mentor.relevance && (
-                      <p className="text-sm text-indigo-600">
-                        <strong>Relevance:</strong> {mentor.relevance}
+                  <CardContent>
+                    <p className="text-zinc-300 leading-relaxed">{selectedMentor.bio}</p>
+                    {selectedMentor.relevance && (
+                      <p className="text-sm text-indigo-400 mt-3">
+                        <strong>Why this matters:</strong> {selectedMentor.relevance}
                       </p>
-                    )}
-
-                    {mentor.books && mentor.books.length > 0 && (
-                      <div>
-                        <p className="font-medium text-sm text-zinc-300 mb-2">Key Books:</p>
-                        {mentor.books.map((book, i) => (
-                          <div key={i} className="text-sm">
-                            <a
-                              href={book.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              {book.title}
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {mentor.key_insights && mentor.key_insights.length > 0 && (
-                      <div className="bg-indigo-50 rounded-lg p-3">
-                        <p className="font-medium text-sm text-indigo-700 mb-2">Key Insights:</p>
-                        <ul className="space-y-1">
-                          {mentor.key_insights.map((insight, i) => (
-                            <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
-                              <span className="text-indigo-500">•</span>
-                              {insight}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     )}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+
+                {/* Key Insights */}
+                {selectedMentor.key_insights && selectedMentor.key_insights.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-yellow-500" />
+                        Key Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {selectedMentor.key_insights.map((insight, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                            <span className="text-indigo-400 font-bold mt-0.5">{i + 1}</span>
+                            <p className="text-zinc-300">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Books */}
+                {selectedMentor.books && selectedMentor.books.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Book className="w-5 h-5 text-blue-500" />
+                        Books & Reading
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {selectedMentor.books.map((book, i) => (
+                          <a
+                            key={i}
+                            href={book.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-zinc-800/30 transition-colors group"
+                          >
+                            <BookOpen className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-white group-hover:text-indigo-400 transition-colors">
+                                {book.title}
+                              </p>
+                              {book.author && <p className="text-sm text-zinc-500">by {book.author}</p>}
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-zinc-600 ml-auto flex-shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Resources */}
+                {selectedMentor.resources && selectedMentor.resources.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Link className="w-5 h-5 text-purple-500" />
+                        Resources & Links
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {selectedMentor.resources.map((resource, i) => (
+                          <a
+                            key={i}
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-3 p-3 border rounded-lg hover:bg-zinc-800/30 transition-colors group"
+                          >
+                            {resource.type === 'YouTube' ? (
+                              <Youtube className="w-5 h-5 text-red-500 flex-shrink-0" />
+                            ) : resource.type === 'LinkedIn' ? (
+                              <Linkedin className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                            ) : (
+                              <Globe className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+                            )}
+                            <div>
+                              <p className="font-medium text-white group-hover:text-indigo-400 transition-colors">
+                                {resource.type}
+                              </p>
+                              <p className="text-sm text-zinc-400">{resource.description}</p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Button variant="outline" onClick={() => setSelectedMentor(null)} className="w-full">
+                  ← Back to All Leaders
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {mentors.map((mentor) => (
+                  <Card
+                    key={mentor.id}
+                    className="cursor-pointer hover:shadow-lg transition-all hover:border-indigo-300 group"
+                    onClick={() => setSelectedMentor(mentor)}
+                    data-testid={`mentor-card-${mentor.id}`}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                            {mentor.name.split(' ').map((n) => n[0]).join('')}
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg group-hover:text-indigo-400 transition-colors">
+                              {mentor.name}
+                            </CardTitle>
+                            <Badge className="bg-indigo-100 text-indigo-700 mt-1">
+                              {mentor.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-zinc-400 line-clamp-3">{mentor.bio}</p>
+                      <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+                        {mentor.books && mentor.books.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Book className="w-3 h-3" /> {mentor.books.length} books
+                          </span>
+                        )}
+                        {mentor.key_insights && mentor.key_insights.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Lightbulb className="w-3 h-3" /> {mentor.key_insights.length} insights
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       )}

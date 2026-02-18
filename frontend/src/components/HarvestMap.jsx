@@ -364,6 +364,7 @@ export const HarvestMap = ({
         className="h-full w-full"
         ref={mapRef}
         zoomControl={false}
+        tap={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
