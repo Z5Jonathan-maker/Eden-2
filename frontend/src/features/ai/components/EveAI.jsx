@@ -25,6 +25,18 @@ import { FEATURE_ICONS, PAGE_ICONS } from '../../../assets/badges';
 import { toast } from 'sonner';
 import { apiGet, apiPost, apiDelete, API_URL } from '../../../lib/api';
 
+// Fallback model list in case backend /api/ai/models is unreachable
+const FALLBACK_MODELS = [
+  { id: 'deepseek-v3.2', name: 'DeepSeek V3.2', size: '671B', description: 'Powerful reasoning model with chain-of-thought', recommended: true },
+  { id: 'gemma3:27b', name: 'Gemma 3 27B', size: '27B', description: "Google's balanced model — good quality, fast" },
+  { id: 'gemma3:12b', name: 'Gemma 3 12B', size: '12B', description: 'Fastest general-purpose model' },
+  { id: 'qwen3.5:397b', name: 'Qwen 3.5', size: '397B', description: "Alibaba's latest large model" },
+  { id: 'mistral-large-3:675b', name: 'Mistral Large 3', size: '675B', description: "Mistral's flagship model" },
+  { id: 'deepseek-v3.1:671b', name: 'DeepSeek V3.1', size: '671B', description: 'Previous DeepSeek version' },
+  { id: 'gemma3:4b', name: 'Gemma 3 4B', size: '4B', description: 'Ultra-fast lightweight model' },
+  { id: 'ministral-3:8b', name: 'Ministral 3 8B', size: '8B', description: "Mistral's small efficient model" },
+];
+
 const EveAI = () => {
   const [messages, setMessages] = useState([
     {
@@ -46,9 +58,9 @@ const EveAI = () => {
   const [availableClaims, setAvailableClaims] = useState([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
 
-  // Model selector state
-  const [selectedModel, setSelectedModel] = useState(null);
-  const [availableModels, setAvailableModels] = useState([]);
+  // Model selector state — initialize with fallback so dropdown is never empty
+  const [selectedModel, setSelectedModel] = useState(FALLBACK_MODELS.find((m) => m.id === 'gemma3:12b') || FALLBACK_MODELS[0]);
+  const [availableModels, setAvailableModels] = useState(FALLBACK_MODELS);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const modelSelectorRef = useRef(null);
 
@@ -89,18 +101,18 @@ const EveAI = () => {
   const fetchModels = async () => {
     try {
       const response = await apiGet('/api/ai/models');
-      if (response.ok) {
-        const models = response.data.models || [];
+      if (response.ok && response.data?.models?.length) {
+        const models = response.data.models;
         setAvailableModels(models);
-        // Set default model
         const defaultId = response.data.default_model;
         const defaultModel = models.find((m) => m.id === defaultId) || models[0];
-        if (defaultModel && !selectedModel) {
+        if (defaultModel) {
           setSelectedModel(defaultModel);
         }
       }
+      // If API fails or returns empty, FALLBACK_MODELS are already set as initial state
     } catch (error) {
-      console.error('Failed to fetch models:', error);
+      console.error('Failed to fetch models (using fallback list):', error);
     }
   };
 
