@@ -104,7 +104,7 @@ const Layout = () => {
   const systemItems = [
     { icon: NAV_ICONS.settings, label: 'Config', path: '/settings' },
     { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', permission: 'users.read' },
-    { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data', permission: 'data.export' },
+    { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data' },
     { icon: NAV_ICONS.storage, label: 'Storage', path: '/storage' },
   ];
 
