@@ -233,7 +233,7 @@ CARE_CLAIMS_TEMPLATE = {
         "EXPENSES/COSTS: POLICYHOLDER is responsible for all costs and expenses incurred for claim preparation.",
         "NO LEGAL SERVICES: This Agreement is not for legal services. An attorney must provide any legal services.",
         "FLORIDA LAW: Pursuant to s 817.234, Florida Statutes, any person who prepares false or misleading claim information commits a felony.",
-        "RESCISSION PERIOD: Contract may be cancelled within 10 days (or 30 days for state of emergency declarations)."
+        "RESCISSION PERIOD: Contract may be cancelled within 10 days after execution; for certain emergency claims, cancellation is allowed within 30 days after date of loss or 10 days after execution, whichever is longer."
     ],
     "signature_blocks": [
         {"id": "insured_1", "role": "Primary Insured", "required": True},

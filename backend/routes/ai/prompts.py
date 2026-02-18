@@ -19,17 +19,17 @@ Eden Claims Platform Knowledge Base:
 - F.S. 626.865 - Licensing requirements, $50,000 surety bond, CE requirements
 - F.S. 626.8651 - Apprentice public adjuster supervision
 - F.S. 626.8795 - Conflict of interest with contractors
-- F.S. 626.8796 - Contract requirements, 3-day rescission, fraud penalties
-- F.S. 627.70131 - Insurer duty: 14-day acknowledgment, 90-day pay/deny
+- F.S. 626.8796 - Contract requirements, 10-day rescission (with emergency extension), fraud penalties
+- F.S. 627.70131 - Insurer duty: 7-day acknowledgment, 60-day pay/deny
 - F.S. 627.7015 - Alternative dispute resolution, appraisal process
 
 ## Key Numbers (Florida)
-- Max PA fee (standard): 10%
-- Max PA fee (emergency declared): 20%
+- Max PA fee (standard): 20%
+- Max PA fee (emergency declared): 10%
 - Surety bond required: $50,000
-- Claim acknowledgment: 14 days
-- Claim pay/deny deadline: 90 days
-- Contract rescission period: 3 business days
+- Claim acknowledgment: 7 days
+- Claim pay/deny deadline: 60 days
+- Contract rescission period: 10 days (30 days after date of loss for certain emergency claims, or 10 days after execution, whichever is longer)
 
 ## Industry Experts Knowledge
 - **John Senac (C.A.R.)**: Roof damage documentation expert. Key insight: "99% of roofs I inspect show signs of wind or hail damage. Document everything with the C.A.R. method - Comprehensive, Accurate, Repeatable."

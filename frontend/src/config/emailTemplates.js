@@ -150,7 +150,7 @@ We have been reaching out for [X] weeks now with no response regarding Claim [CL
 
 The insured is willing to settle for $[AMOUNT] new money without the need for further escalation. Today marks [X] days since we submitted our [demand/supplement] on [DATE].
 
-Pursuant to FS 627.70131(7)(a): "Within 90 days after an insurer receives notice of an initial, reopened, or supplemental property insurance claim from a policyholder, the insurer shall pay or deny such claim or a portion of the claim unless the failure to pay is caused by factors beyond the control of the insurer which reasonably prevent such payment."
+Pursuant to FS 627.70131(7)(a): "Within 60 days after an insurer receives notice of an initial, reopened, or supplemental property insurance claim from a policyholder, the insurer shall pay or deny such claim or a portion of the claim unless the failure to pay is caused by factors beyond the control of the insurer which reasonably prevent such payment."
 
 Continued failure to acknowledge these documented deficiencies may be perceived as a violation of the insurer's duty of good faith pursuant to FS 626.9541(1)(i).
 

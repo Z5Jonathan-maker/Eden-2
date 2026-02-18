@@ -98,12 +98,12 @@ const TOOLKITS = [
     color: 'red',
     why: 'When the carrier fails to acknowledge, investigate, or make a coverage determination within statutory timelines.',
     carrierMove: 'Delay acknowledgment, extend investigation indefinitely, ignore deadlines.',
-    ourMove: 'Reference statutory timelines: 7-day acknowledgment (627.70131), 14-day updates, 60/90-day pay/deny (627.70132). Document every missed deadline.',
+    ourMove: 'Reference statutory timelines: 7-day claim acknowledgment and 60-day pay/deny under 627.70131. Use 627.70132 for claim notice timing rules. Document every missed deadline.',
     statutes: [
-      { section: '627.70131', name: 'Duty to Acknowledge Claims (7 days)' },
-      { section: '627.70132', name: 'Processing & Pay/Deny Deadlines (60/90 days)' },
-      { section: '627.7015', name: 'Unfair Claim Settlement Practices' },
-      { section: '627.7017', name: 'Notice of Claim Requirements' },
+      { section: '627.70131', name: 'Claim Communications + 60-Day Pay/Deny' },
+      { section: '627.70132', name: 'Notice of Property Insurance Claim' },
+      { section: '626.9541', name: 'Unfair Claim Settlement Practices' },
+      { section: '627.7015', name: 'Alternative Dispute Resolution (Mediation)' },
     ],
   },
   {
@@ -113,10 +113,10 @@ const TOOLKITS = [
     color: 'green',
     why: 'When the carrier\'s estimate is missing line items or using below-market pricing.',
     carrierMove: 'Issue incomplete estimate, use carrier-modified pricing below market.',
-    ourMove: 'Submit supplement under 627.70153. Track owed vs. paid. Cite unfair settlement practices if carrier ignores evidence.',
+    ourMove: 'Submit supplement under 627.70153. Track owed vs. paid. Cite 626.9541 if carrier ignores documented evidence in bad-faith patterns.',
     statutes: [
       { section: '627.70153', name: 'Supplemental Claims' },
-      { section: '627.7015', name: 'Unfair Claim Settlement Practices' },
+      { section: '626.9541', name: 'Unfair Claim Settlement Practices' },
       { section: '627.7011', name: 'Insurer Duties to Policyholders' },
       { section: '627.70152', name: 'Uniform & Consistent Repairs (Matching)' },
     ],
@@ -1039,10 +1039,10 @@ const FloridaLaws = () => {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                    Pending 2026 Legislation
+                    2026 Legislative Tracking
                   </CardTitle>
                   <CardDescription>
-                    Bills currently advancing that may affect public adjusters
+                    Verify pending bill text and status from official trackers before citing as law
                   </CardDescription>
                 </CardHeader>
               </Card>

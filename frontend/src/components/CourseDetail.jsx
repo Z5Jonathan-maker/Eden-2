@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FileText,
   AlertCircle,
+  Info,
   Target,
   Shield,
   Crosshair,
@@ -19,6 +20,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 import { apiGet, apiPost } from '@/lib/api';
 
 const TRACK_LABELS = {
@@ -379,8 +381,8 @@ function CourseDetail() {
                   </div>
                 )}
 
-                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-300 leading-relaxed">
-                  {activeLesson.content}
+                <div className="prose prose-invert prose-orange max-w-none text-zinc-300 leading-relaxed prose-headings:text-zinc-100 prose-h1:text-2xl prose-h1:border-b prose-h1:border-zinc-700 prose-h1:pb-2 prose-h2:text-xl prose-h2:text-orange-400 prose-h3:text-lg prose-h3:text-zinc-200 prose-strong:text-white prose-li:text-zinc-300 prose-p:text-zinc-300 prose-a:text-orange-400">
+                  <ReactMarkdown>{activeLesson.content}</ReactMarkdown>
                 </div>
 
                 {/* Carrier Move / Our Move */}
@@ -469,53 +471,101 @@ function CourseDetail() {
               </CardHeader>
               <CardContent>
                 {quizResult ? (
-                  <div className="text-center py-8">
-                    {quizResult.passed ? (
-                      <div>
-                        <Award className="w-20 h-20 text-green-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-green-400 mb-2">Congratulations!</h3>
-                        <p className="text-zinc-400 mb-2">You scored {quizResult.score}%</p>
-                        <p className="text-zinc-500 text-sm mb-6">Certificate earned. You can view it in the Certificates tab.</p>
-                        <Button
-                          className="bg-orange-600 hover:bg-orange-700"
-                          onClick={function () {
-                            navigate('/university');
-                          }}
-                        >
-                          <Award className="w-4 h-4 mr-2" />
-                          View Certificates
-                        </Button>
-                      </div>
-                    ) : (
-                      <div>
-                        <AlertCircle className="w-20 h-20 text-red-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-red-400 mb-2">Not Quite</h3>
-                        <p className="text-zinc-400 mb-2">You scored {quizResult.score}% (70% required)</p>
-                        <p className="text-zinc-500 text-sm mb-6">Review the lessons and try again.</p>
-                        <div className="flex gap-3 justify-center">
+                  <div className="py-6">
+                    {/* Score banner */}
+                    <div className="text-center mb-8">
+                      {quizResult.passed ? (
+                        <div>
+                          <Award className="w-16 h-16 text-green-400 mx-auto mb-3" />
+                          <h3 className="text-2xl font-bold text-green-400 mb-1">Congratulations!</h3>
+                          <p className="text-zinc-400 mb-1">You scored {quizResult.score}% ({quizResult.correct}/{quizResult.total} correct)</p>
+                          <p className="text-zinc-500 text-sm mb-4">Certificate earned. You can view it in the Certificates tab.</p>
                           <Button
-                            variant="outline"
-                            className="border-zinc-700"
-                            onClick={function () {
-                              setQuizResult(null);
-                              setQuizAnswers(new Array(course.quiz.length).fill(-1));
-                            }}
+                            className="bg-orange-600 hover:bg-orange-700"
+                            onClick={function () { navigate('/university'); }}
                           >
-                            Retry Quiz
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="border-zinc-700"
-                            onClick={function () {
-                              setShowQuiz(false);
-                              if (course.lessons && course.lessons.length > 0) {
-                                setActiveLesson(course.lessons[0]);
-                              }
-                            }}
-                          >
-                            Review Lessons
+                            <Award className="w-4 h-4 mr-2" />
+                            View Certificates
                           </Button>
                         </div>
+                      ) : (
+                        <div>
+                          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-3" />
+                          <h3 className="text-2xl font-bold text-red-400 mb-1">Not Quite</h3>
+                          <p className="text-zinc-400 mb-1">You scored {quizResult.score}% ({quizResult.correct}/{quizResult.total} correct, 70% required)</p>
+                          <p className="text-zinc-500 text-sm mb-4">Review the explanations below, then try again.</p>
+                          <div className="flex gap-3 justify-center">
+                            <Button
+                              variant="outline"
+                              className="border-zinc-700"
+                              onClick={function () {
+                                setQuizResult(null);
+                                setQuizAnswers(new Array(course.quiz.length).fill(-1));
+                              }}
+                            >
+                              Retry Quiz
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border-zinc-700"
+                              onClick={function () {
+                                setShowQuiz(false);
+                                if (course.lessons && course.lessons.length > 0) {
+                                  setActiveLesson(course.lessons[0]);
+                                }
+                              }}
+                            >
+                              Review Lessons
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Per-question breakdown */}
+                    {quizResult.details && quizResult.details.length > 0 && (
+                      <div className="space-y-4 border-t border-zinc-700 pt-6">
+                        <h4 className="text-lg font-semibold text-zinc-200 mb-3">Question Breakdown</h4>
+                        {quizResult.details.map(function (detail, idx) {
+                          return (
+                            <div key={idx} className={
+                              detail.is_correct
+                                ? 'p-4 rounded-lg border-2 border-green-500/30 bg-green-500/5'
+                                : 'p-4 rounded-lg border-2 border-red-500/30 bg-red-500/5'
+                            }>
+                              <div className="flex items-start gap-2 mb-2">
+                                {detail.is_correct
+                                  ? <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                                  : <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                                }
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-zinc-100">{idx + 1}. {detail.question}</span>
+                                    {detail.question_type === 'scenario' && (
+                                      <Badge className="bg-purple-500/20 text-purple-300 text-xs">Scenario</Badge>
+                                    )}
+                                    {detail.question_type === 'true_false' && (
+                                      <Badge className="bg-blue-500/20 text-blue-300 text-xs">True/False</Badge>
+                                    )}
+                                  </div>
+                                  {!detail.is_correct && detail.options && (
+                                    <p className="text-sm mt-1">
+                                      <span className="text-red-400">Your answer: {detail.options[detail.user_answer] || 'None'}</span>
+                                      <span className="text-zinc-500 mx-2">|</span>
+                                      <span className="text-green-400">Correct: {detail.options[detail.correct_answer]}</span>
+                                    </p>
+                                  )}
+                                  {detail.explanation && (
+                                    <div className="mt-2 flex items-start gap-2 p-2 bg-zinc-800/60 rounded text-sm">
+                                      <Info className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                                      <span className="text-zinc-400">{detail.explanation}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -523,46 +573,102 @@ function CourseDetail() {
                   <div className="space-y-6">
                     {course.quiz &&
                       course.quiz.map(function (question, qIndex) {
+                        var qType = question.question_type || 'multiple_choice';
+                        var isTrueFalse = qType === 'true_false';
+                        var isScenario = qType === 'scenario';
+
                         return (
                           <div key={question.id} className="p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                            {/* Question type badge */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-semibold text-zinc-500">{qIndex + 1} / {course.quiz.length}</span>
+                              {isScenario && (
+                                <Badge className="bg-purple-500/20 text-purple-300 text-xs">Scenario</Badge>
+                              )}
+                              {isTrueFalse && (
+                                <Badge className="bg-blue-500/20 text-blue-300 text-xs">True / False</Badge>
+                              )}
+                            </div>
+
+                            {/* Scenario context */}
+                            {isScenario && question.scenario_context && (
+                              <div className="mb-3 p-3 bg-purple-500/5 border border-purple-500/20 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                  <Info className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                                  <p className="text-sm text-zinc-400 italic">{question.scenario_context}</p>
+                                </div>
+                              </div>
+                            )}
+
                             <p className="font-medium text-zinc-100 mb-3">
-                              {qIndex + 1}. {question.question}
+                              {question.question}
                             </p>
-                            <div className="space-y-2">
-                              {question.options.map(function (option, oIndex) {
-                                var isSelected = quizAnswers[qIndex] === oIndex;
-                                return (
-                                  <label
-                                    key={oIndex}
-                                    className={
-                                      isSelected
-                                        ? 'flex items-center p-3 rounded-lg cursor-pointer bg-orange-500/15 border-2 border-orange-500 text-orange-200'
-                                        : 'flex items-center p-3 rounded-lg cursor-pointer bg-zinc-900 border-2 border-zinc-700 text-zinc-300 hover:border-zinc-500'
-                                    }
-                                  >
-                                    <input
-                                      type="radio"
-                                      name={'q' + qIndex}
-                                      checked={isSelected}
-                                      onChange={function () {
+
+                            {/* True/False toggle buttons */}
+                            {isTrueFalse ? (
+                              <div className="grid grid-cols-2 gap-3">
+                                {question.options.map(function (option, oIndex) {
+                                  var isSelected = quizAnswers[qIndex] === oIndex;
+                                  var isTrue = option === 'True';
+                                  return (
+                                    <button
+                                      key={oIndex}
+                                      onClick={function () {
                                         var newAnswers = quizAnswers.slice();
                                         newAnswers[qIndex] = oIndex;
                                         setQuizAnswers(newAnswers);
                                       }}
-                                      className="sr-only"
-                                    />
-                                    <div className={
-                                      isSelected
-                                        ? 'w-5 h-5 rounded-full border-2 border-orange-500 bg-orange-500 mr-3 flex-shrink-0 flex items-center justify-center'
-                                        : 'w-5 h-5 rounded-full border-2 border-zinc-600 mr-3 flex-shrink-0'
-                                    }>
-                                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                                    </div>
-                                    <span>{option}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
+                                      className={
+                                        isSelected
+                                          ? (isTrue
+                                            ? 'p-4 rounded-lg font-semibold text-center border-2 border-green-500 bg-green-500/15 text-green-300'
+                                            : 'p-4 rounded-lg font-semibold text-center border-2 border-red-500 bg-red-500/15 text-red-300')
+                                          : 'p-4 rounded-lg font-semibold text-center border-2 border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500'
+                                      }
+                                    >
+                                      {option}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              /* Standard multiple-choice / scenario radio options */
+                              <div className="space-y-2">
+                                {question.options.map(function (option, oIndex) {
+                                  var isSelected = quizAnswers[qIndex] === oIndex;
+                                  return (
+                                    <label
+                                      key={oIndex}
+                                      className={
+                                        isSelected
+                                          ? 'flex items-center p-3 rounded-lg cursor-pointer bg-orange-500/15 border-2 border-orange-500 text-orange-200'
+                                          : 'flex items-center p-3 rounded-lg cursor-pointer bg-zinc-900 border-2 border-zinc-700 text-zinc-300 hover:border-zinc-500'
+                                      }
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={'q' + qIndex}
+                                        checked={isSelected}
+                                        onChange={function () {
+                                          var newAnswers = quizAnswers.slice();
+                                          newAnswers[qIndex] = oIndex;
+                                          setQuizAnswers(newAnswers);
+                                        }}
+                                        className="sr-only"
+                                      />
+                                      <div className={
+                                        isSelected
+                                          ? 'w-5 h-5 rounded-full border-2 border-orange-500 bg-orange-500 mr-3 flex-shrink-0 flex items-center justify-center'
+                                          : 'w-5 h-5 rounded-full border-2 border-zinc-600 mr-3 flex-shrink-0'
+                                      }>
+                                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                      </div>
+                                      <span>{option}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -571,7 +677,7 @@ function CourseDetail() {
                       onClick={submitQuiz}
                       disabled={quizAnswers.indexOf(-1) !== -1}
                     >
-                      Submit Quiz ({quizAnswers.filter(a => a !== -1).length}/{course.quiz.length} answered)
+                      Submit Quiz ({quizAnswers.filter(function (a) { return a !== -1; }).length}/{course.quiz.length} answered)
                     </Button>
                   </div>
                 )}

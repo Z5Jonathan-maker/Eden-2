@@ -551,9 +551,9 @@ INDUSTRY_EXPERTS = {
 }
 
 
-# Florida Public Adjusting Laws - Current as of February 2026
+# Florida Public Adjusting Laws - verified against official statute text on February 18, 2026
 FLORIDA_PA_LAWS = {
-    "description": "Comprehensive Florida-specific statutes, regulations, and laws relevant to public adjusting and insurance claims handling. Current as of February 2026.",
+    "description": "Comprehensive Florida-specific statutes, regulations, and laws relevant to public adjusting and insurance claims handling. Verified against official Florida statute sources on February 18, 2026.",
     "key_statutes": [
         {
             "id": "626.854",
@@ -617,40 +617,42 @@ This is critical for maintaining objectivity and avoiding conflicts.""",
             "source_url": "https://www.leg.state.fl.us/Statutes/index.cfm?App_mode=Display_Statute&Search_String=&URL=0600-0699%2F0626%2FSections%2F0626.8795.html",
             "last_updated": "2025 Florida Statutes; current in 2026"
         },
-        {
+                {
             "id": "626.8796",
             "statute": "Florida Statute 626.8796 - Public Adjuster Contracts",
             "summary": "Contract requirements and disclosures",
             "details": """Contract requirements:
-• Must be in writing
-• At least 12-point type
-• Titled 'Public Adjuster Contract'
-• Include fraud warning in 18-point bold type
-• Detail adjuster/insured information, services, compensation, and rescission rights
+- Must be in writing
+- At least 12-point type
+- Titled 'Public Adjuster Contract'
+- Include fraud warning in 18-point bold type
+- Detail adjuster/insured information, services, compensation, and rescission rights
 
 Rescission Rights:
-• Insured can rescind if no written estimate submitted to insurer within 60 days (unless extenuating circumstances)
-• Must include statement on potential fee reductions if claim amount decreases
+- Insured can rescind within 10 days after contract execution
+- For certain state-of-emergency residential claims, rescission is allowed until 30 days after date of loss or 10 days after contract execution, whichever is longer
+- Insured can rescind if no written estimate is submitted to the insurer within 60 days (unless extenuating circumstances)
+- Must include statement on potential fee reductions if claim amount decreases
 
 Non-compliant contracts are INVALID and UNENFORCEABLE.""",
-            "source_url": "https://www.flsenate.gov/Laws/Statutes/2024/0626.8796",
-            "last_updated": "2025 Florida Statutes; see SB 266 for potential extensions"
+            "source_url": "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0600-0699/0626/Sections/0626.8796.html",
+            "last_updated": "Verified against official Florida Statutes on 2026-02-18"
         },
-        {
+                {
             "id": "fee-structures",
             "statute": "Fee Structures and Caps (626.854 and Related Rules)",
             "summary": "Maximum fees and emergency caps",
             "details": """Maximum Fee Structure:
-• Standard residential/condo claims: 20% maximum
-• During state of emergency: 10% maximum for one year post-event
-• If insurer commits to full policy limits early: 1% maximum
+- Standard residential/condo claims: 20% maximum
+- During state of emergency: 10% maximum for one year post-event
+- If insurer commits to full policy limits early: 1% maximum
 
 Prohibited Fees:
-• No fees on denied claims
-• No fees on amounts paid before contract execution
-• Emergency declarations cap at 10% for one year""",
-            "source_url": "https://flsenate.gov/Session/Bill/2026/266/Analyses/2026s00266.bi.PDF",
-            "last_updated": "2025 Statutes; confirmed current in 2026"
+- No fees on denied claims
+- No fees on amounts paid before contract execution
+- Emergency declarations cap at 10% for one year""",
+            "source_url": "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0600-0699/0626/Sections/0626.854.html",
+            "last_updated": "Verified against official Florida Statutes on 2026-02-18"
         },
         {
             "id": "69B-220.201",
@@ -666,23 +668,27 @@ Prohibited Fees:
 • Retain ALL estimate versions for transparency
 
 Updated via Emergency Rule 69BER24-4 (2024, still effective in 2026).""",
-            "source_url": "https://www.propertyinsurancecoveragelaw.com/blog/florida-adjuster-and-public-adjuster-codes-of-ethics",
-            "last_updated": "Emergency Rule 69BER24-4 (2024); effective in 2026"
+            "source_url": "https://www.flrules.org/gateway/ruleno.asp?id=69B-220.201",
+            "last_updated": "Reference updated to official Florida Administrative Code source on 2026-02-18"
         },
-        {
+                {
             "id": "claims-timelines",
-            "statute": "Claims Handling Timelines (SB 7052)",
-            "summary": "Required response and payment timelines",
-            "details": """Insurer Obligations:
-• Acknowledge claims within 7 days
-• Provide status updates every 14 days
-• Pay or deny within 60 days of proof of loss
+            "statute": "Claims Handling Timelines (627.70131 + 627.70132)",
+            "summary": "Acknowledgment, pay/deny, and notice timelines",
+            "details": """Insurer Obligations (627.70131):
+- Review and acknowledge claim communications within 7 calendar days
+- Begin claim investigation within 7 days unless prevented by factors beyond the insurer's control
+- Pay or deny initial, reopened, or supplemental property claims within 60 days from notice of claim unless factors beyond the insurer's control reasonably prevent payment
 
-Public Adjuster Obligations:
-• Submit estimates promptly
-• Maintain transparency in estimate submissions""",
-            "source_url": "https://krapflegal.com/recources/property-damage/florida-insurance-reform-2025",
-            "last_updated": "SB 7052 (2025); effective July 1, 2025; current in 2026"
+Claim Notice Rules (627.70132):
+- New and reopened property insurance claims generally must be reported within 1 year after date of loss
+- Supplemental claims generally must be reported within 18 months after date of loss
+
+Public Adjuster Operational Notes:
+- Document every missed statutory deadline in writing
+- Preserve communication logs and proof of submission timestamps""",
+            "source_url": "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0600-0699/0627/Sections/0627.70131.html",
+            "last_updated": "Verified against official Florida Statutes on 2026-02-18"
         },
         {
             "id": "aob-reforms",
@@ -711,38 +717,22 @@ Note: John Voelpel III's book 'The Appraisal Process' is the definitive guide.""
             "last_updated": "From SB 2A (2023); current in 2026"
         }
     ],
-    "recent_updates_2026": [
+        "recent_updates_2026": [
         {
-            "id": "sb-266",
-            "bill": "Senate Bill 266 (2026) - Public Adjuster Contracts",
-            "summary": "Extends rescission period to 10 days",
-            "details": "Extends rescission period to 10 days without penalty. Clarifies that insureds can cancel within 10 days after contract execution.",
-            "source_url": "https://legiscan.com/FL/text/S0266/id/3274475/Florida-2026-S0266-Introduced.html",
-            "status": "Introduced January 2026; advancing as of February 4, 2026"
+            "id": "official-tracker-senate",
+            "bill": "Florida Senate Bill Tracker (Official)",
+            "summary": "Use official tracker before citing pending legislation",
+            "details": "Pending bill language and status can change quickly during session. Verify bill text and latest actions directly from the Florida Senate before using it in negotiations.",
+            "source_url": "https://www.flsenate.gov/Session/Bills/2026",
+            "status": "Monitor official tracker (as of 2026-02-18)"
         },
         {
-            "id": "hb-427",
-            "bill": "House Bill 427 (2026) - Public Adjuster Contracts",
-            "summary": "Clarifies disciplinary acts for PAs",
-            "details": "Authorizes rescission by certain persons; clarifies acts that subject public adjusters to discipline, including non-compliance with contract requirements.",
-            "source_url": "https://trackbill.com/bill/florida-house-bill-427-public-adjuster-contracts/2749649",
-            "status": "Introduced 2026; no final passage as of February 4, 2026"
-        },
-        {
-            "id": "hb-527",
-            "bill": "House Bill 527 / Senate Bill 202 (2026) - AI in Claims Handling",
-            "summary": "Requires human review for AI-denied claims",
-            "details": "Requires mandatory human review for claim denials based on AI/algorithms; cannot deny solely on AI output. Insurers must detail AI use in claims manuals. Applies to public adjusters interacting with AI-processed claims.",
-            "source_url": "https://www.jdsupra.com/legalnews/new-proposed-legislation-in-florida-9848816",
-            "status": "Filed November 2025; passed subcommittee December 2025; advancing in 2026"
-        },
-        {
-            "id": "hb-459",
-            "bill": "House Bill 459 (2025) - Disputed Claims Resolution",
-            "summary": "Formal process for disputed claims",
-            "details": "Establishes formal process for disputed property claims, potentially involving public adjusters in mediation/appraisal steps.",
-            "source_url": "https://boggslawgroup.com/what-floridas-new-insurance-laws-mean-for-2026",
-            "status": "Passed 2025; effective 2026"
+            "id": "official-tracker-house",
+            "bill": "Florida House Bill Tracker (Official)",
+            "summary": "Cross-check House companions and committee actions",
+            "details": "Cross-check companion bills, committee references, and effective dates on the Florida House tracker before presenting a bill as enacted law.",
+            "source_url": "https://www.myfloridahouse.gov/Sections/Bills/bills.aspx",
+            "status": "Monitor official tracker (as of 2026-02-18)"
         }
     ],
     "key_numbers": {
@@ -756,7 +746,7 @@ Note: John Voelpel III's book 'The Appraisal Process' is the definitive guide.""
         "max_apprentices_per_firm": 4,
         "max_apprentices_per_supervisor": 4,
         "claim_acknowledgment_days": 7,
-        "claim_status_update_days": 14,
+        "claim_status_update_days": None,
         "claim_pay_deny_days": 60,
         "contract_rescission_days": 10,
         "estimate_submission_days": 60
@@ -764,7 +754,8 @@ Note: John Voelpel III's book 'The Appraisal Process' is the definitive guide.""
     "resources": [
         {"type": "Official Statutes", "url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0600-0699%2F0626%2F0626ContentsIndex.html", "description": "Full Chapter 626 (2025 Florida Statutes)"},
         {"type": "DFS Licensing", "url": "https://myfloridacfo.com/division/agents/licensing/agents-adjusters/adjusters", "description": "Florida DFS licensing and rules"},
-        {"type": "Legal Updates Blog", "url": "https://www.propertyinsurancecoveragelaw.com/tags/florida/", "description": "Recent Florida insurance law changes"}
+        {"type": "Official Senate Bills", "url": "https://www.flsenate.gov/Session/Bills/2026", "description": "Official Florida Senate bill tracker"},
+        {"type": "Official House Bills", "url": "https://www.myfloridahouse.gov/Sections/Bills/bills.aspx", "description": "Official Florida House bill tracker"}
     ]
 }
 
@@ -1108,3 +1099,7 @@ async def get_florida_laws_for_eve(topic: Optional[str] = None):
         "relevant_statutes": relevant_statutes[:5],
         "key_numbers": FLORIDA_PA_LAWS["key_numbers"]
     }
+
+
+
+

@@ -15,7 +15,10 @@ class QuizQuestion(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     question: str
     options: List[str]
-    correct_answer: int
+    correct_answer: int  # index into options for multiple_choice / true_false
+    question_type: str = "multiple_choice"  # multiple_choice | true_false | scenario
+    explanation: Optional[str] = None  # shown after answering
+    scenario_context: Optional[str] = None  # background context for scenario questions
 
 class Lesson(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -245,17 +248,48 @@ They believe appraisal will cost them more. This signals your position is strong
                 QuizQuestion(
                     question="When a carrier issues a lowball initial estimate, you should:",
                     options=["Accept it to maintain a good relationship", "Never accept the first estimate—document and get your own estimates", "Wait for them to increase it automatically", "Immediately file a lawsuit"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Initial carrier estimates are routinely 30-60% below actual costs. Always get independent estimates and document everything before responding."
                 ),
                 QuizQuestion(
                     question="Why do carriers request repeated re-inspections?",
                     options=["They genuinely want to help", "Each inspection resets timelines and tests your resolve", "It's required by law", "To provide better service"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Re-inspections are a delay tactic. Each one resets the clock, giving the carrier more time while testing whether you'll give up."
                 ),
                 QuizQuestion(
                     question="The carrier's adjuster works for:",
                     options=["You, the policyholder", "The state insurance department", "The carrier—period", "Both parties equally"],
-                    correct_answer=2
+                    correct_answer=2,
+                    explanation="No matter how friendly, the adjuster is employed by the carrier. Their performance metrics are tied to controlling payouts."
+                ),
+                QuizQuestion(
+                    question="True or False: A carrier's 'friendly' adjuster means you will receive fair payment.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Charm is a tactic. Judge adjusters by their numbers and actions, not their personality. They work within carrier constraints regardless of demeanor."
+                ),
+                QuizQuestion(
+                    question="A carrier adjuster tells your client 'We're still reviewing your claim' after 45 days with no action. What does this likely indicate?",
+                    options=["They are conducting a thorough review", "This is a delay tactic—hoping the policyholder gives up or accepts less", "The claim is unusually complex", "The adjuster is new and needs more time"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="Your client filed a roof damage claim 45 days ago. The carrier acknowledged receipt within 14 days but has provided no estimate or inspection date. When your client calls, they're told 'We're still reviewing.'",
+                    explanation="Extended 'review' periods with no concrete action are classic delay tactics. Reference your state's prompt payment statutes and send written requests with deadlines."
+                ),
+                QuizQuestion(
+                    question="True or False: If a carrier offers a partial payment, you should always accept it immediately.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Accepting partial payment can complicate your ability to dispute the remainder in some jurisdictions. Review the release language carefully before accepting."
+                ),
+                QuizQuestion(
+                    question="What is the BEST way to document a phone conversation with a carrier adjuster?",
+                    options=["Don't bother—phone calls aren't important", "Send a follow-up email summarizing the call with date, time, and key points", "Record the call without telling them", "Just remember the key points"],
+                    correct_answer=1,
+                    explanation="Always follow up phone calls with written confirmation. This creates an accountable paper trail and prevents 'I never said that' disputes."
                 )
             ]
         ),
@@ -453,17 +487,49 @@ On larger claims, this is significant money. Don't leave it on the table.""",
                 QuizQuestion(
                     question="The best time to submit a supplement is:",
                     options=["Before any work begins", "When damage is discovered and documented during repairs", "After all repairs are complete", "Only if the carrier asks for one"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Submit supplements when you can prove the damage exists, it's loss-related, and it wasn't in the original scope. Document during demolition for maximum credibility."
                 ),
                 QuizQuestion(
                     question="The 'three-trade rule' for O&P means:",
                     options=["You can only claim O&P three times per year", "O&P is only for three-story buildings", "If three or more trades are needed, GC involvement and O&P is typically warranted", "You need three estimates to claim O&P"],
-                    correct_answer=2
+                    correct_answer=2,
+                    explanation="When three or more trades (roofing, drywall, painting, etc.) are required, a general contractor's coordination is warranted, justifying the industry-standard 10% overhead + 10% profit."
                 ),
                 QuizQuestion(
                     question="When a carrier denies a supplement without explanation, you should:",
                     options=["Accept the denial and move on", "Get the denial in writing with specific reasons", "Immediately sue them", "Never submit supplements again"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="A written denial with specific reasons becomes your roadmap for disputing. Without specifics, the carrier has no defensible position."
+                ),
+                QuizQuestion(
+                    question="True or False: A supplement is only valid if the carrier's adjuster agrees damage exists.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="False. Supplements are based on documented damage, not carrier agreement. Your photos, expert reports, and contractor statements are the evidence—not the adjuster's opinion."
+                ),
+                QuizQuestion(
+                    question="During a roof tear-off, your contractor discovers rotted decking under 3 squares of shingles. The carrier's original estimate only included shingle replacement. What is the correct supplement approach?",
+                    options=["Wait until all repairs are done, then submit everything at once", "Document the decking damage immediately with photos and measurements, then submit a supplement with line-item costs", "Call the adjuster and ask them to come back for another inspection", "Include the decking cost in the original estimate retroactively"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A residential roof replacement is in progress. The carrier approved shingle replacement for the entire roof. During tear-off, the crew finds 3 squares of badly deteriorated decking that wasn't visible before removal. This is clearly storm-related water intrusion damage.",
+                    explanation="Document progressively during demolition. Photos with measurements, explanation of how the damage relates to the covered loss, and line-item costs create a supplement package that's hard to deny."
+                ),
+                QuizQuestion(
+                    question="What does O&P stand for in property claims?",
+                    options=["Operations & Planning", "Overhead & Profit", "Owner's & Policyholder's costs", "Original & Present value"],
+                    correct_answer=1,
+                    explanation="Overhead & Profit represents the general contractor's business costs (overhead) and margin (profit), industry-standard at 10/10 (10% each)."
+                ),
+                QuizQuestion(
+                    question="A carrier says 'The homeowner can coordinate the repairs themselves, so O&P isn't owed.' What is the best response?",
+                    options=["Accept their position—they're probably right", "The policy promises to restore the property, not to make the homeowner a general contractor. Coordination is a skilled service with liability implications.", "Threaten to sue immediately", "Ask the homeowner to try coordinating first"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A claim involves roofing, siding, drywall, painting, and electrical work (5 trades). The carrier has excluded O&P from their estimate, stating the homeowner can coordinate the sub-contractors themselves.",
+                    explanation="With 5 trades involved, GC coordination is clearly warranted. The policy covers the cost to repair—which includes professional coordination when multiple trades are needed."
                 )
             ]
         ),
@@ -694,17 +760,48 @@ The difference between ACV and RCV can be 20-40% of the claim. Don't surrender i
                 QuizQuestion(
                     question="Who has the burden to prove an exclusion applies?",
                     options=["The policyholder must disprove it", "The carrier must prove it applies", "The court decides without input", "Neither party has a burden"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="In most jurisdictions, the policyholder must prove the loss occurred; then the burden shifts to the carrier to prove an exclusion applies."
                 ),
                 QuizQuestion(
                     question="What is 'recoverable depreciation'?",
                     options=["Depreciation you can never get back", "The withheld amount you can claim after completing repairs", "A tax deduction", "The carrier's profit margin"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="On RCV policies, the carrier withholds depreciation initially (paying ACV). After you complete repairs and incur the cost, you can claim the withheld depreciation—but there's usually a time limit."
                 ),
                 QuizQuestion(
                     question="In a valued policy state with a total loss:",
                     options=["You get whatever the carrier decides", "The carrier must pay the full Coverage A limit", "Depreciation is doubled", "The claim is automatically denied"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Valued policy laws (FL, LA, MS, TX, others) require the carrier to pay the full Coverage A limit on a total loss from a covered peril, regardless of actual value."
+                ),
+                QuizQuestion(
+                    question="True or False: Coverage D (Loss of Use) pays for your hotel, meals, and additional living expenses when your home is uninhabitable.",
+                    options=["True", "False"],
+                    correct_answer=0,
+                    question_type="true_false",
+                    explanation="Coverage D covers additional living expenses when the home is uninhabitable due to a covered loss. This includes hotel stays, restaurant meals (above your normal food costs), and other necessary expenses."
+                ),
+                QuizQuestion(
+                    question="What does the doctrine of 'contra proferentem' mean for insurance policies?",
+                    options=["The policyholder always wins", "Ambiguous policy language is interpreted against the drafter (the carrier)", "The carrier can rewrite the policy at any time", "Courts cannot interpret policy language"],
+                    correct_answer=1,
+                    explanation="When policy language is genuinely ambiguous, courts interpret it against the party that drafted it (the carrier). However, judges are skeptical of manufactured ambiguity."
+                ),
+                QuizQuestion(
+                    question="A homeowner's roof was damaged by wind, but the carrier says the damage is 'wear and tear' (excluded). Water is now entering through the damaged area. Which statement is most accurate?",
+                    options=["If any part is wear and tear, nothing is covered", "The wind damage and resulting water damage may both be covered even if some aging is present—the key is whether the covered peril caused distinct damage", "Wear and tear always overrides storm damage", "The homeowner should just fix it and not file a claim"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A 12-year-old roof was hit by a windstorm. The carrier's adjuster notes some granule loss from aging but also clear wind creases and lifted shingles. Water is entering at the lifted shingle locations. The carrier denies the claim citing the 'wear and tear' exclusion.",
+                    explanation="Carriers often conflate normal aging with storm damage. The key question is whether the covered peril (wind) caused distinct, identifiable damage separate from normal wear. If so, the exclusion doesn't apply to the storm damage."
+                ),
+                QuizQuestion(
+                    question="True or False: In Florida, carriers are allowed to depreciate labor costs when calculating ACV.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Florida statute specifically prohibits the depreciation of labor costs. Know your state's rules—this can significantly impact claim payments."
                 )
             ]
         )
@@ -885,16 +982,6 @@ Legal representation isn't always necessary. But when it is, proper preparation 
 - Coverage denial on substantial claim
 - Bad faith indicators present
 - Complex policy interpretation issues
-
-            # Include source details
-            playlist_sources = []
-            for source_id in playlist["sources"]:
-                for source in APPROVED_VIDEO_SOURCES:
-                    if source["id"] == source_id:
-                        playlist_sources.append(source)
-            return {**playlist, "source_details": playlist_sources}
-    raise HTTPException(status_code=404, detail="Playlist not found")
-
 - Carrier acting in violation of statute
 - Claim value justifies legal costs
 
@@ -982,24 +1069,1012 @@ Remember: The attorney works FOR you. Stay engaged. Ask questions. Understand th
                 QuizQuestion(
                     question="Bad faith requires:",
                     options=["Any disagreement with the carrier", "Unreasonable, knowing, or reckless conduct violating good faith duties", "A low estimate", "Delayed response"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Bad faith is more than a disagreement. It requires a pattern of conduct that is unreasonable, knowing, or reckless in violating the carrier's duty of good faith and fair dealing."
                 ),
                 QuizQuestion(
                     question="The appraisal process can resolve disputes about:",
                     options=["Whether coverage exists", "The AMOUNT of loss only", "Bad faith conduct", "All claim issues"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Appraisal is a contractual mechanism for resolving disputes about the AMOUNT of loss only. It cannot determine coverage questions or award bad faith damages."
                 ),
                 QuizQuestion(
                     question="Before consulting an attorney, you should:",
                     options=["Delete all your documentation", "Have your complete policy, claim file, and correspondence organized", "Accept the carrier's offer", "Stop communicating with the carrier"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="An organized file with your complete policy, claim documentation, and correspondence chronology helps the attorney evaluate your case efficiently and develop strategy."
+                ),
+                QuizQuestion(
+                    question="True or False: A single low estimate from the carrier automatically constitutes bad faith.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="A low estimate alone is not bad faith. Bad faith requires a pattern of unreasonable conduct—not just a disagreement on numbers. However, a pattern of systematic undervaluation may indicate bad faith."
+                ),
+                QuizQuestion(
+                    question="A carrier has ignored your client's claim for 60 days. They've sent 3 written follow-ups with no response. The state statute requires acknowledgment within 14 days. What is the BEST next step?",
+                    options=["Wait another 30 days", "File a complaint with the state Department of Insurance while continuing to document the delay", "Post about it on social media", "Just hire an attorney immediately without documenting anything"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="Your client filed a water damage claim 60 days ago. The carrier has not acknowledged the claim despite 3 written follow-ups sent via certified mail. Your state requires claim acknowledgment within 14 days of receipt (F.S. 627.70131 in Florida).",
+                    explanation="A Department of Insurance complaint creates a regulatory record, may prompt carrier action, and builds your bad faith documentation. Continue documenting while escalating—don't choose only one approach."
+                ),
+                QuizQuestion(
+                    question="Which type of attorney is BEST suited for a bad faith insurance claim?",
+                    options=["A general litigator who handles all case types", "A policyholder attorney who specializes in bad faith against carriers", "A criminal defense attorney", "Any attorney with the lowest fees"],
+                    correct_answer=1,
+                    explanation="Policyholder attorneys who specialize in bad faith understand carrier tactics, policy language, and have track records against specific carriers. Generalists may lack this specialized knowledge."
+                ),
+                QuizQuestion(
+                    question="True or False: Once you hire an attorney, you should continue negotiating directly with the carrier yourself.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Once represented, all communication should go through your attorney. Direct negotiation can undermine your legal strategy and create complications."
                 )
             ]
         )
     ]
-    
+
+    # ========== ADDITIONAL COURSES ==========
+
+    additional_courses = [
+        Course(
+            title="Water Damage Claims Mastery",
+            description="From first notice of loss to final payment—master the complexities of water damage claims including categorization, mitigation, and carrier disputes.",
+            category="training",
+            thumbnail="https://images.unsplash.com/photo-1525438160292-a4a860951216?w=400",
+            lessons=[
+                Lesson(
+                    title="Water Damage Categories & Standards",
+                    description="IICRC classifications and why they matter for your claim",
+                    content="""# Water Damage Categories & Standards
+
+Understanding water damage classification is critical. The category and class of water damage directly affects the scope of work, required remediation, and claim value.
+
+## IICRC Water Damage Categories
+
+The Institute of Inspection, Cleaning and Restoration Certification (IICRC) S500 standard defines three categories:
+
+### Category 1: Clean Water
+Water from a sanitary source that poses no substantial risk.
+
+**Sources:**
+- Broken supply lines
+- Tub or sink overflow (clean water)
+- Appliance malfunction (supply line)
+- Rainwater (initial entry)
+
+**Key:** Category 1 water can degrade to Category 2 or 3 if left untreated for more than 48 hours.
+
+### Category 2: Gray Water
+Contains significant contamination that could cause illness if ingested.
+
+**Sources:**
+- Dishwasher or washing machine overflow
+- Toilet overflow (urine only, no feces)
+- Aquarium leaks
+- Sump pump failures
+
+### Category 3: Black Water
+Grossly contaminated—may contain pathogens, toxins, or other harmful agents.
+
+**Sources:**
+- Sewage backup
+- Toilet overflow with feces
+- Flooding from rivers/streams
+- Standing water with microbial growth
+
+**Critical:** Category 3 requires specialized remediation. Porous materials exposed to Category 3 water typically must be removed and replaced.
+
+## IICRC Water Damage Classes
+
+Classes describe the rate of evaporation based on the extent of water absorption.
+
+### Class 1: Least Amount
+- Small area affected
+- Minimal absorption into materials
+- Example: Leak contained to small section of floor
+
+### Class 2: Significant Amount
+- Large area affected
+- Water wicked up walls 12-24 inches
+- Carpet and cushion wet
+- Structural materials retain moisture
+
+### Class 3: Greatest Amount
+- Water from overhead
+- Ceilings, walls, insulation, carpet all saturated
+- Requires maximum drying equipment
+
+### Class 4: Specialty
+- Deep pockets of saturation
+- Hardwood floors, concrete, crawlspaces
+- Requires special drying methods and extended time
+
+## Why Classification Matters for Claims
+
+- **Higher categories = more extensive (and expensive) remediation**
+- **Carriers often try to downgrade categories to reduce scope**
+- **Proper moisture readings and testing support correct classification**
+- **IICRC standards are the industry benchmark—reference them in disputes**
+
+Document the water source, affected materials, and moisture readings immediately. This evidence supports proper classification when the carrier's adjuster tries to minimize.""",
+                    duration_minutes=25,
+                    order=1
+                ),
+                Lesson(
+                    title="Mitigation & Documentation",
+                    description="Protecting the property while building your claim file",
+                    content="""# Mitigation & Documentation
+
+You have a duty to mitigate—but how you mitigate and document determines your claim's outcome.
+
+## The Duty to Mitigate
+
+Your policy requires reasonable steps to prevent further damage. This is NOT optional—failure to mitigate can be used against you.
+
+### What's Required
+- Stop the water source if possible
+- Extract standing water
+- Begin drying within 24-48 hours
+- Protect undamaged property
+- Emergency tarping/boarding if needed
+
+### What's NOT Required
+- Permanent repairs before claim is assessed
+- Hiring the carrier's "preferred" vendor
+- Spending your own money on full restoration
+
+## Documentation Protocol
+
+### Before Any Work Begins
+1. **Photograph everything** before touching it
+2. **Video walkthrough** showing water levels, affected areas
+3. **Moisture readings** at multiple points (record location, reading, time)
+4. **Note the water source** and category assessment
+
+### During Mitigation
+1. **Daily moisture readings** with documentation
+2. **Equipment placement log** (what equipment, where, how long)
+3. **Photos of what's removed** (drywall, flooring, cabinets)
+4. **Material samples** if mold suspected (for testing)
+5. **Drying logs** from the mitigation company
+
+### Critical Measurements
+- **Moisture content** of affected materials (use pin and pinless meters)
+- **Relative humidity** of affected rooms
+- **Temperature** readings
+- **GPP (Grains Per Pound)** calculations for drying goals
+- **Comparison readings** in unaffected areas (your "dry standard")
+
+## Carrier Disputes on Mitigation
+
+### "You didn't mitigate quickly enough"
+**Response:** Document when you discovered the damage and what steps you took. Show the timeline proves reasonable response.
+
+### "The mitigation company did too much"
+**Response:** IICRC S500 standards dictate minimum scope. If the work follows S500, it's defensible.
+
+### "We have a preferred vendor who can do it cheaper"
+**Response:** You are not required to use the carrier's preferred vendor. You are entitled to choose your own qualified contractor.
+
+### "The drying took too long"
+**Response:** Drying goals are reached when moisture content returns to dry standard. This is measurable, not arbitrary. Share the drying logs.
+
+## The Mold Question
+
+### When to Test
+- Visible microbial growth
+- Category 2 or 3 water present > 48 hours
+- Musty odor
+- Occupant health complaints
+
+### IICRC S520 Standard
+Mold remediation follows IICRC S520. Key requirements:
+- Air sampling before and after
+- Containment during remediation
+- HEPA filtration
+- Post-remediation verification
+
+### Claim Impact
+Mold findings can significantly increase claim value. Carriers will resist—but documented mold requiring S520 remediation is a covered consequence of the water loss in most policies.""",
+                    duration_minutes=30,
+                    order=2
+                ),
+                Lesson(
+                    title="Water Damage Estimate Strategy",
+                    description="Building a complete and defensible estimate",
+                    content="""# Water Damage Estimate Strategy
+
+Water damage estimates are often the most complex in property claims. Getting them right means understanding what belongs in the scope and how to price it.
+
+## Scope Components Most Often Missed
+
+### 1. Contents
+- Furniture affected by water (swelling, staining, odor)
+- Electronics exposed to moisture
+- Personal items requiring cleaning or replacement
+- Soft goods (clothing, linens, pillows)
+
+### 2. Hidden Damage
+- Damage behind cabinets and vanities
+- Insulation contamination in walls/attics
+- Subfloor damage beneath finished flooring
+- Mold growth in concealed spaces
+
+### 3. Code Upgrades
+- Electrical code changes since original construction
+- Plumbing code requirements
+- HVAC modifications
+- Building envelope requirements
+
+### 4. Matching
+- If you replace 30% of a hardwood floor, matching the remaining 70% may require replacing the entire floor
+- Same principle applies to cabinets, tile, and other finishes
+- "Like kind and quality" means a reasonable match—not a patchwork
+
+### 5. Loss of Use
+- Hotel stays, meals, storage costs
+- Additional transportation costs
+- Pet boarding
+- Often undervalued or ignored by carriers
+
+## Pricing Strategy
+
+### Use Industry Standards
+- Xactimate pricing databases
+- RS Means for commercial work
+- Actual contractor bids for specialty work
+
+### Line-Item Everything
+- Don't lump items together
+- Separate labor and materials where possible
+- Include all required steps (demo, haul, install, finish)
+
+### Account for Realistic Conditions
+- Access difficulties (tight spaces, multi-story)
+- After-hours or emergency rates if applicable
+- Specialty equipment requirements
+- Minimum charges for small areas
+
+## Common Carrier Objections
+
+### "We can dry the carpet, no need to replace it"
+**Response (Category 2/3):** IICRC S500 requires removal of carpet and pad exposed to Category 2/3 water. Cleaning cannot restore contaminated materials to safe condition.
+
+### "The subfloor just needs to dry"
+**Response:** Check moisture content. If the subfloor shows swelling, delamination, or persistent elevated moisture, replacement is required. Document with moisture readings and photos.
+
+### "We're not paying for matching"
+**Response:** "Like kind and quality" restoration requires reasonable matching. A patched floor or mismatched cabinets do not restore the property. Most state courts support matching requirements.
+
+### "Mold remediation isn't covered"
+**Response:** Review your policy. Mold that results from a covered water loss is typically covered as a consequence of the loss. Carriers cannot exclude consequences of covered perils through blanket mold exclusions in most jurisdictions.
+
+## The Complete Water Damage Estimate Checklist
+
+- [ ] Emergency services (extraction, board-up, tarping)
+- [ ] Drying equipment (daily rates × days to dry standard)
+- [ ] Demolition (affected materials)
+- [ ] Haul-off and disposal
+- [ ] Mold testing (if warranted)
+- [ ] Mold remediation (if positive)
+- [ ] Structural drying of framing/subfloor
+- [ ] Reconstruction (drywall, texture, paint)
+- [ ] Flooring replacement (with matching)
+- [ ] Cabinet/vanity replacement or refinishing
+- [ ] Electrical/plumbing if exposed
+- [ ] Contents cleaning or replacement
+- [ ] Code upgrades
+- [ ] Overhead & Profit (if warranted)
+- [ ] Loss of use (ALE)""",
+                    duration_minutes=30,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="IICRC Category 3 (black water) comes from sources such as:",
+                    options=["A broken kitchen supply line", "A dishwasher overflow", "Sewage backup or river flooding", "A leaking water heater"],
+                    correct_answer=2,
+                    explanation="Category 3 water is grossly contaminated and includes sewage, flooding from natural water bodies, and any standing water with microbial growth."
+                ),
+                QuizQuestion(
+                    question="True or False: Category 1 (clean) water can never become Category 3 (black) water.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Category 1 water degrades over time. After 48+ hours untreated, clean water can become Category 2 or 3 due to microbial growth and contamination from materials it contacts."
+                ),
+                QuizQuestion(
+                    question="What does IICRC S500 govern?",
+                    options=["Roofing standards", "Water damage restoration standards", "Electrical code requirements", "Carrier claim procedures"],
+                    correct_answer=1,
+                    explanation="IICRC S500 is the industry standard for professional water damage restoration. It defines categories, classes, and proper remediation procedures."
+                ),
+                QuizQuestion(
+                    question="Your client's kitchen had a dishwasher overflow 3 days ago. Water reached the adjacent living room. The carrier says 'just dry the carpet.' The carpet has been wet for 72+ hours with gray water. What should you do?",
+                    options=["Accept the carrier's recommendation to dry the carpet", "Document that IICRC S500 requires removal of carpet exposed to Category 2 water for 72+ hours, and supplement for replacement", "Let the homeowner decide", "Wait and see if the carpet develops mold first"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A dishwasher overflow (Category 2 - gray water) affected the kitchen and living room. The mitigation company arrived 3 days later. Carpet and pad in the living room are saturated. Moisture readings show elevated levels in the walls 18 inches up.",
+                    explanation="IICRC S500 is clear: carpet and pad exposed to Category 2 water for extended periods must be removed. Drying cannot restore contaminated porous materials to safe condition."
+                ),
+                QuizQuestion(
+                    question="True or False: You are required to use the carrier's preferred mitigation vendor.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="You have the right to choose your own qualified contractor. The carrier may recommend vendors, but you are not obligated to use them."
+                ),
+                QuizQuestion(
+                    question="When documenting water damage, moisture readings should include:",
+                    options=["Just the wet areas", "Wet areas plus unaffected areas for 'dry standard' comparison", "Only the carrier's readings", "No readings needed—photos are enough"],
+                    correct_answer=1,
+                    explanation="Moisture readings in both affected AND unaffected areas establish a baseline ('dry standard'). This proves what's abnormal and defines when drying is complete."
+                )
+            ]
+        ),
+        Course(
+            title="Xactimate Fundamentals",
+            description="Learn to read, analyze, and dispute carrier estimates written in Xactimate—the industry-standard estimating software.",
+            category="training",
+            thumbnail="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400",
+            lessons=[
+                Lesson(
+                    title="Reading an Xactimate Estimate",
+                    description="Understanding line items, categories, and pricing",
+                    content="""# Reading an Xactimate Estimate
+
+Xactimate is the industry-standard estimating software used by carriers, contractors, and public adjusters. If you can't read it, you can't dispute it.
+
+## Estimate Structure
+
+### Header Information
+- **Claim number and date**
+- **Insured name and property address**
+- **Type of loss** (wind, water, fire, etc.)
+- **Price list** (geographic pricing database used)
+- **Date of loss**
+
+### Room-by-Room Layout
+Xactimate organizes estimates by room/area. Each room contains line items for the work required in that space.
+
+### Line Item Components
+Each line item has:
+- **Category code** (e.g., RFG = Roofing, DRY = Drywall)
+- **Selector code** (specific item within category)
+- **Description** (what the item is)
+- **Quantity** (amount needed)
+- **Unit** (SF, LF, EA, SQ, etc.)
+- **Unit price** (cost per unit)
+- **Total** (quantity × unit price)
+- **O&P** indicator (whether overhead & profit is included)
+
+## Key Category Codes
+
+| Code | Category |
+|------|----------|
+| RFG | Roofing |
+| DRY | Drywall |
+| PNT | Painting |
+| FLR | Flooring |
+| PLM | Plumbing |
+| ELC | Electrical |
+| CLN | Cleaning |
+| WTR | Water extraction/mitigation |
+| DEM | Demolition |
+| GNL | General items |
+| CNT | Contents |
+
+## Units of Measurement
+
+- **SF** = Square Feet
+- **LF** = Linear Feet
+- **SQ** = Square (100 SF, used for roofing)
+- **EA** = Each (per unit)
+- **HR** = Hour (labor)
+- **DA** = Day (equipment rental)
+
+## What to Look For
+
+### Missing Items
+Compare the estimate against the actual damage. Common omissions:
+- Demolition/removal of damaged materials
+- Haul-off and dump fees
+- Protection of surrounding areas
+- Detach and reset items (light fixtures, outlets, etc.)
+- Texture matching for drywall
+- Primer before paint
+
+### Incorrect Quantities
+- Measure the actual area—don't assume the carrier measured correctly
+- Check waste factors (roofing should include waste)
+- Verify room dimensions match reality
+
+### Wrong Pricing
+- Xactimate prices update monthly by region
+- Ensure the correct price list is being used
+- Check for manual price overrides (the carrier may have manually lowered prices)
+
+### Depreciation Issues
+- Check what's being depreciated and at what rate
+- Labor depreciation may be improper in your state
+- Verify depreciation percentages are reasonable for material age""",
+                    duration_minutes=30,
+                    order=1
+                ),
+                Lesson(
+                    title="Common Carrier Estimate Tricks",
+                    description="How carriers manipulate Xactimate to underpay",
+                    content="""# Common Carrier Estimate Tricks
+
+Carriers use Xactimate too—but they configure it to minimize payouts. Knowing their tricks lets you catch them.
+
+## Pricing Manipulation
+
+### Manual Price Overrides
+Carriers sometimes manually override Xactimate's market-based pricing with lower figures. Look for:
+- Prices significantly below current Xactimate rates
+- Flat rates instead of line-item pricing
+- "Preferred vendor" rates substituted for market rates
+
+**Your move:** Request the Xactimate printout showing price list version and any manual overrides. Compare against current market rates.
+
+### Outdated Price Lists
+Using last year's price list when materials have increased 10-15%.
+
+**Your move:** Check the price list date on the estimate. Current Xactimate pricing updates monthly.
+
+### Wrong Geographic Price List
+Using pricing from a cheaper market for your area.
+
+**Your move:** Verify the price list matches your property's zip code.
+
+## Scope Manipulation
+
+### "Repair" vs. "Replace"
+Carriers estimate repair when replacement is required. Example: patching 3 shingles when 3 squares need replacement.
+
+**Your move:** Document why replacement is necessary. Photos showing extent of damage, manufacturer specs on repair limits.
+
+### Ignoring Related Items
+Replacing drywall but not estimating texture matching, primer, or paint. Replacing flooring but not including baseboards.
+
+**Your move:** Walk through the logical repair sequence. Every trade action has related items.
+
+### Combining Rooms
+Treating multiple rooms as one to reduce minimum charges and setup costs.
+
+**Your move:** Each room is a separate work area requiring individual setup, protection, and finishing.
+
+### Excluding Demolition
+Estimating installation without removal of damaged materials.
+
+**Your move:** You can't install new over damaged. Demo, haul-off, and disposal are required scope items.
+
+## Depreciation Tricks
+
+### Aggressive Depreciation Rates
+Depreciating a 5-year-old roof at 50% when its expected life is 30 years.
+
+**Your move:** Research expected lifespan of the material. Calculate reasonable depreciation. A 5-year-old, 30-year shingle = 16.7% depreciation, not 50%.
+
+### Depreciating Non-Depreciable Items
+- Labor (improper in FL, TX, and other states)
+- Overhead & Profit
+- Removal/haul-off (these are new costs, not replacing aged items)
+
+**Your move:** Know your state's depreciation rules. Cite statute if labor depreciation is prohibited.
+
+## The Line-Item Comparison Method
+
+For every supplement dispute, create a side-by-side comparison:
+
+| Line Item | Carrier's Estimate | Your Estimate | Difference | Justification |
+|-----------|-------------------|---------------|------------|---------------|
+| Shingle removal | $0 (not included) | $85/SQ | $850 | Required before install |
+| Drip edge | $0 | $3.50/LF | $560 | Code requirement |
+| Ice & water shield | $0 | $95/SQ | $285 | Building code in valleys |
+
+This format makes it easy for the carrier to approve—or forces them to explain line-by-line denials.""",
+                    duration_minutes=25,
+                    order=2
+                ),
+                Lesson(
+                    title="Building Your Counter-Estimate",
+                    description="Creating a complete, defensible Xactimate estimate",
+                    content="""# Building Your Counter-Estimate
+
+A professional counter-estimate isn't just "more money"—it's a documented, defensible scope of work priced at industry standards.
+
+## The Complete Scope Approach
+
+### Step 1: Field Documentation
+Before opening Xactimate, complete your field inspection:
+- Measurements (don't rely on carrier's)
+- Photos tied to specific damage
+- Moisture readings (water claims)
+- Material identification (shingle type, flooring brand, etc.)
+- Code requirements for the jurisdiction
+
+### Step 2: Scope Development
+Build your estimate room-by-room:
+1. **What needs to be removed** (demo line items)
+2. **What needs to be disposed of** (haul-off)
+3. **What needs to be protected** (adjacent areas)
+4. **What needs to be installed** (replacement items)
+5. **What finishing is required** (paint, texture, trim)
+6. **What related trades are triggered** (electrical, plumbing)
+
+### Step 3: Pricing
+- Use current Xactimate price lists for your region
+- Don't manually override prices without justification
+- Include waste factors where appropriate
+- Add minimum charges for small areas
+
+### Step 4: O&P Determination
+Include overhead & profit when warranted:
+- Three or more trades involved
+- Complexity requires coordination
+- Permits and inspections needed
+
+## Estimate Quality Checklist
+
+### Completeness
+- [ ] All affected areas included
+- [ ] Demo AND replacement for each damaged item
+- [ ] Related items included (detach/reset, protection, cleanup)
+- [ ] Code upgrades where applicable
+- [ ] Contents affected by the loss
+
+### Accuracy
+- [ ] Measurements verified in the field
+- [ ] Correct materials specified (match existing)
+- [ ] Appropriate waste factors
+- [ ] Current price list used
+- [ ] Reasonable depreciation (if ACV)
+
+### Defensibility
+- [ ] Every line item ties to documented damage
+- [ ] Photos support scope claims
+- [ ] Methodology follows industry standards
+- [ ] Pricing is market-standard (not inflated)
+- [ ] Notes explain non-obvious items
+
+## Presenting Your Estimate
+
+### Format
+- Professional Xactimate printout (not handwritten)
+- Cover letter summarizing differences from carrier's estimate
+- Photo documentation referenced to line items
+- Supporting documents (code requirements, manufacturer specs)
+
+### Language
+- Factual and specific
+- Reference policy language for coverage basis
+- Cite IICRC, building code, or manufacturer standards
+- Request written response with specific objections
+
+### Follow-Up
+- Set a response deadline (14-21 days is reasonable)
+- Document submission method (email with read receipt, certified mail)
+- Track response and follow up if no response received
+
+## The Supplement Workflow
+
+1. Submit counter-estimate with documentation
+2. Carrier reviews and responds (or doesn't)
+3. If partial approval → submit supplement for remaining items
+4. If denial → request written basis for each denied item
+5. If no response → escalate (supervisor, DOI, appraisal)
+
+The goal is to make your estimate so well-documented that approval is easier than denial.""",
+                    duration_minutes=30,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="In Xactimate, what does the unit 'SQ' stand for?",
+                    options=["Square inch", "Square foot", "Square (100 square feet)", "Square yard"],
+                    correct_answer=2,
+                    explanation="In roofing, a 'square' (SQ) equals 100 square feet. This is the standard unit for measuring and pricing roof work in Xactimate."
+                ),
+                QuizQuestion(
+                    question="True or False: If the carrier's Xactimate estimate uses last month's price list, the pricing is automatically correct.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Price lists update monthly to reflect market conditions. An outdated list may undervalue materials and labor that have increased. Always check the price list date and version."
+                ),
+                QuizQuestion(
+                    question="A carrier's estimate includes shingle replacement but NOT shingle removal, haul-off, or disposal. What should you do?",
+                    options=["Accept it—removal is included in the install price", "Submit a supplement adding demo, haul-off, and disposal as separate line items", "Remove the old shingles yourself to save money", "Wait for the contractor to figure it out"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="You receive a carrier estimate for roof repair. It includes 15 squares of shingle installation but has no line items for tear-off, removal, or disposal of the existing damaged shingles. The current shingles must be removed before new ones can be installed.",
+                    explanation="Removal, haul-off, and disposal are separate scope items in Xactimate. You cannot install new shingles over damaged ones. These are standard line items that should be included."
+                ),
+                QuizQuestion(
+                    question="What is the most effective way to dispute a carrier's Xactimate estimate?",
+                    options=["Just tell them the number is too low", "Create a line-by-line comparison showing each missing or underpriced item with documentation", "Hire a lawyer immediately", "Accept the estimate and negotiate later"],
+                    correct_answer=1,
+                    explanation="A line-by-line comparison makes it easy for the carrier to approve specific items—or forces them to justify denials for each one. Vague objections are easy to dismiss."
+                ),
+                QuizQuestion(
+                    question="True or False: The carrier can require you to use their 'preferred vendor' pricing in the estimate.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="You are entitled to market-rate pricing. The carrier's preferred vendor rates may be below market and do not obligate you to accept below-standard compensation."
+                ),
+                QuizQuestion(
+                    question="When should O&P (Overhead & Profit) be included in your Xactimate estimate?",
+                    options=["Always, on every estimate", "Only when the claim exceeds $50,000", "When three or more trades are involved, requiring GC coordination", "Never—O&P is the contractor's problem"],
+                    correct_answer=2,
+                    explanation="The industry 'three-trade rule' applies: when three or more trades require coordination, GC involvement is warranted, and the standard 10/10 O&P should be included."
+                )
+            ]
+        ),
+        Course(
+            title="Florida Insurance Law Essentials",
+            description="Master the Florida-specific statutes, regulations, and legal frameworks that govern property insurance claims in the Sunshine State.",
+            category="advanced",
+            thumbnail="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400",
+            lessons=[
+                Lesson(
+                    title="Key Florida Statutes for Claims",
+                    description="The laws that protect policyholders in Florida",
+                    content="""# Key Florida Statutes for Claims
+
+Florida has some of the strongest policyholder protections in the country. Knowing these statutes gives you leverage in every negotiation.
+
+## F.S. 627.70131 — Insurer's Duty to Acknowledge & Act
+
+This is the most important statute for claims handling timelines.
+
+### Requirements
+- **14 days** — Carrier must acknowledge receipt of claim
+- **90 days** — Carrier must pay or deny the claim with written explanation
+- **Penalty** — Interest accrues on late payments
+
+### How to Use It
+Reference this statute in every correspondence where timelines are at issue. "Per F.S. 627.70131, payment or written denial was due by [date]. We have received neither."
+
+## F.S. 626.854 — Public Adjuster Regulations
+
+### Key Provisions
+- PA must be licensed and bonded ($50,000 surety bond)
+- Maximum fee: 10% of claim proceeds (standard)
+- Maximum fee in declared emergency areas: 20%
+- 3 business day rescission period for PA contracts
+- PA cannot have financial interest in repair work
+
+### Why It Matters
+If you're working with a PA, these rules protect you. If the carrier questions your PA's authority, these statutes establish the framework.
+
+## F.S. 626.8796 — Contract Requirements
+
+### Mandatory Contract Elements
+- Written contract required
+- Clear statement of fees
+- Rescission notice (3 business days)
+- Fraud penalties disclosure
+- Description of services
+
+## F.S. 627.7015 — Alternative Dispute Resolution
+
+### Appraisal
+- Either party can invoke appraisal for amount disputes
+- Each party selects an appraiser
+- Appraisers select an umpire
+- Two of three decide the loss amount
+
+### Mediation
+- Available through the Department of Financial Services
+- Non-binding (unlike appraisal)
+- Low cost compared to litigation
+
+## F.S. 627.702 — Valued Policy Law
+
+### The Rule
+If a covered peril causes **total loss** to a building insured under a valued policy, the carrier must pay the **full policy limit** regardless of actual value.
+
+### Requirements
+- Must be a total loss (constructive or actual)
+- Must be a covered peril
+- Applies to dwelling (Coverage A)
+
+### Practical Impact
+In total loss scenarios, don't let the carrier depreciate or argue the building is worth less than the limit. The law is clear.
+
+## Florida Labor Depreciation Prohibition
+
+### The Rule
+Florida prohibits carriers from depreciating labor costs when calculating ACV.
+
+### Why This Matters
+Labor can represent 40-60% of a claim's value. If the carrier depreciates labor, they're underpaying by a significant amount.
+
+### How to Enforce
+"Per Florida law, labor costs may not be depreciated in calculating actual cash value. Please revise your estimate to remove labor depreciation from lines [X, Y, Z]."
+
+## Assignment of Benefits (AOB) — Current Status
+
+### Historical Context
+AOBs allowed contractors and providers to file claims directly against carriers. This was common but controversial.
+
+### Current Law
+Florida significantly restricted AOBs in recent legislation. Understand the current framework before relying on AOB strategies.
+
+## Practical Application
+
+For every Florida claim:
+1. Calculate statutory deadlines from date of loss
+2. Track carrier compliance with 14/90 day requirements
+3. Document any labor depreciation for dispute
+4. Know your appraisal rights
+5. Understand valued policy law for total losses""",
+                    duration_minutes=35,
+                    order=1
+                ),
+                Lesson(
+                    title="Department of Financial Services",
+                    description="How to use Florida's insurance regulator effectively",
+                    content="""# Department of Financial Services
+
+The Florida Department of Financial Services (DFS) oversees insurance regulation. It can be a powerful tool—but you need to use it correctly.
+
+## What the DFS Can Do
+
+### Investigate Carrier Practices
+- Review claim handling procedures
+- Examine whether carriers follow statutory requirements
+- Identify patterns of violations
+
+### Require Carrier Response
+- When you file a complaint, the carrier MUST respond
+- This creates documented evidence
+- Response timeline creates accountability
+
+### Impose Penalties
+- Fines for statutory violations
+- Market conduct examinations
+- License actions for repeat offenders
+
+### Provide Documentation
+- Complaint records are public
+- Pattern evidence supports litigation
+- Regulatory findings carry weight
+
+## What the DFS Cannot Do
+
+### They Cannot
+- Force payment of your specific claim
+- Interpret your policy for you
+- Practice law or give legal advice
+- Override a legitimate coverage determination
+- Speed up the claims process (directly)
+
+### But Indirectly
+A DFS complaint often triggers:
+- Senior-level review at the carrier
+- Re-evaluation of the claim
+- Faster resolution to avoid regulatory scrutiny
+
+## Filing an Effective Complaint
+
+### Be Specific
+Bad: "State Farm isn't paying my claim."
+Good: "State Farm received my roof damage claim on [date], acknowledged receipt on [date], but has failed to provide payment or written denial within the 90-day period required by F.S. 627.70131."
+
+### Include Documentation
+- Copies of all correspondence
+- Claim number and policy number
+- Timeline of events
+- Specific statutes you believe were violated
+
+### Focus on Regulatory Violations
+The DFS responds to statutory violations, not unfairness complaints.
+
+Effective triggers:
+- Failure to acknowledge within 14 days
+- Failure to pay or deny within 90 days
+- Failure to provide written basis for denial
+- Labor depreciation (prohibited in FL)
+- Misrepresentation of policy provisions
+
+### Follow Up
+- Check complaint status regularly
+- Respond to any DFS requests promptly
+- Keep records of all DFS communications
+
+## Strategic Timing
+
+### File Early When
+- Carrier is clearly violating statutory timelines
+- You have documented evidence of violations
+- Pattern of non-responsiveness
+
+### Wait When
+- Negotiations are productive
+- Carrier is acting within timelines
+- You want to preserve the relationship for ongoing claims
+
+## Building Bad Faith Through Regulatory Records
+
+Each DFS complaint creates a regulatory record. Multiple complaints against the same carrier on the same claim demonstrate:
+- Pattern of behavior
+- Notice to the carrier of problems
+- Failure to correct despite notice
+
+This is valuable if the claim later moves to litigation for bad faith.""",
+                    duration_minutes=25,
+                    order=2
+                ),
+                Lesson(
+                    title="Hurricane & Catastrophe Claims in Florida",
+                    description="Special rules and strategies for catastrophe claims",
+                    content="""# Hurricane & Catastrophe Claims in Florida
+
+Hurricane claims in Florida have unique characteristics that require specialized knowledge and strategy.
+
+## Separate Hurricane Deductibles
+
+### How They Work
+Most Florida policies have a **separate hurricane deductible** that's typically 2-5% of Coverage A.
+
+**Example:** $300,000 dwelling limit × 2% hurricane deductible = **$6,000 deductible** (vs. perhaps $1,000 for a non-hurricane claim).
+
+### Impact
+- Smaller claims may not exceed the deductible
+- This is by design—carriers structure deductibles to minimize hurricane payouts
+- Document ALL damage to ensure you exceed the deductible threshold
+
+### Multiple Events
+If multiple hurricanes affect the property in one season, each may trigger a separate deductible. Know your policy's language on "hurricane season" deductibles.
+
+## Wind vs. Water Disputes
+
+### The Core Issue
+Wind damage is covered by your homeowner's policy. Flood damage requires separate flood insurance (NFIP or private).
+
+### The Carrier Tactic
+After a hurricane, carriers routinely argue that damage was caused by "storm surge" or "flood" (excluded) rather than "wind" (covered).
+
+### Your Strategy
+- **Document wind damage before water recedes** if possible
+- **Elevation matters:** Damage above storm surge height is wind
+- **Direction of damage:** Wind damage has directional patterns
+- **Timeline:** Wind precedes surge—damage from the eyewall may precede flooding
+- **Engineering reports** can distinguish wind from water damage
+
+## Emergency Measures After a Hurricane
+
+### Immediate Steps
+1. Secure the property (emergency tarping, board-up)
+2. Document everything with photos/video
+3. Report the claim immediately
+4. Keep all receipts for emergency expenses
+5. Do NOT make permanent repairs yet
+
+### Emergency Services Coverage
+Your policy covers reasonable emergency services. This includes:
+- Temporary tarping
+- Board-up
+- Water extraction
+- Generator rental (if needed to prevent further damage)
+- Tree removal from structures
+
+## Post-Catastrophe Carrier Behavior
+
+### What to Expect
+- Overwhelmed adjusters making quick assessments
+- "Desk adjusters" estimating from satellite imagery
+- Pressure to accept fast settlements
+- Preferred vendor referrals (often at below-market rates)
+- Extended timelines due to volume
+
+### Your Response
+- Don't accept desk estimates without field inspection
+- Don't rush to settle—document thoroughly first
+- Get independent estimates from your own contractor
+- Insist on complete scoping (not just visible damage)
+- Track statutory deadlines despite "catastrophe" excuses
+
+## Public Adjuster Fee Caps (Emergency Areas)
+
+When a state of emergency is declared:
+- PA fees are capped at **20%** (vs. 10% normal)
+- This cap applies to the declared area
+- Duration: typically 12-24 months from declaration
+
+## The Long Game: Supplements After Catastrophe
+
+### Hidden Damage Timeline
+Hurricane damage reveals itself over time:
+- **Week 1-4:** Obvious structural damage, roof damage
+- **Month 1-3:** Water intrusion from compromised envelope
+- **Month 3-12:** Mold growth, settling, secondary damage
+- **Year 1-2:** Structural issues from prolonged moisture exposure
+
+### Supplementing Strategy
+- Initial claim for immediate damage
+- Supplement 1: Hidden damage found during repairs
+- Supplement 2: Consequential damage (mold, structure)
+- Keep the claim open until all damage is identified
+
+## Documentation Standards for Hurricane Claims
+
+### Minimum Documentation
+- Date-stamped photos of all damage
+- Wide, medium, and close-up shots
+- Aerial/drone imagery if available
+- Moisture readings throughout the property
+- Contractor assessments for each trade affected
+- Weather data for your specific location
+- Neighboring property damage (establishes pattern)""",
+                    duration_minutes=35,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="Under F.S. 627.70131, a carrier must pay or deny a claim within:",
+                    options=["30 days", "60 days", "90 days", "120 days"],
+                    correct_answer=2,
+                    explanation="Florida statute requires carriers to pay or deny claims with written explanation within 90 days. They must acknowledge receipt within 14 days."
+                ),
+                QuizQuestion(
+                    question="True or False: In Florida, carriers are allowed to depreciate labor costs when calculating ACV.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Florida law prohibits the depreciation of labor costs. Since labor can represent 40-60% of a claim, this significantly impacts payment amounts."
+                ),
+                QuizQuestion(
+                    question="A Florida homeowner has a $300,000 dwelling policy with a 2% hurricane deductible. What is their hurricane deductible?",
+                    options=["$2,000", "$3,000", "$6,000", "$30,000"],
+                    correct_answer=2,
+                    question_type="scenario",
+                    scenario_context="A Florida homeowner with a $300,000 Coverage A limit has a 2% hurricane deductible. A Category 3 hurricane has damaged their roof, siding, and interior from water intrusion.",
+                    explanation="$300,000 × 2% = $6,000. Florida hurricane deductibles are percentage-based and much higher than standard deductibles, by design."
+                ),
+                QuizQuestion(
+                    question="The Florida Valued Policy Law applies when:",
+                    options=["Any claim is filed", "The carrier agrees to pay", "A covered peril causes total loss to the building", "The policyholder requests it"],
+                    correct_answer=2,
+                    explanation="The Valued Policy Law requires full policy limit payment only for TOTAL losses from covered perils. Partial losses are paid based on actual damage."
+                ),
+                QuizQuestion(
+                    question="After a hurricane, a carrier sends a 'desk adjuster' estimate based on satellite imagery without visiting the property. What is the best response?",
+                    options=["Accept it—satellite imagery is accurate", "Insist on a field inspection and document damage thoroughly with your own estimates before accepting anything", "File a lawsuit immediately", "Wait for the carrier to schedule their own inspection"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="Hurricane winds damaged your client's roof, soffit, and caused interior water damage. The carrier sent an estimate based on satellite/aerial imagery without sending an adjuster. The estimate covers only partial roof damage and excludes interior damage entirely.",
+                    explanation="Desk estimates are incomplete by nature. They cannot assess interior damage, hidden damage, or proper scope. Insist on a field inspection while documenting everything independently."
+                ),
+                QuizQuestion(
+                    question="True or False: PA fees in Florida are always capped at 10% regardless of circumstances.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Standard PA fees are capped at 10%, but in declared emergency areas, the cap increases to 20% for a specified period (typically 12-24 months)."
+                ),
+                QuizQuestion(
+                    question="What is the maximum time a Florida carrier has to ACKNOWLEDGE receipt of a claim?",
+                    options=["7 days", "14 days", "30 days", "90 days"],
+                    correct_answer=1,
+                    explanation="F.S. 627.70131 requires carriers to acknowledge claim receipt within 14 days. The 90-day period is for paying or denying the claim."
+                )
+            ]
+        )
+    ]
+
     # Insert all courses
-    all_courses = training_courses + advanced_courses
+    all_courses = training_courses + advanced_courses + additional_courses
     for course in all_courses:
         await db.courses.insert_one(course.dict())
     
@@ -1323,11 +2398,23 @@ async def submit_quiz(submission: QuizSubmission, current_user: dict = Depends(g
     
     correct = 0
     total = len(quiz)
-    
+    details = []
+
     for i, question in enumerate(quiz):
-        if i < len(submission.answers) and submission.answers[i] == question["correct_answer"]:
+        user_answer = submission.answers[i] if i < len(submission.answers) else -1
+        is_correct = user_answer == question["correct_answer"]
+        if is_correct:
             correct += 1
-    
+        details.append({
+            "question": question["question"],
+            "user_answer": user_answer,
+            "correct_answer": question["correct_answer"],
+            "is_correct": is_correct,
+            "explanation": question.get("explanation"),
+            "question_type": question.get("question_type", "multiple_choice"),
+            "options": question.get("options", []),
+        })
+
     score = int((correct / total) * 100)
     passed = score >= 70
     
@@ -1364,7 +2451,7 @@ async def submit_quiz(submission: QuizSubmission, current_user: dict = Depends(g
                 logger.error(f"Failed to emit university course completion event: {e}")
                 # Don't fail the request if event emission fails
     
-    return {"score": score, "correct": correct, "total": total, "passed": passed, "certificate": certificate}
+    return {"score": score, "correct": correct, "total": total, "passed": passed, "certificate": certificate, "details": details}
 
 @router.get("/progress")
 async def get_user_progress(current_user: dict = Depends(get_current_active_user)):

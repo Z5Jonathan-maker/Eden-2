@@ -1174,7 +1174,7 @@ Deadlines without consequence are requests. Deadlines with documented follow-thr
 - Document the deadline, the response (or silence), and your follow-through
 
 ## Escalation Timeline
-Submission → 14-day response window → Follow-up with new deadline → Management request → DOI/Appraisal""",
+Submission → 7-day acknowledgment checkpoint → Follow-up with new deadline → Management request → DOI/Appraisal (and track the 60-day pay/deny clock)""",
                     duration_minutes=14,
                     order=2,
                     teaching_beats=["Deadlines without consequences are just requests", "Always state specific dates and specific next steps", "Document deadline compliance for escalation file"],
