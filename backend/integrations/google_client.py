@@ -17,6 +17,7 @@ import io
 import email.mime.text
 import email.mime.multipart
 import email.mime.base
+import email.encoders
 import logging
 
 from routes.auth import get_current_active_user
@@ -73,10 +74,12 @@ async def _google_request(user_id: str, method: str, url: str, **kwargs):
     if not token:
         raise HTTPException(status_code=401, detail="Google not connected. Connect via Settings.")
 
+    extra_headers = kwargs.pop("headers", {})
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.request(
             method, url,
-            headers={"Authorization": f"Bearer {token}", **kwargs.pop("headers", {})},
+            headers={"Authorization": f"Bearer {token}", **extra_headers},
             **kwargs
         )
 
@@ -86,7 +89,7 @@ async def _google_request(user_id: str, method: str, url: str, **kwargs):
                 raise HTTPException(status_code=401, detail="Google token expired. Please reconnect.")
             resp = await client.request(
                 method, url,
-                headers={"Authorization": f"Bearer {token}", **kwargs.pop("headers", {})},
+                headers={"Authorization": f"Bearer {token}", **extra_headers},
                 **kwargs
             )
 
@@ -256,32 +259,54 @@ async def get_gmail_message(
 
 @router.post("/gmail/send")
 async def send_gmail_message(
-    email_data: EmailSend,
+    to: str = Form(...),
+    subject: str = Form(...),
+    body: str = Form(...),
+    cc: Optional[str] = Form(None),
+    bcc: Optional[str] = Form(None),
+    reply_to_message_id: Optional[str] = Form(None),
+    attachments: Optional[List[UploadFile]] = File(None),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Send an email via Gmail API."""
+    """Send an email via Gmail API with optional attachments."""
     user_id = _get_user_id(current_user)
 
-    msg = email.mime.multipart.MIMEMultipart()
-    msg["To"] = email_data.to
-    msg["Subject"] = email_data.subject
-    if email_data.cc:
-        msg["Cc"] = email_data.cc
-    if email_data.bcc:
-        msg["Bcc"] = email_data.bcc
+    msg = email.mime.multipart.MIMEMultipart("mixed")
+    msg["To"] = to
+    msg["Subject"] = subject
+    if cc:
+        msg["Cc"] = cc
+    if bcc:
+        msg["Bcc"] = bcc
 
-    msg.attach(email.mime.text.MIMEText(email_data.body, "html"))
+    msg.attach(email.mime.text.MIMEText(body, "html"))
+
+    # Attach files if any
+    if attachments:
+        for attachment in attachments:
+            content = await attachment.read()
+            mime_type = attachment.content_type or "application/octet-stream"
+            if "/" in mime_type:
+                maintype, subtype = mime_type.split("/", 1)
+            else:
+                maintype, subtype = "application", "octet-stream"
+
+            part = email.mime.base.MIMEBase(maintype, subtype)
+            part.set_payload(content)
+            email.encoders.encode_base64(part)
+            part.add_header("Content-Disposition", "attachment", filename=attachment.filename)
+            msg.attach(part)
 
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
 
-    body = {"raw": raw}
-    if email_data.reply_to_message_id:
-        body["threadId"] = email_data.reply_to_message_id
+    send_body = {"raw": raw}
+    if reply_to_message_id:
+        send_body["threadId"] = reply_to_message_id
 
     resp = await _google_request(
         user_id, "POST",
         f"{GMAIL_API}/messages/send",
-        json=body
+        json=send_body
     )
 
     if resp.status_code not in (200, 201):
@@ -290,6 +315,34 @@ async def send_gmail_message(
 
     result = resp.json()
     return {"id": result.get("id"), "threadId": result.get("threadId"), "status": "sent"}
+
+
+@router.get("/gmail/messages/{message_id}/attachments/{attachment_id}")
+async def download_gmail_attachment(
+    message_id: str,
+    attachment_id: str,
+    filename: Optional[str] = "attachment",
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Download a Gmail attachment by ID."""
+    user_id = _get_user_id(current_user)
+
+    resp = await _google_request(
+        user_id, "GET",
+        f"{GMAIL_API}/messages/{message_id}/attachments/{attachment_id}"
+    )
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to download attachment")
+
+    data = resp.json()
+    content = base64.urlsafe_b64decode(data.get("data", ""))
+
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 # ============================================

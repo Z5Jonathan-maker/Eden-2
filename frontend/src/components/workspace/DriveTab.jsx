@@ -7,7 +7,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from '../../shared/ui/button';
 import { Input } from '../../shared/ui/input';
-import { apiGet, apiDelete, apiUpload } from '../../lib/api';
+import { apiGet, apiDelete, apiUpload, API_URL, getAuthToken } from '../../lib/api';
 
 const MIME_ICONS = {
   'application/pdf': FileText,
@@ -56,17 +56,23 @@ const DriveTab = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const fileInputRef = useRef(null);
 
+  const [driveError, setDriveError] = useState(null);
+
   const fetchFiles = useCallback(async (query) => {
     setLoading(true);
+    setDriveError(null);
     try {
       const params = query ? `?q=${encodeURIComponent(query)}` : '';
-      const res = await apiGet(`/api/integrations/google/drive/files${params}`);
+      const res = await apiGet(`/api/integrations/google/drive/files${params}`, { cache: false });
       if (res.ok) {
         setFiles(res.data.files || []);
       } else {
-        toast.error('Failed to load files');
+        const msg = res.error || 'Failed to load files';
+        setDriveError(msg);
+        toast.error(msg);
       }
     } catch {
+      setDriveError('Failed to connect to Google Drive');
       toast.error('Failed to load files');
     } finally {
       setLoading(false);
@@ -118,9 +124,37 @@ const DriveTab = () => {
         toast.success(`Deleted "${fileName}"`);
         setDeleteConfirm(null);
         fetchFiles(searchQuery);
+      } else {
+        toast.error(res.error || 'Failed to delete file');
       }
     } catch {
       toast.error('Failed to delete file');
+    }
+  };
+
+  const handleDownload = async (fileId, fileName) => {
+    try {
+      const baseUrl = API_URL || '';
+      const token = getAuthToken();
+      const res = await fetch(
+        `${baseUrl}/api/integrations/google/drive/files/${fileId}/download`,
+        {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          credentials: 'include',
+        }
+      );
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch {
+      toast.error('Failed to download file');
     }
   };
 
@@ -173,8 +207,20 @@ const DriveTab = () => {
         ) : files.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
             <HardDrive className="w-12 h-12 mb-3 text-zinc-600" />
-            <p className="text-sm mb-1">No files found</p>
-            <p className="text-xs text-zinc-600">Upload files to your Eden Documents folder in Google Drive</p>
+            {driveError ? (
+              <>
+                <p className="text-sm mb-1 text-red-400">Google Drive Error</p>
+                <p className="text-xs text-zinc-500 max-w-md text-center">{driveError}</p>
+                {driveError.toLowerCase().includes('permission') && (
+                  <p className="text-xs text-orange-500 mt-2">Try reconnecting Google in Settings to grant Drive access.</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm mb-1">No files found</p>
+                <p className="text-xs text-zinc-600">Upload files to your Eden Documents folder in Google Drive</p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -202,6 +248,15 @@ const DriveTab = () => {
                     <div className="text-xs text-zinc-500">{formatDate(file.modifiedTime)}</div>
                     <div className="text-xs text-zinc-500">{formatFileSize(file.size)}</div>
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!file.mimeType?.startsWith('application/vnd.google-apps.') && (
+                        <button
+                          onClick={() => handleDownload(file.id, file.name)}
+                          className="p-1 text-zinc-500 hover:text-orange-400 rounded"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
                       {file.webViewLink && (
                         <a
                           href={file.webViewLink}

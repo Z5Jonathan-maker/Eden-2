@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, RefreshCw, Loader2, Mail, Send, Reply, X,
-  Paperclip, Circle, ArrowLeft, Plus, FileText, ChevronDown
+  Paperclip, Circle, ArrowLeft, Plus, FileText, ChevronDown, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../shared/ui/button';
 import { Input } from '../../shared/ui/input';
-import { apiGet, apiPost } from '../../lib/api';
+import { apiGet, apiUpload, API_URL, getAuthToken } from '../../lib/api';
 import { EMAIL_TEMPLATES, TEMPLATE_CATEGORIES, TONE_LABELS } from '../../config/emailTemplates';
 
 const GmailTab = () => {
@@ -19,6 +19,8 @@ const GmailTab = () => {
   const [showCompose, setShowCompose] = useState(false);
   const [composeData, setComposeData] = useState({ to: '', subject: '', body: '', cc: '', bcc: '' });
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateFilter, setTemplateFilter] = useState('all');
 
@@ -70,14 +72,24 @@ const GmailTab = () => {
     }
     setSending(true);
     try {
-      const res = await apiPost('/api/integrations/google/gmail/send', composeData);
+      const formData = new FormData();
+      formData.append('to', composeData.to);
+      formData.append('subject', composeData.subject);
+      formData.append('body', composeData.body || '');
+      if (composeData.cc) formData.append('cc', composeData.cc);
+      if (composeData.bcc) formData.append('bcc', composeData.bcc);
+      if (composeData.reply_to_message_id) formData.append('reply_to_message_id', composeData.reply_to_message_id);
+      attachments.forEach(file => formData.append('attachments', file));
+
+      const res = await apiUpload('/api/integrations/google/gmail/send', formData);
       if (res.ok) {
         toast.success('Email sent');
         setShowCompose(false);
         setComposeData({ to: '', subject: '', body: '', cc: '', bcc: '' });
+        setAttachments([]);
         fetchMessages();
       } else {
-        toast.error('Failed to send email');
+        toast.error(res.error || 'Failed to send email');
       }
     } catch {
       toast.error('Failed to send email');
@@ -95,7 +107,52 @@ const GmailTab = () => {
       bcc: '',
       reply_to_message_id: msg.threadId || '',
     });
+    setAttachments([]);
     setShowCompose(true);
+  };
+
+  const handleAttachFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    const maxSize = 25 * 1024 * 1024; // 25MB per file (Gmail limit)
+    const valid = files.filter(f => {
+      if (f.size > maxSize) {
+        toast.error(`"${f.name}" is too large (max 25MB)`);
+        return false;
+      }
+      return true;
+    });
+    setAttachments(prev => [...prev, ...valid]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const downloadAttachment = async (messageId, attachmentId, filename) => {
+    try {
+      const baseUrl = API_URL || '';
+      const token = getAuthToken();
+      const res = await fetch(
+        `${baseUrl}/api/integrations/google/gmail/messages/${messageId}/attachments/${attachmentId}?filename=${encodeURIComponent(filename)}`,
+        {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          credentials: 'include',
+        }
+      );
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch {
+      toast.error('Failed to download attachment');
+    }
   };
 
   const applyTemplate = (template) => {
@@ -261,22 +318,57 @@ const GmailTab = () => {
                 className="w-full h-64 bg-zinc-900 border border-zinc-700 rounded-md p-3 text-white text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowCompose(false)}
-                className="border-zinc-700 text-zinc-300"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSend}
-                disabled={sending}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                Send
-              </Button>
+            {/* Attachments */}
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((file, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-300">
+                    <Paperclip className="w-3 h-3 text-zinc-500" />
+                    <span className="truncate max-w-[160px]">{file.name}</span>
+                    <span className="text-zinc-600">({(file.size / 1024).toFixed(0)}KB)</span>
+                    <button onClick={() => removeAttachment(i)} className="text-zinc-500 hover:text-red-400 ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-between items-center">
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <Paperclip className="w-4 h-4 mr-1" /> Attach Files
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleAttachFiles}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCompose(false)}
+                  className="border-zinc-700 text-zinc-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSend}
+                  disabled={sending}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                  Send{attachments.length > 0 && ` (${attachments.length} file${attachments.length > 1 ? 's' : ''})`}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -316,13 +408,23 @@ const GmailTab = () => {
             </div>
 
             {messageDetail.attachments?.length > 0 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {messageDetail.attachments.map((a, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-300">
-                    <Paperclip className="w-3 h-3" />
-                    {a.filename}
-                  </div>
-                ))}
+              <div className="mb-4">
+                <div className="text-xs text-zinc-500 mb-2">{messageDetail.attachments.length} attachment{messageDetail.attachments.length > 1 ? 's' : ''}</div>
+                <div className="flex flex-wrap gap-2">
+                  {messageDetail.attachments.map((a, i) => (
+                    <button
+                      key={i}
+                      onClick={() => a.attachmentId && downloadAttachment(messageDetail.id, a.attachmentId, a.filename)}
+                      className="flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600 transition-colors cursor-pointer"
+                      title={`Download ${a.filename}`}
+                    >
+                      <Paperclip className="w-3 h-3" />
+                      <span className="truncate max-w-[160px]">{a.filename}</span>
+                      {a.size > 0 && <span className="text-zinc-600">({(a.size / 1024).toFixed(0)}KB)</span>}
+                      <Download className="w-3 h-3 text-orange-500" />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
