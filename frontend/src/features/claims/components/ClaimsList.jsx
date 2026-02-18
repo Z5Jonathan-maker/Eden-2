@@ -121,7 +121,11 @@ const ClaimsList = () => {
     const badges = {
       'In Progress': 'badge-rare',
       'Under Review': 'badge-epic',
+      Approved: 'badge-legendary',
+      Denied: 'badge-mythic',
       Completed: 'badge-uncommon',
+      Closed: 'badge-common',
+      Archived: 'badge-common',
       New: 'badge-common',
     };
     return badges[status] || 'badge-common';
@@ -187,7 +191,7 @@ const ClaimsList = () => {
             />
           </div>
           <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-            {['All', 'New', 'In Progress', 'Under Review', 'Completed'].map((status) => (
+            {['All', 'New', 'In Progress', 'Under Review', 'Approved', 'Denied', 'Completed', 'Closed', 'Archived'].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}

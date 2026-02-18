@@ -39,7 +39,11 @@ const ClaimEditModal = ({ isOpen, editForm, setEditForm, onSave, onCancel, isSav
                 <option value="New">New</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Under Review">Under Review</option>
+                <option value="Approved">Approved</option>
+                <option value="Denied">Denied</option>
                 <option value="Completed">Completed</option>
+                <option value="Closed">Closed</option>
+                <option value="Archived">Archived</option>
               </select>
             </div>
             <div>

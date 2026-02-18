@@ -334,7 +334,52 @@ async def extract_claim_reference(message: str) -> Optional[str]:
     return None
 
 
-async def fetch_claim_context(claim_ref: str, user_id: str) -> Optional[dict]:
+def _user_can_access_claim(current_user: dict, claim: dict) -> bool:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return True
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        claim_email = (claim.get("client_email") or "").strip().lower()
+        return bool(user_email) and user_email == claim_email
+    assigned_to = claim.get("assigned_to")
+    assigned_to_id = claim.get("assigned_to_id")
+    full_name = current_user.get("full_name")
+    return (
+        claim.get("created_by") == user_id
+        or assigned_to_id == user_id
+        or (full_name and assigned_to == full_name)
+    )
+
+
+def _claim_visibility_filter(current_user: dict) -> dict:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return {}
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip()
+        if not user_email:
+            return {"client_email": "__no_match__"}
+        return {"client_email": {"$regex": f"^{re.escape(user_email)}$", "$options": "i"}}
+    claim_filters = [{"created_by": user_id}, {"assigned_to_id": user_id}]
+    full_name = current_user.get("full_name")
+    if full_name:
+        claim_filters.append({"assigned_to": full_name})
+    return {"$or": claim_filters}
+
+
+def _merge_claim_filters(*filters: dict) -> dict:
+    valid = [flt for flt in filters if flt]
+    if not valid:
+        return {}
+    if len(valid) == 1:
+        return valid[0]
+    return {"$and": valid}
+
+
+async def fetch_claim_context(claim_ref: str, current_user: dict) -> Optional[dict]:
     """
     Fetch comprehensive claim data for Eve's context.
     Returns claim details, notes, documents summary, and recent activity.
@@ -367,7 +412,7 @@ async def fetch_claim_context(claim_ref: str, user_id: str) -> Optional[dict]:
                 {"_id": 0}
             )
         
-        if not claim:
+        if not claim or not _user_can_access_claim(current_user, claim):
             return None
         
         claim_id = claim.get("id")
@@ -435,8 +480,15 @@ async def get_user_claims_summary(user_id: str, limit: int = 10) -> List[dict]:
     Get a summary of user's recent claims for context.
     """
     try:
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "role": 1, "email": 1, "full_name": 1})
+        if not user:
+            return []
+
+        user["id"] = user_id
+        query = _claim_visibility_filter(user)
+
         claims = await db.claims.find(
-            {},  # All claims - TODO: filter by user access
+            query,
             {"_id": 0, "id": 1, "claim_number": 1, "client_name": 1, "status": 1, "carrier": 1}
         ).sort("updated_at", -1).limit(limit).to_list(limit)
         
@@ -1135,7 +1187,7 @@ async def chat_with_eve(
         
         # Priority 1: Direct claim_id provided
         if request.claim_id:
-            detected_claim_context = await fetch_claim_context(request.claim_id, user_id)
+            detected_claim_context = await fetch_claim_context(request.claim_id, current_user)
             if detected_claim_context:
                 claim_context_str = format_claim_context_for_prompt(detected_claim_context)
         
@@ -1148,14 +1200,14 @@ async def chat_with_eve(
         else:
             claim_ref = await extract_claim_reference(request.message)
             if claim_ref:
-                detected_claim_context = await fetch_claim_context(claim_ref, user_id)
+                detected_claim_context = await fetch_claim_context(claim_ref, current_user)
                 if detected_claim_context:
                     claim_context_str = format_claim_context_for_prompt(detected_claim_context)
                     logger.info(f"Eve auto-detected claim reference: {claim_ref}")
         
         # Priority 4: Check session for previously referenced claim
         if not claim_context_str and session and session.get("active_claim_id"):
-            detected_claim_context = await fetch_claim_context(session["active_claim_id"], user_id)
+            detected_claim_context = await fetch_claim_context(session["active_claim_id"], current_user)
             if detected_claim_context:
                 claim_context_str = format_claim_context_for_prompt(detected_claim_context)
         
@@ -1249,7 +1301,7 @@ async def claim_copilot_next_actions(
 ):
     """Generate prioritized claim next actions from claim context."""
     user_id = current_user.get("id")
-    context = await fetch_claim_context(claim_id, user_id)
+    context = await fetch_claim_context(claim_id, current_user)
     if not context:
         raise HTTPException(status_code=404, detail="Claim not found")
 
@@ -1328,7 +1380,7 @@ async def claim_comms_copilot(
 ):
     """Generate communications summary + next-best action + suggested reply for claim thread."""
     user_id = current_user.get("id")
-    context = await fetch_claim_context(claim_id, user_id)
+    context = await fetch_claim_context(claim_id, current_user)
     if not context:
         raise HTTPException(status_code=404, detail="Claim not found")
 
@@ -1575,22 +1627,26 @@ async def get_claims_for_context(
     Used by frontend to show claim selector.
     """
     try:
-        query = {}
+        visibility_query = _claim_visibility_filter(current_user)
+        search_query = {}
+        safe_limit = max(1, min(limit, 100))
         
         # If search provided, filter by claim number or client name
         if search:
-            query = {
+            search_query = {
                 "$or": [
                     {"claim_number": {"$regex": search, "$options": "i"}},
                     {"client_name": {"$regex": search, "$options": "i"}},
                     {"property_address": {"$regex": search, "$options": "i"}}
                 ]
             }
+
+        query = _merge_claim_filters(visibility_query, search_query)
         
         claims = await db.claims.find(
             query,
             {"_id": 0, "id": 1, "claim_number": 1, "client_name": 1, "status": 1, "carrier": 1, "property_address": 1}
-        ).sort("updated_at", -1).limit(limit).to_list(limit)
+        ).sort("updated_at", -1).limit(safe_limit).to_list(safe_limit)
         
         return {"claims": claims}
         
@@ -1608,9 +1664,7 @@ async def get_claim_context_for_eve(
     Get full claim context for Eve.
     Returns claim details, notes, documents summary.
     """
-    user_id = current_user.get("id")
-    
-    context = await fetch_claim_context(claim_id, user_id)
+    context = await fetch_claim_context(claim_id, current_user)
     
     if not context:
         raise HTTPException(status_code=404, detail="Claim not found")

@@ -6,6 +6,8 @@ from services.claims_service import ClaimsService
 from utils.claim_aggregations import get_claim_with_related_counts, get_claims_list_optimized
 import logging
 import os
+import uuid
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 # Structured logging setup
@@ -42,10 +44,31 @@ def _parse_date(value: Optional[str]) -> Optional[datetime]:
 
 def _can_access_claim(current_user: dict, claim: dict) -> bool:
     role = current_user.get("role", "client")
+    user_id = current_user.get("id")
     if role in {"admin", "manager"}:
         return True
-    user_id = current_user.get("id")
-    return claim.get("created_by") == user_id or claim.get("assigned_to") == user_id
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        claim_email = (claim.get("client_email") or "").strip().lower()
+        return bool(user_email) and user_email == claim_email
+
+    assigned_to = claim.get("assigned_to")
+    assigned_to_id = claim.get("assigned_to_id")
+    full_name = current_user.get("full_name")
+    return (
+        claim.get("created_by") == user_id
+        or assigned_to_id == user_id
+        or (full_name and assigned_to == full_name)
+    )
+
+
+async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if not _can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return claim
 
 
 def _deadline_status(due_at: datetime) -> tuple[str, int]:
@@ -407,7 +430,10 @@ async def add_note(
 ):
     """Add a note to a claim"""
     try:
+        await _get_claim_for_user_or_403(claim_id, current_user)
         note_dict = note_data.dict()
+        # Path parameter is source of truth; prevent cross-claim note injection.
+        note_dict["claim_id"] = claim_id
         note_dict["author_id"] = current_user["id"]
         note_dict["author_name"] = current_user["full_name"]
         
@@ -416,7 +442,8 @@ async def add_note(
         
         logger.info(f"Note added to claim: {claim_id}")
         return note_obj
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Add note error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -428,9 +455,11 @@ async def get_notes(
 ):
     """Get all notes for a claim"""
     try:
+        await _get_claim_for_user_or_403(claim_id, current_user)
         notes = await db.notes.find({"claim_id": claim_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
         return [Note(**note) for note in notes]
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Get notes error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -445,13 +474,21 @@ async def upload_document(
 ):
     """Upload a document to a claim"""
     try:
+        await _get_claim_for_user_or_403(claim_id, current_user)
+
         # Create upload directory if it doesn't exist
         base_upload_dir = os.getenv("UPLOAD_DIR", "/tmp/eden_uploads")
         upload_dir = f"{base_upload_dir}/claims/{claim_id}"
         os.makedirs(upload_dir, exist_ok=True)
-        
+
+        # Normalize filename to prevent path traversal.
+        safe_filename = Path(file.filename or "upload.bin").name
+        if safe_filename in {"", ".", ".."}:
+            raise HTTPException(status_code=400, detail="Invalid filename")
+        stored_filename = f"{uuid.uuid4().hex}_{safe_filename}"
+
         # Save file
-        file_path = f"{upload_dir}/{file.filename}"
+        file_path = f"{upload_dir}/{stored_filename}"
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
@@ -459,7 +496,7 @@ async def upload_document(
         # Create document record
         doc_dict = {
             "claim_id": claim_id,
-            "name": file.filename,
+            "name": safe_filename,
             "type": doc_type,
             "size": f"{len(content) / 1024:.2f} KB",
             "uploaded_by": current_user["full_name"],
@@ -471,7 +508,8 @@ async def upload_document(
         
         logger.info(f"Document uploaded to claim: {claim_id}")
         return doc_obj
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Upload document error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -483,9 +521,11 @@ async def get_documents(
 ):
     """Get all documents for a claim"""
     try:
+        await _get_claim_for_user_or_403(claim_id, current_user)
         documents = await db.documents.find({"claim_id": claim_id}, {"_id": 0}).sort("uploaded_at", -1).to_list(100)
         return [Document(**doc) for doc in documents]
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Get documents error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

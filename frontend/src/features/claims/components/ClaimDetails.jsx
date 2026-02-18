@@ -638,6 +638,8 @@ Generated on: ${new Date().toLocaleString()}
   const getStatusColor = (status) => {
     if (status === 'In Progress') return 'badge-rare';
     if (status === 'Under Review') return 'badge-epic';
+    if (status === 'Approved') return 'badge-legendary';
+    if (status === 'Denied') return 'badge-mythic';
     if (status === 'Completed') return 'badge-uncommon';
     return 'badge-common';
   };

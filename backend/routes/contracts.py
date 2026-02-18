@@ -2,21 +2,120 @@
 Contracts Management API - Templates, E-Signatures, Document Management
 Integrates with SignNow for electronic signatures
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
 import io
 import os
 import logging
+import re
 
 from dependencies import db, get_current_active_user as get_current_user
 from services.signnow_service import SignNowService
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 logger = logging.getLogger(__name__)
+MUTATING_ROLES = {"admin", "manager", "adjuster"}
+
+
+def _combine_query_filters(*filters: Dict[str, Any]) -> Dict[str, Any]:
+    valid = [flt for flt in filters if flt]
+    if not valid:
+        return {}
+    if len(valid) == 1:
+        return valid[0]
+    return {"$and": valid}
+
+
+def _can_access_claim(current_user: dict, claim: dict) -> bool:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return True
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        claim_email = (claim.get("client_email") or "").strip().lower()
+        return bool(user_email) and user_email == claim_email
+    assigned_to = claim.get("assigned_to")
+    assigned_to_id = claim.get("assigned_to_id")
+    full_name = current_user.get("full_name")
+    return (
+        claim.get("created_by") == user_id
+        or assigned_to_id == user_id
+        or (full_name and assigned_to == full_name)
+    )
+
+
+async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if not _can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return claim
+
+
+async def _build_contract_visibility_filter(current_user: dict) -> Dict[str, Any]:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return {}
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip()
+        if not user_email:
+            return {"client_email": "__no_match__"}
+        return {"client_email": {"$regex": f"^{re.escape(user_email)}$", "$options": "i"}}
+
+    full_name = current_user.get("full_name")
+    claim_query_or = [{"created_by": user_id}, {"assigned_to_id": user_id}]
+    if full_name:
+        claim_query_or.append({"assigned_to": full_name})
+
+    visible_claims = await db.claims.find(
+        {"$or": claim_query_or},
+        {"_id": 0, "id": 1},
+    ).limit(5000).to_list(5000)
+    claim_ids = [item.get("id") for item in visible_claims if item.get("id")]
+
+    visibility_or = [{"created_by": user_id}]
+    if claim_ids:
+        visibility_or.append({"claim_id": {"$in": claim_ids}})
+    return {"$or": visibility_or}
+
+
+def _require_mutating_role(current_user: dict):
+    if current_user.get("role", "client") not in MUTATING_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient role for contract modification")
+
+
+async def _get_contract_for_user_or_403(contract_id: str, current_user: dict) -> dict:
+    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return contract
+
+    claim_id = contract.get("claim_id")
+    if claim_id:
+        claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+        if claim and _can_access_claim(current_user, claim):
+            return contract
+
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        contract_email = (contract.get("client_email") or "").strip().lower()
+        if user_email and contract_email and user_email == contract_email:
+            return contract
+    elif contract.get("created_by") == user_id:
+        return contract
+
+    raise HTTPException(status_code=403, detail="Access denied")
 
 
 async def _get_signnow_token():
@@ -247,10 +346,9 @@ async def create_contract(
     - claim_id is REQUIRED (contracts must be linked to claims)
     - created_by automatically set from current user
     """
-    # Validate claim exists
-    claim = await db.claims.find_one({"id": contract.claim_id})
-    if not claim:
-        raise HTTPException(status_code=400, detail="Invalid claim_id - claim not found")
+    _require_mutating_role(current_user)
+    # Validate claim exists and user can access it
+    await _get_claim_for_user_or_403(contract.claim_id, current_user)
     
     # Get template
     if contract.template_id == CARE_CLAIMS_TEMPLATE["id"]:
@@ -294,15 +392,19 @@ async def get_contracts(
     if status:
         query["status"] = status
     if claim_id:
+        await _get_claim_for_user_or_403(claim_id, current_user)
         query["claim_id"] = claim_id
-    
-    contracts = await db.contracts.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
-    
-    # Get stats
-    total = await db.contracts.count_documents({})
-    signed = await db.contracts.count_documents({"status": "signed"})
-    pending = await db.contracts.count_documents({"status": "pending"})
-    draft = await db.contracts.count_documents({"status": "draft"})
+
+    visibility_filter = await _build_contract_visibility_filter(current_user)
+    effective_query = _combine_query_filters(query, visibility_filter)
+
+    contracts = await db.contracts.find(effective_query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+
+    stats_scope = _combine_query_filters({"claim_id": claim_id} if claim_id else {}, visibility_filter)
+    total = await db.contracts.count_documents(stats_scope)
+    signed = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "signed"}))
+    pending = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "pending"}))
+    draft = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "draft"}))
     
     return {
         "contracts": contracts,
@@ -321,11 +423,7 @@ async def get_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Get a specific contract"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    return contract
+    return await _get_contract_for_user_or_403(contract_id, current_user)
 
 
 @router.patch("/{contract_id}")
@@ -335,6 +433,11 @@ async def update_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Update contract field values"""
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    if contract.get("status") == "signed":
+        raise HTTPException(status_code=400, detail="Cannot edit signed contracts")
+
     result = await db.contracts.update_one(
         {"id": contract_id},
         {"$set": {
@@ -355,12 +458,11 @@ async def delete_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Delete a draft contract"""
-    contract = await db.contracts.find_one({"id": contract_id})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    if contract.get("status") == "signed":
-        raise HTTPException(status_code=400, detail="Cannot delete signed contracts")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+
+    if contract.get("status") != "draft":
+        raise HTTPException(status_code=400, detail="Only draft contracts can be deleted")
     
     await db.contracts.delete_one({"id": contract_id})
     return {"message": "Contract deleted"}
@@ -377,9 +479,8 @@ async def send_contract_for_signature(
     current_user: dict = Depends(get_current_user)
 ):
     """Send a contract for e-signature via SignNow"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Check if SignNow is configured
     signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
@@ -450,9 +551,7 @@ async def get_contract_signature_status(
     current_user: dict = Depends(get_current_user)
 ):
     """Check signing status from SignNow"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     doc_id = contract.get("signnow_document_id")
     if not doc_id:
@@ -488,9 +587,7 @@ async def download_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Download contract PDF (signed if available)"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     doc_id = contract.get("signnow_document_id")
     signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
@@ -532,9 +629,7 @@ async def generate_filled_pdf(
     import fitz  # PyMuPDF
     import base64
     
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     field_values = contract.get("field_values", {})
     signature_data = contract.get("signature_data")
@@ -712,9 +807,7 @@ async def prefill_contract_from_claim(
     current_user: dict = Depends(get_current_user)
 ):
     """Get pre-filled contract values from a claim"""
-    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
-    if not claim:
-        raise HTTPException(status_code=404, detail="Claim not found")
+    claim = await _get_claim_for_user_or_403(claim_id, current_user)
     
     # Parse address if needed
     address_parts = claim.get("property_address", "").split(",")
@@ -785,10 +878,8 @@ async def sign_contract_in_person(
     )
     import httpx
     
-    # Get contract
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Get signer info from contract
     signer_email = contract.get("client_email", "")
@@ -926,9 +1017,8 @@ async def complete_contract_signing(
     Mark a contract as signed after in-person signing completes.
     Accepts signature data (base64 PNG) and saves it with the contract.
     """
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Prepare update data
     update_data = {

@@ -537,16 +537,24 @@ async def websocket_notifications(websocket: WebSocket, token: str = None):
         if user_id:
             manager.disconnect(websocket, user_id)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
-    # Auto-allow all Vercel deployments (production + preview + branch deploys)
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
-    expose_headers=["X-RateLimit-Remaining", "Retry-After"],
-)
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+cors_origin_regex = os.environ.get("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
+
+cors_options = {
+    "allow_credentials": True,
+    "allow_origins": cors_origins,
+    "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    "allow_headers": ["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    "expose_headers": ["X-RateLimit-Remaining", "Retry-After"],
+}
+if cors_origin_regex:
+    cors_options["allow_origin_regex"] = cors_origin_regex
+
+app.add_middleware(CORSMiddleware, **cors_options)
 
 # Configure logging
 logging.basicConfig(

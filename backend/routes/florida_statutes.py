@@ -4,8 +4,8 @@ Fetches exact statute text from Online Sunshine (leg.state.fl.us)
 Stores verbatim legal text as source of truth for Eve AI
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from dependencies import db
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from dependencies import db, require_role
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -409,7 +409,11 @@ async def get_statutes_for_eve(query: str, limit: int = 5):
 
 
 @router.post("/scrape")
-async def trigger_scrape(background_tasks: BackgroundTasks, year: int = 2025):
+async def trigger_scrape(
+    background_tasks: BackgroundTasks,
+    year: int = 2025,
+    current_user: dict = Depends(require_role(["admin"])),
+):
     """
     Trigger background scraping of all target statutes.
     Admin only.
@@ -425,7 +429,11 @@ async def trigger_scrape(background_tasks: BackgroundTasks, year: int = 2025):
 
 
 @router.post("/scrape/section/{section_number}")
-async def scrape_single_section(section_number: str, year: int = 2025):
+async def scrape_single_section(
+    section_number: str,
+    year: int = 2025,
+    current_user: dict = Depends(require_role(["admin"])),
+):
     """
     Scrape a single statute section from Online Sunshine.
     """
@@ -494,7 +502,10 @@ async def get_scrape_status():
 
 
 @router.delete("/clear")
-async def clear_statutes(confirm: bool = False):
+async def clear_statutes(
+    confirm: bool = False,
+    current_user: dict = Depends(require_role(["admin"])),
+):
     """Clear all statutes (admin only, requires confirmation)"""
     if not confirm:
         raise HTTPException(status_code=400, detail="Set confirm=true to clear all statutes")

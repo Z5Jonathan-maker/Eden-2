@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { CheckCircle, Circle, Clock, FileText, Phone, Mail, MapPin, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -14,6 +14,7 @@ const STAGES = [
 
 const ClaimStatusPortal = () => {
   const { claimId } = useParams();
+  const location = useLocation();
   const [claim, setClaim] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,11 +22,16 @@ const ClaimStatusPortal = () => {
   const fetchClaimStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api(`/api/client-status/claim/${claimId}/public`);
+      const searchParams = new URLSearchParams(location.search);
+      const shareToken = searchParams.get('t') || searchParams.get('token');
+      const query = shareToken ? `?t=${encodeURIComponent(shareToken)}` : '';
+      const res = await api(`/api/client-status/claim/${claimId}/public${query}`);
 
       if (!res.ok) {
         if (res.status === 404) {
           setError('Claim not found. Please check your link.');
+        } else if (res.status === 403) {
+          setError('This status link is invalid or expired.');
         } else {
           setError('Unable to load claim status.');
         }
@@ -38,7 +44,7 @@ const ClaimStatusPortal = () => {
     } finally {
       setLoading(false);
     }
-  }, [claimId]);
+  }, [claimId, location.search]);
 
   useEffect(() => {
     fetchClaimStatus();

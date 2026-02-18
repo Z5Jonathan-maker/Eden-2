@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import HTTPException
@@ -12,12 +13,15 @@ logger = logging.getLogger(__name__)
 
 # --- 1. State Machine Definition (Enforcement Rule #3) ---
 ALLOWED_TRANSITIONS = {
-    "New": ["Under Review", "Archived"],
-    "Under Review": ["Approved", "Denied", "New", "Archived"],
-    "Approved": ["Closed", "Archived"],
+    # Includes legacy UI statuses ("In Progress", "Completed") plus newer workflow statuses.
+    "New": ["In Progress", "Under Review", "Archived"],
+    "In Progress": ["Under Review", "Completed", "Denied", "Archived", "New"],
+    "Under Review": ["Approved", "Denied", "In Progress", "Completed", "Archived", "New"],
+    "Approved": ["Completed", "Closed", "Archived"],
     "Denied": ["Under Review", "Archived"],
+    "Completed": ["Closed", "Archived", "Under Review"],
     "Closed": ["Archived"],
-    "Archived": ["New"] # Can be restored to New
+    "Archived": ["New", "In Progress"]  # Can be restored to active workflow
 }
 
 class ClaimsService:
@@ -31,6 +35,7 @@ class ClaimsService:
             claim_dict = claim_data.model_dump()
             claim_dict["created_by"] = current_user["id"]
             claim_dict["assigned_to"] = current_user["full_name"]
+            claim_dict["public_status_token"] = uuid.uuid4().hex
             
             # Enforce initial state
             claim_dict["status"] = "New"
@@ -50,8 +55,8 @@ class ClaimsService:
     async def update_claim(self, claim_id: str, updates: ClaimUpdate, current_user: Dict[str, Any]) -> Claim:
         """Update a claim with STRICT status transition logic"""
         try:
-            # Only adjusters and admins can update
-            if current_user["role"] not in ["admin", "adjuster"]:
+            # Only operational roles can update claim records
+            if current_user["role"] not in ["admin", "manager", "adjuster"]:
                 raise HTTPException(status_code=403, detail="Not authorized to update claims")
             
             claim = await self.db.claims.find_one({"id": claim_id})
@@ -321,6 +326,14 @@ class ClaimsService:
     async def _sms_claim_created(self, claim_dict):
         from routes.messaging_sms import send_fnol_sms
         if claim_dict.get("client_phone"):
-            base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://eden.careclaims.com")
-            status_link = f"{base_url}/status/{claim_dict['id']}"
+            status_token = claim_dict.get("public_status_token")
+            if not status_token:
+                status_token = uuid.uuid4().hex
+                await self.db.claims.update_one(
+                    {"id": claim_dict["id"]},
+                    {"$set": {"public_status_token": status_token}},
+                )
+
+            frontend_url = os.environ.get("FRONTEND_URL", "https://eden.careclaims.com").rstrip("/")
+            status_link = f"{frontend_url}/status/{claim_dict['id']}?t={status_token}"
             await send_fnol_sms(claim_dict["id"], claim_dict["client_phone"], status_link)

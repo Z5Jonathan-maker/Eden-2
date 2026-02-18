@@ -12,7 +12,8 @@ import os
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-security = HTTPBearer()
+# Do not auto-fail when Authorization is missing; we support cookie-first auth.
+security = HTTPBearer(auto_error=False)
 
 mongo_url = os.environ.get('MONGO_URL')
 if not mongo_url:

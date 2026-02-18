@@ -8,6 +8,7 @@ import os
 import uuid
 import httpx
 import logging
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,27 @@ GAMMA_CLIENT_ID = os.environ.get("GAMMA_CLIENT_ID", "")
 GAMMA_CLIENT_SECRET = os.environ.get("GAMMA_CLIENT_SECRET", "")
 
 # Get base URL from environment
-BASE_URL = os.environ.get("BASE_URL", "http://localhost:8001")
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8001").strip().rstrip("/")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").strip().rstrip("/")
+
+
+def _resolve_base_url(request: Optional[Request] = None) -> str:
+    """Resolve API public base URL, preferring env but falling back to request headers."""
+    configured = os.environ.get("BASE_URL", "").strip().rstrip("/")
+    if configured:
+        return configured
+
+    if request:
+        proto = (
+            request.headers.get("x-forwarded-proto")
+            or request.url.scheme
+            or "https"
+        )
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        if host:
+            return f"{proto}://{host}".rstrip("/")
+
+    return BASE_URL
 
 class OAuthStatus(BaseModel):
     provider: str
@@ -101,20 +121,49 @@ async def get_oauth_status(provider: str, current_user: dict = Depends(get_curre
     
     return OAuthStatus(provider=provider, connected=False)
 
+
+@router.get("/google/config-debug")
+async def google_oauth_config_debug(
+    request: Request,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Debug endpoint to verify runtime Google OAuth wiring.
+    Returns only non-sensitive metadata.
+    """
+    base_url = _resolve_base_url(request)
+    redirect_uri = f"{base_url}/api/oauth/google/callback"
+    client_id = (GOOGLE_CLIENT_ID or "").strip()
+    client_id_prefix = f"{client_id[:12]}..." if client_id else ""
+    return {
+        "google_client_id_prefix": client_id_prefix,
+        "base_url": base_url,
+        "expected_redirect_uri": redirect_uri,
+        "frontend_url": FRONTEND_URL,
+        "configured": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+    }
+
 # ============ GOOGLE OAUTH ============
 
 @router.get("/google/connect")
-async def google_oauth_connect(current_user: dict = Depends(get_current_active_user)):
+async def google_oauth_connect(
+    request: Request,
+    current_user: dict = Depends(get_current_active_user)
+):
     """Initiate Google OAuth flow"""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=400, detail="Google OAuth not configured. Please contact administrator.")
     
     # Store state for CSRF protection
     state = str(uuid.uuid4())
+    base_url = _resolve_base_url(request)
+    redirect_uri = f"{base_url}/api/oauth/google/callback"
+
     await db.oauth_states.insert_one({
         "state": state,
         "user_id": current_user.get("id"),
         "provider": "google",
+        "redirect_uri": redirect_uri,
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     
@@ -129,23 +178,27 @@ async def google_oauth_connect(current_user: dict = Depends(get_current_active_u
         "https://www.googleapis.com/auth/calendar"
     ]
     
-    redirect_uri = f"{BASE_URL}/api/oauth/google/callback"
-    
-    auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?"
-        f"client_id={GOOGLE_CLIENT_ID}&"
-        f"redirect_uri={redirect_uri}&"
-        f"response_type=code&"
-        f"scope={' '.join(scopes)}&"
-        f"access_type=offline&"
-        f"prompt=consent&"
-        f"state={state}"
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(
+        {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": " ".join(scopes),
+            "access_type": "offline",
+            "prompt": "consent",
+            "state": state,
+        }
     )
+    logger.info("Google OAuth connect redirect_uri=%s", redirect_uri)
     
-    return {"auth_url": auth_url, "state": state}
+    return {"auth_url": auth_url, "state": state, "redirect_uri": redirect_uri}
 
 @router.get("/google/callback")
-async def google_oauth_callback(code: str, state: str):
+async def google_oauth_callback(
+    request: Request,
+    code: str,
+    state: str
+):
     """Handle Google OAuth callback"""
     # Verify state
     state_doc = await db.oauth_states.find_one({"state": state, "provider": "google"})
@@ -155,8 +208,8 @@ async def google_oauth_callback(code: str, state: str):
     user_id = state_doc.get("user_id")
     await db.oauth_states.delete_one({"state": state})
     
-    # Exchange code for tokens
-    redirect_uri = f"{BASE_URL}/api/oauth/google/callback"
+    # Exchange code for tokens using exact redirect URI used at connect-time.
+    redirect_uri = state_doc.get("redirect_uri") or f"{_resolve_base_url(request)}/api/oauth/google/callback"
     
     async with httpx.AsyncClient() as client:
         token_response = await client.post(

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/lib/api';
 
 export const claimsApi = {
   getClaim: (id: string) => apiGet(`/api/claims/${id}`),
@@ -14,6 +14,6 @@ export const claimsApi = {
   uploadDocument: (claimId: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiPost(`/api/claims/${claimId}/documents`, { body: formData });
+    return apiUpload(`/api/claims/${claimId}/documents`, formData);
   },
 };

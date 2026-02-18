@@ -1,10 +1,12 @@
 """
 Client Status API Routes - Client-facing claim status and Eve-generated updates
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
+import os
+import secrets
 import logging
 
 from dependencies import db, get_current_active_user
@@ -34,7 +36,11 @@ def mask_address(address: str) -> str:
 
 
 @router.get("/claim/{claim_id}/public")
-async def get_public_claim_status(claim_id: str):
+async def get_public_claim_status(
+    claim_id: str,
+    token: Optional[str] = Query(default=None),
+    t: Optional[str] = Query(default=None),
+):
     """
     Public endpoint for clients to check claim status via status link.
     NO AUTHENTICATION REQUIRED - accessed via unique claim ID in SMS/email.
@@ -46,12 +52,22 @@ async def get_public_claim_status(claim_id: str):
             {"_id": 0, "id": 1, "claim_number": 1, "client_name": 1, 
              "property_address": 1, "claim_type": 1, "status": 1, "stage": 1,
              "next_actions_client": 1, "next_actions_firm": 1, 
-             "last_client_update_at": 1, "created_at": 1}
+             "last_client_update_at": 1, "created_at": 1, "public_status_token": 1}
         )
         
         if not claim:
             raise HTTPException(status_code=404, detail="Claim not found")
         
+        # Require secure share token when configured.
+        supplied_token = token or t
+        required_token = claim.get("public_status_token")
+        environment = os.environ.get("ENVIRONMENT", "development").lower()
+        if required_token:
+            if not supplied_token or not secrets.compare_digest(required_token, supplied_token):
+                raise HTTPException(status_code=403, detail="Invalid claim status link")
+        elif environment == "production":
+            raise HTTPException(status_code=403, detail="Secure claim status link required")
+
         # Map status to stage
         stage = claim.get("stage") or derive_stage_from_status(claim.get("status", "New"))
         
