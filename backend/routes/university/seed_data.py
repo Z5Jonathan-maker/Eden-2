@@ -188,17 +188,42 @@ They believe appraisal will cost them more. This signals your position is strong
                 QuizQuestion(
                     question="When a carrier issues a lowball initial estimate, you should:",
                     options=["Accept it to maintain a good relationship", "Never accept the first estimate—document and get your own estimates", "Wait for them to increase it automatically", "Immediately file a lawsuit"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="The first carrier estimate is almost always below actual repair costs. Document everything, get independent contractor estimates, and use them as leverage."
                 ),
                 QuizQuestion(
                     question="Why do carriers request repeated re-inspections?",
                     options=["They genuinely want to help", "Each inspection resets timelines and tests your resolve", "It's required by law", "To provide better service"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Re-inspections are a delay tactic. Each one resets the clock and tests whether you'll give up. Recognize this pattern and set firm deadlines."
                 ),
                 QuizQuestion(
-                    question="The carrier's adjuster works for:",
-                    options=["You, the policyholder", "The state insurance department", "The carrier—period", "Both parties equally"],
-                    correct_answer=2
+                    question="The carrier's adjuster works for the policyholder.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="The adjuster works for the carrier — period. Their job is to protect company reserves, not ensure you receive full indemnification."
+                ),
+                QuizQuestion(
+                    question="A homeowner receives a carrier estimate that covers only 40% of their contractor's bid. What is the best next step?",
+                    options=["Accept the carrier's estimate", "Request a detailed line-by-line comparison of both estimates", "Hire an attorney immediately", "Ignore the carrier estimate and begin repairs"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A homeowner has wind damage to their roof. The carrier's field adjuster wrote an estimate for $8,200, but the homeowner's contractor bid is $19,500.",
+                    explanation="A line-by-line comparison reveals exactly where the carrier is shorting the claim — missing items, underpriced labor, or omitted code upgrades."
+                ),
+                QuizQuestion(
+                    question="Carriers depreciate materials to reduce payouts. This practice is always legal.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Some depreciation is legitimate (ACV vs RCV), but carriers sometimes depreciate illegally — like depreciating labor or non-depreciable items. Know your policy."
+                ),
+                QuizQuestion(
+                    question="What is the 'Golden Rule' of carrier behavior?",
+                    options=["Carriers always negotiate in good faith", "The carrier will pay what they believe you can prove and will fight for", "Carriers follow a standard pricing guide", "Adjusters have final authority on all claims"],
+                    correct_answer=1,
+                    explanation="Carriers pay based on what you can prove and demonstrate willingness to fight for. Your documentation and persistence determine the outcome."
                 )
             ]
         ),
@@ -402,17 +427,41 @@ On larger claims, this is significant money. Don't leave it on the table.""",
                 QuizQuestion(
                     question="The best time to submit a supplement is:",
                     options=["Before any work begins", "When damage is discovered and documented during repairs", "After all repairs are complete", "Only if the carrier asks for one"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Supplements should be submitted when new damage is discovered and documented during the repair process. Real-time documentation creates the strongest evidence."
                 ),
                 QuizQuestion(
                     question="The 'three-trade rule' for O&P means:",
                     options=["You can only claim O&P three times per year", "O&P is only for three-story buildings", "If three or more trades are needed, GC involvement and O&P is typically warranted", "You need three estimates to claim O&P"],
-                    correct_answer=2
+                    correct_answer=2,
+                    explanation="When a job requires 3 or more trades (roofing, drywall, painting, etc.), a general contractor is typically needed to coordinate, justifying Overhead & Profit."
                 ),
                 QuizQuestion(
                     question="When a carrier denies a supplement without explanation, you should:",
                     options=["Accept the denial and move on", "Get the denial in writing with specific reasons", "Immediately sue them", "Never submit supplements again"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Always get denials in writing with specific reasons. Vague denials are a red flag and provide leverage for escalation."
+                ),
+                QuizQuestion(
+                    question="A supplement can only be submitted once per claim.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="False — you can submit multiple supplements as new damage is discovered during repairs. Each supplement should be individually documented."
+                ),
+                QuizQuestion(
+                    question="During tear-off, the crew discovers the decking has extensive water damage not visible from the surface. What should happen?",
+                    options=["Include it in the final invoice only", "Stop work, document with photos and measurements, then submit a supplement", "Ignore it if it's minor", "Call the carrier's adjuster to come inspect before touching anything"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A roofing crew is replacing storm-damaged shingles. After removing the old shingles, they find rotted decking underneath that wasn't visible during the initial inspection.",
+                    explanation="Document immediately with dated photos, measurements, and moisture readings. Then submit a supplement with this evidence before proceeding with repairs."
+                ),
+                QuizQuestion(
+                    question="O&P (Overhead & Profit) is typically calculated as:",
+                    options=["5% overhead + 5% profit", "10% overhead + 10% profit", "15% overhead + 15% profit", "20% overhead + 20% profit"],
+                    correct_answer=1,
+                    explanation="Industry standard O&P is 10% overhead + 10% profit on the total job cost. This is the Xactimate default and widely accepted standard."
                 )
             ]
         ),
@@ -649,17 +698,42 @@ The difference between ACV and RCV can be 20-40% of the claim. Don't surrender i
                 QuizQuestion(
                     question="Who has the burden to prove an exclusion applies?",
                     options=["The policyholder must disprove it", "The carrier must prove it applies", "The court decides without input", "Neither party has a burden"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Insurance law places the burden on the carrier to prove an exclusion applies. The policyholder only needs to show the loss occurred."
                 ),
                 QuizQuestion(
                     question="What is 'recoverable depreciation'?",
                     options=["Depreciation you can never get back", "The withheld amount you can claim after completing repairs", "A tax deduction", "The carrier's profit margin"],
-                    correct_answer=1
+                    correct_answer=1,
+                    explanation="Under an RCV policy, the carrier withholds depreciation on the initial payment but must pay it back once repairs are completed."
                 ),
                 QuizQuestion(
-                    question="In a valued policy state with a total loss:",
-                    options=["You get whatever the carrier decides", "The carrier must pay the full Coverage A limit", "Depreciation is doubled", "The claim is automatically denied"],
-                    correct_answer=1
+                    question="In a valued policy state with a total loss, the carrier must pay the full Coverage A limit.",
+                    options=["True", "False"],
+                    correct_answer=0,
+                    question_type="true_false",
+                    explanation="In valued policy states, a total loss means the carrier must pay the full policy limit — no depreciation, no negotiation on value."
+                ),
+                QuizQuestion(
+                    question="In Florida, carriers can depreciate labor costs on insurance claims.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Florida statute specifically prohibits depreciating labor costs. If a carrier depreciates labor, challenge it — it's improper."
+                ),
+                QuizQuestion(
+                    question="A homeowner's RCV policy has a $300,000 Coverage A limit. The carrier estimates $180,000 in damage but only pays $120,000 initially. What does the withheld $60,000 represent?",
+                    options=["The carrier's profit", "Recoverable depreciation owed after repairs are completed", "A penalty for late filing", "The deductible"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A homeowner with an RCV (Replacement Cost Value) policy receives a payment that is less than the full estimated damage amount.",
+                    explanation="The $60,000 difference is recoverable depreciation. The carrier pays ACV first, then owes the remaining depreciation once the homeowner completes repairs."
+                ),
+                QuizQuestion(
+                    question="An ACV policy pays:",
+                    options=["Full replacement cost upfront", "Replacement cost minus depreciation", "Whatever the carrier decides", "Only for total losses"],
+                    correct_answer=1,
+                    explanation="ACV (Actual Cash Value) = Replacement Cost minus Depreciation. There is no recoverable depreciation — what you get is what you get."
                 )
             ]
         ),
@@ -744,9 +818,11 @@ Claims are won by structure, not arguing. We don't inflate. We don't guess. We d
                 )
             ],
             quiz=[
-                QuizQuestion(question="Full indemnification means:", options=["Pay whatever the policyholder asks", "Restore property to pre-loss condition", "Pay depreciated value only", "Split the difference"], correct_answer=1),
-                QuizQuestion(question="The best evidence for pre-loss condition is:", options=["Verbal description", "Historical aerial imagery and permits", "Carrier inspection photos", "Neighbor testimony"], correct_answer=1),
-                QuizQuestion(question="Claims are won primarily by:", options=["Arguing aggressively", "Structure and documentation", "Filing complaints immediately", "Accepting the first offer"], correct_answer=1)
+                QuizQuestion(question="Full indemnification means:", options=["Pay whatever the policyholder asks", "Restore property to pre-loss condition", "Pay depreciated value only", "Split the difference"], correct_answer=1, explanation="Full indemnification = restoring the property to exactly what it was before the loss. Not more, not less."),
+                QuizQuestion(question="The best evidence for pre-loss condition is:", options=["Verbal description", "Historical aerial imagery and permits", "Carrier inspection photos", "Neighbor testimony"], correct_answer=1, explanation="Objective evidence like aerial imagery (Google Earth timeline) and permit records provide dated, indisputable proof of pre-loss condition."),
+                QuizQuestion(question="Claims are won primarily by arguing aggressively with the adjuster.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Claims are won by structure and documentation, not arguments. Let your organized file speak — emotion and aggression are counterproductive."),
+                QuizQuestion(question="A carrier claims roof damage was pre-existing. You have Google Earth imagery from 6 months before the storm showing an intact roof. What does this prove?", options=["Nothing — Google Earth isn't admissible", "The roof was in pre-loss condition before the event, defeating the pre-existing argument", "The carrier is committing fraud", "The homeowner maintained their property"], correct_answer=1, question_type="scenario", scenario_context="A carrier adjuster inspects a home and writes in their report that the roof damage is pre-existing and not related to the recent hailstorm.", explanation="Historical aerial imagery is Tier 1 objective evidence. Dated imagery showing an intact roof before the storm directly defeats the pre-existing argument."),
+                QuizQuestion(question="The pre-loss condition standard applies to:", options=["Only total loss claims", "Only roof claims", "Every single claim, regardless of size", "Only claims over $50,000"], correct_answer=2, explanation="The pre-loss condition standard is universal — every claim recovery is measured against what the property was before the loss event.")
             ]
         ),
 
@@ -836,9 +912,11 @@ Every submission must be clean, organized, and self-supporting. If you wouldn't 
                 )
             ],
             quiz=[
-                QuizQuestion(question="The adjuster with the better ___ wins:", options=["Argument", "File", "Attitude", "Connections"], correct_answer=1),
-                QuizQuestion(question="When should you start building your claim file?", options=["After the carrier inspection", "Day 1, before the carrier", "When you file a supplement", "Only if the claim is disputed"], correct_answer=1),
-                QuizQuestion(question="The file review test asks:", options=["Is the carrier happy?", "Would this win at appraisal without me present?", "Did I include enough photos?", "Is the estimate high enough?"], correct_answer=1)
+                QuizQuestion(question="The adjuster with the better ___ wins:", options=["Argument", "File", "Attitude", "Connections"], correct_answer=1, explanation="The file is everything. A well-organized claim file speaks for itself — it compels payment without needing to argue."),
+                QuizQuestion(question="When should you start building your claim file?", options=["After the carrier inspection", "Day 1, before the carrier", "When you file a supplement", "Only if the claim is disputed"], correct_answer=1, explanation="Start building your file from Day 1 — before the carrier even inspects. This gives you the initiative and the best evidence."),
+                QuizQuestion(question="A well-structured claim file should be able to win at appraisal even without you present.", options=["True", "False"], correct_answer=0, question_type="true_false", explanation="This is the gold standard — if your file can't stand on its own, it's not complete enough. Build it so a neutral reviewer would rule in your favor."),
+                QuizQuestion(question="You have two claims: one with extensive photos but no organization, and one with fewer photos but a clean timeline, evidence hierarchy, and communication log. Which is stronger?", options=["The one with more photos", "The organized file with proper structure", "They're equal", "Neither — only the estimate matters"], correct_answer=1, question_type="scenario", scenario_context="An adjuster is reviewing two claim files side by side to decide how to prioritize payment.", explanation="Structure beats volume. A smaller, well-organized file is more compelling than a disorganized pile of photos because it tells a clear story."),
+                QuizQuestion(question="The pre-submission checklist should include:", options=["Only photos and estimates", "Damage documentation, measurements, pre-loss evidence, communication log, and deadlines", "Just the contractor bid", "A cover letter only"], correct_answer=1, explanation="Every submission needs the complete package: photos, measurements, pre-loss evidence, scope, communication log, and documented deadlines.")
             ]
         ),
 
@@ -931,9 +1009,12 @@ Not "water damage in bedroom" but "Active water intrusion at ceiling/wall juncti
                 )
             ],
             quiz=[
-                QuizQuestion(question="The strongest tier of evidence is:", options=["Contractor opinions", "Written narrative", "Objective proof (weather, aerials, permits)", "Photos"], correct_answer=2),
-                QuizQuestion(question="The three-shot rule requires:", options=["3 photos of the whole house", "Wide, medium, and close-up of each damage area", "Photos from 3 different days", "3 different cameras"], correct_answer=1),
-                QuizQuestion(question="When should you pull weather data and aerials?", options=["After the carrier denies the claim", "Day 1, before carrier inspection", "Only for large claims", "When the attorney requests it"], correct_answer=1)
+                QuizQuestion(question="The strongest tier of evidence is:", options=["Contractor opinions", "Written narrative", "Objective proof (weather, aerials, permits)", "Photos"], correct_answer=2, explanation="Tier 1 = Objective proof. Weather data, satellite imagery, permits, and engineering reports cannot be argued — only acknowledged or ignored."),
+                QuizQuestion(question="The three-shot rule requires:", options=["3 photos of the whole house", "Wide, medium, and close-up of each damage area", "Photos from 3 different days", "3 different cameras"], correct_answer=1, explanation="Every damage area needs three photos: wide (context), medium (location), and close-up (detail). This creates undeniable documentation."),
+                QuizQuestion(question="Weather data and aerial imagery should be pulled on Day 1, before the carrier inspection.", options=["True", "False"], correct_answer=0, question_type="true_false", explanation="Always pull weather data and capture aerials on Day 1. This is your strongest evidence and must be gathered before the carrier can claim 'pre-existing.'"),
+                QuizQuestion(question="A photo described as 'water damage in bedroom' is sufficient documentation.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Vague descriptions are easily dismissed. Proper documentation would say: 'Active water intrusion at ceiling/wall junction, NE corner of master bedroom, moisture reading 42%.'"),
+                QuizQuestion(question="You find hail damage on a roof but have no weather data to prove a recent hailstorm occurred. What should you do?", options=["Document it anyway and hope for the best", "Pull NOAA storm reports and hail maps for the area first to establish causation", "Only photograph the largest impacts", "Wait for the carrier to pull weather data"], correct_answer=1, question_type="scenario", scenario_context="During a roof inspection, you find circular impact marks consistent with hail damage, but you haven't verified weather events in the area.", explanation="Without Tier 1 weather data establishing a hail event, the carrier will argue the damage is pre-existing or from another cause. Pull NOAA data first to prove causation."),
+                QuizQuestion(question="Contractor opinions rank highest in the evidence hierarchy.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Contractor opinions are Tier 5 — the weakest. They support your case but never lead it. Always build from Tier 1 (objective proof) down.")
             ]
         ),
 
@@ -1021,9 +1102,11 @@ Would an independent appraiser reviewing this scope find it fair, accurate, and 
                 )
             ],
             quiz=[
-                QuizQuestion(question="A defensible line item is one that:", options=["Is estimated generously", "Can be justified with evidence if challenged", "The carrier already included", "Uses industry-standard pricing only"], correct_answer=1),
-                QuizQuestion(question="Using the word 'flood' in your scope can:", options=["Get you paid faster", "Trigger a policy exclusion", "Strengthen your claim", "Has no effect"], correct_answer=1),
-                QuizQuestion(question="Before submitting a scope, you should:", options=["Add 20% for negotiation room", "Run the 5-point review checklist", "Wait for the carrier's estimate first", "Remove all photos"], correct_answer=1)
+                QuizQuestion(question="A defensible line item is one that:", options=["Is estimated generously", "Can be justified with evidence if challenged", "The carrier already included", "Uses industry-standard pricing only"], correct_answer=1, explanation="Every line item must pass the evidence test: can you point to a photo, measurement, or code requirement that supports it?"),
+                QuizQuestion(question="Using the word 'flood' in your scope can:", options=["Get you paid faster", "Trigger a policy exclusion", "Strengthen your claim", "Has no effect"], correct_answer=1, explanation="Certain words like 'flood,' 'mold,' or 'settling' can trigger policy exclusions. Use precise, neutral language instead."),
+                QuizQuestion(question="It's a good strategy to add 20% to your estimate for 'negotiation room.'", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Never inflate. One indefensible line item damages credibility on every other item. Accuracy builds trust that pays dividends across all claims."),
+                QuizQuestion(question="Your estimate includes 'Remove & Replace drywall — water damaged' but you have no photo of the damaged drywall. Should you include this line item?", options=["Yes, it's obviously damaged", "No — get the photo documentation first, then include it", "Yes, but note it as an estimate", "Only if the carrier already included it"], correct_answer=1, question_type="scenario", scenario_context="You're reviewing your scope before submission and notice one line item has no supporting photographic evidence.", explanation="No photo = no proof = indefensible line item. Get the documentation first. Submitting unverified items risks your credibility on the entire estimate."),
+                QuizQuestion(question="Before submitting a scope, you should:", options=["Add 20% for negotiation room", "Run the 5-point review checklist", "Wait for the carrier's estimate first", "Remove all photos"], correct_answer=1, explanation="The 5-point review: evidence match, language check, measurement verification, pricing accuracy, completeness. Every scope goes through QC.")
             ]
         ),
 
@@ -1113,9 +1196,11 @@ Log every deadline set, the carrier's response (or non-response), and the action
                 )
             ],
             quiz=[
-                QuizQuestion(question="After a phone call with the carrier, you should:", options=["Wait for their follow-up", "Send a written summary confirming what was discussed", "Call back to clarify", "Do nothing unless they send something"], correct_answer=1),
-                QuizQuestion(question="The doctrine posture is:", options=["Aggressive and threatening", "Passive and accommodating", "Educated, professional, assumes amicable resolution", "Emotional and personal"], correct_answer=2),
-                QuizQuestion(question="Every carrier communication should end with:", options=["A thank you note", "A specific deadline and next step", "A phone number", "A threat of litigation"], correct_answer=1)
+                QuizQuestion(question="After a phone call with the carrier, you should:", options=["Wait for their follow-up", "Send a written summary confirming what was discussed", "Call back to clarify", "Do nothing unless they send something"], correct_answer=1, explanation="Written summaries create documented accountability. Phone calls leave no record — always follow up in writing."),
+                QuizQuestion(question="The doctrine posture is:", options=["Aggressive and threatening", "Passive and accommodating", "Educated, professional, assumes amicable resolution", "Emotional and personal"], correct_answer=2, explanation="The doctrine posture combines knowledge, professionalism, and an assumption of good faith — disrupting carrier expectations and commanding respect."),
+                QuizQuestion(question="Every carrier communication should end with:", options=["A thank you note", "A specific deadline and next step", "A phone number", "A threat of litigation"], correct_answer=1, explanation="Deadlines with clear next steps create accountability and keep the claim moving forward."),
+                QuizQuestion(question="Verbal agreements with carrier adjusters are sufficient documentation.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Verbal agreements carry no weight. Always follow up phone calls with a written summary to create a documented paper trail."),
+                QuizQuestion(question="You sent a supplement two weeks ago with a 10-day deadline. The deadline passed with no response. What do you do?", options=["Call repeatedly until they answer", "Send a written follow-up referencing the missed deadline with a new deadline", "Wait another two weeks", "Immediately file a DOI complaint"], correct_answer=1, question_type="scenario", scenario_context="A detailed supplement was submitted to the carrier with a 10-business-day response deadline. That deadline has now passed without acknowledgment.", explanation="A written follow-up documents the missed deadline and sets a new one, building your escalation file while maintaining professional posture.")
             ]
         )
     ]
@@ -1213,9 +1298,11 @@ You don't announce escalation — you execute it. Each level follows naturally f
                 )
             ],
             quiz=[
-                QuizQuestion(question="The doctrine posture is:", options=["Aggressive from day one", "Educated, professional, assumes amicable resolution", "Passive until the carrier makes an offer", "Threatening from the start"], correct_answer=1),
-                QuizQuestion(question="A deadline must always include:", options=["A threat of lawsuit", "A specific date and specific next step", "The amount you expect", "A reference to your attorney"], correct_answer=1),
-                QuizQuestion(question="When amicable isn't working, you should:", options=["Get emotional and confrontational", "Execute documented escalation", "Accept the carrier's position", "Start over with a new adjuster"], correct_answer=1)
+                QuizQuestion(question="The doctrine posture is:", options=["Aggressive from day one", "Educated, professional, assumes amicable resolution", "Passive until the carrier makes an offer", "Threatening from the start"], correct_answer=1, explanation="The doctrine posture combines expertise with professionalism. It assumes good faith while being prepared for bad faith."),
+                QuizQuestion(question="A deadline must always include:", options=["A threat of lawsuit", "A specific date and specific next step", "The amount you expect", "A reference to your attorney"], correct_answer=1, explanation="Effective deadlines are specific: 'Please respond by March 15 with payment or written explanation of denial.' Vague deadlines create no accountability."),
+                QuizQuestion(question="When amicable isn't working, you should:", options=["Get emotional and confrontational", "Execute documented escalation", "Accept the carrier's position", "Start over with a new adjuster"], correct_answer=1, explanation="Escalation must be documented and structured. Emotion undermines your position. Let the documented failure speak for itself."),
+                QuizQuestion(question="Threatening litigation in your first communication is an effective negotiation tactic.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Threatening litigation too early undermines good faith and can actually delay resolution. The doctrine posture assumes amicable resolution first."),
+                QuizQuestion(question="A carrier adjuster verbally agrees to pay your supplement over the phone. Is this sufficient?", options=["Yes, verbal agreements are binding", "No — get it in writing with a specific payment date", "Only if you recorded the call", "Yes, if you have a witness"], correct_answer=1, question_type="scenario", scenario_context="During a phone call, the carrier's adjuster says they agree with your supplement amount and will process payment. They ask you to consider it resolved.", explanation="Verbal agreements mean nothing without written confirmation. Follow up with an email summarizing the agreement and requesting written confirmation with a payment date.")
             ]
         ),
 
@@ -1308,9 +1395,11 @@ Maintain a running dollar figure: total documented owed minus total paid. This n
                 )
             ],
             quiz=[
-                QuizQuestion(question="The structured rebuttal framework is:", options=["Argue → Threaten → Repeat", "Acknowledge → Evidence → Policy → Request", "Deny → Counter-offer → Accept", "Complain → Wait → Escalate"], correct_answer=1),
-                QuizQuestion(question="An evidence-aligned estimate connects each line item to:", options=["The carrier's estimate", "Photo, measurement, cause, and code references", "The policyholder's desired outcome", "Industry average pricing"], correct_answer=1),
-                QuizQuestion(question="Supplement tracking exposes:", options=["Your mistakes", "Carrier patterns that support escalation", "How much you overcharged", "Nothing useful"], correct_answer=1)
+                QuizQuestion(question="The structured rebuttal framework is:", options=["Argue → Threaten → Repeat", "Acknowledge → Evidence → Policy → Request", "Deny → Counter-offer → Accept", "Complain → Wait → Escalate"], correct_answer=1, explanation="Acknowledge the carrier's position, present your evidence, cite policy language, then make a specific request. Professional, structured, and hard to dismiss."),
+                QuizQuestion(question="An evidence-aligned estimate connects each line item to:", options=["The carrier's estimate", "Photo, measurement, cause, and code references", "The policyholder's desired outcome", "Industry average pricing"], correct_answer=1, explanation="Every line item needs its evidence chain: what photo proves it, what measurement confirms it, what caused it, and what code requires it."),
+                QuizQuestion(question="Supplement tracking exposes:", options=["Your mistakes", "Carrier patterns that support escalation", "How much you overcharged", "Nothing useful"], correct_answer=1, explanation="Tracking supplements reveals carrier patterns — consistent denials, recurring delays, systematic underpayment — which build your escalation and bad faith file."),
+                QuizQuestion(question="A supplement should be submitted in a different format than the carrier's estimate for clarity.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Use the SAME format (Xactimate codes, same structure). This makes it easier for the desk adjuster to process and removes excuses for delay."),
+                QuizQuestion(question="The carrier denied your supplement for 'lack of documentation' but you included photos, measurements, and code references for every line item. How do you respond?", options=["Accept the denial", "Submit a structured rebuttal asking them to identify which specific items lack documentation", "Resubmit the same supplement", "File a lawsuit"], correct_answer=1, question_type="scenario", scenario_context="Your detailed supplement was denied with a vague 'insufficient documentation' response. Your supplement included photo evidence, field measurements, and building code references for each line item.", explanation="Force specificity. Ask them to identify exactly which items lack documentation. Vague denials are indefensible and create bad faith evidence.")
             ]
         ),
 
@@ -1409,9 +1498,11 @@ A documented pattern of moving goalposts is powerful evidence of bad faith. It s
                 )
             ],
             quiz=[
-                QuizQuestion(question="Carrier behavior is driven primarily by:", options=["Individual adjuster malice", "Structural business model incentives", "Random decision-making", "Government regulations"], correct_answer=1),
-                QuizQuestion(question="The best counter to carrier delay is:", options=["Waiting patiently", "Written deadlines and documented non-response", "Threatening litigation immediately", "Calling daily"], correct_answer=1),
-                QuizQuestion(question="Documented moving goalposts are evidence of:", options=["Thorough investigation", "Bad faith obstruction", "Carrier efficiency", "Normal claims process"], correct_answer=1)
+                QuizQuestion(question="Carrier behavior is driven primarily by:", options=["Individual adjuster malice", "Structural business model incentives", "Random decision-making", "Government regulations"], correct_answer=1, explanation="Carrier behavior is structural, not personal. Their business model — collect premiums, minimize payouts — drives every decision."),
+                QuizQuestion(question="The best counter to carrier delay is:", options=["Waiting patiently", "Written deadlines and documented non-response", "Threatening litigation immediately", "Calling daily"], correct_answer=1, explanation="Written deadlines create accountability. Documented non-response builds your escalation file."),
+                QuizQuestion(question="Documented moving goalposts are evidence of:", options=["Thorough investigation", "Bad faith obstruction", "Carrier efficiency", "Normal claims process"], correct_answer=1, explanation="When a carrier keeps changing requirements after you comply, the chronological pattern demonstrates obstruction, not legitimate investigation."),
+                QuizQuestion(question="Adjusters who underpay claims are acting out of personal malice.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Carrier behavior is structural. Adjusters operate within authority limits and performance metrics designed to minimize payouts — it's the system, not the individual."),
+                QuizQuestion(question="A carrier first requested photos, then different angles, and now wants an engineering report they never mentioned before. What does this pattern indicate?", options=["Thorough claim investigation", "Moving goalposts — a documented bad faith pattern", "Standard operating procedure", "The adjuster is being careful"], correct_answer=1, question_type="scenario", scenario_context="On a hail damage claim, the carrier has made three successive documentation requests, each new one appearing only after you complied with the previous.", explanation="A chronological log of each request and your compliance creates a powerful moving-goalposts pattern that constitutes strong bad faith evidence.")
             ]
         ),
 
@@ -1512,9 +1603,11 @@ A well-built escalation file often resolves the claim before you need to use it.
                 )
             ],
             quiz=[
-                QuizQuestion(question="Level 4 of the escalation ladder is:", options=["Filing a lawsuit", "Sending angry emails", "DOI complaint or appraisal demand with documented failure", "Calling the carrier's CEO"], correct_answer=2),
-                QuizQuestion(question="You should escalate when:", options=["You feel frustrated", "Deadlines pass without adequate response (documented)", "The adjuster is unfriendly", "The first estimate seems low"], correct_answer=1),
-                QuizQuestion(question="Skipping escalation levels:", options=["Saves time", "Weakens your good-faith negotiation position", "Shows strength", "Is recommended for large claims"], correct_answer=1)
+                QuizQuestion(question="Level 4 of the escalation ladder is:", options=["Filing a lawsuit", "Sending angry emails", "DOI complaint or appraisal demand with documented failure", "Calling the carrier's CEO"], correct_answer=2, explanation="Level 4 involves formal regulatory action (DOI complaint) or appraisal demand, backed by documented failure at Levels 1-3."),
+                QuizQuestion(question="You should escalate when:", options=["You feel frustrated", "Deadlines pass without adequate response (documented)", "The adjuster is unfriendly", "The first estimate seems low"], correct_answer=1, explanation="Escalation is triggered by documented failure — missed deadlines, policy misrepresentation — not by emotion or frustration."),
+                QuizQuestion(question="Skipping escalation levels:", options=["Saves time", "Weakens your good-faith negotiation position", "Shows strength", "Is recommended for large claims"], correct_answer=1, explanation="Completing each level demonstrates good faith. Skipping levels allows the carrier to argue you didn't attempt reasonable resolution."),
+                QuizQuestion(question="A well-built escalation file often resolves claims before formal dispute resolution.", options=["True", "False"], correct_answer=0, question_type="true_false", explanation="Carriers recognize a strong file and often settle to avoid regulatory scrutiny. The file itself becomes leverage."),
+                QuizQuestion(question="You submitted a claim, sent a follow-up after the deadline, and requested supervisor review — all documented. No response. What's the next step?", options=["File a lawsuit", "Start over", "File a DOI complaint or demand appraisal (Level 4)", "Accept the carrier's silence as a denial"], correct_answer=2, question_type="scenario", scenario_context="You've completed Levels 1 through 3 of the escalation ladder with documented failure at each level. The carrier has not responded to any written communication.", explanation="After documented failure at Levels 1-3, Level 4 (DOI complaint or appraisal demand) is the correct next step. Your documentation supports formal action.")
             ]
         ),
 
@@ -1621,9 +1714,11 @@ Entering dispute resolution with a weak file can result in a binding outcome tha
                 )
             ],
             quiz=[
-                QuizQuestion(question="Appraisal resolves disputes about:", options=["Coverage interpretation", "Amount of loss only", "Bad faith conduct", "All claim issues"], correct_answer=1),
-                QuizQuestion(question="Before entering formal dispute resolution, you must:", options=["File a DOI complaint first", "Verify your file is strong enough with the checklist", "Accept the carrier's last offer", "Hire an attorney"], correct_answer=1),
-                QuizQuestion(question="Litigation is appropriate when:", options=["You're frustrated with the carrier", "Bad faith evidence is strong and documented", "The claim is under $5,000", "You want a quick resolution"], correct_answer=1)
+                QuizQuestion(question="Appraisal resolves disputes about:", options=["Coverage interpretation", "Amount of loss only", "Bad faith conduct", "All claim issues"], correct_answer=1, explanation="Appraisal handles amount disputes only. Coverage disagreements require mediation or litigation."),
+                QuizQuestion(question="Before entering formal dispute resolution, you must:", options=["File a DOI complaint first", "Verify your file is strong enough with the checklist", "Accept the carrier's last offer", "Hire an attorney"], correct_answer=1, explanation="Entering dispute resolution with a weak file risks a binding outcome worse than continued negotiation. Verify file strength first."),
+                QuizQuestion(question="Litigation is appropriate when:", options=["You're frustrated with the carrier", "Bad faith evidence is strong and documented", "The claim is under $5,000", "You want a quick resolution"], correct_answer=1, explanation="Litigation requires strong documented bad faith evidence. It's appropriate when discovery is needed or bad faith damages are available."),
+                QuizQuestion(question="Mediation results are legally binding on both parties.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Mediation is non-binding. Either party can walk away. Appraisal, on the other hand, is typically binding on the amount."),
+                QuizQuestion(question="A carrier disputes both whether water damage is covered AND the repair amount. Your file is strong. The homeowner wants to avoid litigation costs. What mechanism fits best?", options=["Appraisal", "Mediation", "Litigation", "Arbitration"], correct_answer=1, question_type="scenario", scenario_context="Both coverage and amount are in dispute. The policyholder prefers a cost-effective resolution.", explanation="Mediation handles both coverage and amount disputes, is non-binding, and costs less than litigation. It's ideal when multiple issues need resolution.")
             ]
         ),
 
@@ -1711,9 +1806,11 @@ If denied, request specific written reason. Apply the structured rebuttal framew
                 )
             ],
             quiz=[
-                QuizQuestion(question="The industry standard for O&P is:", options=["5% total", "10% overhead + 10% profit", "15% flat rate", "Negotiable only"], correct_answer=1),
-                QuizQuestion(question="When a carrier says 'the homeowner can coordinate,' you respond:", options=["Accept the objection", "The policy promises restoration, not making the homeowner a GC", "Reduce the O&P to 5%", "File a complaint immediately"], correct_answer=1),
-                QuizQuestion(question="The three-trade rule states:", options=["You can only claim 3 trades", "3+ trades justifies GC involvement and O&P", "O&P is limited to 3 claims", "Only 3 carriers pay O&P"], correct_answer=1)
+                QuizQuestion(question="The industry standard for O&P is:", options=["5% total", "10% overhead + 10% profit", "15% flat rate", "Negotiable only"], correct_answer=1, explanation="10% overhead + 10% profit compensates the GC for coordination, management, and liability on multi-trade jobs."),
+                QuizQuestion(question="When a carrier says 'the homeowner can coordinate,' you respond:", options=["Accept the objection", "The policy promises restoration, not making the homeowner a GC", "Reduce the O&P to 5%", "File a complaint immediately"], correct_answer=1, explanation="The policy promises to restore the property, not turn the homeowner into a GC. Coordination is a skilled service with liability implications."),
+                QuizQuestion(question="The three-trade rule states:", options=["You can only claim 3 trades", "3+ trades justifies GC involvement and O&P", "O&P is limited to 3 claims", "Only 3 carriers pay O&P"], correct_answer=1, explanation="When 3+ trades are needed, a GC is typically required to coordinate, justifying O&P."),
+                QuizQuestion(question="O&P can only be claimed after a GC has been hired and submitted an invoice.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="O&P is owed based on the scope of work, not whether a GC has already been retained. If GC involvement is necessary, O&P applies."),
+                QuizQuestion(question="A claim requires roof replacement, interior drywall repair, painting, and permit inspections. The carrier denies O&P saying only 2 trades are involved. How do you respond?", options=["Accept the denial", "Document all trades: roofing, drywall, painting, plus permit coordination — 3+ trades justifies O&P", "Reduce the O&P percentage", "File for appraisal"], correct_answer=1, question_type="scenario", scenario_context="The carrier's estimate lumps drywall and painting as one trade to avoid the 3-trade threshold for O&P.", explanation="Roofing, drywall, and painting are separate trades. Document each one separately, plus coordination requirements, to establish the 3-trade threshold.")
             ]
         ),
 
@@ -1935,9 +2032,11 @@ On a $100,000 claim with 30% depreciation, that's **$30,000** sitting unclaimed.
                 )
             ],
             quiz=[
-                QuizQuestion(question="Recoverable depreciation is:", options=["Money you can never get back", "The withheld amount you claim after completing repairs", "The carrier's profit", "A tax deduction"], correct_answer=1),
-                QuizQuestion(question="In Florida, labor costs:", options=["Should be depreciated at 50%", "Cannot be depreciated per statute", "Are not covered by insurance", "Depreciate at the same rate as materials"], correct_answer=1),
-                QuizQuestion(question="On a $100K claim with 30% depreciation, the holdback is:", options=["$3,000", "$10,000", "$30,000", "$50,000"], correct_answer=2)
+                QuizQuestion(question="Recoverable depreciation is:", options=["Money you can never get back", "The withheld amount you claim after completing repairs", "The carrier's profit", "A tax deduction"], correct_answer=1, explanation="Under an RCV policy, the carrier withholds depreciation initially but must pay it back once repairs are completed and documented."),
+                QuizQuestion(question="In Florida, labor costs:", options=["Should be depreciated at 50%", "Cannot be depreciated per statute", "Are not covered by insurance", "Depreciate at the same rate as materials"], correct_answer=1, explanation="Florida statute prohibits depreciating labor. If a carrier depreciates labor, challenge it immediately."),
+                QuizQuestion(question="On a $100K claim with 30% depreciation, the holdback is:", options=["$3,000", "$10,000", "$30,000", "$50,000"], correct_answer=2, explanation="30% of $100,000 = $30,000. This significant amount must be actively recovered with proper documentation."),
+                QuizQuestion(question="Carriers are required to proactively remind you about depreciation recovery deadlines.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Carriers profit from unclaimed depreciation. You must track deadlines yourself from day one."),
+                QuizQuestion(question="You completed roof repairs and have all invoices. The carrier withheld $18K in depreciation. What's your next step?", options=["Wait for the carrier to send a check", "Submit a recovery package with invoices, photos, and a formal request letter with deadline", "Call the adjuster to discuss", "Deduct from future premiums"], correct_answer=1, question_type="scenario", scenario_context="All repairs are complete and documented. The carrier is holding $18,000 in recoverable depreciation on an RCV policy.", explanation="Submit a complete recovery package immediately — invoices, completion photos, original estimate, depreciation calculation, and a formal request with a specific payment deadline.")
             ]
         ),
 
@@ -3388,8 +3487,566 @@ When you can teach all five, you have mastered the doctrine.""",
         )
     ]
 
+    # ========== ADDITIONAL SPECIALTY COURSES ==========
+
+    additional_courses = [
+        Course(
+            title="Water Damage Claims Mastery",
+            description="Master the complexities of water damage claims — from IICRC categories to mitigation documentation and carrier pushback strategies.",
+            category="Water Damage",
+            track="training",
+            difficulty=2,
+            est_minutes=45,
+            tags=["water damage", "mitigation", "IICRC", "mold", "documentation"],
+            why_this_matters="Water damage is one of the most common and most disputed claim types. Carriers aggressively deny water claims using exclusion language. Knowing the science and documentation standards is critical.",
+            outcomes=["Classify water damage by IICRC categories", "Document mitigation properly to defeat carrier denials", "Build water damage estimates that withstand carrier scrutiny"],
+            thumbnail="https://images.unsplash.com/photo-1525785967371-87ba44b3e6cf?w=400",
+            lessons=[
+                Lesson(
+                    title="IICRC Water Damage Categories",
+                    description="Understanding the classification system that drives claim strategy",
+                    content="""# IICRC Water Damage Categories
+
+The Institute of Inspection, Cleaning and Restoration Certification (IICRC) S500 standard defines three categories of water damage. These categories determine the scope of work, health precautions, and ultimately the claim value.
+
+## Category 1 — Clean Water
+Water from a sanitary source that poses no substantial risk.
+
+**Sources:** Broken supply lines, sink overflows, appliance malfunctions, rainwater (fresh)
+
+**Key Point:** Even Category 1 water becomes Category 2 or 3 if left untreated for 48+ hours. Document the timeline.
+
+## Category 2 — Gray Water
+Water with significant contamination that can cause illness.
+
+**Sources:** Washing machine overflow, dishwasher discharge, toilet overflow (urine only), sump pump failure
+
+**Claim Impact:** Gray water requires more extensive remediation — antimicrobial treatment, potential removal of porous materials.
+
+## Category 3 — Black Water
+Grossly unsanitary water containing pathogens.
+
+**Sources:** Sewage backup, flooding from rivers/streams, standing water with microbial growth, toilet overflow (fecal matter)
+
+**Claim Impact:** Requires full containment, removal of all affected porous materials, HEPA air filtration, and professional remediation. Significantly higher claim value.
+
+## Why Categories Matter for Claims
+Carriers will try to downgrade the category to reduce scope and cost. A Category 3 loss requires 2-3x the remediation of Category 1. Your documentation of the water source and contamination level is critical.
+
+## The 48-Hour Rule
+Clean water that sits for 48+ hours upgrades to Category 2 or 3. If the carrier delayed response, that delay may have caused the upgrade — and they're responsible for the additional damage.""",
+                    duration_minutes=15,
+                    order=1
+                ),
+                Lesson(
+                    title="Mitigation Documentation",
+                    description="How to document water mitigation to maximize recovery",
+                    content="""# Mitigation Documentation
+
+Mitigation is the emergency response to prevent further damage. It's separately billable and often where carriers push back hardest.
+
+## What Mitigation Includes
+- **Water extraction** — Removing standing water with truck-mounted or portable extractors
+- **Structural drying** — Dehumidifiers, air movers, monitoring until dry standard is met
+- **Demolition** — Removing wet drywall, insulation, flooring to allow drying
+- **Antimicrobial treatment** — Preventing mold growth on affected surfaces
+- **Content manipulation** — Moving, protecting, or removing personal property
+
+## Documentation Requirements
+
+### Moisture Readings
+Take moisture readings at minimum twice daily during drying:
+- **Affected materials** — Drywall, framing, subfloor, concrete
+- **Unaffected reference** — Dry standard from same material type elsewhere in structure
+- Record readings with dates, times, locations, and equipment used
+
+### Photo Documentation
+- Before extraction begins (standing water visible)
+- Equipment placement with identification tags
+- Daily progress photos showing same areas
+- Final readings showing dry standard achieved
+
+### Drying Logs
+- Equipment deployed: type, quantity, location
+- Daily readings with trending data
+- Date/time of each monitoring visit
+- Dry standard achieved date
+
+## The Carrier's Mitigation Playbook
+1. Claim mitigation was "excessive" — Counter with IICRC S500 standards
+2. Reduce equipment days — Counter with moisture logs showing ongoing elevated readings
+3. Deny antimicrobial — Counter with Category 2/3 classification documentation
+4. Say you should have mitigated faster — Counter with timeline showing when loss was discovered
+
+## Key Rule
+IICRC S500 is the industry standard. If your mitigation follows S500, it's defensible. Carriers who reject S500-compliant work are creating a bad faith argument for you.""",
+                    duration_minutes=15,
+                    order=2
+                ),
+                Lesson(
+                    title="Water Damage Estimate Strategy",
+                    description="Building estimates that account for all water damage costs",
+                    content="""# Water Damage Estimate Strategy
+
+Water damage estimates are complex because they involve multiple phases: emergency mitigation, structural repairs, and content restoration.
+
+## The Three-Phase Estimate
+
+### Phase 1: Emergency Mitigation
+- Water extraction (by area and method)
+- Equipment rental (dehumidifiers, air movers — by day)
+- Monitoring visits (labor for daily readings)
+- Demolition for drying access
+- Antimicrobial application
+- Content manipulation (move-out, pack-out)
+
+### Phase 2: Structural Repairs
+- Drywall replacement (match existing texture)
+- Insulation replacement
+- Flooring replacement (matching existing)
+- Painting (affected rooms, full walls for color match)
+- Trim and baseboard replacement
+- Cabinet repair/replacement if affected
+
+### Phase 3: Content & Finishing
+- Content cleaning or replacement
+- Carpet/pad replacement
+- Appliance replacement if source of loss
+- Code upgrades triggered by repairs
+
+## Common Carrier Shortcuts
+- **Drying in place** when removal is required — Challenge with moisture readings
+- **Spot repair** instead of full replacement — Document why matching requires full replacement
+- **Ignoring secondary damage** — Water travels; document all affected areas
+- **Skipping content** — Inventory and document all affected personal property
+
+## The Hidden Costs Carriers Skip
+- Matching (can't replace half a floor with a different product)
+- Code upgrades triggered by the repair scope
+- Temporary housing if the home is uninhabitable during drying
+- Mold testing if there's any indication of growth""",
+                    duration_minutes=15,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="Category 3 (black) water includes:",
+                    options=["Clean water from a broken supply line", "Dishwasher overflow", "Sewage backup or river flooding", "Rainwater through a window"],
+                    correct_answer=2,
+                    explanation="Category 3 is grossly unsanitary water — sewage, river flooding, or any water with pathogen contamination. It requires the most extensive remediation."
+                ),
+                QuizQuestion(
+                    question="Clean water left standing for 48+ hours automatically remains Category 1.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="The 48-hour rule: Category 1 water upgrades to Category 2 or 3 after 48 hours. If carrier delay caused this, they're responsible for the additional damage."
+                ),
+                QuizQuestion(
+                    question="The industry standard for water damage restoration is:",
+                    options=["OSHA guidelines", "Carrier internal standards", "IICRC S500", "EPA recommendations"],
+                    correct_answer=2,
+                    explanation="IICRC S500 is THE industry standard for water damage restoration. If your mitigation follows S500, it's defensible against carrier pushback."
+                ),
+                QuizQuestion(
+                    question="A carrier claims your mitigation was 'excessive' because you ran dehumidifiers for 5 days. Your moisture logs show readings were still elevated on day 4. How do you respond?",
+                    options=["Accept their reduction", "Show the moisture logs proving drying was still in progress", "Remove the equipment charges entirely", "File a complaint"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="After a Category 2 water loss, you placed 4 dehumidifiers and 8 air movers. The carrier wants to pay for only 3 days of equipment rental, but your moisture readings show materials didn't reach dry standard until day 5.",
+                    explanation="Moisture logs are objective evidence. If readings show materials were still wet, the equipment was necessary. IICRC S500 requires drying to standard, not to an arbitrary timeline."
+                ),
+                QuizQuestion(
+                    question="Moisture readings should be taken at minimum:",
+                    options=["Once at the start and once at the end", "Twice daily during the drying process", "Only when the carrier requests them", "Weekly until dry"],
+                    correct_answer=1,
+                    explanation="IICRC S500 requires at minimum twice-daily moisture monitoring to document drying progress and justify equipment usage."
+                ),
+                QuizQuestion(
+                    question="When a carrier says to 'dry in place' instead of removing wet drywall, you should always comply.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Drying in place is only appropriate for Category 1 water caught quickly. For Category 2/3 or prolonged exposure, porous materials must be removed per IICRC standards."
+                )
+            ]
+        ),
+
+        Course(
+            title="Xactimate Fundamentals",
+            description="Learn to read, challenge, and build Xactimate estimates — the language carriers speak.",
+            category="Estimating",
+            track="training",
+            difficulty=2,
+            est_minutes=40,
+            tags=["xactimate", "estimating", "pricing", "supplements"],
+            why_this_matters="Xactimate is the industry-standard estimating software. Carriers use it to write estimates — and to underpay claims. Understanding how it works gives you the ability to challenge their numbers with their own tool.",
+            outcomes=["Read and interpret Xactimate line items and pricing", "Identify common carrier estimate shortcuts", "Build counter-estimates that stand up to scrutiny"],
+            thumbnail="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400",
+            lessons=[
+                Lesson(
+                    title="Reading Xactimate Estimates",
+                    description="Understanding line items, pricing, and what carriers leave out",
+                    content="""# Reading Xactimate Estimates
+
+Xactimate is the industry-standard estimating software used by carriers, adjusters, and contractors. Understanding how to read it is essential.
+
+## Anatomy of a Line Item
+Each Xactimate line item contains:
+- **Category code** — The type of work (e.g., RFG for roofing, DRY for drywall)
+- **Selector code** — The specific task (e.g., RFG TEAR for tear-off)
+- **Description** — What the work entails
+- **Quantity** — Amount (SF, LF, EA)
+- **Unit price** — Cost per unit (updates monthly by zip code)
+- **Total** — Quantity × Unit Price
+
+## What to Look For
+1. **Missing line items** — Carriers frequently omit items like drip edge, ice & water shield, starter strip, or ridge vent
+2. **Underpriced labor** — Check if unit prices match current local Xactimate pricing
+3. **Wrong quantities** — Measure independently; don't trust carrier measurements
+4. **Missing categories** — Interior damage from roof leaks, gutters, paint, trim
+5. **No O&P** — If 3+ trades are needed, O&P should be included
+
+## The Price List
+Xactimate prices update monthly and are specific to your zip code. Carriers sometimes use outdated price lists. Always verify the price list date on their estimate.
+
+## Reading the Summary
+The estimate summary shows:
+- **Material costs** — Supplies and products
+- **Labor costs** — Installation and work hours
+- **Equipment costs** — Specialty tools and machinery
+- **Overhead** — General contractor management (10%)
+- **Profit** — General contractor profit (10%)
+- **Total RCV** — Full replacement cost
+- **Depreciation** — Withheld until repairs complete
+- **Total ACV** — What they pay upfront (RCV minus depreciation)""",
+                    duration_minutes=15,
+                    order=1
+                ),
+                Lesson(
+                    title="Common Carrier Estimate Tricks",
+                    description="How carriers use Xactimate to underpay",
+                    content="""# Common Carrier Estimate Tricks
+
+Carriers are sophisticated Xactimate users. They know exactly which levers to pull to minimize payouts while appearing thorough.
+
+## Trick 1: Cherry-Picking Line Items
+The carrier includes some legitimate items but systematically omits others. The estimate looks complete at first glance but is missing 20-40% of the actual scope.
+
+**Counter:** Compare line-by-line against your own scope. Create a supplement for every omitted item.
+
+## Trick 2: Using "Combo" Line Items
+Xactimate has individual line items and "combo" items that bundle work. Carriers use whichever is cheaper.
+
+**Counter:** Break down combo items to see if individual pricing is higher. Use the method that accurately reflects the work.
+
+## Trick 3: Minimizing Quantities
+A 30-square roof gets written as 24 squares. A 12×14 room gets measured as 10×12.
+
+**Counter:** Always measure independently. Include your measurements in your supplement with photos showing measurement tapes.
+
+## Trick 4: Aggressive Depreciation
+Depreciating items at rates not supported by actual condition. A 10-year-old roof with a 30-year shingle gets depreciated 33% instead of the actual condition-based rate.
+
+**Counter:** Challenge depreciation schedules. Document actual condition. In Florida, labor cannot be depreciated.
+
+## Trick 5: Excluding O&P
+Even when the job clearly requires 3+ trades and general contractor coordination, carriers write estimates without Overhead & Profit.
+
+**Counter:** Document the trades involved. Cite Xactimate's own standards and industry practice. O&P is not optional when a GC is required.
+
+## Trick 6: Outdated Price Lists
+Using a price list from 6 months ago when material costs have increased.
+
+**Counter:** Check the price list date on every carrier estimate. If outdated, request repricing with current data.""",
+                    duration_minutes=15,
+                    order=2
+                ),
+                Lesson(
+                    title="Building Counter-Estimates",
+                    description="Creating supplements and counter-estimates in Xactimate",
+                    content="""# Building Counter-Estimates
+
+Your counter-estimate is your primary weapon. It must be accurate, complete, and defensible.
+
+## The Counter-Estimate Process
+
+### Step 1: Line-by-Line Comparison
+Create a spreadsheet comparing:
+- Carrier's line items vs. your line items
+- Carrier's quantities vs. your measurements
+- Carrier's pricing vs. current Xactimate pricing
+- Items they included vs. items they omitted
+
+### Step 2: Document Every Difference
+For each disputed item:
+- Photo evidence supporting your scope
+- Measurement documentation
+- Code requirement (if applicable)
+- Xactimate line item code and current pricing
+
+### Step 3: Write the Supplement
+Structure your supplement clearly:
+1. Summary of differences (total delta)
+2. Line-by-line additions with justification
+3. Quantity corrections with measurement proof
+4. Pricing corrections with current price list reference
+5. O&P calculation if applicable
+
+## Supplement Best Practices
+- Use the same Xactimate format as the carrier
+- Reference specific line item codes
+- Attach supporting photos for every added item
+- Include measurement documentation
+- Note the price list date you're using
+- Keep it professional — facts, not opinions
+
+## The Power of Speaking Their Language
+When your supplement is in Xactimate format with proper codes, pricing, and documentation, the carrier's desk adjuster can process it directly. You've removed their excuse to delay or deny.""",
+                    duration_minutes=10,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="What should you check first on a carrier's Xactimate estimate?",
+                    options=["The total amount", "The adjuster's name", "The price list date and missing line items", "The depreciation only"],
+                    correct_answer=2,
+                    explanation="Always check the price list date (carriers use outdated lists) and scan for missing line items. These are the two most common ways carriers underpay."
+                ),
+                QuizQuestion(
+                    question="Carrier Xactimate estimates are always accurate and complete.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Carrier estimates routinely omit 20-40% of the actual scope. Always do your own measurements and line-by-line comparison."
+                ),
+                QuizQuestion(
+                    question="A carrier's estimate for a roof replacement is missing drip edge, ice & water shield, and starter strip. These are:",
+                    options=["Optional upgrades the homeowner can add", "Required components that should be in the estimate", "Only needed on new construction", "Cosmetic items the carrier doesn't cover"],
+                    correct_answer=1,
+                    explanation="Drip edge, ice & water shield, and starter strip are required roofing components. Omitting them is a common carrier trick to reduce the estimate."
+                ),
+                QuizQuestion(
+                    question="A carrier writes a roof estimate for 24 squares, but your measurement shows 30 squares. What do you do?",
+                    options=["Accept the carrier's measurement", "Submit a supplement with your measurements and photo documentation", "Split the difference at 27 squares", "Only correct it if the homeowner complains"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="You've independently measured the roof using satellite imagery and on-site measurements. The carrier's estimate is 6 squares short of your verified measurement.",
+                    explanation="Never accept incorrect measurements. Submit a supplement with your documented measurements, including photos of measurement tapes and satellite verification."
+                ),
+                QuizQuestion(
+                    question="Your supplement should be written in a completely different format than the carrier's estimate.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Use the SAME Xactimate format with proper codes. This makes it easy for the desk adjuster to process and removes excuses for delay."
+                ),
+                QuizQuestion(
+                    question="O&P (Overhead & Profit) should be included when:",
+                    options=["The homeowner requests it", "Three or more trades are required and a GC coordinates the work", "The claim exceeds $10,000", "Only on commercial claims"],
+                    correct_answer=1,
+                    explanation="The industry standard: when 3+ trades are needed (roofing, drywall, painting, etc.), a general contractor is required to coordinate, justifying 10% overhead + 10% profit."
+                )
+            ]
+        ),
+
+        Course(
+            title="Florida Insurance Law Essentials",
+            description="Master the Florida statutes, regulations, and legal frameworks that govern property insurance claims in the Sunshine State.",
+            category="Legal",
+            track="advanced-elite",
+            difficulty=3,
+            est_minutes=50,
+            tags=["florida law", "statutes", "regulations", "bad faith", "DFS"],
+            why_this_matters="Florida has some of the strongest policyholder protections in the country — but only if you know them. Understanding Florida insurance law transforms your ability to hold carriers accountable.",
+            outcomes=["Cite key Florida statutes that protect policyholders", "File effective DFS complaints", "Recognize and document bad faith carrier conduct"],
+            thumbnail="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400",
+            lessons=[
+                Lesson(
+                    title="Key Florida Insurance Statutes",
+                    description="The laws that protect Florida policyholders",
+                    content="""# Key Florida Insurance Statutes
+
+Florida's insurance code provides specific protections for policyholders. Knowing these statutes gives you leverage in every claim.
+
+## F.S. 627.70131 — Claims Administration
+The most important statute for property claims adjusters:
+
+### Timeline Requirements
+- **14 days** — Carrier must acknowledge receipt of claim
+- **90 days** — Carrier must pay or deny the claim (with extensions for catastrophe)
+- **Supplemental claims** — Same timelines apply to supplements
+
+### Key Provisions
+- Carrier must conduct a **reasonable investigation**
+- Carrier must provide a **written explanation** for any denial
+- Carrier cannot require the policyholder to use their preferred contractor
+
+## F.S. 626.9541 — Unfair Insurance Practices
+Defines what constitutes unfair claims settlement practices:
+- Misrepresenting policy provisions
+- Failing to acknowledge communications promptly
+- Failing to adopt reasonable standards for investigation
+- Not attempting good faith settlement when liability is clear
+- Compelling policyholders to litigate by offering substantially less than owed
+
+## F.S. 627.7011 — Valued Policy Law
+In a total loss, the carrier must pay the **full Coverage A limit** — no depreciation, no argument about actual value.
+
+## F.S. 627.70132 — Insurer's Duty to Acknowledge & Act
+Carriers must:
+- Acknowledge receipt of claim within 14 days
+- Begin investigation within 14 days
+- Provide necessary forms within 14 days
+- Not request information already provided
+
+## F.S. 624.155 — Bad Faith
+Allows a civil remedy (lawsuit) against carriers who:
+- Violate the insurance code
+- Fail to settle claims in good faith
+- Engage in unfair claims practices
+
+**Important:** You must file a Civil Remedy Notice (CRN) with the Department of Financial Services before filing suit. The carrier gets 60 days to cure.""",
+                    duration_minutes=20,
+                    order=1
+                ),
+                Lesson(
+                    title="Department of Financial Services (DFS)",
+                    description="How to use Florida's insurance regulator as leverage",
+                    content="""# Department of Financial Services (DFS)
+
+The Florida DFS is the state agency that regulates insurance companies. Understanding how to use DFS is a powerful tool.
+
+## Filing a DFS Complaint
+
+### When to File
+- Carrier exceeds statutory timelines (14/90 day rules)
+- Carrier fails to provide written denial with reasons
+- Carrier engages in unfair claims practices
+- Carrier refuses to communicate or respond
+
+### How to File
+1. Go to **MyFloridaCFO.com** → Consumer Services → File a Complaint
+2. Include: Policy number, claim number, timeline of events, specific statute violated
+3. Attach: All correspondence, the carrier's estimate, your supplement, photos
+
+### What Happens
+- DFS assigns an investigator
+- Carrier must respond within 20 days
+- DFS can require the carrier to take action
+- Complaint becomes part of carrier's regulatory record
+
+## The Strategic Value of DFS Complaints
+Even if DFS doesn't force action on your specific claim, the complaint:
+- Creates a paper trail of carrier misconduct
+- Adds to the carrier's complaint ratio (regulators track this)
+- Shows the carrier you know your rights
+- Supports a future bad faith claim
+
+## When NOT to File
+- Don't file frivolous complaints — it dilutes your credibility
+- Don't file before you've given the carrier reasonable time to respond
+- Don't file as a threat — file when there's a genuine violation""",
+                    duration_minutes=15,
+                    order=2
+                ),
+                Lesson(
+                    title="Hurricane Claims in Florida",
+                    description="Special rules and strategies for Florida hurricane claims",
+                    content="""# Hurricane Claims in Florida
+
+Hurricane claims in Florida have special rules, extended timelines, and unique challenges.
+
+## Notice of Loss Deadlines
+- **Standard claims** — Must be reported within policy timeframe (typically 1 year)
+- **Hurricane claims** — Florida law provides 3 years from the date of loss to file (recently shortened from indefinite)
+- **Supplemental claims** — Can be filed after initial claim if new damage is discovered
+
+## Catastrophe Extensions
+During declared catastrophes, carriers get extended timelines:
+- 90-day claim resolution can extend to 120+ days
+- Carriers must still acknowledge within 14 days
+- Extensions don't excuse bad faith conduct
+
+## Common Hurricane Claim Issues
+
+### 1. ALE (Additional Living Expenses)
+If the home is uninhabitable, the carrier must pay for temporary housing. This is Coverage D and is often underpaid.
+
+### 2. Wind vs. Water
+Carriers distinguish between wind damage (covered) and flood/storm surge (requires separate NFIP policy). Document the **cause** of each damage element.
+
+### 3. Matching
+When part of a roof or floor is damaged, the carrier must pay for matching if the undamaged portion can't be reasonably matched. Florida courts have supported this.
+
+### 4. Contractor Availability
+After hurricanes, contractor prices increase due to demand. Carriers must pay **actual reasonable costs**, not pre-hurricane pricing.
+
+## Florida's Assignment of Benefits (AOB) Changes
+Recent legislation has changed AOB rules significantly. Understand current law before entering AOB agreements.
+
+## Key Strategy
+Document everything from day one. Take video of the entire property. Secure the property to prevent further damage. File your claim immediately — don't wait for a contractor.""",
+                    duration_minutes=15,
+                    order=3
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="Under F.S. 627.70131, how many days does a carrier have to acknowledge receipt of a claim?",
+                    options=["7 days", "14 days", "30 days", "90 days"],
+                    correct_answer=1,
+                    explanation="F.S. 627.70131 requires carriers to acknowledge claim receipt within 14 days. The 90-day period is for paying or denying the claim."
+                ),
+                QuizQuestion(
+                    question="Florida's Valued Policy Law means the carrier can negotiate the home's value in a total loss.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Under Florida's Valued Policy Law (F.S. 627.7011), a total loss requires payment of the full Coverage A limit — no depreciation, no negotiation."
+                ),
+                QuizQuestion(
+                    question="Before filing a bad faith lawsuit under F.S. 624.155, you must first:",
+                    options=["Get an attorney", "File a Civil Remedy Notice with DFS and wait 60 days", "File a police report", "Complete all repairs"],
+                    correct_answer=1,
+                    explanation="Florida requires a Civil Remedy Notice (CRN) filed with DFS before a bad faith suit. The carrier gets 60 days to cure the violation."
+                ),
+                QuizQuestion(
+                    question="A carrier takes 45 days to acknowledge receipt of a Florida homeowner's hurricane claim. They cite 'catastrophe volume' as the reason. Is this a violation?",
+                    options=["No, catastrophe extensions apply to everything", "Yes — the 14-day acknowledgment rule applies even during catastrophes", "Only if the homeowner complains", "It depends on the carrier's internal policies"],
+                    correct_answer=1,
+                    question_type="scenario",
+                    scenario_context="A Florida homeowner filed a hurricane claim. The carrier did not acknowledge the claim for 45 days, citing high claim volume from the catastrophe.",
+                    explanation="Catastrophe extensions apply to the 90-day resolution timeline, NOT the 14-day acknowledgment requirement. The carrier violated F.S. 627.70131."
+                ),
+                QuizQuestion(
+                    question="In Florida, carriers can depreciate labor costs on property insurance claims.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Florida prohibits labor depreciation on property insurance claims. If a carrier depreciates labor, it's improper and should be challenged."
+                ),
+                QuizQuestion(
+                    question="A DFS complaint is only useful if DFS forces the carrier to pay your claim.",
+                    options=["True", "False"],
+                    correct_answer=1,
+                    question_type="true_false",
+                    explanation="Even if DFS doesn't force action on your specific claim, the complaint creates a paper trail, affects the carrier's complaint ratio, and supports future bad faith claims."
+                ),
+                QuizQuestion(
+                    question="Under Florida's unfair claims practices statute, which of the following is prohibited?",
+                    options=["Requesting documentation", "Offering substantially less than owed to compel litigation", "Sending a written denial", "Conducting an inspection"],
+                    correct_answer=1,
+                    explanation="F.S. 626.9541 prohibits compelling policyholders to litigate by offering substantially less than what's owed. This is a defined unfair claims practice."
+                )
+            ]
+        )
+    ]
+
     # Insert all courses
-    all_courses = foundation_courses + operator_courses + advanced_elite_courses
+    all_courses = foundation_courses + operator_courses + advanced_elite_courses + additional_courses
     for course in all_courses:
         await db.courses.insert_one(course.dict())
     

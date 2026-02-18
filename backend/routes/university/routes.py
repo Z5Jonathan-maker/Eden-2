@@ -131,11 +131,23 @@ async def submit_quiz(submission: QuizSubmission, current_user: dict = Depends(g
     
     correct = 0
     total = len(quiz)
-    
+    details = []
+
     for i, question in enumerate(quiz):
-        if i < len(submission.answers) and submission.answers[i] == question["correct_answer"]:
+        user_answer = submission.answers[i] if i < len(submission.answers) else -1
+        is_correct = user_answer == question["correct_answer"]
+        if is_correct:
             correct += 1
-    
+        details.append({
+            "question": question["question"],
+            "user_answer": user_answer,
+            "correct_answer": question["correct_answer"],
+            "is_correct": is_correct,
+            "explanation": question.get("explanation"),
+            "question_type": question.get("question_type", "multiple_choice"),
+            "options": question.get("options", []),
+        })
+
     score = int((correct / total) * 100)
     passed = score >= 70
     
@@ -172,7 +184,7 @@ async def submit_quiz(submission: QuizSubmission, current_user: dict = Depends(g
                 logger.error(f"Failed to emit university course completion event: {e}")
                 # Don't fail the request if event emission fails
     
-    return {"score": score, "correct": correct, "total": total, "passed": passed, "certificate": certificate}
+    return {"score": score, "correct": correct, "total": total, "passed": passed, "certificate": certificate, "details": details}
 
 @router.get("/progress")
 async def get_user_progress(current_user: dict = Depends(get_current_active_user)):

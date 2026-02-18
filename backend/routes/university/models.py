@@ -13,7 +13,10 @@ class QuizQuestion(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     question: str
     options: List[str]
-    correct_answer: int
+    correct_answer: int  # index into options
+    question_type: str = "multiple_choice"  # multiple_choice | true_false | scenario
+    explanation: Optional[str] = None  # shown after answering
+    scenario_context: Optional[str] = None  # background context for scenario questions
 
 class Lesson(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
