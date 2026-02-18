@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request, Depends, Header
+from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -101,14 +101,13 @@ app.add_middleware(StructuredLoggingMiddleware)
 # Startup logging
 logger = logging.getLogger("eden.startup")
 
-@app.on_event("startup")
-async def startup_event():
+async def log_startup_config():
     """Log environment configuration at startup"""
     logger.info("="*70)
-    logger.info("🚀 EDEN BACKEND STARTING")
+    logger.info("EDEN BACKEND STARTING")
     logger.info("="*70)
     logger.info(f"Environment: {os.environ.get('ENVIRONMENT', 'unknown')}")
-    
+
     # Mask sensitive parts of MongoDB URL
     masked_mongo = mongo_url[:50] + "..." if len(mongo_url) > 50 else mongo_url
     logger.info(f"Database: {masked_mongo}")
@@ -119,13 +118,13 @@ async def startup_event():
     logger.info(f"Base URL: {os.environ.get('BASE_URL', 'not configured')}")
     logger.info("-"*70)
     logger.info("INTEGRATION CONFIG:")
-    logger.info(f"  GOOGLE_CLIENT_ID: {'SET ✓' if os.environ.get('GOOGLE_CLIENT_ID') else 'MISSING ✗'}")
-    logger.info(f"  GOOGLE_CLIENT_SECRET: {'SET ✓' if os.environ.get('GOOGLE_CLIENT_SECRET') else 'MISSING ✗'}")
-    logger.info(f"  SIGNNOW_CLIENT_ID: {'SET ✓' if os.environ.get('SIGNNOW_CLIENT_ID') else 'MISSING ✗'}")
-    logger.info(f"  SIGNNOW_CLIENT_SECRET: {'SET ✓' if os.environ.get('SIGNNOW_CLIENT_SECRET') else 'MISSING ✗'}")
-    logger.info(f"  GAMMA_API_KEY: {'SET ✓' if os.environ.get('GAMMA_API_KEY') else 'MISSING ✗'}")
-    logger.info(f"  STRIPE_SECRET_KEY: {'SET ✓' if os.environ.get('STRIPE_SECRET_KEY') else 'MISSING ✗'}")
-    logger.info(f"  OPENAI_API_KEY: {'SET ✓' if os.environ.get('OPENAI_API_KEY') else 'MISSING ✗'}")
+    logger.info(f"  GOOGLE_CLIENT_ID: {'SET' if os.environ.get('GOOGLE_CLIENT_ID') else 'MISSING'}")
+    logger.info(f"  GOOGLE_CLIENT_SECRET: {'SET' if os.environ.get('GOOGLE_CLIENT_SECRET') else 'MISSING'}")
+    logger.info(f"  SIGNNOW_CLIENT_ID: {'SET' if os.environ.get('SIGNNOW_CLIENT_ID') else 'MISSING'}")
+    logger.info(f"  SIGNNOW_CLIENT_SECRET: {'SET' if os.environ.get('SIGNNOW_CLIENT_SECRET') else 'MISSING'}")
+    logger.info(f"  GAMMA_API_KEY: {'SET' if os.environ.get('GAMMA_API_KEY') else 'MISSING'}")
+    logger.info(f"  STRIPE_SECRET_KEY: {'SET' if os.environ.get('STRIPE_SECRET_KEY') else 'MISSING'}")
+    logger.info(f"  OPENAI_API_KEY: {'SET' if os.environ.get('OPENAI_API_KEY') else 'MISSING'}")
     logger.info("="*70)
 
 
@@ -420,7 +419,8 @@ app.include_router(imagery_router)
 # Startup event to seed data
 @app.on_event("startup")
 async def startup_event():
-    """Seed university data, ensure admin user exists, initialize gamification, and start scheduler"""
+    """Log config, seed data, ensure admin, initialize gamification, start scheduler"""
+    await log_startup_config()
     await seed_university_data()
     await ensure_admin_user()
     await initialize_harvest_gamification()

@@ -72,7 +72,7 @@ async def get_signnow_access_token(user_email: str = None) -> Optional[str]:
 
     # Priority 2: User-specific OAuth token
     if user_email:
-        token_doc = await db.integration_tokens.find_one({
+        token_doc = await db.oauth_tokens.find_one({
             "user_email": user_email,
             "provider": "signnow"
         })
@@ -105,7 +105,7 @@ async def get_app_level_token() -> Optional[str]:
         return None
     
     # Check if we have a cached app token
-    app_token = await db.integration_tokens.find_one({
+    app_token = await db.oauth_tokens.find_one({
         "provider": "signnow",
         "token_type": "app_level"
     })
@@ -145,7 +145,7 @@ async def get_app_level_token() -> Optional[str]:
                 expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
                 
                 # Cache the token
-                await db.integration_tokens.update_one(
+                await db.oauth_tokens.update_one(
                     {"provider": "signnow", "token_type": "app_level"},
                     {"$set": {
                         "provider": "signnow",
@@ -191,7 +191,7 @@ async def refresh_signnow_token(user_email: str, refresh_token: str) -> Optional
                 expires_in = data.get("expires_in", 3600)
                 expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
                 
-                await db.integration_tokens.update_one(
+                await db.oauth_tokens.update_one(
                     {"user_email": user_email, "provider": "signnow"},
                     {"$set": {
                         "access_token": data["access_token"],
@@ -464,7 +464,7 @@ class SignNowClient:
             return True
 
         if self.user_email:
-            token = await db.integration_tokens.find_one({
+            token = await db.oauth_tokens.find_one({
                 "user_email": self.user_email,
                 "provider": "signnow"
             })

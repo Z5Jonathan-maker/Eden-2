@@ -9,7 +9,7 @@ import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } fro
 import { APP_LOGO, NAV_ICONS } from '../../assets/badges';
 import useUnreadCount from '../../hooks/useUnreadCount';
 
-var API_URL = import.meta.env.REACT_APP_BACKEND_URL;
+
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
 
 // 3D Icon component with glow and animation
