@@ -21,14 +21,14 @@ def task_default_provider_orders() -> Dict[str, List[str]]:
         "summarize_communication_thread": ["ollama", "anthropic"],
         "suggest_follow_up_sms": ["ollama", "openai"],
         "draft_communication": ["ollama", "openai"],
-        "claim_brief": ["anthropic", "openai"],
-        "supplement_justification": ["anthropic", "openai"],
+        "claim_brief": ["ollama", "anthropic"],
+        "supplement_justification": ["ollama", "anthropic"],
     }
 
 
 def resolve_provider_order_for_task(task: str) -> List[str]:
     defaults = task_default_provider_orders()
-    provider_order = defaults.get(task, ["anthropic", "openai"])
+    provider_order = defaults.get(task, ["ollama", "anthropic"])
     task_env_key = f"AI_TASK_PROVIDER_{task.upper()}"
     provider_order = parse_provider_order(os.environ.get(task_env_key), provider_order)
     provider_order = parse_provider_order(os.environ.get("AI_PROVIDER_ORDER_DEFAULT"), provider_order)
@@ -42,16 +42,16 @@ def sanitize_provider_order(order: List[str], default_order: Optional[List[str]]
         if provider in ALLOWED_PROVIDERS and provider not in normalized:
             normalized.append(provider)
     if len(normalized) == 1:
-        if normalized[0] == "openai":
+        if normalized[0] == "ollama":
             fallback = "anthropic"
         elif normalized[0] == "anthropic":
-            fallback = "openai"
+            fallback = "ollama"
         else:
-            fallback = "openai"
+            fallback = "ollama"
         normalized.append(fallback)
     if normalized:
         return normalized[:2]
-    return default_order or ["openai", "anthropic"]
+    return default_order or ["ollama", "anthropic"]
 
 
 def default_runtime_routing_config() -> Dict[str, Any]:

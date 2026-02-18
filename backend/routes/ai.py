@@ -21,8 +21,13 @@ from services.ai_routing_policy import (
     load_runtime_routing_config as load_policy_runtime_routing_config,
 )
 
-# Get the Emergent LLM key
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+# Get an LLM API key — prefer Ollama (free), fall back to legacy key or OpenAI
+EMERGENT_LLM_KEY = (
+    os.environ.get("OLLAMA_API_KEY")
+    or os.environ.get("EMERGENT_LLM_KEY")
+    or os.environ.get("OPENAI_API_KEY")
+    or os.environ.get("ANTHROPIC_API_KEY")
+)
 
 # FIRM CONTEXT - Static knowledge base (Gamma DISABLED)
 FIRM_CONTEXT = """
