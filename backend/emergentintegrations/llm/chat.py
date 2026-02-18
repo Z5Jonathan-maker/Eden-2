@@ -14,7 +14,7 @@ PROVIDER_CONFIGS = {
     "ollama": {
         "base_url": os.environ.get("OLLAMA_BASE_URL", "https://ollama.com"),
         "api_key": os.environ.get("OLLAMA_API_KEY", ""),
-        "default_model": os.environ.get("OLLAMA_MODEL", "llama3.1"),
+        "default_model": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",
@@ -43,11 +43,11 @@ class LlmChat:
 
     Usage (routes/ai.py style):
         chat = LlmChat(api_key=key, session_id="abc", system_message="You are Eve.")
-        chat = chat.with_model("ollama", "llama3.1")
+        chat = chat.with_model("ollama", "gemma3:12b")
         response = await chat.send_message(UserMessage(text="Hello"))
 
     Usage (ai_service.py style):
-        client = LlmChat(api_key=key, model="llama3.1")
+        client = LlmChat(api_key=key, model="gemma3:12b")
         response = await client.chat(messages=[{"role": "user", "content": "Hello"}])
     """
 
@@ -96,7 +96,7 @@ class LlmChat:
         cfg = PROVIDER_CONFIGS.get(provider, PROVIDER_CONFIGS.get("ollama", {}))
         base_url = self._base_url or cfg.get("base_url", "")
         api_key = self._api_key or cfg.get("api_key", "")
-        model = self._model or cfg.get("default_model", "llama3.1")
+        model = self._model or cfg.get("default_model", "gemma3:12b")
 
         if provider == "ollama":
             return await self._call_ollama(base_url, api_key, model, messages)

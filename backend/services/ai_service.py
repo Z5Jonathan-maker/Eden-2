@@ -25,7 +25,7 @@ def get_llm_client():
             from emergentintegrations.llm.chat import LlmChat
             _llm_client = LlmChat(
                 api_key=os.environ.get("OLLAMA_API_KEY") or os.environ.get("EMERGENT_LLM_KEY"),
-                model=os.environ.get("OLLAMA_MODEL", "llama3.1")
+                model=os.environ.get("OLLAMA_MODEL", "gemma3:12b")
             )
             # Auto-select best available provider
             _llm_client._resolve_default_provider()

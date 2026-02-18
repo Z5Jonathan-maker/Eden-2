@@ -598,7 +598,7 @@ class TeamCommsCopilotResponse(BaseModel):
 
 
 SUPPORTED_PROVIDERS = {"ollama", "openai", "anthropic"}
-OLLAMA_MODEL_DEFAULT = os.environ.get("OLLAMA_MODEL", "llama3.1")
+OLLAMA_MODEL_DEFAULT = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
 OPENAI_MODEL_DEFAULT = os.environ.get("OPENAI_MODEL", "gpt-4o")
 ANTHROPIC_MODEL_DEFAULT = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 AI_DAILY_BUDGET_USD = float(os.environ.get("AI_DAILY_BUDGET_USD", "25"))

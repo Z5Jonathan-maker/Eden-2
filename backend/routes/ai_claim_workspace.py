@@ -269,7 +269,7 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
     ollama_api_key = os.environ.get("OLLAMA_API_KEY", "")
     ollama_enabled = bool(ollama_api_key) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"}
     ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
-    ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.1")
+    ollama_model = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
 
     runtime_cfg = await _load_runtime_routing_config()
     configured_order = runtime_cfg.get("task_provider_order", {}).get(task)
@@ -447,7 +447,7 @@ async def get_ai_routing(
         "models": {
             "openai": os.environ.get("OPENAI_MODEL", "gpt-4.1"),
             "anthropic": os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
-            "ollama": os.environ.get("OLLAMA_MODEL", "llama3.1"),
+            "ollama": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
         },
         "global_default_env_key": "AI_PROVIDER_ORDER_DEFAULT",
         "global_default_is_set": bool(os.environ.get("AI_PROVIDER_ORDER_DEFAULT")),
@@ -478,7 +478,7 @@ async def get_ai_routing_config(
         "models": {
             "openai": os.environ.get("OPENAI_MODEL", "gpt-4.1"),
             "anthropic": os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
-            "ollama": os.environ.get("OLLAMA_MODEL", "llama3.1"),
+            "ollama": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
         },
         "config": runtime_cfg,
         "tasks": tasks,
@@ -527,7 +527,7 @@ async def get_ai_providers_health(
     ollama_api_key = os.environ.get("OLLAMA_API_KEY", "")
     ollama_enabled = bool(ollama_api_key) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"}
     ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
-    ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.1")
+    ollama_model = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
 
     ollama_status = {
         "enabled": ollama_enabled,
