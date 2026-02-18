@@ -2862,7 +2862,6 @@ Don't fight the process — navigate it. Know what triggers each internal step, 
                 QuizQuestion(question="Field adjusters have unlimited authority to approve any claim amount.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Field adjusters have strict authority limits. Higher amounts require supervisor, manager, or executive approval. Understanding this hierarchy helps you target the right decision-maker."),
                 QuizQuestion(question="The carrier's desk adjuster says your $45K supplement needs 'further review' and assigns it to a new adjuster. What should you do?", options=["Wait for the new adjuster to contact you", "Immediately re-submit your complete package to the new adjuster with a cover letter and deadline", "Reduce the supplement amount", "File a DOI complaint"], correct_answer=1, question_type="scenario", scenario_context="Your detailed supplement for $45,000 was acknowledged by the desk adjuster but then transferred to a different adjuster for 'further review.' No timeline was provided.", explanation="Proactively re-submit your complete package. Don't wait — the transfer is an opportunity. A fresh set of eyes with your well-organized file can lead to approval.")
             ]
-            ]
         ),
 
         # --- Advanced-Elite 3: Total Loss Strategy ---
@@ -2963,7 +2962,6 @@ Coverage A + debris removal + demolition + code upgrade + Coverage B + C + D = t
                 QuizQuestion(question="To establish total loss, you need:", options=["The homeowner's opinion", "Engineering report, repair estimate exceeding Coverage A, or code determination", "Just photos of damage", "Only the adjuster's agreement"], correct_answer=1, explanation="Total loss requires objective evidence — engineering reports, repair estimates exceeding policy limits, or code requirements making repair impractical."),
                 QuizQuestion(question="In a total loss, the carrier can depreciate the Coverage A payment.", options=["True", "False"], correct_answer=1, question_type="true_false", explanation="Under Valued Policy Law, total loss means full Coverage A limit — no depreciation applies."),
                 QuizQuestion(question="A home has $280K in Coverage A. Your repair estimate is $310K, and a code upgrade adds $40K. The carrier says repairs cost $240K. How do you establish total loss?", options=["Accept the carrier's lower estimate", "Submit your estimate plus engineering report plus code requirements showing total exceeds Coverage A", "Ask the homeowner to pay the difference", "File for appraisal on the amount"], correct_answer=1, question_type="scenario", scenario_context="The carrier's estimate is below the Coverage A limit, but your independent estimate plus required code upgrades exceed it significantly.", explanation="Present all three: your independent repair estimate ($310K), code upgrade requirements ($40K), and engineering assessment. When total repair cost exceeds Coverage A, it's a total loss — triggering Valued Policy Law and full limit payment.")
-            ]
             ]
         ),
 
