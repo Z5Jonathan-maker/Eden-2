@@ -76,36 +76,36 @@ const Layout = () => {
   // Navigation: workflow-first grouping for faster daily use.
   const coreOpsItems = [
     { icon: NAV_ICONS.command, label: 'Command', path: '/dashboard' },
-    { icon: NAV_ICONS.garden, label: 'Garden', path: '/claims' },
-    { icon: NAV_ICONS.harvest, label: 'Harvest', path: '/canvassing' },
-    { icon: NAV_ICONS.sales_ops, label: 'Sales Ops', path: '/sales' },
-    { icon: NAV_ICONS.recon, label: 'Recon', path: '/inspections' },
-    { icon: NAV_ICONS.documents, label: 'Docs', path: '/documents' },
-    { icon: NAV_ICONS.contracts, label: 'Contracts', path: '/contracts' },
     { icon: NAV_ICONS.voice_assistant, label: 'Comms', path: '/comms/chat' },
     { icon: NAV_ICONS.workspace, label: 'Workspace', path: '/workspace' },
+    { icon: NAV_ICONS.garden, label: 'Garden', path: '/claims' },
+    { icon: NAV_ICONS.recon, label: 'Recon', path: '/inspections' },
+    { icon: NAV_ICONS.harvest, label: 'Harvest', path: '/canvassing' },
+    { icon: NAV_ICONS.sales_ops, label: 'Sales Ops', path: '/sales' },
+    { icon: NAV_ICONS.documents, label: 'Docs', path: '/documents' },
+    { icon: NAV_ICONS.contracts, label: 'Contracts', path: '/contracts' },
   ];
 
   const intelligenceItems = [
+    { icon: NAV_ICONS.eve, label: 'Agent Eve', path: '/eve' },
     { icon: NAV_ICONS.intel_hub, label: 'Intel Hub', path: '/property' },
     { icon: NAV_ICONS.scales, label: 'Scales', path: '/scales' },
-    { icon: NAV_ICONS.eve, label: 'Agent Eve', path: '/eve' },
   ];
 
   const growthItems = [
-    { icon: NAV_ICONS.battle_pass, label: 'Battle Pass', path: '/battle-pass' },
     { icon: NAV_ICONS.my_card, label: 'My Card', path: '/mycard' },
-    { icon: NAV_ICONS.vision, label: 'Vision', path: '/vision' },
+    { icon: NAV_ICONS.battle_pass, label: 'Battle Pass', path: '/battle-pass' },
     { icon: NAV_ICONS.doctrine, label: 'Doctrine', path: '/university' },
+    { icon: NAV_ICONS.vision, label: 'Vision', path: '/vision' },
     { icon: NAV_ICONS.experts, label: 'Experts', path: '/experts' },
     { icon: NAV_ICONS.laws, label: 'Laws', path: '/florida-laws' },
   ];
 
   const systemItems = [
-    { icon: NAV_ICONS.storage, label: 'Storage', path: '/storage' },
-    { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data', permission: 'data.export' },
-    { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', permission: 'users.read' },
     { icon: NAV_ICONS.settings, label: 'Config', path: '/settings' },
+    { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', permission: 'users.read' },
+    { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data', permission: 'data.export' },
+    { icon: NAV_ICONS.storage, label: 'Storage', path: '/storage' },
   ];
 
   const adminItems = user?.role === 'admin'
