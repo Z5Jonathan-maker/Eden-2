@@ -6,15 +6,24 @@ Routes to Ollama Cloud (free, default), OpenAI, or Anthropic.
 import os
 import logging
 import httpx
+from services.ollama_config import (
+    DEFAULT_OLLAMA_BASE_URL,
+    DEFAULT_OLLAMA_MODEL,
+    extract_ollama_error_detail,
+    get_ollama_api_key,
+    get_ollama_model,
+    normalize_ollama_base_url,
+    ollama_endpoint,
+)
 
 logger = logging.getLogger(__name__)
 
 # Provider configs loaded from env
 PROVIDER_CONFIGS = {
     "ollama": {
-        "base_url": os.environ.get("OLLAMA_BASE_URL", "https://ollama.com"),
-        "api_key": os.environ.get("OLLAMA_API_KEY", ""),
-        "default_model": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
+        "base_url": normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL)),
+        "api_key": get_ollama_api_key(),
+        "default_model": get_ollama_model(),
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",
@@ -96,7 +105,12 @@ class LlmChat:
         cfg = PROVIDER_CONFIGS.get(provider, PROVIDER_CONFIGS.get("ollama", {}))
         base_url = self._base_url or cfg.get("base_url", "")
         api_key = self._api_key or cfg.get("api_key", "")
-        model = self._model or cfg.get("default_model", "gemma3:12b")
+        model = self._model or cfg.get("default_model", DEFAULT_OLLAMA_MODEL)
+
+        if provider == "ollama":
+            base_url = normalize_ollama_base_url(base_url)
+            api_key = (api_key or "").strip()
+            model = (model or DEFAULT_OLLAMA_MODEL).strip()
 
         if provider == "ollama":
             return await self._call_ollama(base_url, api_key, model, messages)
@@ -107,7 +121,7 @@ class LlmChat:
 
     async def _call_ollama(self, base_url: str, api_key: str, model: str, messages: list) -> str:
         """Call Ollama Cloud API (native format: /api/chat)."""
-        url = f"{base_url.rstrip('/')}/api/chat"
+        url = ollama_endpoint(base_url, "/api/chat")
 
         headers = {"Content-Type": "application/json"}
         if api_key:
@@ -124,17 +138,39 @@ class LlmChat:
                 resp = await client.post(url, json=payload, headers=headers)
 
                 if resp.status_code != 200:
-                    error_detail = resp.text[:500]
+                    try:
+                        error_detail = extract_ollama_error_detail(resp.json(), max_len=500)
+                    except Exception:
+                        error_detail = extract_ollama_error_detail(resp.text, max_len=500)
+                    remediation = ""
+                    if resp.status_code == 401:
+                        remediation = "Verify OLLAMA_API_KEY."
+                    elif resp.status_code == 404:
+                        remediation = "Check OLLAMA_BASE_URL and model name."
                     logger.error(f"Ollama API error ({resp.status_code}): {error_detail}")
-                    raise Exception(f"Ollama API returned {resp.status_code}: {error_detail}")
+                    message = f"Ollama API returned {resp.status_code}: {error_detail}"
+                    if remediation:
+                        message = f"{message}. {remediation}"
+                    raise Exception(message)
 
                 data = resp.json()
-                # Ollama response: {"message": {"role": "assistant", "content": "..."}}
-                return data["message"]["content"]
+                # Ollama response (chat): {"message": {"role": "assistant", "content": "..."}}
+                # Some deployments may return a plain "response" field.
+                message = data.get("message", {}) if isinstance(data, dict) else {}
+                content = message.get("content") if isinstance(message, dict) else None
+                if isinstance(content, str) and content.strip():
+                    return content
+                fallback = data.get("response") if isinstance(data, dict) else None
+                if isinstance(fallback, str) and fallback.strip():
+                    return fallback
+                raise KeyError("missing_message_content")
 
         except httpx.TimeoutException:
             logger.error(f"Ollama API timeout ({model}@{base_url})")
             raise Exception("Ollama request timed out. Try again.")
+        except httpx.HTTPError as e:
+            logger.error(f"Ollama HTTP client error ({model}@{base_url}): {e}")
+            raise Exception("Unable to reach Ollama API. Verify OLLAMA_BASE_URL.")
         except KeyError as e:
             logger.error(f"Unexpected Ollama response format: {e}")
             raise Exception(f"Unexpected response from Ollama: {e}")

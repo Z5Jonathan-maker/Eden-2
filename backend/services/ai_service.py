@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel
 from dependencies import db
+from services.ollama_config import get_ollama_api_key, get_ollama_model
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ def get_llm_client():
         try:
             from emergentintegrations.llm.chat import LlmChat
             _llm_client = LlmChat(
-                api_key=os.environ.get("OLLAMA_API_KEY") or os.environ.get("EMERGENT_LLM_KEY"),
-                model=os.environ.get("OLLAMA_MODEL", "gemma3:12b")
+                api_key=get_ollama_api_key() or os.environ.get("EMERGENT_LLM_KEY"),
+                model=get_ollama_model()
             )
             # Auto-select best available provider
             _llm_client._resolve_default_provider()

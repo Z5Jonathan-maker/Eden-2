@@ -95,7 +95,7 @@ const Settings = () => {
     () => [
       { value: 'openai', label: 'OpenAI' },
       { value: 'anthropic', label: 'Anthropic' },
-      { value: 'ollama', label: 'Ollama (Local)' },
+      { value: 'ollama', label: 'Ollama Cloud/API' },
     ],
     []
   );
@@ -800,7 +800,7 @@ const Settings = () => {
                       if (primaryOllamaTasks.length > 0 && !ollamaHealthy) {
                         return (
                           <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
-                            Ollama is configured as primary for {primaryOllamaTasks.length} task(s), but local health is not ready.
+                            Ollama is configured as primary for {primaryOllamaTasks.length} task(s), but health is not ready.
                             {' '}({ollamaHealth?.detail || 'unavailable'})
                           </div>
                         );

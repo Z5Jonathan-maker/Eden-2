@@ -20,10 +20,17 @@ from services.ai_routing_policy import (
     sanitize_provider_order as sanitize_policy_provider_order,
     load_runtime_routing_config as load_policy_runtime_routing_config,
 )
+from services.ollama_config import (
+    DEFAULT_OLLAMA_MODEL,
+    get_ollama_api_key,
+    get_ollama_model,
+    normalize_ollama_base_url,
+    ollama_endpoint,
+)
 
 # Get an LLM API key — prefer Ollama (free), fall back to legacy key or OpenAI
 EMERGENT_LLM_KEY = (
-    os.environ.get("OLLAMA_API_KEY")
+    get_ollama_api_key()
     or os.environ.get("EMERGENT_LLM_KEY")
     or os.environ.get("OPENAI_API_KEY")
     or os.environ.get("ANTHROPIC_API_KEY")
@@ -663,7 +670,7 @@ OLLAMA_CLOUD_MODELS = [
     {"id": "ministral-3:8b", "name": "Ministral 3 8B", "size": "8B", "description": "Mistral's small efficient model"},
 ]
 
-OLLAMA_MODEL_DEFAULT = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
+OLLAMA_MODEL_DEFAULT = get_ollama_model()
 OPENAI_MODEL_DEFAULT = os.environ.get("OPENAI_MODEL", "gpt-4o")
 ANTHROPIC_MODEL_DEFAULT = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 AI_DAILY_BUDGET_USD = float(os.environ.get("AI_DAILY_BUDGET_USD", "25"))
@@ -692,7 +699,8 @@ def _get_task_daily_budget_usd(task_type: str) -> Optional[float]:
 
 def _default_model_for_provider(provider: str, preferred_model: Optional[str] = None) -> str:
     if preferred_model:
-        return preferred_model
+        model = str(preferred_model).strip()
+        return model or DEFAULT_OLLAMA_MODEL
     return {
         "ollama": OLLAMA_MODEL_DEFAULT,
         "openai": OPENAI_MODEL_DEFAULT,
@@ -1122,8 +1130,8 @@ async def get_available_models(
     """Get available AI models for Eve chat"""
     import httpx
 
-    ollama_key = os.environ.get("OLLAMA_API_KEY", "")
-    ollama_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
+    ollama_key = get_ollama_api_key()
+    ollama_url = normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL"))
 
     # Try to fetch live model list from Ollama Cloud
     live_models = []
@@ -1132,7 +1140,7 @@ async def get_available_models(
         if ollama_key:
             headers["Authorization"] = f"Bearer {ollama_key}"
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(f"{ollama_url}/api/tags", headers=headers)
+            resp = await client.get(ollama_endpoint(ollama_url, "/api/tags"), headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
                 live_ids = {m["name"] for m in data.get("models", [])}

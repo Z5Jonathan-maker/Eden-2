@@ -2,6 +2,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 import os
 import time
+import logging
 
 import aiohttp
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -18,9 +19,17 @@ from services.ai_routing_policy import (
     apply_routing_config_updates as svc_apply_routing_config_updates,
     save_runtime_routing_config as svc_save_runtime_routing_config,
 )
+from services.ollama_config import (
+    extract_ollama_error_detail,
+    get_ollama_api_key,
+    get_ollama_model,
+    normalize_ollama_base_url,
+    ollama_endpoint,
+)
 
 
 router = APIRouter(prefix="/api/ai", tags=["ai-claim-workspace"])
+logger = logging.getLogger(__name__)
 
 
 class ClaimBriefRequest(BaseModel):
@@ -266,10 +275,10 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
     """
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
-    ollama_api_key = os.environ.get("OLLAMA_API_KEY", "")
+    ollama_api_key = get_ollama_api_key()
     ollama_enabled = bool(ollama_api_key) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"}
-    ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
-    ollama_model = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
+    ollama_base_url = normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL"))
+    ollama_model = get_ollama_model()
 
     runtime_cfg = await _load_runtime_routing_config()
     configured_order = runtime_cfg.get("task_provider_order", {}).get(task)
@@ -340,12 +349,23 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
                     ],
                     "stream": False,
                 }
-                async with session.post(f"{ollama_base_url}/api/chat", json=payload, headers=headers) as resp:
+                async with session.post(ollama_endpoint(ollama_base_url, "/api/chat"), json=payload, headers=headers) as resp:
                     if resp.status >= 300:
+                        try:
+                            detail_payload = await resp.json()
+                        except Exception:
+                            detail_payload = await resp.text()
+                        logger.warning(
+                            "Ollama call failed (status=%s, detail=%s)",
+                            resp.status,
+                            extract_ollama_error_detail(detail_payload),
+                        )
                         return None
                     data = await resp.json()
                     message = data.get("message", {}) or {}
                     text = message.get("content", "")
+                    if not text.strip():
+                        text = (data.get("response") or "") if isinstance(data, dict) else ""
                     if not text.strip():
                         return None
                     return {
@@ -442,12 +462,12 @@ async def get_ai_routing(
         "providers_available": {
             "openai": bool(os.environ.get("OPENAI_API_KEY")),
             "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY")),
-            "ollama": bool(os.environ.get("OLLAMA_API_KEY")) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"},
+            "ollama": bool(get_ollama_api_key()) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"},
         },
         "models": {
             "openai": os.environ.get("OPENAI_MODEL", "gpt-4.1"),
             "anthropic": os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
-            "ollama": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
+            "ollama": get_ollama_model(),
         },
         "global_default_env_key": "AI_PROVIDER_ORDER_DEFAULT",
         "global_default_is_set": bool(os.environ.get("AI_PROVIDER_ORDER_DEFAULT")),
@@ -473,12 +493,12 @@ async def get_ai_routing_config(
         "providers_available": {
             "openai": bool(os.environ.get("OPENAI_API_KEY")),
             "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY")),
-            "ollama": bool(os.environ.get("OLLAMA_API_KEY")) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"},
+            "ollama": bool(get_ollama_api_key()) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"},
         },
         "models": {
             "openai": os.environ.get("OPENAI_MODEL", "gpt-4.1"),
             "anthropic": os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
-            "ollama": os.environ.get("OLLAMA_MODEL", "gemma3:12b"),
+            "ollama": get_ollama_model(),
         },
         "config": runtime_cfg,
         "tasks": tasks,
@@ -524,10 +544,10 @@ async def get_ai_providers_health(
 
     openai_configured = bool(os.environ.get("OPENAI_API_KEY"))
     anthropic_configured = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    ollama_api_key = os.environ.get("OLLAMA_API_KEY", "")
+    ollama_api_key = get_ollama_api_key()
     ollama_enabled = bool(ollama_api_key) or os.environ.get("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes"}
-    ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "https://ollama.com").rstrip("/")
-    ollama_model = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
+    ollama_base_url = normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL"))
+    ollama_model = get_ollama_model()
 
     ollama_status = {
         "enabled": ollama_enabled,
@@ -544,35 +564,68 @@ async def get_ai_providers_health(
             headers = {}
             if ollama_api_key:
                 headers["Authorization"] = f"Bearer {ollama_api_key}"
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
-                # Try /api/tags for local Ollama; for Ollama Cloud just check connectivity
-                check_url = f"{ollama_base_url}/api/tags"
-                async with session.get(check_url, headers=headers) as resp:
+
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
+                tags_hint = ""
+                try:
+                    async with session.get(ollama_endpoint(ollama_base_url, "/api/tags"), headers=headers) as tags_resp:
+                        if tags_resp.status < 300:
+                            tags_data = await tags_resp.json()
+                            models = tags_data.get("models", []) or []
+                            model_listed = any((m.get("name", "") == ollama_model) for m in models)
+                            if not model_listed:
+                                tags_hint = "model_not_listed_in_tags"
+                        else:
+                            tags_hint = f"tags_http_{tags_resp.status}"
+                except Exception as tags_exc:
+                    tags_hint = f"tags_error:{str(tags_exc)[:60]}"
+
+                payload = {
+                    "model": ollama_model,
+                    "messages": [{"role": "user", "content": "health_check"}],
+                    "stream": False,
+                    "options": {"num_predict": 1},
+                }
+                async with session.post(
+                    ollama_endpoint(ollama_base_url, "/api/chat"),
+                    json=payload,
+                    headers=headers,
+                ) as chat_resp:
                     latency_ms = int((time.perf_counter() - started) * 1000)
-                    if resp.status < 300:
-                        try:
-                            data = await resp.json()
-                            models = data.get("models", []) or []
-                            installed = any((m.get("name", "") == ollama_model) for m in models)
-                            ollama_status.update(
-                                {
-                                    "healthy": installed,
-                                    "latency_ms": latency_ms,
-                                    "detail": "ok" if installed else f"model_not_found:{ollama_model}",
-                                }
-                            )
-                        except Exception:
-                            # Ollama Cloud may not return JSON for /api/tags — treat reachable as healthy
-                            ollama_status.update({"healthy": True, "latency_ms": latency_ms, "detail": "cloud_reachable"})
-                    elif resp.status == 404 and ollama_api_key:
-                        # Ollama Cloud doesn't have /api/tags — API key present means configured
-                        ollama_status.update({"healthy": True, "latency_ms": latency_ms, "detail": "cloud_api_key_present"})
+                    if chat_resp.status < 300:
+                        detail_parts = ["ok"]
+                        if tags_hint:
+                            detail_parts.append(tags_hint)
+                        ollama_status.update(
+                            {
+                                "healthy": True,
+                                "latency_ms": latency_ms,
+                                "detail": ",".join(detail_parts),
+                            }
+                        )
                     else:
-                        ollama_status.update({"healthy": False, "latency_ms": latency_ms, "detail": f"http_{resp.status}"})
+                        try:
+                            error_payload = await chat_resp.json()
+                        except Exception:
+                            error_payload = await chat_resp.text()
+                        detail = extract_ollama_error_detail(error_payload)
+                        status_detail = f"chat_http_{chat_resp.status}"
+                        if chat_resp.status == 401:
+                            status_detail = "chat_unauthorized_api_key"
+                        elif chat_resp.status == 404:
+                            status_detail = "chat_endpoint_or_model_not_found"
+                        elif chat_resp.status == 429:
+                            status_detail = "chat_rate_limited"
+                        ollama_status.update(
+                            {
+                                "healthy": False,
+                                "latency_ms": latency_ms,
+                                "detail": f"{status_detail}:{detail}",
+                            }
+                        )
         except Exception as exc:
             latency_ms = int((time.perf_counter() - started) * 1000)
             if ollama_api_key:
-                # Cloud key is configured, network error is transient
                 ollama_status.update({"healthy": False, "latency_ms": latency_ms, "detail": f"cloud_unreachable:{str(exc)[:80]}"})
             else:
                 ollama_status.update({"healthy": False, "latency_ms": latency_ms, "detail": str(exc)[:120]})
@@ -1437,3 +1490,4 @@ async def extract_document(
         provider="fallback",
         model="deterministic",
     )
+

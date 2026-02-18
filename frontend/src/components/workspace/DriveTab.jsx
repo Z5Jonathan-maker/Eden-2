@@ -7,7 +7,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from '../../shared/ui/button';
 import { Input } from '../../shared/ui/input';
-import { apiGet, apiDelete, getAuthToken } from '../../lib/api';
+import { apiGet, apiDelete, apiUpload } from '../../lib/api';
 
 const MIME_ICONS = {
   'application/pdf': FileText,
@@ -96,19 +96,12 @@ const DriveTab = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = getAuthToken();
-      const resp = await fetch('/api/integrations/google/drive/upload', {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (resp.ok) {
+      const res = await apiUpload('/api/integrations/google/drive/upload', formData);
+      if (res.ok) {
         toast.success(`Uploaded "${file.name}"`);
         fetchFiles(searchQuery);
       } else {
-        const err = await resp.json().catch(() => ({}));
-        toast.error(err.detail || 'Upload failed');
+        toast.error(res.error || 'Upload failed');
       }
     } catch {
       toast.error('Upload failed');

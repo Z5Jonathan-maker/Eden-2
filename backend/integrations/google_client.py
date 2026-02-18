@@ -93,6 +93,25 @@ async def _google_request(user_id: str, method: str, url: str, **kwargs):
         return resp
 
 
+def _google_error_detail(resp: httpx.Response, fallback: str) -> str:
+    """Extract a useful Google API error message for UI surfaces."""
+    message = ""
+    try:
+        payload = resp.json()
+        error_obj = payload.get("error") if isinstance(payload, dict) else None
+        if isinstance(error_obj, dict):
+            message = str(error_obj.get("message") or "").strip()
+        elif error_obj:
+            message = str(error_obj).strip()
+    except Exception:
+        message = ""
+
+    text = message or fallback
+    if resp.status_code == 403 and "insufficient" in text.lower():
+        return "Google Drive permission missing. Reconnect Google and approve Drive access."
+    return text
+
+
 def _get_user_id(current_user: dict) -> str:
     return current_user.get("id") or str(current_user.get("_id", ""))
 
@@ -511,7 +530,10 @@ async def list_drive_files(
     resp = await _google_request(user_id, "GET", f"{DRIVE_API}/files", params=params)
 
     if resp.status_code != 200:
-        raise HTTPException(status_code=resp.status_code, detail="Failed to list Drive files")
+        raise HTTPException(
+            status_code=resp.status_code,
+            detail=_google_error_detail(resp, "Failed to list Drive files")
+        )
 
     data = resp.json()
     files = []
@@ -576,7 +598,10 @@ async def upload_drive_file(
 
     if resp.status_code not in (200, 201):
         logger.error(f"Drive upload failed: {resp.text}")
-        raise HTTPException(status_code=resp.status_code, detail="Failed to upload file")
+        raise HTTPException(
+            status_code=resp.status_code,
+            detail=_google_error_detail(resp, "Failed to upload file")
+        )
 
     result = resp.json()
 
@@ -645,6 +670,9 @@ async def delete_drive_file(
     )
 
     if resp.status_code not in (200, 204):
-        raise HTTPException(status_code=resp.status_code, detail="Failed to delete file")
+        raise HTTPException(
+            status_code=resp.status_code,
+            detail=_google_error_detail(resp, "Failed to delete file")
+        )
 
     return {"message": "File deleted", "id": file_id}
