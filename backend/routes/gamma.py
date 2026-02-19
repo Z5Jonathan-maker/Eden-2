@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from dependencies import db, get_current_active_user
 from pydantic import BaseModel
 from typing import Optional, List
@@ -6,6 +6,14 @@ from datetime import datetime, timezone
 import os
 import logging
 import httpx
+from routes.claims import _get_claim_for_user_or_403
+from routes.gamma_helpers import (
+    pack_client_approval,
+    pack_client_update,
+    pack_pastor_report,
+    pack_rep_performance,
+    pack_settlement,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -836,23 +844,17 @@ class GammaPresentationRequest(BaseModel):
     template: str = "presentation"
 
 
-@router.post("/presentation")
-async def create_gamma_presentation(
-    request: GammaPresentationRequest,
-    current_user: dict = Depends(get_current_active_user)
-):
-    """Create a Gamma presentation deck from content.
-    Returns edit_url, share_url, and pdf_url."""
+async def _create_presentation(title: str, content: str, audience: str) -> dict:
     if not GAMMA_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="Gamma presentation API not configured. Set GAMMA_API_KEY in .env."
+            detail="Gamma presentation API not configured. Set GAMMA_API_KEY in .env.",
         )
 
     payload = {
-        "title": request.title,
+        "title": title,
         "mode": "generate",
-        "prompt": request.content,
+        "prompt": content,
         "options": {"images": True, "language": "en"},
     }
     headers = {
@@ -881,7 +883,7 @@ async def create_gamma_presentation(
             "share_url": f"https://gamma.app/{gamma_id}",
             "url": f"https://gamma.app/{gamma_id}",
             "pdf_url": f"https://gamma.app/export/{gamma_id}/pdf",
-            "audience": request.audience,
+            "audience": audience,
             "status": "created",
         }
     except httpx.HTTPStatusError as e:
@@ -896,3 +898,108 @@ async def create_gamma_presentation(
         logger.error(f"Gamma presentation request failed: {e}")
         raise HTTPException(status_code=503, detail="Unable to reach Gamma service")
 
+
+@router.post("/presentation")
+async def create_gamma_presentation(
+    request: GammaPresentationRequest,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Create a Gamma presentation deck from content.
+    Returns edit_url, share_url, and pdf_url."""
+    return await _create_presentation(request.title, request.content, request.audience)
+
+
+def _format_timeline(events: list[dict]) -> list[dict]:
+    out: list[dict] = []
+    for event in events:
+        out.append(
+            {
+                "date": str(event.get("occurred_at") or event.get("created_at") or ""),
+                "label": event.get("summary") or event.get("event_type") or "Timeline event",
+            }
+        )
+    return out
+
+
+@router.post("/presentation/{audience}")
+async def create_gamma_presentation_for_audience(
+    audience: str,
+    claim_id: str = Query(...),
+    current_user: dict = Depends(get_current_active_user),
+):
+    claim = await _get_claim_for_user_or_403(claim_id, current_user)
+    events = await db.claim_events.find({"claim_id": claim_id}, {"_id": 0}).sort("occurred_at", 1).to_list(120)
+    timeline = _format_timeline(events)
+
+    tasks = []
+    if claim.get("next_actions_firm"):
+        tasks.append({"label": claim.get("next_actions_firm"), "owner": "firm", "done": False})
+    if claim.get("next_actions_client"):
+        tasks.append({"label": claim.get("next_actions_client"), "owner": "carrier", "done": False})
+
+    audience_token = (audience or "client_update").strip().lower()
+    title_map = {
+        "client_update": "Client Update",
+        "client_approval": "Settlement Review",
+        "settlement": "Final Settlement",
+        "rep_performance": "Rep Performance",
+        "pastor_report": "Ministry Report",
+    }
+    title_suffix = title_map.get(audience_token, "Claim Presentation")
+    title = f"{claim.get('claim_number') or claim_id} - {title_suffix}"
+
+    if audience_token == "client_approval":
+        estimate_total = float(claim.get("estimated_value") or 0)
+        carrier_total = float(claim.get("carrier_offer") or 0)
+        content = pack_client_approval(
+            claim,
+            {"total": estimate_total},
+            {"total": carrier_total},
+            [],
+        )
+    elif audience_token == "settlement":
+        gross = float(claim.get("settlement_amount") or claim.get("estimated_value") or 0)
+        content = pack_settlement(
+            claim,
+            {"gross": gross, "deductible": 0, "fee": 0, "net": gross},
+            timeline,
+            [],
+        )
+    elif audience_token == "rep_performance":
+        content = pack_rep_performance(
+            current_user,
+            {
+                "period": "Current period",
+                "doors": 0,
+                "leads": 0,
+                "appointments": 0,
+                "contracts": 0,
+                "lead_to_appt": 0,
+                "appt_to_signed": 0,
+                "revenue": 0,
+                "avg_deal": 0,
+            },
+        )
+    elif audience_token == "pastor_report":
+        content = pack_pastor_report(
+            {"name": "Eden Claims"},
+            {"period": "Current period", "families_helped": 0, "total_claim_value": 0, "fees_earned": 0, "giving": 0},
+        )
+    else:
+        audience_token = "client_update"
+        content = pack_client_update(claim, timeline, tasks)
+
+    return await _create_presentation(title, content, audience_token)
+
+
+@router.post("/client-update-deck/{claim_id}")
+async def create_client_update_deck_alias(
+    claim_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    # Compatibility alias used by existing frontend hook.
+    return await create_gamma_presentation_for_audience(
+        audience="client_update",
+        claim_id=claim_id,
+        current_user=current_user,
+    )

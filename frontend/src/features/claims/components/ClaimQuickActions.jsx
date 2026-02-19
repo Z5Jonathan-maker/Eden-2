@@ -171,7 +171,7 @@ const ClaimQuickActions = ({
           ) : (
             <>
               <FileText className="w-4 h-4" />
-              Generate Report
+              Open Reports
             </>
           )}
         </button>

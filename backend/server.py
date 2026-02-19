@@ -65,6 +65,8 @@ from routes.mycard import router as mycard_router
 from routes.comm_conversations import router as comm_conversations_router
 from routes.integrations import router as integrations_services_router
 from routes.imagery import router as imagery_router
+from routes.evidence import router as evidence_router
+from routes.ops_manifest import router as ops_manifest_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -414,6 +416,8 @@ app.include_router(battle_pass_router)
 app.include_router(mycard_router)
 app.include_router(comm_conversations_router)
 app.include_router(feature_flags_router)
+app.include_router(evidence_router)
+app.include_router(ops_manifest_router)
 
 # Include integrations routers
 app.include_router(integrations_router)

@@ -7,8 +7,14 @@ import {
   Loader2,
   Download,
   Upload,
+  History,
+  ShieldCheck,
+  Presentation,
 } from 'lucide-react';
 import ClaimCommsPanel from './ClaimCommsPanel';
+import ClaimTimelineTab from './ClaimTimelineTab';
+import ClaimEvidenceReviewTab from './ClaimEvidenceReviewTab';
+import ClaimReportsTab from './ClaimReportsTab';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -36,7 +42,7 @@ const ClaimTabs = ({
   return (
     <div className="card-tactical p-5">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-1">
+        <TabsList className="grid w-full grid-cols-7 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-1">
           <TabsTrigger
             value="notes"
             className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
@@ -65,6 +71,30 @@ const ClaimTabs = ({
             data-testid="documents-tab"
           >
             Docs ({documents.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="timeline"
+            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            data-testid="timeline-tab"
+          >
+            <History className="w-4 h-4 mr-1" />
+            Timeline
+          </TabsTrigger>
+          <TabsTrigger
+            value="review"
+            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            data-testid="review-tab"
+          >
+            <ShieldCheck className="w-4 h-4 mr-1" />
+            Review
+          </TabsTrigger>
+          <TabsTrigger
+            value="reports"
+            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            data-testid="reports-tab"
+          >
+            <Presentation className="w-4 h-4 mr-1" />
+            Reports
           </TabsTrigger>
         </TabsList>
 
@@ -264,6 +294,18 @@ const ClaimTabs = ({
             <Upload className="w-4 h-4" />
             Upload Document
           </button>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="mt-4 md:mt-6">
+          <ClaimTimelineTab claimId={claimId} />
+        </TabsContent>
+
+        <TabsContent value="review" className="mt-4 md:mt-6">
+          <ClaimEvidenceReviewTab claimId={claimId} />
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-4 md:mt-6">
+          <ClaimReportsTab claimId={claimId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -320,62 +320,10 @@ const ClaimDetails = () => {
   };
 
   const handleGenerateReport = async () => {
-    try {
-      setGeneratingReport(true);
-
-      // Generate a PDF report (client-side for now)
-      const reportContent = `
-CLAIM REPORT
-============
-
-Claim Number: ${claim.claim_number}
-Status: ${claim.status}
-Priority: ${claim.priority}
-
-CLIENT INFORMATION
-------------------
-Client Name: ${claim.client_name}
-Client Email: ${claim.client_email || 'N/A'}
-Client Phone: ${claim.client_phone || 'N/A'}
-
-PROPERTY INFORMATION
---------------------
-Property Address: ${claim.property_address}
-Date of Loss: ${claim.date_of_loss}
-Claim Type: ${claim.claim_type}
-
-POLICY INFORMATION
-------------------
-Policy Number: ${claim.policy_number}
-Insurance Company: ${claim.insurance_company || 'N/A'}
-Estimated Value: $${(claim.estimated_value || 0).toLocaleString()}
-
-DESCRIPTION
------------
-${claim.description || 'No description provided'}
-
-NOTES (${notes.length})
------------
-${notes.map((n) => `[${new Date(n.created_at).toLocaleDateString()}] ${n.author_name}: ${n.content}`).join('\n\n') || 'No notes'}
-
-Generated on: ${new Date().toLocaleString()}
-      `.trim();
-
-      // Download as text file
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `claim-report-${claim.claim_number}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success('Report generated successfully');
-    } catch (err) {
-      toast.error('Failed to generate report');
-    } finally {
-      setGeneratingReport(false);
-    }
+    setGeneratingReport(true);
+    setActiveTab('reports');
+    toast.success('Open Reports tab to generate a PDF report');
+    setGeneratingReport(false);
   };
 
   const handleGenerateAIBrief = async () => {
