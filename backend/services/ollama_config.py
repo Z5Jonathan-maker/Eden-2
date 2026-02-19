@@ -49,6 +49,21 @@ def get_ollama_model(env: Optional[Mapping[str, str]] = None) -> str:
     return _clean(source.get("OLLAMA_MODEL")) or DEFAULT_OLLAMA_MODEL
 
 
+def validate_ollama_config(env: Optional[Mapping[str, str]] = None) -> dict:
+    """Return diagnostic info about Ollama configuration (no secrets exposed)."""
+    source = env or os.environ
+    api_key = get_ollama_api_key(source)
+    base_url = normalize_ollama_base_url(source.get("OLLAMA_BASE_URL"))
+    model = get_ollama_model(source)
+    return {
+        "api_key_set": bool(api_key),
+        "api_key_preview": f"{api_key[:6]}***" if len(api_key) > 6 else ("set" if api_key else "MISSING"),
+        "base_url": base_url,
+        "chat_endpoint": ollama_endpoint(base_url, "/api/chat"),
+        "model": model,
+    }
+
+
 def extract_ollama_error_detail(payload: Any, *, max_len: int = 220) -> str:
     """
     Convert API error payloads into a compact, operator-friendly string.

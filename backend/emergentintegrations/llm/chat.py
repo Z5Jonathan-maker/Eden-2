@@ -123,6 +123,10 @@ class LlmChat:
         """Call Ollama Cloud API (native format: /api/chat)."""
         url = ollama_endpoint(base_url, "/api/chat")
 
+        # Warn loudly when no API key — Ollama Cloud requires Bearer auth
+        if not api_key:
+            logger.warning(f"Ollama call WITHOUT API key → {url} — will likely fail with 401. Set OLLAMA_API_KEY env var.")
+
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -132,6 +136,8 @@ class LlmChat:
             "messages": messages,
             "stream": False,
         }
+
+        logger.info(f"Ollama request → {url} | model={model} | auth={'yes' if api_key else 'NO'}")
 
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -144,9 +150,11 @@ class LlmChat:
                         error_detail = extract_ollama_error_detail(resp.text, max_len=500)
                     remediation = ""
                     if resp.status_code == 401:
-                        remediation = "Verify OLLAMA_API_KEY."
+                        remediation = "OLLAMA_API_KEY is missing or invalid. Get one at https://ollama.com/settings/keys"
                     elif resp.status_code == 404:
-                        remediation = "Check OLLAMA_BASE_URL and model name."
+                        remediation = f"Model '{model}' may not be available. Check OLLAMA_MODEL or try 'gemma3:12b'."
+                    elif resp.status_code == 429:
+                        remediation = "Rate limited by Ollama Cloud. Wait a moment and retry."
                     logger.error(f"Ollama API error ({resp.status_code}): {error_detail}")
                     message = f"Ollama API returned {resp.status_code}: {error_detail}"
                     if remediation:
