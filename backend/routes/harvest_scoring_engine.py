@@ -228,31 +228,30 @@ async def process_visit_for_scoring(
 async def calculate_streak(user_id: str) -> int:
     """
     Calculate consecutive days with >= STREAK_THRESHOLD doors.
-    Returns the current streak count.
+    Uses a single aggregation instead of N individual queries.
     """
     now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(days=60)).isoformat()
+
+    # Single aggregation: group visits by date, count per day
+    pipeline = [
+        {"$match": {"user_id": user_id, "created_at": {"$gte": cutoff}}},
+        {"$addFields": {"date_str": {"$substr": ["$created_at", 0, 10]}}},
+        {"$group": {"_id": "$date_str", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gte": STREAK_THRESHOLD}}},
+        {"$sort": {"_id": -1}},
+    ]
+    active_days = await db.harvest_visits.aggregate(pipeline).to_list(60)
+    active_dates = {d["_id"] for d in active_days}
+
     streak = 0
-    
-    for i in range(60):  # Check last 60 days max
+    for i in range(60):
         check_date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
-        
-        # Count doors for this day
-        day_start = datetime.strptime(check_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        day_end = day_start + timedelta(days=1)
-        
-        door_count = await db.harvest_visits.count_documents({
-            "user_id": user_id,
-            "created_at": {
-                "$gte": day_start.isoformat(),
-                "$lt": day_end.isoformat()
-            }
-        })
-        
-        if door_count >= STREAK_THRESHOLD:
+        if check_date in active_dates:
             streak += 1
         elif i > 0:  # Allow today to be incomplete
             break
-    
+
     return streak
 
 

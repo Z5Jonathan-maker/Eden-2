@@ -264,33 +264,32 @@ async def get_today_stats(
 
 
 async def _calculate_streak_days(user_id: str) -> int:
-    """Calculate consecutive days with at least 1 visit"""
+    """Calculate consecutive days with at least 1 visit (single aggregation)"""
     now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(days=365)).isoformat()
+
+    # Single aggregation: group visits by date, find all active days
+    pipeline = [
+        {"$match": {"user_id": user_id, "created_at": {"$gte": cutoff}}},
+        {"$addFields": {"date_str": {"$substr": ["$created_at", 0, 10]}}},
+        {"$group": {"_id": "$date_str", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gte": 1}}},
+        {"$sort": {"_id": -1}},
+    ]
+    active_days = await db.harvest_visits.aggregate(pipeline).to_list(365)
+    active_dates = {d["_id"] for d in active_days}
+
     streak = 0
-    
-    # Check each day going backwards
-    for days_ago in range(365):  # Max 1 year
-        check_date = now - timedelta(days=days_ago)
-        day_start = check_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = check_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
-        # Count visits for this day
-        count = await db.harvest_visits.count_documents({
-            "user_id": user_id,
-            "created_at": {
-                "$gte": day_start.isoformat(),
-                "$lte": day_end.isoformat()
-            }
-        })
-        
-        if count > 0:
+    for days_ago in range(365):
+        check_date = (now - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+        if check_date in active_dates:
             streak += 1
         else:
             # Allow skipping today if it's early
             if days_ago == 0 and now.hour < 12:
                 continue
             break
-    
+
     return streak
 
 

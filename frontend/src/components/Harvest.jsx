@@ -758,7 +758,9 @@ const Harvest = () => {
           p.id === selectedPin.id ? { ...p, disposition: selectedPin.disposition } : p
         )
       );
-      toast.error('Update failed');
+      toast.error('Update failed — pin reverted', { duration: 3000 });
+      // Vibrate to signal failure (distinct pattern from success)
+      if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
     }
   };
 

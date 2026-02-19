@@ -93,6 +93,52 @@ PIN_DEDUPE_TIME_SECONDS = 45
 PIN_DEDUPE_DISTANCE_METERS = 25
 
 
+def _point_in_polygon(lat: float, lng: float, polygon: list) -> bool:
+    """Ray-casting point-in-polygon check. Polygon is list of [lat, lng] or {lat, lng} dicts."""
+    points = []
+    for p in polygon:
+        if isinstance(p, dict):
+            plat = _coerce_float(p.get("lat") or p.get("latitude"))
+            plng = _coerce_float(p.get("lng") or p.get("longitude"))
+        elif isinstance(p, (list, tuple)) and len(p) >= 2:
+            plat = _coerce_float(p[0])
+            plng = _coerce_float(p[1])
+            # Handle [lng, lat] ordering (common in GeoJSON)
+            if plat is not None and plng is not None and abs(plat) > 90 and abs(plng) <= 90:
+                plat, plng = plng, plat
+        else:
+            continue
+        if plat is not None and plng is not None:
+            points.append((plat, plng))
+    if len(points) < 3:
+        return False
+    inside = False
+    n = len(points)
+    j = n - 1
+    for i in range(n):
+        yi, xi = points[i]
+        yj, xj = points[j]
+        if (yi > lat) != (yj > lat):
+            slope = (xj - xi) * (lat - yi) / ((yj - yi) or 1e-12) + xi
+            if lng < slope:
+                inside = not inside
+        j = i
+    return inside
+
+
+async def _auto_assign_territory(lat: float, lng: float) -> Optional[str]:
+    """Find the territory containing the given point. Returns territory_id or None."""
+    territories = await db.canvassing_territories.find(
+        {"is_active": True},
+        {"id": 1, "coordinates": 1, "polygon": 1, "_id": 0}
+    ).to_list(200)
+    for t in territories:
+        coords = t.get("coordinates") or t.get("polygon") or []
+        if _point_in_polygon(lat, lng, coords):
+            return t.get("id")
+    return None
+
+
 def _find_duplicate_pin(
     latitude: float,
     longitude: float,
@@ -257,7 +303,12 @@ async def create_door_pin(
         return _duplicate_pin_response(duplicate)
 
     pin_id = str(uuid.uuid4())
-    
+
+    # Server-side territory auto-assign if frontend didn't provide one
+    territory_id = pin.territory_id
+    if not territory_id:
+        territory_id = await _auto_assign_territory(pin.latitude, pin.longitude)
+
     doc = {
         "id": pin_id,
         "user_id": user_id,
@@ -269,7 +320,7 @@ async def create_door_pin(
         "notes": pin.notes,
         "homeowner_name": pin.homeowner_name,
         "phone": pin.phone,
-        "territory_id": pin.territory_id,
+        "territory_id": territory_id,
         "idempotency_key": idempotency_key,
         "created_at": now_iso,
         "updated_at": now_iso,
@@ -451,6 +502,15 @@ async def get_door_pin(
     return pin
 
 
+def _can_modify_pin(pin: dict, current_user: dict) -> bool:
+    """Check if user can modify this pin (owner or admin/manager)"""
+    user_id = current_user.get("id")
+    role = (current_user.get("role") or "").lower()
+    if role in ("admin", "manager", "owner"):
+        return True
+    return pin.get("user_id") == user_id
+
+
 @router.patch("/pins/{pin_id}")
 async def update_door_pin(
     pin_id: str,
@@ -459,9 +519,12 @@ async def update_door_pin(
 ):
     """Update a door pin (disposition, notes, etc.) - Awards points automatically"""
     pin = await db.canvassing_pins.find_one({"id": pin_id})
-    
+
     if not pin:
         raise HTTPException(status_code=404, detail="Pin not found")
+
+    if not _can_modify_pin(pin, current_user):
+        raise HTTPException(status_code=403, detail="You can only update your own pins")
     
     update_data = {k: v for k, v in update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -540,19 +603,25 @@ async def award_disposition_points(user_id: str, user_name: str, old_disp: str, 
     event_type = DISPOSITION_EVENTS.get(new_disp, "door_knocked")
     now = datetime.now(timezone.utc)
     
-    # Calculate multiplier (simplified - streak based)
+    # Calculate multiplier (simplified - streak based, single aggregation)
     multiplier = 1.0
-    
-    # Check streak
+
+    # Streak: single aggregation instead of 30 individual queries
+    cutoff_date = (now - timedelta(days=30)).date().isoformat()
+    streak_pipeline = [
+        {"$match": {"user_id": user_id, "date": {"$gte": cutoff_date}}},
+        {"$group": {"_id": "$date", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gte": 10}}},
+        {"$sort": {"_id": -1}},
+    ]
+    active_days = await db.harvest_score_events.aggregate(streak_pipeline).to_list(30)
+    active_dates = {d["_id"] for d in active_days}
+
     today = now.date()
     streak = 0
     for i in range(30):
         check_date = (today - timedelta(days=i)).isoformat()
-        count = await db.harvest_score_events.count_documents({
-            "user_id": user_id,
-            "date": check_date
-        })
-        if count >= 10:
+        if check_date in active_dates:
             streak += 1
         elif i > 0:
             break
@@ -604,7 +673,12 @@ async def delete_door_pin(
     pin_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete a door pin"""
+    """Delete a door pin (owner or admin only)"""
+    pin = await db.canvassing_pins.find_one({"id": pin_id})
+    if not pin:
+        raise HTTPException(status_code=404, detail="Pin not found")
+    if not _can_modify_pin(pin, current_user):
+        raise HTTPException(status_code=403, detail="You can only delete your own pins")
     result = await db.canvassing_pins.delete_one({"id": pin_id})
     
     if result.deleted_count == 0:
