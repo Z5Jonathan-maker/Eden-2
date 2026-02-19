@@ -56,6 +56,33 @@ async def get_course(course_id: str, current_user: dict = Depends(get_current_ac
     course["user_progress"] = progress
     return course
 
+@router.get("/courses/{course_id}/flashcards")
+async def get_course_flashcards(course_id: str, current_user: dict = Depends(get_current_active_user)):
+    """Get flashcards for a course, auto-generated from teaching_beats if none explicit."""
+    course = await db.courses.find_one({"id": course_id}, {"_id": 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    flashcards = []
+    for lesson in course.get("lessons", []):
+        lesson_cards = lesson.get("flashcards", [])
+        if lesson_cards:
+            for card in lesson_cards:
+                card["category"] = lesson.get("title", "")
+                flashcards.append(card)
+        elif lesson.get("teaching_beats"):
+            # Auto-generate from teaching_beats as fallback
+            for beat in lesson["teaching_beats"]:
+                flashcards.append({
+                    "id": str(uuid.uuid4()),
+                    "front": beat,
+                    "back": beat,
+                    "category": lesson.get("title", ""),
+                    "auto_generated": True
+                })
+
+    return {"course_id": course_id, "flashcards": flashcards, "total": len(flashcards)}
+
 @router.get("/articles")
 async def get_articles(
     category: Optional[str] = None,

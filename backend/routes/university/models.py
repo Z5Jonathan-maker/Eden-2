@@ -9,14 +9,30 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 
+class MatchingPair(BaseModel):
+    left: str
+    right: str
+
 class QuizQuestion(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     question: str
-    options: List[str]
-    correct_answer: int  # index into options
-    question_type: str = "multiple_choice"  # multiple_choice | true_false | scenario
-    explanation: Optional[str] = None  # shown after answering
-    scenario_context: Optional[str] = None  # background context for scenario questions
+    options: List[str] = []
+    correct_answer: int = 0  # index into options (for MCQ/TF/scenario)
+    question_type: str = "multiple_choice"  # multiple_choice | true_false | scenario | matching | fill_blank | ordering
+    explanation: Optional[str] = None
+    scenario_context: Optional[str] = None
+    # New quiz type fields
+    matching_pairs: List[MatchingPair] = []  # for "matching" type
+    correct_text: Optional[str] = None  # for "fill_blank" type
+    correct_order: List[str] = []  # for "ordering" type
+    blank_placeholder: Optional[str] = None  # hint for fill_blank
+
+class Flashcard(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    front: str
+    back: str
+    hint: Optional[str] = None
+    category: Optional[str] = None
 
 class Lesson(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -30,6 +46,7 @@ class Lesson(BaseModel):
     carrier_move: Optional[str] = None
     our_move: Optional[str] = None
     completion_criteria: Optional[str] = None
+    flashcards: List[Flashcard] = []
 
 class Course(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

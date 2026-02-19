@@ -8,7 +8,7 @@ This data can be regenerated, updated, or loaded from external sources.
 from datetime import datetime, timezone
 import logging
 from dependencies import db
-from .models import Course, Lesson, Article, QuizQuestion
+from .models import Course, Lesson, Article, QuizQuestion, Flashcard, MatchingPair
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +41,40 @@ async def seed_university_data():
 
 Insurance carriers are publicly traded companies with shareholders. Their business model is simple: collect premiums, minimize payouts.
 
+:::key-term
+**Full Indemnification** — The legal obligation to restore the policyholder's property to its pre-loss condition. This is the standard every claim is measured against.
+:::
+
 ## The Core Reality
-The carrier's adjuster is not your friend. They are trained to protect company reserves, not ensure you receive full indemnification. This isn't personal—it's structural.
+
+The carrier's adjuster is not your friend. They are trained to protect company reserves, not ensure you receive full indemnification. This isn't personal — it's structural.
+
+:::warning
+Never assume the carrier's adjuster is working in your best interest. They are paid to protect company reserves. Judge them by their numbers, not their demeanor.
+:::
 
 ## Common Tactics You Will Encounter
 
 ### 1. The Lowball Initial Offer
-Carriers routinely issue estimates 30-60% below actual repair costs. They count on policyholders accepting out of fatigue or ignorance.
+Carriers routinely issue estimates **30-60% below** actual repair costs. They count on policyholders accepting out of fatigue or ignorance.
 
-**Your response:** Never accept the first estimate. Document everything. Get your own contractor estimates.
+:::tip
+Never accept the first estimate. Document everything. Get your own contractor estimates to create a line-by-line comparison.
+:::
 
 ### 2. Moving Goalposts
 First they need "more documentation." Then they need a "re-inspection." Then they need an "engineering report." Each request buys time and tests your resolve.
 
-**Your response:** Provide what's reasonable, but recognize delay tactics. Set deadlines. Document every request and response.
+:::tip
+Provide what's reasonable, but recognize delay tactics. Set deadlines. Document every request and response in writing.
+:::
 
 ### 3. Depreciation Games
 Carriers depreciate materials aggressively, sometimes illegally. They may withhold recoverable depreciation indefinitely.
 
-**Your response:** Know your policy. Understand ACV vs RCV. Track what's owed.
+:::warning
+Some carriers illegally depreciate labor. Under Florida law, labor is generally not depreciable. Know your policy's ACV vs RCV provisions.
+:::
 
 ### 4. Scope Denial
 "That damage was pre-existing." "That's not storm-related." "That's maintenance, not covered loss."
@@ -67,26 +82,60 @@ Carriers depreciate materials aggressively, sometimes illegally. They may withho
 **Your response:** Photos, reports, and expert opinions. Build your file before they build theirs.
 
 ## The Golden Rule
-The carrier will pay what they believe you can prove and will fight for—nothing more. Your job is to make the path of least resistance the path of fair payment.""",
+
+:::key-term
+**The Golden Rule of Carrier Behavior** — The carrier will pay what they believe you can **prove** and will **fight** for — nothing more. Your job is to make the path of least resistance the path of fair payment.
+:::
+
+<details>
+<summary>Deep Dive: How Carrier Reserve Systems Work</summary>
+
+When a claim is filed, the carrier sets an initial **reserve** — the amount they budget for the claim. This reserve is based on their adjuster's initial assessment, not on what you're actually owed.
+
+The reserve becomes the ceiling for what the desk adjuster can approve without supervisor sign-off. Every dollar above the reserve requires escalation and justification. This is why:
+
+- **First offers are low** — they're based on the initial reserve
+- **Supplements face resistance** — they exceed the original reserve
+- **Persistence works** — adjusted reserves unlock higher payments
+
+Understanding this system lets you strategize: submit thorough documentation early to influence the initial reserve, and be prepared for resistance when supplementing above it.
+
+</details>""",
                     duration_minutes=20,
-                    order=1
+                    order=1,
+                    flashcards=[
+                        Flashcard(front="What is the carrier's core business model?", back="Collect premiums, minimize payouts. They are publicly traded companies with shareholders to satisfy."),
+                        Flashcard(front="What is 'full indemnification'?", back="The legal obligation to restore the policyholder's property to its pre-loss condition.", hint="Think restoration standard"),
+                        Flashcard(front="What is a 'lowball initial offer'?", back="Carriers routinely issue estimates 30-60% below actual repair costs, counting on policyholder fatigue or ignorance."),
+                        Flashcard(front="What are 'moving goalposts'?", back="Sequential requests for more documentation, re-inspections, engineering reports — each buying time and testing your resolve."),
+                        Flashcard(front="What is the Golden Rule of carrier behavior?", back="The carrier will pay what they believe you can PROVE and will FIGHT for — nothing more."),
+                        Flashcard(front="What is a carrier reserve?", back="The amount the carrier budgets for a claim based on their adjuster's initial assessment. It becomes the ceiling for desk adjuster approval.", hint="Budget system"),
+                    ]
                 ),
                 Lesson(
                     title="Documentation That Creates Leverage",
                     description="Your file is your weapon",
                     content="""# Documentation That Creates Leverage
 
-In claims, what isn't documented didn't happen. Your file quality determines your outcome.
+:::key-term
+**The Documentation Rule** — In claims, what isn't documented didn't happen. Your file quality determines your outcome.
+:::
 
 ## The Documentation Mindset
-Every photo, every note, every email builds your case. The carrier is building theirs. Who has the better file wins.
+
+Every photo, every note, every email builds your case. The carrier is building theirs. **Who has the better file wins.**
 
 ## Photo Documentation Standards
 
-### What to Capture
-- **Wide shots** showing context and location
-- **Medium shots** showing extent of damage
-- **Close-ups** showing specific damage details
+### The Three-Shot Rule
+
+:::tip
+For every area of damage, capture three shots: **Wide** (context), **Medium** (extent), **Close-up** (detail). This creates an irrefutable visual narrative.
+:::
+
+- **Wide shots** — showing context and location
+- **Medium shots** — showing extent of damage
+- **Close-ups** — showing specific damage details
 - **Measurement references** in frame when relevant
 - **Date/time stamps** enabled on your device
 
@@ -97,18 +146,21 @@ Every photo, every note, every email builds your case. The carrier is building t
 - Valleys and ridges
 - Satellite damage indicators
 
-### The "Before and After" Problem
-You rarely have "before" photos. Solution: Obtain Google Earth historical imagery, real estate listing photos, or neighbor documentation of similar undamaged properties.
+:::example
+**Before/After Problem Solution:** You rarely have "before" photos. Obtain Google Earth historical imagery, real estate listing photos, or neighbor documentation of similar undamaged properties to establish pre-loss condition.
+:::
 
 ## Written Documentation
 
 ### Moisture Readings
-- Location, date, time, reading value
-- Equipment used and calibration status
-- Comparison to dry standard
 
-### Observations
-Be specific. Not "water damage in bedroom" but "Active water intrusion at ceiling/wall junction, NE corner of master bedroom. Drywall soft to touch, visible staining extending 18 inches from corner. Moisture reading 42% (dry standard 12%)."
+| Reading | Location | Date | Value | Standard |
+|---------|----------|------|-------|----------|
+| Sample  | Master BR NE corner | 01/15 | 42% | 12% (dry) |
+
+:::warning
+Vague descriptions kill claims. Not "water damage in bedroom" but "Active water intrusion at ceiling/wall junction, NE corner of master bedroom. Drywall soft to touch, visible staining extending 18 inches from corner. Moisture reading 42% (dry standard 12%)."
+:::
 
 ## Communication Records
 - Save all emails in a dedicated folder
@@ -116,10 +168,22 @@ Be specific. Not "water damage in bedroom" but "Active water intrusion at ceilin
 - Log dates, times, names, and summaries of all conversations
 - Request responses in writing
 
+:::tip
+After every phone call with a carrier, send an email: "Per our conversation today at [time] with [name]..." This creates a paper trail they can't deny.
+:::
+
 ## The File Review Test
-Ask yourself: If this claim went to appraisal or litigation, would my file support my position? If not, keep documenting.""",
+
+> Ask yourself: If this claim went to appraisal or litigation, would my file support my position? If not, keep documenting.""",
                     duration_minutes=25,
-                    order=2
+                    order=2,
+                    flashcards=[
+                        Flashcard(front="What is the Three-Shot Rule?", back="For every area of damage, capture three photos: Wide (context), Medium (extent), Close-up (detail)."),
+                        Flashcard(front="What is the Documentation Rule?", back="In claims, what isn't documented didn't happen. Your file quality determines your outcome."),
+                        Flashcard(front="How do you solve the 'before photos' problem?", back="Use Google Earth historical imagery, real estate listing photos, or neighbor documentation of similar undamaged properties."),
+                        Flashcard(front="What should a moisture reading log include?", back="Location, date, time, reading value, equipment used, calibration status, and comparison to dry standard."),
+                        Flashcard(front="What should you do after every phone call with a carrier?", back="Send an email summarizing the call: 'Per our conversation today at [time] with [name]...' — creates an undeniable paper trail."),
+                    ]
                 ),
                 Lesson(
                     title="Reading Carrier Behavior",
@@ -224,6 +288,36 @@ They believe appraisal will cost them more. This signals your position is strong
                     options=["Carriers always negotiate in good faith", "The carrier will pay what they believe you can prove and will fight for", "Carriers follow a standard pricing guide", "Adjusters have final authority on all claims"],
                     correct_answer=1,
                     explanation="Carriers pay based on what you can prove and demonstrate willingness to fight for. Your documentation and persistence determine the outcome."
+                ),
+                QuizQuestion(
+                    question="Match each carrier tactic with the correct counter-strategy:",
+                    question_type="matching",
+                    matching_pairs=[
+                        MatchingPair(left="Lowball offer", right="Get independent contractor estimates"),
+                        MatchingPair(left="Moving goalposts", right="Set deadlines, document every request"),
+                        MatchingPair(left="Depreciation games", right="Know ACV vs RCV policy terms"),
+                        MatchingPair(left="Scope denial", right="Photos, reports, expert opinions"),
+                    ],
+                    explanation="Each carrier tactic has a specific counter-strategy grounded in documentation and policy knowledge."
+                ),
+                QuizQuestion(
+                    question="The carrier will pay what they believe you can _____ and will _____ for.",
+                    question_type="fill_blank",
+                    correct_text="prove, fight",
+                    blank_placeholder="Two words, separated by a comma",
+                    explanation="This is the Golden Rule — carriers pay based on provable claims backed by persistence and willingness to escalate."
+                ),
+                QuizQuestion(
+                    question="Arrange the documentation priorities from most to least important:",
+                    question_type="ordering",
+                    correct_order=[
+                        "Objective proof (weather data, aerials, permits)",
+                        "Photo documentation (three-shot rule)",
+                        "Continuity evidence (cause and origin)",
+                        "Written narrative and timeline",
+                        "Contractor opinions and bids"
+                    ],
+                    explanation="The evidence hierarchy runs from irrefutable objective proof down to subjective opinions. Always lead with your strongest evidence."
                 )
             ]
         ),
