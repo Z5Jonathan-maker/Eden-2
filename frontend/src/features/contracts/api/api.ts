@@ -7,7 +7,9 @@ import {
 } from './types';
 import { apiGet, apiPost } from '@/lib/api';
 
-const SIGNNOW_TEMPLATE_ID = import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
+const PA_TEMPLATE_ID = import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
+const LOR_TEMPLATE_ID = 'care-claims-lor';
+const SIGNNOW_TEMPLATE_ID = PA_TEMPLATE_ID; // backward compat
 
 function normalizeStatus(raw: string): ContractStatus {
   const v = (raw || '').toLowerCase();
@@ -35,6 +37,41 @@ export function toMergeFields(claim: ClaimItem, prefill: Record<string, any>): C
     email: prefill.policyholder_email || claim.email || claim.insured_email || '',
   };
 }
+
+export function toLorFields(claim: ClaimItem, prefill: Record<string, any>): ContractMergeFields {
+  const claimName = claim.client_name || claim.insured_name || '';
+  return {
+    client_name: prefill.insured_name || claimName,
+    client_address: prefill.insured_address || claim.property_address || '',
+    property_address: prefill.property_address || claim.property_address || '',
+    carrier: prefill.insurance_company || claim.insurance_company || '',
+    policy_number: prefill.policy_number || claim.policy_number || '',
+    loss_date: prefill.date_of_loss || claim.date_of_loss || '',
+    claim_number: prefill.claim_number || claim.claim_number || '',
+    fee_percentage: String(prefill.fee_percentage || 10),
+    adjuster_name: prefill.adjuster_name || '',
+    adjuster_license: prefill.adjuster_license || '',
+    phone: prefill.insured_phone || claim.phone || claim.insured_phone || '',
+    email: prefill.insured_email || claim.email || claim.insured_email || '',
+    // LOR-specific extras
+    insured_name: prefill.insured_name || claimName,
+    insured_email: prefill.insured_email || claim.email || claim.insured_email || '',
+    insured_address: prefill.insured_address || claim.property_address || '',
+    insured_city: prefill.insured_city || '',
+    insured_state: prefill.insured_state || 'FL',
+    insured_zip: prefill.insured_zip || '',
+    insured_phone: prefill.insured_phone || claim.phone || claim.insured_phone || '',
+    insurance_company: prefill.insurance_company || claim.insurance_company || '',
+    carrier_address: prefill.carrier_address || '',
+    property_city: prefill.property_city || '',
+    property_state_zip: prefill.property_state_zip || '',
+    date_of_loss: prefill.date_of_loss || claim.date_of_loss || '',
+    loss_description: prefill.loss_description || '',
+    scope_of_authority: prefill.scope_of_authority || 'Full Claim Representation',
+  };
+}
+
+export { PA_TEMPLATE_ID, LOR_TEMPLATE_ID };
 
 export async function fetchContracts(): Promise<ContractItem[]> {
   const res = await apiGet('/api/contracts/');

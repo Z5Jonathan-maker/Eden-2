@@ -176,7 +176,7 @@ const ContractsPage: React.FC = () => {
             Active Contracts
           </h1>
           <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-500">
-            22 fields | FL compliant | E-signature ready
+            PA Agreements & Letters of Representation | FL compliant | E-signature ready
           </p>
         </div>
         <button

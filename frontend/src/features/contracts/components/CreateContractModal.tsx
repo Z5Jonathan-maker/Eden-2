@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { FileText, ScrollText } from 'lucide-react';
 import { ClaimItem, ContractMergeFields, CreateContractPayload } from '../types/types';
 import SelectClaimModal from './SelectClaimModal';
-import { fetchClaimPrefill, toMergeFields } from '../api/api';
+import { fetchClaimPrefill, toMergeFields, toLorFields, PA_TEMPLATE_ID, LOR_TEMPLATE_ID } from '../api/api';
 
 const DEFAULT_FIELDS: ContractMergeFields = {
   client_name: '',
@@ -17,6 +18,23 @@ const DEFAULT_FIELDS: ContractMergeFields = {
   phone: '',
   email: '',
 };
+
+const TEMPLATES = [
+  {
+    id: PA_TEMPLATE_ID,
+    name: 'PA Agreement',
+    description: 'Public Adjuster service agreement — full 22-field FL-compliant contract',
+    icon: FileText,
+    accent: 'cyan',
+  },
+  {
+    id: LOR_TEMPLATE_ID,
+    name: 'Letter of Representation',
+    description: 'Authorization letter — grants Care Claims authority to represent the insured with their carrier',
+    icon: ScrollText,
+    accent: 'orange',
+  },
+] as const;
 
 interface Props {
   open: boolean;
@@ -40,32 +58,61 @@ const Field: React.FC<FieldProps> = ({ label, value }) => (
 );
 
 const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate }) => {
+  const [templateId, setTemplateId] = useState(PA_TEMPLATE_ID);
   const [claimPickerOpen, setClaimPickerOpen] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<ClaimItem | null>(null);
   const [fields, setFields] = useState<ContractMergeFields>(DEFAULT_FIELDS);
   const [creating, setCreating] = useState(false);
+  const [prefillCache, setPrefillCache] = useState<Record<string, any>>({});
+
+  const isLor = templateId === LOR_TEMPLATE_ID;
+  const selectedTemplate = TEMPLATES.find((t) => t.id === templateId) || TEMPLATES[0];
 
   useEffect(() => {
     if (!open) {
       setSelectedClaim(null);
       setFields(DEFAULT_FIELDS);
+      setTemplateId(PA_TEMPLATE_ID);
+      setPrefillCache({});
     }
   }, [open]);
 
   const contractName = useMemo(
-    () => `PA Agreement - ${fields.client_name || 'Client'}`,
-    [fields.client_name]
+    () =>
+      isLor
+        ? `LOR - ${fields.client_name || 'Client'}`
+        : `PA Agreement - ${fields.client_name || 'Client'}`,
+    [fields.client_name, isLor]
   );
 
   const handleClaimSelect = async (claim: ClaimItem) => {
     setSelectedClaim(claim);
     setClaimPickerOpen(false);
     const prefill = await fetchClaimPrefill(claim.id);
-    setFields(toMergeFields(claim, prefill));
+    setPrefillCache(prefill);
+    // Apply fields based on current template
+    if (templateId === LOR_TEMPLATE_ID) {
+      setFields(toLorFields(claim, prefill));
+    } else {
+      setFields(toMergeFields(claim, prefill));
+    }
   };
 
-  const missingRequired =
-    !fields.client_name || !fields.email || !fields.adjuster_license || !selectedClaim;
+  // Re-map fields when template changes (if claim already selected)
+  const handleTemplateChange = (newId: string) => {
+    setTemplateId(newId);
+    if (selectedClaim && prefillCache) {
+      if (newId === LOR_TEMPLATE_ID) {
+        setFields(toLorFields(selectedClaim, prefillCache));
+      } else {
+        setFields(toMergeFields(selectedClaim, prefillCache));
+      }
+    }
+  };
+
+  const missingRequired = isLor
+    ? !fields.client_name || !fields.email || !selectedClaim
+    : !fields.client_name || !fields.email || !fields.adjuster_license || !selectedClaim;
 
   const submit = async () => {
     if (missingRequired || !selectedClaim) return;
@@ -74,8 +121,8 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
       await onCreate({
         claimId: selectedClaim.id,
         name: contractName,
-        type: 'PA Agreement',
-        templateId: import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement',
+        type: isLor ? 'Letter of Representation' : 'PA Agreement',
+        templateId,
         fields,
       });
     } finally {
@@ -95,7 +142,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                 Create Contract
               </h2>
               <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                Step 1 claim select to Step 2 field autofill to SignNow template construct
+                Select template → Select claim → Review fields → Create
               </p>
             </div>
             <button type="button" onClick={onClose} className="text-slate-400 hover:text-white">
@@ -103,6 +150,57 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
             </button>
           </div>
 
+          {/* ── Template Picker ── */}
+          <div className="mb-4">
+            <p className="mb-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+              Document Type
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {TEMPLATES.map((tmpl) => {
+                const Icon = tmpl.icon;
+                const active = templateId === tmpl.id;
+                const borderColor = active
+                  ? tmpl.accent === 'orange'
+                    ? 'border-orange-500 bg-orange-500/10'
+                    : 'border-cyan-500 bg-cyan-500/10'
+                  : 'border-slate-700/60 hover:border-slate-600';
+                const textColor =
+                  tmpl.accent === 'orange' ? 'text-orange-400' : 'text-cyan-400';
+
+                return (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => handleTemplateChange(tmpl.id)}
+                    className={`relative rounded-lg border p-3 text-left transition-all ${borderColor}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon
+                        className={`h-4 w-4 ${active ? textColor : 'text-slate-500'}`}
+                      />
+                      <span
+                        className={`text-sm font-semibold ${active ? 'text-white' : 'text-slate-300'}`}
+                      >
+                        {tmpl.name}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      {tmpl.description}
+                    </p>
+                    {active && (
+                      <div
+                        className={`absolute top-2 right-2 h-2 w-2 rounded-full ${
+                          tmpl.accent === 'orange' ? 'bg-orange-500' : 'bg-cyan-500'
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Claim Selection ── */}
           <div className="mb-4 rounded-lg border border-cyan-600/30 bg-cyan-950/20 p-3 text-xs text-slate-300">
             <p className="font-semibold text-cyan-300">Claim Selection</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -121,6 +219,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
             </div>
           </div>
 
+          {/* ── Fields Preview ── */}
           <div className="rounded-xl border border-slate-700/60 bg-[linear-gradient(rgba(20,20,20,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(20,20,20,0.55)_1px,transparent_1px)] bg-[size:18px_18px] bg-slate-900/65 p-4">
             {!selectedClaim ? (
               <div className="py-10 text-center text-slate-500">
@@ -129,7 +228,39 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                   Select a claim to autofill contract fields.
                 </div>
               </div>
+            ) : isLor ? (
+              /* ── LOR Fields ── */
+              <div className="mt-4 grid grid-cols-2 gap-6">
+                <div className="col-span-2 text-xs uppercase tracking-wide text-orange-300">
+                  Insured / Policyholder
+                </div>
+                <Field label="Insured Name" value={fields.insured_name || fields.client_name} />
+                <Field label="Email" value={fields.insured_email || fields.email} />
+                <Field label="Address" value={fields.insured_address || fields.client_address} />
+                <Field label="Phone" value={fields.insured_phone || fields.phone} />
+
+                <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-amber-300">
+                  Insurance Carrier
+                </div>
+                <Field label="Insurance Company" value={fields.insurance_company || fields.carrier} />
+                <Field label="Policy Number" value={fields.policy_number} />
+                <Field label="Claim Number" value={fields.claim_number} />
+
+                <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-orange-300">
+                  Property & Loss
+                </div>
+                <Field label="Property Address" value={fields.property_address} />
+                <Field label="Date of Loss" value={fields.date_of_loss || fields.loss_date} />
+                <Field label="Loss Description" value={fields.loss_description || ''} />
+
+                <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-amber-300">
+                  Scope of Representation
+                </div>
+                <Field label="Authority" value={fields.scope_of_authority || 'Full Claim Representation'} />
+                <Field label="Fee %" value={fields.fee_percentage} />
+              </div>
             ) : (
+              /* ── PA Agreement Fields ── */
               <div className="mt-4 grid grid-cols-2 gap-6">
                 <div className="col-span-2 text-xs uppercase tracking-wide text-cyan-300">
                   Client Information
@@ -162,22 +293,32 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
             )}
           </div>
 
-          <div className="mt-6 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-slate-600 px-3 py-2 text-xs text-slate-300 hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={creating || missingRequired}
-              className="btn-tactical px-4 py-2 text-xs uppercase disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {creating ? 'Creating...' : 'Create Contract'}
-            </button>
+          {/* ── Actions ── */}
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-[10px] font-mono text-slate-600">
+              {isLor ? 'FL §626.854 compliant' : '22 fields | FL compliant | E-signature ready'}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-md border border-slate-600 px-3 py-2 text-xs text-slate-300 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={creating || missingRequired}
+                className="btn-tactical px-4 py-2 text-xs uppercase disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creating
+                  ? 'Creating...'
+                  : isLor
+                    ? 'Create LOR'
+                    : 'Create Contract'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
