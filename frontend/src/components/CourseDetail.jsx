@@ -86,26 +86,12 @@ function CourseDetail() {
 
   useEffect(() => { fetchCourse(); }, [fetchCourse]);
 
-  // Build flashcards: try API first, fallback to extracting from course data
+  // Build flashcards from course data (always works, no backend dependency)
   useEffect(() => {
-    if (!courseId) return;
-    apiGet(`/api/university/courses/${courseId}/flashcards`).then(res => {
-      if (res.ok && res.data.flashcards?.length > 0) {
-        setFlashcards(res.data.flashcards);
-      } else {
-        // Fallback: extract from course lessons
-        buildFlashcardsFromCourse();
-      }
-    }).catch(() => {
-      buildFlashcardsFromCourse();
-    });
-  }, [courseId, course]);
-
-  function buildFlashcardsFromCourse() {
     if (!course?.lessons) return;
     const cards = [];
     course.lessons.forEach(lesson => {
-      // Use explicit flashcards if present
+      // Use explicit flashcards if present on lesson
       if (lesson.flashcards?.length > 0) {
         cards.push(...lesson.flashcards);
         return;
@@ -131,8 +117,18 @@ function CourseDetail() {
         });
       }
     });
-    if (cards.length > 0) setFlashcards(cards);
-  }
+    setFlashcards(cards);
+    // Also try API for richer flashcards (will override when backend deploys)
+    if (courseId) {
+      apiGet(`/api/university/courses/${courseId}/flashcards`)
+        .then(res => {
+          if (res.ok && res.data?.flashcards?.length > 0) {
+            setFlashcards(res.data.flashcards);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [course, courseId]);
 
   async function markLessonComplete(lessonId) {
     try {
