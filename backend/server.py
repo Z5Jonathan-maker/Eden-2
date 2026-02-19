@@ -67,6 +67,8 @@ from routes.integrations import router as integrations_services_router
 from routes.imagery import router as imagery_router
 from routes.evidence import router as evidence_router
 from routes.ops_manifest import router as ops_manifest_router
+from routes.tasks import router as tasks_router
+from routes.garden_dashboard import router as garden_dashboard_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -425,6 +427,8 @@ app.include_router(integrations_services_router)
 app.include_router(google_router)
 app.include_router(signnow_router)
 app.include_router(imagery_router)
+app.include_router(tasks_router)
+app.include_router(garden_dashboard_router)
 
 # Startup event to seed data
 @app.on_event("startup")

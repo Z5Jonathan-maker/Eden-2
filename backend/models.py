@@ -101,12 +101,28 @@ class ClaimBase(BaseModel):
     claim_number: str
     client_name: str
     client_email: Optional[str] = ""
+    client_phone: Optional[str] = ""
     property_address: str
     date_of_loss: Optional[str] = ""
     claim_type: str = "Water Damage"
     policy_number: Optional[str] = ""
     estimated_value: float = 0
     description: Optional[str] = None
+    # Carrier / Insurance info
+    carrier_name: Optional[str] = ""
+    carrier_claim_number: Optional[str] = ""
+    carrier_adjuster_name: Optional[str] = ""
+    carrier_adjuster_email: Optional[str] = ""
+    carrier_adjuster_phone: Optional[str] = ""
+    insurance_company_email: Optional[str] = ""
+    # Financial tracking
+    actual_cash_value: Optional[float] = None
+    replacement_cost_value: Optional[float] = None
+    deductible: Optional[float] = None
+    depreciation: Optional[float] = None
+    net_claim_value: Optional[float] = None
+    settlement_amount: Optional[float] = None
+    mortgage_company: Optional[str] = ""
 
 class ClaimCreate(ClaimBase):
     pass
@@ -117,10 +133,33 @@ class ClaimUpdate(BaseModel):
     estimated_value: Optional[float] = None
     description: Optional[str] = None
     priority: Optional[str] = None
-    # New client status fields
+    # Client status fields
     stage: Optional[str] = None  # intake, inspection, negotiation, settlement, closed
     next_actions_firm: Optional[str] = None
     next_actions_client: Optional[str] = None
+    # Client info
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
+    client_phone: Optional[str] = None
+    property_address: Optional[str] = None
+    date_of_loss: Optional[str] = None
+    claim_type: Optional[str] = None
+    policy_number: Optional[str] = None
+    # Carrier info
+    carrier_name: Optional[str] = None
+    carrier_claim_number: Optional[str] = None
+    carrier_adjuster_name: Optional[str] = None
+    carrier_adjuster_email: Optional[str] = None
+    carrier_adjuster_phone: Optional[str] = None
+    insurance_company_email: Optional[str] = None
+    # Financial tracking
+    actual_cash_value: Optional[float] = None
+    replacement_cost_value: Optional[float] = None
+    deductible: Optional[float] = None
+    depreciation: Optional[float] = None
+    net_claim_value: Optional[float] = None
+    settlement_amount: Optional[float] = None
+    mortgage_company: Optional[str] = None
 
 class Claim(ClaimBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -130,7 +169,7 @@ class Claim(ClaimBase):
     created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    # New client status fields
+    # Client status fields
     stage: str = "intake"  # intake, inspection, negotiation, settlement, closed
     next_actions_firm: Optional[str] = None
     next_actions_client: Optional[str] = None
@@ -195,3 +234,31 @@ class Notification(NotificationCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     is_read: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Task / Follow-up Models
+class TaskCreate(BaseModel):
+    claim_id: str
+    title: str
+    description: Optional[str] = ""
+    due_date: Optional[str] = None
+    assigned_to: Optional[str] = None
+    priority: str = "Medium"  # Low, Medium, High, Urgent
+    task_type: str = "follow_up"  # follow_up, inspection, document_request, carrier_call, client_contact, legal, other
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+    assigned_to: Optional[str] = None
+    priority: Optional[str] = None
+    task_type: Optional[str] = None
+    status: Optional[str] = None  # pending, in_progress, completed
+
+class Task(TaskCreate):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    status: str = "pending"  # pending, in_progress, completed
+    created_by: str
+    created_by_name: str
+    completed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

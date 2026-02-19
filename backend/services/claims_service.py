@@ -281,8 +281,37 @@ class ClaimsService:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         if details:
-            log_data.update(details)
+            # Store a subset safe for DB (strip Pydantic objects / large blobs)
+            safe_details = {}
+            changes = details.get("changes", {})
+            if changes:
+                safe_details["changes"] = {k: str(v)[:200] for k, v in changes.items() if k != "_id"}
+            old_status = details.get("old_status")
+            if old_status:
+                safe_details["old_status"] = old_status
+            log_data["details"] = safe_details
         logger.info(f"AUDIT: {log_data}")
+        # Persist to MongoDB for frontend activity feed
+        try:
+            import asyncio
+            asyncio.ensure_future(self._persist_activity(log_data))
+        except Exception:
+            pass  # Non-blocking
+
+    async def _persist_activity(self, log_data: dict):
+        """Store activity record in claim_activity collection"""
+        try:
+            record = {
+                "id": str(uuid.uuid4()),
+                "event": log_data.get("event", ""),
+                "claim_id": log_data.get("claim_id", ""),
+                "user": log_data.get("user", ""),
+                "timestamp": log_data.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                "details": log_data.get("details", {}),
+            }
+            await self.db.claim_activity.insert_one(record)
+        except Exception as e:
+            logger.warning(f"Failed to persist activity: {e}")
 
     async def _emit_gamification_event(self, user_id: str, event_type: str, claim: Claim):
         try:

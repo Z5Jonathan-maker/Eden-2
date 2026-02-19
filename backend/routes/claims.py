@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi.responses import FileResponse
 from typing import List, Optional
 from models import ClaimCreate, ClaimUpdate, Claim, NoteCreate, Note, DocumentCreate, Document
 from dependencies import db, get_current_active_user, require_role, require_permission
@@ -9,6 +10,7 @@ import os
 import uuid
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from pydantic import BaseModel
 
 # Structured logging setup
 logger = logging.getLogger(__name__)
@@ -529,3 +531,126 @@ async def get_documents(
     except Exception as e:
         logger.error(f"Get documents error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ──────────────────────────────────────────────
+# Document Download
+# ──────────────────────────────────────────────
+@router.get("/{claim_id}/documents/{doc_id}/download")
+async def download_document(
+    claim_id: str,
+    doc_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Download a document file"""
+    await _get_claim_for_user_or_403(claim_id, current_user)
+    doc = await db.documents.find_one({"id": doc_id, "claim_id": claim_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    file_path = doc.get("file_path")
+    if not file_path or not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(file_path, filename=doc.get("name", "download"), media_type="application/octet-stream")
+
+
+# ──────────────────────────────────────────────
+# Note Edit / Delete
+# ──────────────────────────────────────────────
+class NoteUpdate(BaseModel):
+    content: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+
+@router.put("/{claim_id}/notes/{note_id}", response_model=Note)
+async def update_note(
+    claim_id: str,
+    note_id: str,
+    payload: NoteUpdate,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Edit a note (author or admin only)"""
+    await _get_claim_for_user_or_403(claim_id, current_user)
+    note = await db.notes.find_one({"id": note_id, "claim_id": claim_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    if note.get("author_id") != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only the author or admin can edit this note")
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        return Note(**note)
+    updates["edited_at"] = datetime.now(timezone.utc).isoformat()
+    await db.notes.update_one({"id": note_id}, {"$set": updates})
+    updated = await db.notes.find_one({"id": note_id}, {"_id": 0})
+    return Note(**updated)
+
+
+@router.delete("/{claim_id}/notes/{note_id}")
+async def delete_note(
+    claim_id: str,
+    note_id: str,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Delete a note (author or admin only)"""
+    await _get_claim_for_user_or_403(claim_id, current_user)
+    note = await db.notes.find_one({"id": note_id, "claim_id": claim_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    if note.get("author_id") != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only the author or admin can delete this note")
+    await db.notes.delete_one({"id": note_id})
+    return {"message": "Note deleted"}
+
+
+# ──────────────────────────────────────────────
+# Activity / Audit Log
+# ──────────────────────────────────────────────
+@router.get("/{claim_id}/activity")
+async def get_claim_activity(
+    claim_id: str,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Get the activity/audit log for a claim"""
+    await _get_claim_for_user_or_403(claim_id, current_user)
+    activities = await db.claim_activity.find(
+        {"claim_id": claim_id}, {"_id": 0}
+    ).sort("timestamp", -1).to_list(min(limit, 200))
+    return activities
+
+
+# ──────────────────────────────────────────────
+# Batch Operations
+# ──────────────────────────────────────────────
+class BatchAction(BaseModel):
+    claim_ids: List[str]
+    action: str  # archive, status_change, assign
+    value: Optional[str] = None  # new status or assignee name
+
+
+@router.post("/batch")
+async def batch_claims_action(
+    payload: BatchAction,
+    current_user: dict = Depends(require_role(["admin", "manager"])),
+    service: ClaimsService = Depends(get_claims_service),
+):
+    """Batch archive, status change, or reassign claims (admin/manager only)"""
+    results = {"success": 0, "failed": 0, "errors": []}
+    for cid in payload.claim_ids[:100]:  # cap at 100
+        try:
+            if payload.action == "archive":
+                await service.delete_claim(cid, permanent=False, current_user=current_user)
+            elif payload.action == "status_change" and payload.value:
+                updates = ClaimUpdate(status=payload.value)
+                await service.update_claim(cid, updates, current_user)
+            elif payload.action == "assign" and payload.value:
+                updates = ClaimUpdate(assigned_to=payload.value)
+                await service.update_claim(cid, updates, current_user)
+            else:
+                results["errors"].append({"id": cid, "error": "Unknown action"})
+                results["failed"] += 1
+                continue
+            results["success"] += 1
+        except Exception as e:
+            results["failed"] += 1
+            results["errors"].append({"id": cid, "error": str(e)})
+    return results

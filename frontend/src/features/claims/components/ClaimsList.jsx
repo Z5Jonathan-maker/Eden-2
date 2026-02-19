@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Search,
   Plus,
@@ -13,8 +14,21 @@ import {
   FolderOpen,
   Target,
   ChevronRight,
+  Kanban,
+  List,
+  BarChart3,
+  CheckSquare,
+  Square,
+  Archive,
+  UserPlus,
+  ArrowRightLeft,
+  X,
 } from 'lucide-react';
 import { NAV_ICONS } from '../../../assets/badges';
+import ClaimsPipeline from './ClaimsPipeline';
+import GardenDashboard from './GardenDashboard';
+
+const VIEW_MODES = { list: 'list', pipeline: 'pipeline', dashboard: 'dashboard' };
 
 const ClaimsList = () => {
   const navigate = useNavigate();
@@ -27,6 +41,11 @@ const ClaimsList = () => {
   const [sortDirection, setSortDirection] = useState('desc');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const sortDropdownRef = useRef(null);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('garden_view') || VIEW_MODES.list);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [batchAction, setBatchAction] = useState(null); // null, 'archive', 'status', 'assign'
+  const [batchValue, setBatchValue] = useState('');
+  const [batchProcessing, setBatchProcessing] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -117,6 +136,52 @@ const ClaimsList = () => {
       return aVal < bVal ? 1 : -1;
     });
 
+  // ── Multi-select helpers ──
+  const toggleSelect = (id, e) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === sortedAndFilteredClaims.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedAndFilteredClaims.map(c => c.id)));
+    }
+  };
+
+  const clearSelection = () => { setSelectedIds(new Set()); setBatchAction(null); setBatchValue(''); };
+
+  const handleBatchExecute = async () => {
+    if (selectedIds.size === 0) return;
+    const action = batchAction === 'archive' ? 'archive' : batchAction === 'status' ? 'status_change' : batchAction === 'assign' ? 'assign' : null;
+    if (!action) return;
+    if (action !== 'archive' && !batchValue) { toast.error('Select a value'); return; }
+    setBatchProcessing(true);
+    try {
+      const res = await apiPost('/api/claims/batch', {
+        claim_ids: Array.from(selectedIds),
+        action,
+        value: batchValue || null,
+      });
+      if (res.ok) {
+        toast.success(`${res.data.success} claims updated${res.data.failed ? `, ${res.data.failed} failed` : ''}`);
+        clearSelection();
+        fetchClaims();
+      } else {
+        toast.error(res.error || 'Batch operation failed');
+      }
+    } catch {
+      toast.error('Batch operation failed');
+    } finally {
+      setBatchProcessing(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
       'In Progress': 'badge-rare',
@@ -164,14 +229,38 @@ const ClaimsList = () => {
             Track and manage all property claims
           </p>
         </div>
-        <button
-          className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
-          onClick={() => navigate('/claims/new')}
-          data-testid="new-claim-btn"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Mission</span>
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* View Mode Toggle */}
+          <div className="flex rounded border border-zinc-700/50 overflow-hidden">
+            {[
+              { mode: VIEW_MODES.list, icon: List, label: 'List' },
+              { mode: VIEW_MODES.pipeline, icon: Kanban, label: 'Pipeline' },
+              { mode: VIEW_MODES.dashboard, icon: BarChart3, label: 'Metrics' },
+            ].map(({ mode, icon: Icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => { setViewMode(mode); localStorage.setItem('garden_view', mode); }}
+                className={`px-3 py-2 text-xs font-mono uppercase flex items-center gap-1.5 transition-all ${
+                  viewMode === mode
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                }`}
+                title={label}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 justify-center"
+            onClick={() => navigate('/claims/new')}
+            data-testid="new-claim-btn"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Mission</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters - Tactical Style */}
@@ -224,10 +313,85 @@ const ClaimsList = () => {
         </div>
       )}
 
+      {/* Dashboard View */}
+      {viewMode === VIEW_MODES.dashboard && (
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+          <GardenDashboard />
+        </div>
+      )}
+
+      {/* Pipeline View */}
+      {viewMode === VIEW_MODES.pipeline && (
+        <div className="card-tactical p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+          <ClaimsPipeline claims={sortedAndFilteredClaims} loading={loading} onRefresh={fetchClaims} />
+        </div>
+      )}
+
+      {/* Batch Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="card-tactical p-3 mb-4 flex flex-wrap items-center gap-3 animate-fade-in-up border-orange-500/30">
+          <div className="flex items-center gap-2 text-sm text-orange-400 font-mono">
+            <CheckSquare className="w-4 h-4" />
+            {selectedIds.size} selected
+          </div>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            <button
+              onClick={() => { setBatchAction('archive'); setBatchValue(''); }}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'archive' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-red-500/30'}`}
+            >
+              <Archive className="w-3.5 h-3.5" /> Archive
+            </button>
+            <button
+              onClick={() => setBatchAction('status')}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'status' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-blue-500/30'}`}
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Status
+            </button>
+            <button
+              onClick={() => setBatchAction('assign')}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'assign' ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-purple-500/30'}`}
+            >
+              <UserPlus className="w-3.5 h-3.5" /> Assign
+            </button>
+            {batchAction === 'status' && (
+              <select className="input-tactical px-2 py-1.5 text-xs" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+                <option value="">Pick status...</option>
+                {['New', 'In Progress', 'Under Review', 'Approved', 'Denied', 'Completed', 'Closed'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
+            {batchAction === 'assign' && (
+              <input className="input-tactical px-2 py-1.5 text-xs w-40" placeholder="Assignee name..." value={batchValue} onChange={e => setBatchValue(e.target.value)} />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {batchAction && (
+              <button
+                onClick={handleBatchExecute}
+                disabled={batchProcessing || (batchAction !== 'archive' && !batchValue)}
+                className="btn-tactical px-4 py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {batchProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                Apply
+              </button>
+            )}
+            <button onClick={clearSelection} className="text-zinc-500 hover:text-zinc-300 p-1.5">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Claims List - Tactical Style */}
+      {viewMode !== VIEW_MODES.list ? null :
       <div className="card-tactical p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
+            <button onClick={selectAll} className="text-zinc-500 hover:text-orange-400 transition-colors" title="Select all">
+              {selectedIds.size === sortedAndFilteredClaims.length && sortedAndFilteredClaims.length > 0
+                ? <CheckSquare className="w-5 h-5 text-orange-400" />
+                : <Square className="w-5 h-5" />
+              }
+            </button>
             <Target className="w-5 h-5 text-orange-500" />
             <span className="font-tactical font-bold text-white uppercase text-sm tracking-wide">
               {sortedAndFilteredClaims.length} Targets
@@ -316,13 +480,19 @@ const ClaimsList = () => {
             {sortedAndFilteredClaims.map((claim, index) => (
               <div
                 key={claim.id}
-                className="group p-4 md:p-5 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 border border-zinc-700/30 hover:border-orange-500/30 stagger-item interactive-card"
+                className={`group p-4 md:p-5 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 border stagger-item interactive-card ${selectedIds.has(claim.id) ? 'border-orange-500/50 bg-orange-500/5' : 'border-zinc-700/30 hover:border-orange-500/30'}`}
                 onClick={() => navigate(`/claims/${claim.id}`)}
                 data-testid={`claim-item-${claim.id}`}
               >
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <button
+                        onClick={(e) => toggleSelect(claim.id, e)}
+                        className="text-zinc-500 hover:text-orange-400 transition-colors mr-1 flex-shrink-0"
+                      >
+                        {selectedIds.has(claim.id) ? <CheckSquare className="w-4 h-4 text-orange-400" /> : <Square className="w-4 h-4" />}
+                      </button>
                       <span className="font-tactical font-bold text-base text-white group-hover:text-orange-400 transition-colors">
                         {claim.claim_number}
                       </span>
@@ -390,7 +560,7 @@ const ClaimsList = () => {
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 };

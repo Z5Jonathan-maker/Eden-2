@@ -39,6 +39,10 @@ import ClaimEditModal from './ClaimEditModal';
 import ClaimHeader from './ClaimHeader';
 import ClaimQuickActions from './ClaimQuickActions';
 import ClaimTabs from './ClaimTabs';
+import ClaimFinancials from './ClaimFinancials';
+import ClaimCarrierInfo from './ClaimCarrierInfo';
+import ClaimTasksPanel from './ClaimTasksPanel';
+import ClaimActivityLog from './ClaimActivityLog';
 import { Textarea } from '../../../shared/ui/textarea';
 import { Input } from '../../../shared/ui/input';
 import { Label } from '../../../shared/ui/label';
@@ -813,6 +817,22 @@ const ClaimDetails = () => {
         />
       </div>
 
+      {/* Carrier Info + Financials Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+        <ClaimCarrierInfo claim={claim} />
+        <ClaimFinancials claim={claim} />
+      </div>
+
+      {/* Tasks Panel */}
+      <div className="card-tactical p-5 mb-4 md:mb-6">
+        <ClaimTasksPanel claimId={claimId} />
+      </div>
+
+      {/* Activity Log */}
+      <div className="mb-4 md:mb-6">
+        <ClaimActivityLog claimId={claimId} />
+      </div>
+
       {/* Client Status Panel - Stage Progress and Eve Updates */}
       <div className="mb-4 md:mb-6">
         <ClientStatusPanel claimId={claimId} isClientView={false} />
@@ -839,6 +859,10 @@ const ClaimDetails = () => {
         commsDraftPrefill={commsDraftPrefill}
         handleCommsDraftConsumed={handleCommsDraftConsumed}
         navigate={navigate}
+        onDocumentsChange={(newDoc) => {
+          if (newDoc) setDocuments(prev => [newDoc, ...prev]);
+        }}
+        onNotesChange={(updatedNotes) => setNotes(updatedNotes)}
       />
 
       {/* Schedule Appointment Modal */}
