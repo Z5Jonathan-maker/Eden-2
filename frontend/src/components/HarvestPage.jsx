@@ -333,61 +333,38 @@ const HarvestPage = () => {
         {/* Map Tab */}
         {activeTab === 'map' && (
           <div className="h-full flex flex-col">
-            {/* Map Instructions - Tactical Glass Style */}
-            <div className="absolute top-3 left-3 right-3 z-[1100]">
-              <div className="bg-zinc-900/90 backdrop-blur-lg rounded-xl px-4 py-2.5 flex items-center justify-between border border-zinc-700/50">
-                <p className="text-sm text-zinc-300 font-mono">
-                  <span className="font-semibold text-orange-400">Tap map</span> to drop pins •{' '}
-                  <span className="font-semibold text-orange-400">Tap pins</span> to log
-                </p>
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="p-2 rounded-lg border border-zinc-700/30 hover:border-orange-500/30 transition-all flex items-center text-zinc-400 hover:text-orange-400"
-                  data-testid="toggle-filters"
-                >
-                  <Filter className="w-4 h-4" />
-                  {showFilters ? (
-                    <ChevronUp className="w-3 h-3 ml-1" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3 ml-1" />
-                  )}
-                </button>
-              </div>
+            {/* Filter toggle — small floating button, doesn't block map */}
+            <div className="absolute top-3 right-3 z-[1100]">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="bg-zinc-900/85 backdrop-blur-lg rounded-lg px-3 py-2 border border-zinc-700/50 flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-lg"
+                data-testid="toggle-filters"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="text-xs font-mono">Filter</span>
+                {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
 
-              {/* Filter Panel - Tactical Style */}
+              {/* Filter Panel — drops down from button */}
               {showFilters && (
                 <div
-                  className="bg-zinc-900/90 backdrop-blur-lg rounded-xl mt-2 p-3 border border-zinc-700/50"
+                  className="bg-zinc-900/90 backdrop-blur-lg rounded-xl mt-2 p-3 border border-zinc-700/50 min-w-[260px]"
                   data-testid="filter-panel"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-mono text-zinc-300 uppercase tracking-wider">
-                      Filter by Status
-                    </span>
+                    <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Status</span>
                     <div className="flex gap-2">
-                      <button
-                        onClick={selectAllFilters}
-                        className="text-xs text-orange-400 hover:underline font-mono"
-                        data-testid="select-all-filters"
-                      >
-                        All
-                      </button>
+                      <button onClick={selectAllFilters} className="text-[10px] text-orange-400 hover:underline font-mono" data-testid="select-all-filters">All</button>
                       <span className="text-zinc-700">|</span>
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-xs text-zinc-500 hover:underline font-mono"
-                        data-testid="clear-all-filters"
-                      >
-                        None
-                      </button>
+                      <button onClick={clearAllFilters} className="text-[10px] text-zinc-500 hover:underline font-mono" data-testid="clear-all-filters">None</button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {filterOptions.map(({ code, label, color }) => (
                       <button
                         key={code}
                         onClick={() => toggleFilter(code)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-mono uppercase transition-all ${
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-mono uppercase transition-all ${
                           activeFilters.includes(code)
                             ? 'text-white shadow-sm'
                             : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30'
@@ -408,20 +385,18 @@ const HarvestPage = () => {
               <HarvestMap onPinStatusChange={fetchMyStats} activeFilters={activeFilters} />
             </div>
 
-            {/* Stats Footer - Compact Tactical Style */}
-            <div className="absolute bottom-14 left-2 right-2 z-[1000]">
-              <div className="bg-zinc-900/85 backdrop-blur-md rounded-lg px-3 py-1.5 border border-zinc-700/40">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="text-zinc-500 font-mono">TODAY <span className="text-white font-bold">{myStats.today || 0}</span></span>
-                    <span className="text-zinc-500 font-mono">WEEK <span className="text-white font-bold">{myStats.week || 0}</span></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {myStats.streak > 0 && (
-                      <span className="text-orange-400 font-bold">🔥{myStats.streak}</span>
-                    )}
-                    <span className="text-zinc-500 font-mono">SIGNED <span className="text-green-400 font-bold">{myStats.signed || 0}</span></span>
-                  </div>
+            {/* Stats Footer — slim inline bar, not overlaying map */}
+            <div className="bg-zinc-900 border-t border-zinc-800/50 px-3 py-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-500 font-mono">TODAY <span className="text-white font-bold">{myStats.today || 0}</span></span>
+                  <span className="text-zinc-500 font-mono">WEEK <span className="text-white font-bold">{myStats.week || 0}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {myStats.streak > 0 && (
+                    <span className="text-orange-400 font-bold">🔥{myStats.streak}</span>
+                  )}
+                  <span className="text-zinc-500 font-mono">SIGNED <span className="text-green-400 font-bold">{myStats.signed || 0}</span></span>
                 </div>
               </div>
             </div>

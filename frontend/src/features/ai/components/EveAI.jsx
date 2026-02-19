@@ -69,9 +69,6 @@ const EveAI = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // AI health status
-  const [aiHealth, setAiHealth] = useState(null);
-
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -82,11 +79,10 @@ const EveAI = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch existing sessions, available models, and AI health on mount
+  // Fetch existing sessions and available models on mount
   useEffect(() => {
     fetchSessions();
     fetchModels();
-    checkAiHealth();
   }, []);
 
   // Close model selector when clicking outside
@@ -117,17 +113,6 @@ const EveAI = () => {
       // If API fails or returns empty, FALLBACK_MODELS are already set as initial state
     } catch (error) {
       console.error('Failed to fetch models (using fallback list):', error);
-    }
-  };
-
-  const checkAiHealth = async () => {
-    try {
-      const response = await apiGet('/api/ai/health');
-      if (response.ok) {
-        setAiHealth(response.data);
-      }
-    } catch (error) {
-      console.error('AI health check failed:', error);
     }
   };
 
@@ -511,32 +496,6 @@ const EveAI = () => {
           </div>
         )}
 
-        {/* AI Provider Status Banner */}
-        {aiHealth && !aiHealth.service_ready && (
-          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-950/20 p-3 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-300">AI Not Connected</p>
-              <p className="text-xs text-zinc-400 mt-1">
-                {aiHealth.instructions}
-              </p>
-              <p className="text-xs text-zinc-500 mt-1 font-mono">
-                Status: {aiHealth.active_key_source}
-              </p>
-            </div>
-          </div>
-        )}
-        {aiHealth && aiHealth.service_ready && aiHealth.ollama?.reachable === false && (
-          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-950/20 p-3 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-amber-300">Ollama Cloud Unreachable</p>
-              <p className="text-xs text-zinc-400 mt-1">
-                {aiHealth.ollama?.error || 'Connection failed'}. Using fallback provider.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Claim Selector Modal - Tactical */}

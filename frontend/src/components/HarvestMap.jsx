@@ -457,39 +457,20 @@ export const HarvestMap = ({
         <RefreshCw className="w-4 h-4 text-gray-600" />
       </button>
 
-      {/* Stats bar with dynamic colors */}
-      <div className="absolute bottom-24 left-4 right-4 z-[1000] bg-white/95 backdrop-blur rounded-lg shadow-lg p-3">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-3">
-            <span className="font-medium text-gray-700">
-              {filteredPins.length} pins
-              {activeFilters && activeFilters.length < 6 ? ' (filtered)' : ''}
-            </span>
-            <div className="flex items-center gap-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dispositions.SG?.color || '#10B981' }}
-              />
-              <span>{filteredPins.filter((p) => p.status === 'SG').length}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dispositions.AP?.color || '#3B82F6' }}
-              />
-              <span>{filteredPins.filter((p) => p.status === 'AP').length}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dispositions.CB?.color || '#8B5CF6' }}
-              />
-              <span>{filteredPins.filter((p) => p.status === 'CB').length}</span>
-            </div>
-          </div>
-          <span className="text-gray-400">
-            {filteredPins.reduce((sum, p) => sum + (p.visit_count || 0), 0)} visits
-          </span>
+      {/* Pin count — small pill, doesn't block map */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-zinc-900/80 backdrop-blur rounded-full shadow-lg px-3 py-1 flex items-center gap-2 text-[11px] text-zinc-300 pointer-events-none">
+        <span className="font-mono">{filteredPins.length} pins</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: dispositions.SG?.color || '#10B981' }} />
+          <span>{filteredPins.filter((p) => p.status === 'SG').length}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: dispositions.AP?.color || '#3B82F6' }} />
+          <span>{filteredPins.filter((p) => p.status === 'AP').length}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: dispositions.CB?.color || '#8B5CF6' }} />
+          <span>{filteredPins.filter((p) => p.status === 'CB').length}</span>
         </div>
       </div>
     </div>
