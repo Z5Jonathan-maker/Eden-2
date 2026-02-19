@@ -64,6 +64,11 @@ class EmailSend(BaseModel):
     reply_to_message_id: Optional[str] = None
 
 
+class GmailModifyRequest(BaseModel):
+    add_labels: Optional[List[str]] = []
+    remove_labels: Optional[List[str]] = []
+
+
 # ============================================
 # HELPER: Authenticated Google API call
 # ============================================
@@ -161,14 +166,21 @@ def _extract_body(payload: dict) -> dict:
 async def list_gmail_messages(
     max_results: int = 20,
     q: Optional[str] = None,
+    label_ids: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """List recent Gmail messages."""
+    """List Gmail messages, optionally filtered by label/folder."""
     user_id = _get_user_id(current_user)
 
-    params = {"maxResults": min(max_results, 50)}
+    # Use list-of-tuples so httpx sends repeated labelIds query params
+    params = [("maxResults", min(max_results, 50))]
     if q:
-        params["q"] = q
+        params.append(("q", q))
+    if label_ids:
+        for lid in label_ids.split(","):
+            lid = lid.strip()
+            if lid:
+                params.append(("labelIds", lid))
 
     resp = await _google_request(user_id, "GET", f"{GMAIL_API}/messages", params=params)
     if resp.status_code != 200:
@@ -343,6 +355,112 @@ async def download_gmail_attachment(
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+@router.get("/gmail/labels")
+async def list_gmail_labels(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get counts for system Gmail folders."""
+    user_id = _get_user_id(current_user)
+    system_labels = ["INBOX", "STARRED", "SENT", "DRAFT", "SPAM", "TRASH"]
+    results = []
+    for label_id in system_labels:
+        try:
+            resp = await _google_request(user_id, "GET", f"{GMAIL_API}/labels/{label_id}")
+            if resp.status_code == 200:
+                detail = resp.json()
+                results.append({
+                    "id": detail["id"],
+                    "name": detail.get("name", ""),
+                    "messagesTotal": detail.get("messagesTotal", 0),
+                    "messagesUnread": detail.get("messagesUnread", 0),
+                })
+        except Exception:
+            pass
+    return {"labels": results}
+
+
+@router.get("/gmail/profile")
+async def get_gmail_profile(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get Gmail profile info."""
+    user_id = _get_user_id(current_user)
+    resp = await _google_request(user_id, "GET", f"{GMAIL_API}/profile")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to get Gmail profile")
+    data = resp.json()
+    return {
+        "emailAddress": data.get("emailAddress", ""),
+        "messagesTotal": data.get("messagesTotal", 0),
+        "threadsTotal": data.get("threadsTotal", 0),
+    }
+
+
+@router.post("/gmail/messages/{message_id}/trash")
+async def trash_gmail_message(
+    message_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Move a Gmail message to Trash."""
+    user_id = _get_user_id(current_user)
+    resp = await _google_request(user_id, "POST", f"{GMAIL_API}/messages/{message_id}/trash")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to trash message")
+    return {"status": "trashed", "id": message_id}
+
+
+@router.post("/gmail/messages/{message_id}/untrash")
+async def untrash_gmail_message(
+    message_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Remove a Gmail message from Trash."""
+    user_id = _get_user_id(current_user)
+    resp = await _google_request(user_id, "POST", f"{GMAIL_API}/messages/{message_id}/untrash")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to untrash message")
+    return {"status": "untrashed", "id": message_id}
+
+
+@router.post("/gmail/messages/{message_id}/modify")
+async def modify_gmail_message(
+    message_id: str,
+    req: GmailModifyRequest,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Modify message labels (star/unstar, read/unread, archive)."""
+    user_id = _get_user_id(current_user)
+    body = {}
+    if req.add_labels:
+        body["addLabelIds"] = req.add_labels
+    if req.remove_labels:
+        body["removeLabelIds"] = req.remove_labels
+    if not body:
+        raise HTTPException(status_code=400, detail="Provide add_labels or remove_labels")
+    resp = await _google_request(
+        user_id, "POST",
+        f"{GMAIL_API}/messages/{message_id}/modify",
+        json=body
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to modify message")
+    data = resp.json()
+    return {"id": message_id, "labelIds": data.get("labelIds", [])}
+
+
+@router.delete("/gmail/messages/{message_id}")
+async def delete_gmail_message(
+    message_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Permanently delete a Gmail message (cannot be undone)."""
+    user_id = _get_user_id(current_user)
+    resp = await _google_request(user_id, "DELETE", f"{GMAIL_API}/messages/{message_id}")
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Failed to delete message")
+    return {"status": "deleted", "id": message_id}
 
 
 # ============================================
