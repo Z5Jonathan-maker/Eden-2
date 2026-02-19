@@ -86,13 +86,53 @@ function CourseDetail() {
 
   useEffect(() => { fetchCourse(); }, [fetchCourse]);
 
-  // Fetch flashcards
+  // Build flashcards: try API first, fallback to extracting from course data
   useEffect(() => {
     if (!courseId) return;
     apiGet(`/api/university/courses/${courseId}/flashcards`).then(res => {
-      if (res.ok) setFlashcards(res.data.flashcards || []);
-    }).catch(() => {});
-  }, [courseId]);
+      if (res.ok && res.data.flashcards?.length > 0) {
+        setFlashcards(res.data.flashcards);
+      } else {
+        // Fallback: extract from course lessons
+        buildFlashcardsFromCourse();
+      }
+    }).catch(() => {
+      buildFlashcardsFromCourse();
+    });
+  }, [courseId, course]);
+
+  function buildFlashcardsFromCourse() {
+    if (!course?.lessons) return;
+    const cards = [];
+    course.lessons.forEach(lesson => {
+      // Use explicit flashcards if present
+      if (lesson.flashcards?.length > 0) {
+        cards.push(...lesson.flashcards);
+        return;
+      }
+      // Auto-generate from teaching_beats
+      if (lesson.teaching_beats?.length > 0) {
+        lesson.teaching_beats.forEach((beat, i) => {
+          cards.push({
+            id: `${lesson.id}-beat-${i}`,
+            front: beat,
+            back: `Key concept from: ${lesson.title}`,
+            category: lesson.title,
+          });
+        });
+      }
+      // Auto-generate from carrier_move / our_move
+      if (lesson.carrier_move && lesson.our_move) {
+        cards.push({
+          id: `${lesson.id}-move`,
+          front: `Carrier Move: ${lesson.carrier_move}`,
+          back: `Our Counter: ${lesson.our_move}`,
+          category: lesson.title,
+        });
+      }
+    });
+    if (cards.length > 0) setFlashcards(cards);
+  }
 
   async function markLessonComplete(lessonId) {
     try {
