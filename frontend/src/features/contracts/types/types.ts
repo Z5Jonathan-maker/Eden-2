@@ -44,7 +44,7 @@ export interface ContractMergeFields {
   adjuster_license: string;
   phone: string;
   email: string;
-  [key: string]: string; // allow extra LOR fields
+  [key: string]: string;
 }
 
 export interface CreateContractPayload {
@@ -53,15 +53,6 @@ export interface CreateContractPayload {
   type: string;
   templateId: string;
   fields: ContractMergeFields;
-}
-
-export type TemplateType = 'pa-agreement' | 'lor';
-
-export interface TemplateOption {
-  id: string;
-  name: string;
-  description: string;
-  type: TemplateType;
 }
 
 export interface ContractsStats {

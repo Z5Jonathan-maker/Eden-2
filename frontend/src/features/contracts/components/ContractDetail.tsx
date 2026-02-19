@@ -1,12 +1,7 @@
 import React from 'react';
-import { Download, Mail, MessageSquare, PenSquare, RefreshCcw, ScrollText } from 'lucide-react';
+import { Download, Mail, MessageSquare, PenSquare, RefreshCcw } from 'lucide-react';
 import StatusChip from './StatusChip';
 import { ContractItem } from '../types/types';
-
-const isLor = (c: ContractItem) =>
-  c.type?.toLowerCase().includes('letter') ||
-  c.type?.toLowerCase().includes('lor') ||
-  c.name?.toLowerCase().includes('lor');
 
 interface Props {
   contract: ContractItem | null;
@@ -36,12 +31,9 @@ const ContractDetail: React.FC<Props> = ({
       <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              {isLor(contract) && <ScrollText className="h-5 w-5 text-orange-400" />}
-              <h3 className="font-tactical text-lg text-white uppercase tracking-wide">
-                {contract.name}
-              </h3>
-            </div>
+            <h3 className="font-tactical text-lg text-white uppercase tracking-wide">
+              {contract.name}
+            </h3>
             <div className="mt-2 flex items-center gap-2">
               <StatusChip status={contract.status} />
               <span className="text-xs text-zinc-500">

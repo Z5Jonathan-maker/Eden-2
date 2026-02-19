@@ -172,9 +172,6 @@ class ContractSendRequest(BaseModel):
 # Care Claims Contract Template Definition
 # ============================================
 
-BUILTIN_TEMPLATES = {}  # populated below after definitions
-
-
 CARE_CLAIMS_TEMPLATE = {
     "id": "care-claims-pa-agreement",
     "name": "Public Adjuster Agreement",
@@ -256,75 +253,8 @@ CARE_CLAIMS_TEMPLATE = {
 }
 
 
-# ============================================
-# Letter of Representation (LOR) Template
-# ============================================
-
-CARE_CLAIMS_LOR_TEMPLATE = {
-    "id": "care-claims-lor",
-    "name": "Letter of Representation",
-    "description": "Authorization letter granting Care Claims authority to represent the insured with their insurance company",
-    "template_type": "letter_of_representation",
-    "version": "1.0",
-    "adjuster_info": CARE_CLAIMS_TEMPLATE["adjuster_info"],
-    "fields": [
-        # Insured Section
-        {"id": "insured_name", "label": "Insured Name(s)", "type": "text", "required": True, "section": "insured"},
-        {"id": "insured_email", "label": "Email", "type": "email", "required": True, "section": "insured"},
-        {"id": "insured_address", "label": "Mailing Address", "type": "text", "required": True, "section": "insured"},
-        {"id": "insured_city", "label": "City", "type": "text", "required": True, "section": "insured"},
-        {"id": "insured_state", "label": "State", "type": "text", "required": True, "section": "insured", "default": "FL"},
-        {"id": "insured_zip", "label": "Zip Code", "type": "text", "required": True, "section": "insured"},
-        {"id": "insured_phone", "label": "Phone", "type": "tel", "required": True, "section": "insured"},
-
-        # Insurance Carrier Section
-        {"id": "insurance_company", "label": "Insurance Company", "type": "text", "required": True, "section": "carrier"},
-        {"id": "policy_number", "label": "Policy Number", "type": "text", "required": True, "section": "carrier"},
-        {"id": "claim_number", "label": "Claim Number", "type": "text", "required": False, "section": "carrier"},
-        {"id": "carrier_address", "label": "Carrier Address", "type": "text", "required": False, "section": "carrier"},
-
-        # Loss / Property Section
-        {"id": "property_address", "label": "Property / Loss Address", "type": "text", "required": True, "section": "property"},
-        {"id": "property_city", "label": "City", "type": "text", "required": True, "section": "property"},
-        {"id": "property_state_zip", "label": "State / Zip", "type": "text", "required": True, "section": "property"},
-        {"id": "date_of_loss", "label": "Date of Loss", "type": "date", "required": True, "section": "property"},
-        {"id": "loss_description", "label": "Description of Loss", "type": "textarea", "required": True, "section": "property"},
-
-        # Representation Scope
-        {"id": "scope_of_authority", "label": "Scope of Authority", "type": "select",
-         "options": ["Full Claim Representation", "Inspection & Documentation Only", "Negotiation & Settlement Only"],
-         "required": True, "section": "authority", "default": "Full Claim Representation"},
-        {"id": "fee_percentage", "label": "Fee Percentage (%)", "type": "number", "required": True, "section": "authority", "min": 0, "max": 20},
-    ],
-    "sections": [
-        {"id": "insured", "title": "Insured / Policyholder"},
-        {"id": "carrier", "title": "Insurance Carrier"},
-        {"id": "property", "title": "Property & Loss Details"},
-        {"id": "authority", "title": "Scope of Representation"},
-    ],
-    "terms": [
-        "AUTHORIZATION: The undersigned Named Insured(s) hereby authorize CARE CLAIMS, its licensed public adjusters, and designated representatives to act on the insured's behalf in all matters relating to the above-referenced insurance claim.",
-        "SCOPE: This Letter of Representation authorizes CARE CLAIMS to inspect the property, communicate with the insurance company and its representatives, review and negotiate claim estimates, request and receive claim documentation, and take all actions reasonably necessary to pursue the claim.",
-        "CARRIER NOTICE: The insured requests that the insurance company direct all claim-related correspondence, inspections, and communications to CARE CLAIMS at the address and contact information listed above.",
-        "DURATION: This authorization remains in effect until the claim is resolved, this letter is revoked in writing by the insured, or the Public Adjuster Agreement is terminated per its terms.",
-        "FLORIDA DISCLOSURE: Pursuant to Florida Statute s 626.854, a public adjuster may not participate in the rebuilding or repair of a damaged structure. This letter does not authorize legal representation — for legal services an attorney must be retained.",
-        "RESCISSION: The insured may revoke this Letter of Representation at any time by providing written notice to CARE CLAIMS.",
-    ],
-    "signature_blocks": [
-        {"id": "insured_1", "role": "Primary Insured", "required": True},
-        {"id": "insured_2", "role": "Secondary Insured (if applicable)", "required": False},
-        {"id": "adjuster", "role": "Public Adjuster", "required": True, "prefilled": True},
-    ],
-    "initial_blocks": [],
-    "pdf_url": None,  # LOR is generated from scratch — no pre-existing blank template PDF
-    "created_at": "2026-02-18T00:00:00Z",
-}
-
-
-# Register all built-in templates
 BUILTIN_TEMPLATES = {
     CARE_CLAIMS_TEMPLATE["id"]: CARE_CLAIMS_TEMPLATE,
-    CARE_CLAIMS_LOR_TEMPLATE["id"]: CARE_CLAIMS_LOR_TEMPLATE,
 }
 
 
@@ -696,194 +626,6 @@ async def download_contract(
     }
 
 
-def _generate_lor_pdf(contract: dict, field_values: dict, signature_data, template: dict):
-    """Generate a Letter of Representation PDF from scratch using PyMuPDF."""
-    import fitz
-
-    W, H = 612, 792  # US Letter in points
-    doc = fitz.open()
-    page = doc.new_page(width=W, height=H)
-    adj = template.get("adjuster_info", {})
-
-    # Colors
-    BLACK = (0, 0, 0)
-    DARK = (0.15, 0.15, 0.15)
-    GRAY = (0.35, 0.35, 0.35)
-    ACCENT = (0.85, 0.45, 0.05)  # orange
-    RULE = (0.75, 0.75, 0.75)
-
-    y = 50
-
-    # ── Header ──────────────────────────────────────────────
-    page.insert_text(fitz.Point(50, y), "CARE CLAIMS", fontsize=18, fontname="helv", color=ACCENT)
-    y += 16
-    page.insert_text(fitz.Point(50, y), "Public Adjusting Services", fontsize=9, fontname="helv", color=GRAY)
-    # Adjuster info top-right
-    page.insert_text(fitz.Point(350, 50), adj.get("name", ""), fontsize=9, fontname="helv", color=DARK)
-    page.insert_text(fitz.Point(350, 62), f"License: {adj.get('license_number', '')}", fontsize=8, fontname="helv", color=GRAY)
-    page.insert_text(fitz.Point(350, 74), adj.get("phone", ""), fontsize=8, fontname="helv", color=GRAY)
-    page.insert_text(fitz.Point(350, 86), adj.get("email", ""), fontsize=8, fontname="helv", color=GRAY)
-
-    y += 20
-    page.draw_line(fitz.Point(50, y), fitz.Point(W - 50, y), color=RULE, width=0.5)
-    y += 20
-
-    # ── Title ───────────────────────────────────────────────
-    page.insert_text(fitz.Point(50, y), "LETTER OF REPRESENTATION", fontsize=14, fontname="helv", color=BLACK)
-    y += 18
-    today_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
-    page.insert_text(fitz.Point(50, y), f"Date: {today_str}", fontsize=9, fontname="helv", color=GRAY)
-    y += 24
-
-    # ── Carrier Notice ──────────────────────────────────────
-    carrier = field_values.get("insurance_company", "Insurance Company")
-    carrier_addr = field_values.get("carrier_address", "")
-    page.insert_text(fitz.Point(50, y), "TO:", fontsize=9, fontname="helv", color=GRAY)
-    y += 14
-    page.insert_text(fitz.Point(70, y), carrier, fontsize=10, fontname="helv", color=BLACK)
-    y += 14
-    if carrier_addr:
-        page.insert_text(fitz.Point(70, y), carrier_addr, fontsize=9, fontname="helv", color=DARK)
-        y += 14
-    y += 8
-
-    # ── RE: line ────────────────────────────────────────────
-    insured = field_values.get("insured_name", contract.get("client_name", ""))
-    policy = field_values.get("policy_number", "")
-    claim = field_values.get("claim_number", "")
-    prop_addr = field_values.get("property_address", "")
-    dol = field_values.get("date_of_loss", "")
-
-    page.insert_text(fitz.Point(50, y), "RE:", fontsize=9, fontname="helv", color=GRAY)
-    y += 14
-    re_lines = [
-        f"Insured: {insured}",
-        f"Policy #: {policy}" + (f"    Claim #: {claim}" if claim else ""),
-        f"Property: {prop_addr}",
-        f"Date of Loss: {dol}",
-    ]
-    for line in re_lines:
-        page.insert_text(fitz.Point(70, y), line, fontsize=9, fontname="helv", color=DARK)
-        y += 14
-    y += 10
-    page.draw_line(fitz.Point(50, y), fitz.Point(W - 50, y), color=RULE, width=0.5)
-    y += 16
-
-    # ── Body ────────────────────────────────────────────────
-    scope = field_values.get("scope_of_authority", "Full Claim Representation")
-    fee = field_values.get("fee_percentage", "10")
-
-    body_paragraphs = [
-        f"Dear Claims Department,",
-        f"Please be advised that the undersigned, {insured}, has retained CARE CLAIMS, a licensed public adjusting firm (Firm License #{adj.get('firm_license', '')}), to represent and act on their behalf regarding the above-referenced insurance claim.",
-        f"This letter serves as formal authorization for CARE CLAIMS, through its designated public adjuster {adj.get('name', '')} (License #{adj.get('license_number', '')}), to:",
-    ]
-
-    for para in body_paragraphs:
-        lines = _wrap_text(para, 80)
-        for line in lines:
-            if y > H - 120:
-                page = doc.new_page(width=W, height=H)
-                y = 50
-            page.insert_text(fitz.Point(50, y), line, fontsize=9, fontname="helv", color=DARK)
-            y += 13
-        y += 4
-
-    # Bullet points
-    bullets = [
-        "Inspect the insured property and document all damages",
-        "Communicate with the insurance company and its representatives on the insured's behalf",
-        "Request, receive, and review all claim-related documents, estimates, and correspondence",
-        "Negotiate the claim and pursue fair settlement on behalf of the insured",
-        "Attend all inspections, appraisals, and meetings related to the claim",
-    ]
-    if scope != "Full Claim Representation":
-        bullets = [b for b in bullets if "Negotiate" not in b and "Attend all" not in b]
-        bullets.append(f"Scope limited to: {scope}")
-
-    for bullet in bullets:
-        if y > H - 120:
-            page = doc.new_page(width=W, height=H)
-            y = 50
-        page.insert_text(fitz.Point(70, y), f"•  {bullet}", fontsize=9, fontname="helv", color=DARK)
-        y += 14
-    y += 8
-
-    # Direction clause
-    direction = f"Please direct all claim-related correspondence, inspections, and communications to CARE CLAIMS at {adj.get('address', '')} or via email at {adj.get('email', '')}."
-    for line in _wrap_text(direction, 80):
-        if y > H - 120:
-            page = doc.new_page(width=W, height=H)
-            y = 50
-        page.insert_text(fitz.Point(50, y), line, fontsize=9, fontname="helv", color=DARK)
-        y += 13
-    y += 6
-
-    # Fee
-    fee_line = f"The agreed-upon fee for services is {fee}% of the claim settlement, as outlined in the separate Public Adjuster Agreement."
-    for line in _wrap_text(fee_line, 80):
-        if y > H - 120:
-            page = doc.new_page(width=W, height=H)
-            y = 50
-        page.insert_text(fitz.Point(50, y), line, fontsize=9, fontname="helv", color=DARK)
-        y += 13
-    y += 6
-
-    # FL Disclosure
-    disclosure = "Pursuant to Florida Statute §626.854, this authorization does not grant CARE CLAIMS the right to participate in the rebuilding or repair of the damaged structure. For legal services, an attorney must be retained."
-    for line in _wrap_text(disclosure, 80):
-        if y > H - 120:
-            page = doc.new_page(width=W, height=H)
-            y = 50
-        page.insert_text(fitz.Point(50, y), line, fontsize=8, fontname="helv", color=GRAY)
-        y += 12
-    y += 16
-
-    # ── Signature lines ─────────────────────────────────────
-    if y > H - 160:
-        page = doc.new_page(width=W, height=H)
-        y = 50
-
-    page.insert_text(fitz.Point(50, y), "AUTHORIZATION", fontsize=10, fontname="helv", color=BLACK)
-    y += 20
-
-    # Insured signature
-    page.draw_line(fitz.Point(50, y + 20), fitz.Point(260, y + 20), color=BLACK, width=0.5)
-    page.insert_text(fitz.Point(50, y + 30), "Insured Signature", fontsize=8, fontname="helv", color=GRAY)
-    page.insert_text(fitz.Point(50, y + 42), f"Print: {insured}", fontsize=8, fontname="helv", color=DARK)
-
-    page.draw_line(fitz.Point(300, y + 20), fitz.Point(460, y + 20), color=BLACK, width=0.5)
-    page.insert_text(fitz.Point(300, y + 30), "Date", fontsize=8, fontname="helv", color=GRAY)
-
-    y += 60
-
-    # Adjuster signature
-    page.draw_line(fitz.Point(50, y + 20), fitz.Point(260, y + 20), color=BLACK, width=0.5)
-    page.insert_text(fitz.Point(50, y + 30), "Public Adjuster Signature", fontsize=8, fontname="helv", color=GRAY)
-    page.insert_text(fitz.Point(50, y + 42), f"Print: {adj.get('name', '')}", fontsize=8, fontname="helv", color=DARK)
-    page.insert_text(fitz.Point(50, y + 54), f"License: {adj.get('license_number', '')}", fontsize=8, fontname="helv", color=GRAY)
-
-    page.draw_line(fitz.Point(300, y + 20), fitz.Point(460, y + 20), color=BLACK, width=0.5)
-    page.insert_text(fitz.Point(300, y + 30), "Date", fontsize=8, fontname="helv", color=GRAY)
-
-    return doc
-
-
-def _wrap_text(text: str, max_chars: int = 80) -> list:
-    """Simple word-wrap."""
-    words = text.split()
-    lines, current = [], ""
-    for word in words:
-        if len(current) + len(word) + 1 > max_chars:
-            lines.append(current)
-            current = word
-        else:
-            current = f"{current} {word}" if current else word
-    if current:
-        lines.append(current)
-    return lines
-
-
 @router.get("/{contract_id}/pdf")
 async def generate_filled_pdf(
     contract_id: str,
@@ -906,13 +648,8 @@ async def generate_filled_pdf(
     template = _get_builtin_template(template_id) or CARE_CLAIMS_TEMPLATE
 
     try:
-        # ── LOR: generate from scratch ──────────────────────────
-        if template_id == CARE_CLAIMS_LOR_TEMPLATE["id"]:
-            doc = _generate_lor_pdf(contract, field_values, signature_data, template)
-        else:
-            # ── PA Agreement: overlay on existing template ──────
-            pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
-            async with httpx.AsyncClient() as client:
+        pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
+        async with httpx.AsyncClient() as client:
                 pdf_response = await client.get(pdf_url, timeout=30.0)
                 if pdf_response.status_code != 200:
                     raise HTTPException(status_code=500, detail="Failed to download template PDF")
@@ -997,8 +734,7 @@ async def generate_filled_pdf(
             pdf_output.seek(0)
 
         client_name = contract.get("client_name", "unknown").replace(" ", "_")
-        doc_type = "LOR" if template_id == CARE_CLAIMS_LOR_TEMPLATE["id"] else "PA_Agreement"
-        filename = f"{doc_type}_{client_name}_{contract_id[:8]}.pdf"
+        filename = f"PA_Agreement_{client_name}_{contract_id[:8]}.pdf"
 
         return StreamingResponse(
             pdf_output,
@@ -1053,34 +789,10 @@ async def prefill_contract_from_claim(
         "claim_type": "Non Emergency"
     }
     
-    # Also build LOR-specific prefill mapping
-    lor_prefilled = {
-        "insured_name": claim.get("client_name", ""),
-        "insured_email": claim.get("client_email", ""),
-        "insured_address": address_parts[0].strip() if address_parts else "",
-        "insured_city": city,
-        "insured_state": state_zip.split()[0] if state_zip else "FL",
-        "insured_zip": state_zip.split()[1] if len(state_zip.split()) > 1 else "",
-        "insured_phone": claim.get("import_metadata", {}).get("policyholder_phone", ""),
-        "insurance_company": claim.get("import_metadata", {}).get("insurance_company", ""),
-        "policy_number": claim.get("policy_number", ""),
-        "claim_number": claim.get("claim_number", ""),
-        "carrier_address": "",
-        "property_address": claim.get("property_address", ""),
-        "property_city": city,
-        "property_state_zip": state_zip,
-        "date_of_loss": claim.get("date_of_loss", ""),
-        "loss_description": claim.get("description", ""),
-        "scope_of_authority": "Full Claim Representation",
-        "fee_percentage": "10",
-    }
-
     return {
         "claim_id": claim_id,
         "prefilled_values": prefilled,
-        "lor_prefilled_values": lor_prefilled,
         "template_id": CARE_CLAIMS_TEMPLATE["id"],
-        "lor_template_id": CARE_CLAIMS_LOR_TEMPLATE["id"],
     }
 
 
