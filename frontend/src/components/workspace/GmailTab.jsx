@@ -290,20 +290,21 @@ const GmailTab = () => {
   const listRef = useRef(null);
 
   /* ─── Data fetching ─── */
-  const fetchMessages = useCallback(async (query) => {
+  const fetchMessages = useCallback(async (folder, query) => {
     setLoading(true);
+    setMessages([]);
     setSelectedIds(new Set());
     try {
       const params = new URLSearchParams();
       if (query) params.set('q', query);
-      if (activeFolder) params.set('label_ids', activeFolder);
+      if (folder) params.set('label_ids', folder);
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await apiGet(`/api/integrations/google/gmail/messages${qs}`, { cache: false });
       if (res.ok) setMessages(res.data.messages || []);
-      else toast.error('Failed to load emails');
-    } catch { toast.error('Failed to load emails'); }
+      else { setMessages([]); toast.error('Failed to load emails'); }
+    } catch { setMessages([]); toast.error('Failed to load emails'); }
     finally { setLoading(false); }
-  }, [activeFolder]);
+  }, []);
 
   const fetchLabels = useCallback(async () => {
     try {
@@ -318,7 +319,7 @@ const GmailTab = () => {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  useEffect(() => { fetchMessages(activeFolder); }, [activeFolder, fetchMessages]);
   useEffect(() => { fetchLabels(); }, [fetchLabels]);
 
   /* ─── Folder switching ─── */
@@ -369,7 +370,7 @@ const GmailTab = () => {
         setComposeMinimized(false);
         setComposeData({ to: '', subject: '', body: '', cc: '', bcc: '' });
         setAttachments([]);
-        fetchMessages();
+        fetchMessages(activeFolder);
       } else toast.error(res.error || 'Failed to send');
     } catch { toast.error('Failed to send'); }
     finally { setSending(false); }
@@ -550,7 +551,7 @@ const GmailTab = () => {
   };
 
   /* ─── Search ─── */
-  const handleSearch = (e) => { e.preventDefault(); fetchMessages(searchQuery); };
+  const handleSearch = (e) => { e.preventDefault(); fetchMessages(activeFolder, searchQuery); };
 
   /* ─── Keyboard nav ─── */
   useEffect(() => {
@@ -639,7 +640,7 @@ const GmailTab = () => {
               />
             </div>
           </form>
-          <button onClick={() => fetchMessages(searchQuery)} disabled={loading}
+          <button onClick={() => fetchMessages(activeFolder, searchQuery)} disabled={loading}
             className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-colors">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
