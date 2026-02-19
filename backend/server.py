@@ -257,8 +257,12 @@ async def health_check():
                 "SIGNNOW_CLIENT_ID": os.environ.get("SIGNNOW_CLIENT_ID", ""),
                 "SIGNNOW_CLIENT_SECRET": os.environ.get("SIGNNOW_CLIENT_SECRET", ""),
                 "GAMMA_API_KEY": os.environ.get("GAMMA_API_KEY", ""),
-                "OLLAMA_API_KEY": get_ollama_api_key(),
+                "OLLAMA_API_KEY_raw": os.environ.get("OLLAMA_API_KEY", ""),
+                "OLLAMA_API_TOKEN_raw": os.environ.get("OLLAMA_API_TOKEN", ""),
+                "OLLAMA_TOKEN_raw": os.environ.get("OLLAMA_TOKEN", ""),
+                "OLLAMA_resolved": get_ollama_api_key(),
                 "OLLAMA_BASE_URL": os.environ.get("OLLAMA_BASE_URL", ""),
+                "OLLAMA_MODEL": os.environ.get("OLLAMA_MODEL", ""),
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
                 "BASE_URL": os.environ.get("BASE_URL", ""),
                 "FRONTEND_URL": os.environ.get("FRONTEND_URL", ""),
@@ -267,6 +271,35 @@ async def health_check():
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+
+@app.get("/api/ai/ping")
+async def ai_ping():
+    """Public endpoint — tests Ollama Cloud connectivity (no auth needed)."""
+    import httpx
+    from services.ollama_config import normalize_ollama_base_url, ollama_endpoint, get_ollama_model
+
+    key = get_ollama_api_key()
+    base = normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL"))
+    model = get_ollama_model()
+    url = ollama_endpoint(base, "/api/chat")
+
+    if not key:
+        return {"status": "no_key", "detail": "OLLAMA_API_KEY not set", "key_preview": "EMPTY", "url": url}
+
+    try:
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+        payload = {"model": model, "messages": [{"role": "user", "content": "Say OK"}], "stream": False}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            content = data.get("message", {}).get("content", "")[:100]
+            return {"status": "ok", "model": model, "url": url, "key_preview": key[:4] + "...", "response_preview": content}
+        else:
+            return {"status": "error", "http_code": resp.status_code, "detail": resp.text[:300], "key_preview": key[:4] + "...", "url": url}
+    except Exception as e:
+        return {"status": "exception", "detail": str(e)[:300], "key_preview": key[:4] + "...", "url": url}
 
 
 async def require_admin_user(authorization: str = Header(default=None)):
