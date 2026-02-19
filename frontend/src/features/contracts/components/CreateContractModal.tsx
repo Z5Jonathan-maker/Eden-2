@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, ShieldCheck } from 'lucide-react';
 import { ClaimItem, ContractMergeFields, CreateContractPayload } from '../types/types';
 import SelectClaimModal from './SelectClaimModal';
-import { fetchClaimPrefill, toMergeFields, PA_TEMPLATE_ID } from '../api/api';
+import { fetchClaimPrefill, toMergeFields, PA_TEMPLATE_ID, DFS_TEMPLATE_ID } from '../api/api';
 
 const DEFAULT_FIELDS: ContractMergeFields = {
   client_name: '',
@@ -18,6 +18,23 @@ const DEFAULT_FIELDS: ContractMergeFields = {
   phone: '',
   email: '',
 };
+
+const TEMPLATES = [
+  {
+    id: PA_TEMPLATE_ID,
+    name: 'PA Agreement',
+    description: 'Full FL-compliant Public Adjuster Agreement with carrier authorization — 22 fields, e-signature ready',
+    icon: FileText,
+    accent: 'cyan' as const,
+  },
+  {
+    id: DFS_TEMPLATE_ID,
+    name: 'DFS Disclosure',
+    description: 'Florida DFS-H1-1982 Claim Process Disclosure — required by Rule 69B-220.051, F.A.C.',
+    icon: ShieldCheck,
+    accent: 'amber' as const,
+  },
+];
 
 interface Props {
   open: boolean;
@@ -41,21 +58,28 @@ const Field: React.FC<FieldProps> = ({ label, value }) => (
 );
 
 const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate }) => {
+  const [templateId, setTemplateId] = useState(PA_TEMPLATE_ID);
   const [claimPickerOpen, setClaimPickerOpen] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<ClaimItem | null>(null);
   const [fields, setFields] = useState<ContractMergeFields>(DEFAULT_FIELDS);
   const [creating, setCreating] = useState(false);
 
+  const isDfs = templateId === DFS_TEMPLATE_ID;
+
   useEffect(() => {
     if (!open) {
       setSelectedClaim(null);
       setFields(DEFAULT_FIELDS);
+      setTemplateId(PA_TEMPLATE_ID);
     }
   }, [open]);
 
   const contractName = useMemo(
-    () => `PA Agreement - ${fields.client_name || 'Client'}`,
-    [fields.client_name]
+    () =>
+      isDfs
+        ? `DFS Disclosure - ${fields.client_name || 'Client'}`
+        : `PA Agreement - ${fields.client_name || 'Client'}`,
+    [fields.client_name, isDfs]
   );
 
   const handleClaimSelect = async (claim: ClaimItem) => {
@@ -65,7 +89,9 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
     setFields(toMergeFields(claim, prefill));
   };
 
-  const missingRequired = !fields.client_name || !fields.email || !fields.adjuster_license || !selectedClaim;
+  const missingRequired = isDfs
+    ? !fields.client_name || !selectedClaim
+    : !fields.client_name || !fields.email || !fields.adjuster_license || !selectedClaim;
 
   const submit = async () => {
     if (missingRequired || !selectedClaim) return;
@@ -74,8 +100,8 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
       await onCreate({
         claimId: selectedClaim.id,
         name: contractName,
-        type: 'PA Agreement',
-        templateId: PA_TEMPLATE_ID,
+        type: isDfs ? 'DFS Disclosure' : 'PA Agreement',
+        templateId,
         fields,
       });
     } finally {
@@ -92,10 +118,10 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="font-tactical text-lg text-white uppercase tracking-wide">
-                Create Contract
+                Create Document
               </h2>
               <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                Select claim → Review fields → Create & Sign
+                Select document → Select claim → Review → Create & Sign
               </p>
             </div>
             <button type="button" onClick={onClose} className="text-slate-400 hover:text-white">
@@ -103,15 +129,54 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
             </button>
           </div>
 
-          {/* ── Template Info ── */}
-          <div className="mb-4 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-cyan-400" />
-              <span className="text-sm font-semibold text-white">PA Agreement</span>
-            </div>
-            <p className="mt-1 text-[10px] text-slate-500 leading-relaxed">
-              FL-compliant Public Adjuster Agreement with carrier authorization (LOR) — 22 fields, e-signature ready
+          {/* ── Template Picker ── */}
+          <div className="mb-4">
+            <p className="mb-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+              Document Type
             </p>
+            <div className="grid grid-cols-2 gap-3">
+              {TEMPLATES.map((tmpl) => {
+                const Icon = tmpl.icon;
+                const active = templateId === tmpl.id;
+                const borderColor = active
+                  ? tmpl.accent === 'amber'
+                    ? 'border-amber-500 bg-amber-500/10'
+                    : 'border-cyan-500 bg-cyan-500/10'
+                  : 'border-slate-700/60 hover:border-slate-600';
+                const textColor =
+                  tmpl.accent === 'amber' ? 'text-amber-400' : 'text-cyan-400';
+
+                return (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => setTemplateId(tmpl.id)}
+                    className={`relative rounded-lg border p-3 text-left transition-all ${borderColor}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon
+                        className={`h-4 w-4 ${active ? textColor : 'text-slate-500'}`}
+                      />
+                      <span
+                        className={`text-sm font-semibold ${active ? 'text-white' : 'text-slate-300'}`}
+                      >
+                        {tmpl.name}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      {tmpl.description}
+                    </p>
+                    {active && (
+                      <div
+                        className={`absolute top-2 right-2 h-2 w-2 rounded-full ${
+                          tmpl.accent === 'amber' ? 'bg-amber-500' : 'bg-cyan-500'
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Claim Selection ── */}
@@ -139,10 +204,24 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
               <div className="py-10 text-center text-slate-500">
                 No claim selected
                 <div className="mt-1 text-xs text-slate-600">
-                  Select a claim to autofill contract fields.
+                  Select a claim to autofill document fields.
+                </div>
+              </div>
+            ) : isDfs ? (
+              /* ── DFS Disclosure Fields ── */
+              <div className="mt-4 grid grid-cols-2 gap-6">
+                <div className="col-span-2 text-xs uppercase tracking-wide text-amber-300">
+                  Insured Information
+                </div>
+                <Field label="Insured Name(s)" value={fields.client_name} />
+                <Field label="Date Signed" value={new Date().toLocaleDateString()} />
+                <div className="col-span-2 mt-3 rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-slate-400 leading-relaxed">
+                  <p className="mb-2 font-semibold text-amber-300">Form DFS-H1-1982</p>
+                  <p>This is a 1-page Florida-mandated disclosure form that explains the roles of Company, Independent, and Public Adjusters, and the insured's rights under FL law. The insured's name and signature will be captured on the generated document.</p>
                 </div>
               </div>
             ) : (
+              /* ── PA Agreement Fields ── */
               <div className="mt-4 grid grid-cols-2 gap-6">
                 <div className="col-span-2 text-xs uppercase tracking-wide text-cyan-300">
                   Client Information
@@ -178,7 +257,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
           {/* ── Actions ── */}
           <div className="mt-6 flex items-center justify-between">
             <p className="text-[10px] font-mono text-slate-600">
-              FL §626.854 compliant | 22 fields | E-signature ready
+              {isDfs ? 'DFS-H1-1982 | Rule 69B-220.051, F.A.C.' : 'FL §626.854 compliant | 22 fields | E-signature ready'}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -194,7 +273,11 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                 disabled={creating || missingRequired}
                 className="btn-tactical px-4 py-2 text-xs uppercase disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {creating ? 'Creating...' : 'Create Contract'}
+                {creating
+                  ? 'Creating...'
+                  : isDfs
+                    ? 'Create Disclosure'
+                    : 'Create Contract'}
               </button>
             </div>
           </div>

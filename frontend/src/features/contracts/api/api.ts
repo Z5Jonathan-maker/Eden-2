@@ -8,6 +8,7 @@ import {
 import { apiGet, apiPost } from '@/lib/api';
 
 const PA_TEMPLATE_ID = import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
+const DFS_TEMPLATE_ID = 'dfs-h1-1982-disclosure';
 const SIGNNOW_TEMPLATE_ID = PA_TEMPLATE_ID;
 
 function normalizeStatus(raw: string): ContractStatus {
@@ -37,7 +38,7 @@ export function toMergeFields(claim: ClaimItem, prefill: Record<string, any>): C
   };
 }
 
-export { PA_TEMPLATE_ID };
+export { PA_TEMPLATE_ID, DFS_TEMPLATE_ID };
 
 export async function fetchContracts(): Promise<ContractItem[]> {
   const res = await apiGet('/api/contracts/');

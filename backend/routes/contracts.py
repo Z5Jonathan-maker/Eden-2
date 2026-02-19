@@ -253,8 +253,36 @@ CARE_CLAIMS_TEMPLATE = {
 }
 
 
+DFS_DISCLOSURE_TEMPLATE = {
+    "id": "dfs-h1-1982-disclosure",
+    "name": "DFS Claim Process Disclosure",
+    "description": "Florida DFS-H1-1982 Claim Process Disclosure Form — required by Rule 69B-220.051, F.A.C.",
+    "template_type": "dfs_disclosure",
+    "version": "1.0",
+    "fields": [
+        {"id": "insured_name", "label": "Insured Name(s)", "type": "text", "required": True, "section": "insured"},
+        {"id": "date_signed", "label": "Date Signed", "type": "date", "required": True, "section": "insured"},
+    ],
+    "sections": [
+        {"id": "insured", "title": "Insured Information"},
+    ],
+    "terms": [
+        "A Company Adjuster is as defined in s. 626.856, F.S. A company adjuster is employed by the insurance company to address insurance claims on its behalf.",
+        "An Independent Adjuster is as defined in s. 626.855, F.S. An independent adjuster is contracted by the insurance company to address insurance claims on its behalf.",
+        "A Public Adjuster is as defined in s. 626.854, F.S. A public adjuster contracts with and is compensated by you, the insured, to assist you in the insurance claim process. A public adjuster is not an employee or representative of the insurance company.",
+    ],
+    "signature_blocks": [
+        {"id": "insured_1", "role": "Primary Insured", "required": True},
+    ],
+    "initial_blocks": [],
+    "pdf_url": None,  # Generated from scratch — standard government form
+    "created_at": "2026-02-18T00:00:00Z",
+}
+
+
 BUILTIN_TEMPLATES = {
     CARE_CLAIMS_TEMPLATE["id"]: CARE_CLAIMS_TEMPLATE,
+    DFS_DISCLOSURE_TEMPLATE["id"]: DFS_DISCLOSURE_TEMPLATE,
 }
 
 
@@ -626,6 +654,121 @@ async def download_contract(
     }
 
 
+def _generate_dfs_disclosure_pdf(contract: dict, field_values: dict):
+    """Generate the Florida DFS-H1-1982 Claim Process Disclosure Form."""
+    import fitz
+
+    W, H = 612, 792  # US Letter
+    doc = fitz.open()
+    page = doc.new_page(width=W, height=H)
+
+    BLACK = (0, 0, 0)
+    DARK = (0.15, 0.15, 0.15)
+    GRAY = (0.4, 0.4, 0.4)
+    BLUE = (0.0, 0.35, 0.65)
+
+    margin_l = 60
+    margin_r = W - 60
+    y = 50
+
+    # ── Title ──
+    page.insert_text(fitz.Point(170, y), "Claim Process Disclosure Form", fontsize=16, fontname="helvetica-bold", color=BLACK)
+    y += 30
+
+    # ── Paragraphs ──
+    paragraphs = [
+        ('A **Company Adjuster** is as defined in s. 626.856, F.S. A company adjuster is '
+         'employed by the insurance company to address insurance claims on its behalf.'),
+        ('An **Independent Adjuster** is as defined in s. 626.855, F.S. An independent adjuster '
+         'is contracted by the insurance company to address insurance claims on its behalf.'),
+        ('A **Public Adjuster** is as defined in s. 626.854, F.S. A public adjuster contracts with '
+         'and is compensated by you, the insured, to assist you in the insurance claim '
+         'process. A public adjuster is not an employee or representative of the insurance company.'),
+        ('**You**, as the Insured, are not required to hire a public adjuster to assist you with '
+         'the insurance claim process but you have a right to do so.'),
+        ('**You**, as the Insured, have a right to initiate direct communications with your '
+         'attorney, the insurer, the company adjuster, the insurer\'s attorney, or any person '
+         'regarding the settlement of your claim.'),
+        ('**You**, as the Insured, should you enter a contract with a public adjuster:'),
+    ]
+
+    for para in paragraphs:
+        clean = para.replace('**', '')
+        lines = _wrap_text(clean, 85)
+        for line in lines:
+            page.insert_text(fitz.Point(margin_l, y), line, fontsize=10, fontname="helv", color=DARK)
+            y += 15
+        y += 8
+
+    # ── Bullet points ──
+    bullets = [
+        "Are responsible for paying the public adjuster's salary, fee, commission, or other consideration.",
+        "Are entitled to an unaltered copy of the executed public adjusting contract at the time the contract is executed.",
+        "Are entitled to an unaltered copy of this form after it has been executed.",
+        ("May cancel a public adjusting contract without cost or obligation within "
+         "30 days of the loss, or ten (10) days after the date the contract was "
+         "executed, whichever is longer, if the public adjusting contract was "
+         "entered into based on events that are the subject of a declaration of a "
+         "state of emergency by the Governor."),
+    ]
+
+    for bullet in bullets:
+        lines = _wrap_text(bullet, 78)
+        for i, line in enumerate(lines):
+            prefix = "\u2022   " if i == 0 else "    "
+            page.insert_text(fitz.Point(margin_l + 10, y), f"{prefix}{line}", fontsize=10, fontname="helv", color=DARK)
+            y += 15
+        y += 6
+
+    y += 15
+
+    # ── Insured Name ──
+    insured_name = field_values.get("insured_name", field_values.get("policyholder_name", contract.get("client_name", "")))
+    page.insert_text(fitz.Point(margin_l, y), "INSURED NAME(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 130, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    if insured_name:
+        page.insert_text(fitz.Point(margin_l + 135, y), insured_name, fontsize=10, fontname="helv", color=DARK)
+    y += 30
+
+    # ── Insured Signature ──
+    page.insert_text(fitz.Point(margin_l, y), "INSURED SIGNATURE(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 160, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    y += 30
+
+    # ── Date Signed ──
+    date_signed = field_values.get("date_signed", "")
+    page.insert_text(fitz.Point(margin_l, y), "DATE SIGNED:", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 100, y + 2), fitz.Point(margin_l + 250, y + 2), color=BLACK, width=0.5)
+    if date_signed:
+        page.insert_text(fitz.Point(margin_l + 105, y), date_signed, fontsize=10, fontname="helv", color=DARK)
+
+    y += 40
+
+    # ── Footer ──
+    page.insert_text(fitz.Point(margin_l, y), "Form DFS-H1-1982 (Eff. 08/23)", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(margin_l, y + 12), "Rule 69B-220.051, F.A.C.", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(330, y), "FLORIDA DEPARTMENT OF FINANCIAL SERVICES", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(370, y + 12), "1-877-MY-FL-CFO (1-877-693-5236)", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(355, y + 24), "www.myfloridacfo.com/Division/Consumers", fontsize=8, fontname="helv", color=BLUE)
+
+    return doc
+
+
+def _wrap_text(text: str, max_chars: int = 80) -> list:
+    """Simple word-wrap."""
+    words = text.split()
+    lines, current = [], ""
+    for word in words:
+        if len(current) + len(word) + 1 > max_chars:
+            lines.append(current)
+            current = word
+        else:
+            current = f"{current} {word}" if current else word
+    if current:
+        lines.append(current)
+    return lines
+
+
 @router.get("/{contract_id}/pdf")
 async def generate_filled_pdf(
     contract_id: str,
@@ -633,8 +776,8 @@ async def generate_filled_pdf(
 ):
     """
     Generate a filled PDF with the contract data overlaid on the template.
-    For PA Agreements: downloads blank template and overlays fields.
-    For LOR: generates a professional PDF from scratch.
+    PA Agreements: downloads blank template and overlays fields.
+    DFS Disclosure: generates the standard government form from scratch.
     If signed, includes the captured signature.
     """
     import httpx
@@ -648,8 +791,13 @@ async def generate_filled_pdf(
     template = _get_builtin_template(template_id) or CARE_CLAIMS_TEMPLATE
 
     try:
-        pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
-        async with httpx.AsyncClient() as client:
+        # ── DFS Disclosure: generate from scratch ──
+        if template_id == DFS_DISCLOSURE_TEMPLATE["id"]:
+            doc = _generate_dfs_disclosure_pdf(contract, field_values)
+        else:
+            # ── PA Agreement: overlay on existing template ──
+            pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
+            async with httpx.AsyncClient() as client:
                 pdf_response = await client.get(pdf_url, timeout=30.0)
                 if pdf_response.status_code != 200:
                     raise HTTPException(status_code=500, detail="Failed to download template PDF")
@@ -734,7 +882,8 @@ async def generate_filled_pdf(
             pdf_output.seek(0)
 
         client_name = contract.get("client_name", "unknown").replace(" ", "_")
-        filename = f"PA_Agreement_{client_name}_{contract_id[:8]}.pdf"
+        is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
+        filename = f"{'DFS_Disclosure' if is_dfs else 'PA_Agreement'}_{client_name}_{contract_id[:8]}.pdf"
 
         return StreamingResponse(
             pdf_output,
