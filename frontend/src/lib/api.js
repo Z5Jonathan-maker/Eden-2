@@ -6,18 +6,21 @@
  * - Base URL from env
  */
 
+// Empty string "" = same-origin proxy (Vercel rewrites /api/* to backend).
+// Full URL = direct cross-origin requests (needs CORS).
+// ?? preserves "" as a valid value; only null/undefined triggers next check.
 const FALLBACK_BACKEND = 'https://eden-gsot.onrender.com';
 
 const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ||
-  import.meta.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ||
+  import.meta.env.REACT_APP_BACKEND_URL ??
+  import.meta.env.REACT_APP_API_URL ??
+  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
   FALLBACK_BACKEND;
 
 export const assertApiUrl = () => {
   return (
-    API_URL ||
-    (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ||
+    API_URL ??
+    (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
     FALLBACK_BACKEND
   );
 };

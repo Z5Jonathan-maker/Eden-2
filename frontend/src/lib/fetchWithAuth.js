@@ -5,7 +5,7 @@
  * @deprecated Use api.js or ApiService.js instead for new code
  */
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL || 'https://eden-gsot.onrender.com';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? 'https://eden-gsot.onrender.com';
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;

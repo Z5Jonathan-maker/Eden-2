@@ -11,6 +11,14 @@
       "destination": "https://eden-gsot.onrender.com/api/:path*"
     },
     {
+      "source": "/health",
+      "destination": "https://eden-gsot.onrender.com/health"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://eden-gsot.onrender.com/ws/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
