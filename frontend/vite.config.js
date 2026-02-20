@@ -29,7 +29,7 @@ export default defineConfig({
   },
 
   // Environment variable prefix (Vite uses VITE_ by default)
-  envPrefix: 'REACT_APP_',
+  envPrefix: ['REACT_APP_', 'VITE_'],
 
   // Build configuration
   build: {
@@ -50,7 +50,7 @@ export default defineConfig({
             '@radix-ui/react-toast',
             '@radix-ui/react-tooltip',
           ],
-          'vendor-map': ['leaflet', 'react-leaflet'],
+          'vendor-map': ['@vis.gl/react-google-maps'],
           'vendor-utils': ['framer-motion', 'clsx', 'class-variance-authority'],
         },
       },
@@ -78,8 +78,7 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'leaflet',
-      'react-leaflet',
+      '@vis.gl/react-google-maps',
       'framer-motion',
     ],
   },
