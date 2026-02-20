@@ -215,7 +215,7 @@ const FieldModeInner = ({
   }, [map, position, refreshPosition]);
 
   return (
-    <div className="h-full w-full flex flex-col bg-zinc-900">
+    <div className="fixed inset-0 flex flex-col bg-zinc-900 z-50">
       {/* Top bar — session timer + end button */}
       <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between">
         <SessionTimer startTime={sessionStartTime} />
@@ -248,12 +248,11 @@ const FieldModeInner = ({
         <Map
           defaultCenter={position ? { lat: position.lat, lng: position.lng } : DEFAULT_CENTER}
           defaultZoom={FIELD_MODE_ZOOM}
-          mapId="field-mode-map"
           gestureHandling="greedy"
           disableDefaultUI
           clickableIcons={false}
           mapTypeId="hybrid"
-          className="w-full h-full"
+          style={{ width: '100%', height: '100%' }}
         >
           {/* GPS Dot */}
           {position && (
