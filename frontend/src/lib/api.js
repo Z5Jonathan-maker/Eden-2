@@ -6,23 +6,20 @@
  * - Base URL from env
  */
 
+const FALLBACK_BACKEND = 'https://eden-gsot.onrender.com';
+
 const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ??
-  import.meta.env.REACT_APP_API_URL ??
-  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
-  '';
+  import.meta.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ||
+  FALLBACK_BACKEND;
 
 export const assertApiUrl = () => {
-  const url =
-    API_URL ??
-    (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
-    '';
-  if (url == null) {
-    throw new Error(
-      "Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js"
-    );
-  }
-  return url;
+  return (
+    API_URL ||
+    (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ||
+    FALLBACK_BACKEND
+  );
 };
 
 // ── Bearer token storage (localStorage) ──────────────────────────

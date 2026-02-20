@@ -14,6 +14,6 @@
   window.__EDEN_CONFIG__ = window.__EDEN_CONFIG__ || {};
   // Same-origin: Vercel proxy rewrites /api/* to backend (no CORS needed)
   // Override with full URL only if NOT behind a proxy (e.g. local dev without vite proxy)
-  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "";
+  window.__EDEN_CONFIG__.BACKEND_URL = window.__EDEN_CONFIG__.BACKEND_URL || "https://eden-gsot.onrender.com";
 })();
 
