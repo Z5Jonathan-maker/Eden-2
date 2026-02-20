@@ -4151,8 +4151,14 @@ Document everything from day one. Take video of the entire property. Secure the 
 
     # Insert all courses
     all_courses = foundation_courses + operator_courses + advanced_elite_courses + additional_courses
+    inserted = 0
     for course in all_courses:
-        await db.courses.insert_one(course.dict())
+        try:
+            await db.courses.insert_one(course.dict())
+            inserted += 1
+        except Exception as e:
+            logger.error(f"Failed to seed course '{course.title}': {e}")
+    logger.info(f"University seed: {inserted}/{len(all_courses)} courses inserted")
     
     # ========== ARTICLES ==========
     

@@ -23,6 +23,15 @@ from .seed_data import seed_university_data
 
 router = APIRouter(prefix="/api/university", tags=["University"])
 
+@router.post("/reseed")
+async def reseed_university(current_user: dict = Depends(get_current_active_user)):
+    """Re-run university seed data (admin only)."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    await seed_university_data()
+    count = await db.courses.count_documents({})
+    return {"status": "ok", "courses_seeded": count}
+
 @router.get("/courses")
 async def get_courses(
     category: Optional[str] = None,
