@@ -23,9 +23,11 @@ from routes.harvest_scoring_engine import (
     get_leaderboard as engine_get_leaderboard,
     ensure_daily_blitz,
     seed_badges,
+    normalize_status,
     BADGES,
     STATUS_POINTS,
-    DISPOSITION_TO_STATUS
+    DISPOSITION_TO_STATUS,
+    LEGACY_STATUS_MAP,
 )
 from incentives_engine.events import emit_harvest_visit
 
@@ -45,14 +47,14 @@ async def ensure_scoring_engine():
 # MODELS - Spotio + Enzy Patterns
 # ============================================
 
-# Default status configurations (can be overridden via company_settings)
+# DoorMamba-class 6-pin status system
 VISIT_STATUSES = {
-    "NH": {"label": "Not Home", "color": "#F59E0B", "points": 1},
-    "NI": {"label": "Not Interested", "color": "#EF4444", "points": 1},
-    "CB": {"label": "Callback", "color": "#8B5CF6", "points": 5},
-    "AP": {"label": "Appointment", "color": "#3B82F6", "points": 10},
-    "SG": {"label": "Signed", "color": "#10B981", "points": 50},
-    "DNK": {"label": "Do Not Knock", "color": "#1F2937", "points": 0},
+    "NA": {"label": "No Answer", "color": "#FBBF24", "points": 1, "icon": "🚪"},
+    "NI": {"label": "Not Interested", "color": "#EF4444", "points": 3, "icon": "❌"},
+    "RN": {"label": "Renter", "color": "#F97316", "points": 2, "icon": "🏠"},
+    "FU": {"label": "Follow Up", "color": "#8B5CF6", "points": 5, "icon": "📋"},
+    "AP": {"label": "Appointment", "color": "#3B82F6", "points": 10, "icon": "📅"},
+    "DL": {"label": "Deal", "color": "#10B981", "points": 50, "icon": "💰"},
 }
 
 
@@ -66,14 +68,14 @@ async def get_harvest_dispositions_config():
     if config and config.get("value"):
         return config["value"]
     
-    # Return default dispositions
+    # Return default dispositions — DoorMamba-class 6-pin system
     return [
-        {"code": "NH", "label": "Not Home", "color": "#F59E0B", "points": 1, "icon": "🏠"},
-        {"code": "NI", "label": "Not Interested", "color": "#EF4444", "points": 0, "icon": "❌"},
-        {"code": "CB", "label": "Callback", "color": "#8B5CF6", "points": 3, "icon": "📞"},
-        {"code": "AP", "label": "Appointment", "color": "#3B82F6", "points": 5, "icon": "📅"},
-        {"code": "SG", "label": "Signed", "color": "#10B981", "points": 10, "icon": "✅"},
-        {"code": "DNK", "label": "Do Not Knock", "color": "#1F2937", "points": 0, "icon": "🚫"},
+        {"code": "NA", "label": "No Answer", "color": "#FBBF24", "points": 1, "icon": "🚪"},
+        {"code": "NI", "label": "Not Interested", "color": "#EF4444", "points": 3, "icon": "❌"},
+        {"code": "RN", "label": "Renter", "color": "#F97316", "points": 2, "icon": "🏠"},
+        {"code": "FU", "label": "Follow Up", "color": "#8B5CF6", "points": 5, "icon": "📋"},
+        {"code": "AP", "label": "Appointment", "color": "#3B82F6", "points": 10, "icon": "📅"},
+        {"code": "DL", "label": "Deal", "color": "#10B981", "points": 50, "icon": "💰"},
     ]
 
 
@@ -175,12 +177,13 @@ async def update_daily_goals(
 
 
 class VisitCreate(BaseModel):
-    """Create a visit record (Spotio GPS logging)"""
+    """Create a visit record (GPS logging)"""
     pin_id: str
-    status: Literal["NH", "NI", "CB", "AP", "SG", "DNK"]
+    status: Literal["NA", "NI", "RN", "FU", "AP", "DL", "NH", "CB", "SG", "DNK"]
     lat: float
     lng: float
     notes: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 class TerritoryCreate(BaseModel):
@@ -260,10 +263,11 @@ async def get_today_stats(
     # Calculate metrics
     doors_knocked = sum(status_counts.values())
     appointments_set = status_counts.get("AP", 0)
-    signed_contracts = status_counts.get("SG", 0)
-    callbacks = status_counts.get("CB", 0)
-    not_home = status_counts.get("NH", 0)
+    deals_closed = status_counts.get("DL", 0)
+    follow_ups = status_counts.get("FU", 0)
+    no_answer = status_counts.get("NA", 0)
     not_interested = status_counts.get("NI", 0)
+    renters = status_counts.get("RN", 0)
     
     # Calculate points from dispositions config
     total_points = 0
@@ -286,19 +290,21 @@ async def get_today_stats(
         "date": today_start.strftime("%Y-%m-%d"),
         "doors_knocked": doors_knocked,
         "appointments_set": appointments_set,
-        "signed_contracts": signed_contracts,
-        "callbacks": callbacks,
-        "not_home": not_home,
+        "deals_closed": deals_closed,
+        "follow_ups": follow_ups,
+        "no_answer": no_answer,
         "not_interested": not_interested,
+        "renters": renters,
         "total_points": total_points,
         "goals": goals,
         "progress": {
             "doors_knocked": safe_percent(doors_knocked, goals.get("doors_knocked", 40)),
             "appointments_set": safe_percent(appointments_set, goals.get("appointments_set", 3)),
-            "signed_contracts": safe_percent(signed_contracts, goals.get("signed_contracts", 1))
+            "deals_closed": safe_percent(deals_closed, goals.get("deals_closed", 1)),
         },
         "streak_days": streak_days,
-        "dispositions": dispositions
+        "dispositions": dispositions,
+        "status_counts": status_counts,
     }
 
 
@@ -348,22 +354,25 @@ async def create_visit(
     Uses the unified scoring engine for points, streaks, badges.
     """
     await ensure_scoring_engine()
-    
+
     visit_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
     now_iso = now.isoformat()
-    
+
+    # Normalize legacy status codes to new 6-pin system
+    status = normalize_status(visit.status)
+
     # Get pin to find territory_id
     pin = await db.canvassing_pins.find_one({"id": visit.pin_id})
     territory_id = pin.get("territory_id") if pin else None
-    
+
     # Create visit record
     doc = {
         "id": visit_id,
         "pin_id": visit.pin_id,
         "user_id": current_user.get("id"),
         "user_name": current_user.get("full_name", "Unknown"),
-        "status": visit.status,
+        "status": status,
         "lat": visit.lat,
         "lng": visit.lng,
         "notes": visit.notes,
@@ -373,18 +382,20 @@ async def create_visit(
     await db.harvest_visits.insert_one(doc)
     
     # Update the pin's last_status and visit_count
+    disposition_name = {v: k for k, v in DISPOSITION_TO_STATUS.items() if v == status}
+    disp_str = next(iter(disposition_name), status.lower())
     await db.canvassing_pins.update_one(
         {"id": visit.pin_id},
         {
             "$set": {
-                "disposition": visit.status.lower() if visit.status in ["NH", "NI", "CB", "AP", "SG", "DNK"] else visit.status,
+                "disposition": disp_str,
                 "last_visit_at": now_iso,
                 "updated_at": now_iso
             },
             "$inc": {"visit_count": 1},
             "$push": {
                 "history": {
-                    "status": visit.status,
+                    "status": status,
                     "user_id": current_user.get("id"),
                     "user_name": current_user.get("full_name"),
                     "timestamp": now_iso,
@@ -399,7 +410,7 @@ async def create_visit(
     scoring_result = await process_visit_for_scoring(
         user_id=current_user.get("id"),
         user_name=current_user.get("full_name", "Unknown"),
-        status=visit.status,
+        status=status,
         pin_id=visit.pin_id,
         timestamp=now,
         territory_id=territory_id
@@ -410,7 +421,7 @@ async def create_visit(
         await emit_harvest_visit(
             db=db,
             user_id=current_user.get("id"),
-            status=visit.status,
+            status=status,
             pin_id=visit.pin_id,
             territory_id=territory_id,
             disposition_points=scoring_result.get("points_earned", 0)
@@ -418,11 +429,11 @@ async def create_visit(
     except Exception as e:
         logger.warning(f"Failed to emit game event: {e}")
     
-    status_info = VISIT_STATUSES.get(visit.status, {"points": 1, "label": "Unknown", "color": "#9CA3AF"})
-    
+    status_info = VISIT_STATUSES.get(status, {"points": 1, "label": "Unknown", "color": "#9CA3AF"})
+
     return {
         "id": visit_id,
-        "status": visit.status,
+        "status": status,
         "status_info": status_info,
         "points_earned": scoring_result.get("points_earned", 0),
         "base_points": scoring_result.get("base_points", 0),
@@ -504,20 +515,10 @@ async def get_pins_with_history(
         }
     ).sort("updated_at", -1).to_list(1000)
     
-    # Map disposition to Spotio-style status
+    # Map disposition to status code using DISPOSITION_TO_STATUS
     for pin in pins:
         disp = pin.get("disposition", "unmarked")
-        # Map old dispositions to new status codes
-        status_map = {
-            "not_home": "NH",
-            "not_interested": "NI", 
-            "callback": "CB",
-            "appointment": "AP",
-            "signed": "SG",
-            "do_not_knock": "DNK",
-            "unmarked": None
-        }
-        pin["last_status"] = status_map.get(disp, disp.upper() if disp else None)
+        pin["last_status"] = DISPOSITION_TO_STATUS.get(disp, disp.upper() if disp else None)
         pin["visit_count"] = pin.get("visit_count", 0)
         if pin.get("last_status"):
             pin["status_info"] = VISIT_STATUSES.get(pin["last_status"], {})
@@ -743,13 +744,13 @@ async def get_leaderboard(
             status_info = VISIT_STATUSES.get(status, {})
             
             # Aggregate by category
-            if status in ["NH", "NI"]:
-                entry["doors"] += 0  # Already counted in total
-            elif status == "CB":
+            if status in ["NA", "NI", "RN"]:
+                pass  # Cold states — already counted in total doors
+            elif status == "FU":
                 entry["contacts"] += count
             elif status == "AP":
                 entry["appointments"] += count
-            elif status == "SG":
+            elif status == "DL":
                 entry["contracts"] += count
             
             # Calculate points
@@ -892,16 +893,16 @@ async def get_competition_standings(competition: dict) -> list:
     if metric == "doors":
         group_field = {"$sum": 1}
     elif metric == "contacts":
-        query["status"] = {"$in": ["CB", "AP", "SG"]}
+        query["status"] = {"$in": ["FU", "AP", "DL"]}
         group_field = {"$sum": 1}
     elif metric == "appointments":
         query["status"] = "AP"
         group_field = {"$sum": 1}
-    elif metric == "contracts":
-        query["status"] = "SG"
+    elif metric in ("contracts", "deals"):
+        query["status"] = "DL"
         group_field = {"$sum": 1}
     elif metric == "revenue":
-        query["status"] = "SG"
+        query["status"] = "DL"
         group_field = {"$sum": 15000}  # Avg contract value
     else:  # points
         group_field = {"$sum": 1}  # We'll calculate actual points
@@ -961,9 +962,9 @@ async def get_harvest_profile(
     
     # Calculate totals
     total_doors = sum(s["count"] for s in status_stats)
-    total_contacts = sum(s["count"] for s in status_stats if s["_id"] in ["CB", "AP", "SG"])
+    total_contacts = sum(s["count"] for s in status_stats if s["_id"] in ["FU", "AP", "DL"])
     total_appointments = sum(s["count"] for s in status_stats if s["_id"] == "AP")
-    total_contracts = sum(s["count"] for s in status_stats if s["_id"] == "SG")
+    total_contracts = sum(s["count"] for s in status_stats if s["_id"] == "DL")
     
     # Calculate total points
     total_points = 0
@@ -1107,7 +1108,7 @@ async def harvest_assistant(
         # Calculate totals
         for u in user_data:
             for sc in u.get("status_counts", []):
-                if sc.get("status") == "SG":
+                if sc.get("status") == "DL":
                     team_stats["contracts"] += sc.get("count", 0)
                 elif sc.get("status") == "AP":
                     team_stats["appointments"] += sc.get("count", 0)
@@ -1377,7 +1378,121 @@ async def seed_badges_endpoint(
 
 
 # ============================================
-# 8) HARVEST COACH BOT ADMIN ENDPOINTS
+# 8) FIELD MODE SESSION TRACKING
+# ============================================
+
+class FieldSessionCreate(BaseModel):
+    """Start a Field Mode session"""
+    territory_id: Optional[str] = None
+
+class FieldSessionEnd(BaseModel):
+    """End a Field Mode session"""
+    session_id: str
+
+
+@router.post("/field-session/start")
+async def start_field_session(
+    body: FieldSessionCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a Field Mode canvassing session. Returns session_id."""
+    session_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
+    doc = {
+        "id": session_id,
+        "user_id": current_user.get("id"),
+        "user_name": current_user.get("full_name", "Unknown"),
+        "territory_id": body.territory_id,
+        "started_at": now,
+        "ended_at": None,
+        "status_counts": {},
+        "total_pins": 0,
+        "total_points": 0,
+        "duration_minutes": 0,
+    }
+    await db.harvest_field_sessions.insert_one(doc)
+
+    return {"session_id": session_id, "started_at": now}
+
+
+@router.post("/field-session/end")
+async def end_field_session(
+    body: FieldSessionEnd,
+    current_user: dict = Depends(get_current_user)
+):
+    """End a Field Mode session. Returns session summary."""
+    session = await db.harvest_field_sessions.find_one({
+        "id": body.session_id,
+        "user_id": current_user.get("id"),
+    })
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    now = datetime.now(timezone.utc)
+    started_at = session.get("started_at", now.isoformat())
+
+    # Calculate duration
+    try:
+        start_dt = datetime.fromisoformat(started_at)
+        duration_minutes = max(1, int((now - start_dt).total_seconds() / 60))
+    except Exception:
+        duration_minutes = 0
+
+    # Get all visits for this session
+    visits = await db.harvest_visits.find({
+        "user_id": current_user.get("id"),
+        "created_at": {"$gte": started_at, "$lte": now.isoformat()},
+    }).to_list(500)
+
+    # Build summary
+    status_counts = {}
+    total_points = 0
+    for v in visits:
+        st = v.get("status", "NA")
+        status_counts[st] = status_counts.get(st, 0) + 1
+        info = STATUS_POINTS.get(st, {"points": 1})
+        total_points += info["points"]
+
+    # Update session record
+    await db.harvest_field_sessions.update_one(
+        {"id": body.session_id},
+        {"$set": {
+            "ended_at": now.isoformat(),
+            "status_counts": status_counts,
+            "total_pins": len(visits),
+            "total_points": total_points,
+            "duration_minutes": duration_minutes,
+        }}
+    )
+
+    return {
+        "session_id": body.session_id,
+        "duration_minutes": duration_minutes,
+        "total_pins": len(visits),
+        "total_points": total_points,
+        "status_counts": status_counts,
+        "doors_per_hour": round(len(visits) / max(1, duration_minutes / 60), 1),
+    }
+
+
+@router.get("/field-session/history")
+async def get_field_sessions(
+    limit: int = Query(20, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get past Field Mode sessions for the current user."""
+    sessions = await db.harvest_field_sessions.find(
+        {"user_id": current_user.get("id")},
+        {"_id": 0}
+    ).sort("started_at", -1).limit(limit).to_list(limit)
+
+    return sessions
+
+
+# ============================================
+# 9) HARVEST COACH BOT ADMIN ENDPOINTS
 # ============================================
 
 @router.get("/coach/status")

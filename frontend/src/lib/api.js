@@ -11,17 +11,42 @@
 // ?? preserves "" as a valid value; only null/undefined triggers next check.
 const FALLBACK_BACKEND = 'https://eden-gsot.onrender.com';
 
-const API_URL =
-  import.meta.env.REACT_APP_BACKEND_URL ??
-  import.meta.env.REACT_APP_API_URL ??
-  (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
-  FALLBACK_BACKEND;
+const normalizeBackendBase = (value) => {
+  if (value == null) return value;
+  const trimmed = String(value).trim();
 
-export const assertApiUrl = () => {
-  return (
-    API_URL ??
+  // Explicit same-origin mode.
+  if (!trimmed) return '';
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.replace(/\/+$/, '');
+  }
+
+  // Support relative backend paths if needed.
+  if (trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '');
+  }
+
+  // Common production misconfig: host without scheme.
+  if (/^[a-z0-9.-]+(?::\d+)?$/i.test(trimmed)) {
+    return `https://${trimmed}`.replace(/\/+$/, '');
+  }
+
+  return trimmed.replace(/\/+$/, '');
+};
+
+const API_URL = normalizeBackendBase(
+  import.meta.env.REACT_APP_BACKEND_URL ??
+    import.meta.env.REACT_APP_API_URL ??
     (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
     FALLBACK_BACKEND
+);
+
+export const assertApiUrl = () => {
+  return normalizeBackendBase(
+    API_URL ??
+      (typeof window !== 'undefined' ? window.__EDEN_CONFIG__?.BACKEND_URL : undefined) ??
+      FALLBACK_BACKEND
   );
 };
 
@@ -75,7 +100,7 @@ const setCache = (key, data) => {
  */
 export async function api(endpoint, options = {}) {
   const baseUrl = assertApiUrl();
-  const url = `${baseUrl}${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   const method = options.method || 'GET';
   const cacheOption = options.cache;
   const { cache: _cache, ...restOptions } = options;

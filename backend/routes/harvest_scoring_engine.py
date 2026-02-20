@@ -22,24 +22,37 @@ def init_scoring_engine(database):
 # CONSTANTS
 # ============================================
 
-# Base points per status (Enzy-style)
+# Base points per status — DoorMamba-class 6-pin system
 STATUS_POINTS = {
-    "NH": {"points": 1, "event": "door_knocked", "label": "Not Home"},
+    "NA": {"points": 1, "event": "door_knocked", "label": "No Answer"},
     "NI": {"points": 3, "event": "contact_made", "label": "Not Interested"},
-    "DNK": {"points": 3, "event": "contact_made", "label": "Do Not Knock"},
-    "CB": {"points": 5, "event": "callback_scheduled", "label": "Callback"},
+    "RN": {"points": 2, "event": "contact_made", "label": "Renter"},
+    "FU": {"points": 5, "event": "follow_up_scheduled", "label": "Follow Up"},
     "AP": {"points": 10, "event": "appointment_set", "label": "Appointment"},
-    "SG": {"points": 50, "event": "contract_signed", "label": "Signed"},
+    "DL": {"points": 50, "event": "deal_closed", "label": "Deal"},
 }
 
-# Legacy disposition mapping
+# Legacy code aliases — old pins map to new system
+LEGACY_STATUS_MAP = {
+    "NH": "NA",   # Not Home → No Answer
+    "CB": "FU",   # Callback → Follow Up
+    "SG": "DL",   # Signed → Deal
+    "DNK": "NI",  # Do Not Knock → absorbed into Not Interested
+}
+
+# Disposition string → status code mapping
 DISPOSITION_TO_STATUS = {
-    "not_home": "NH",
+    "no_answer": "NA",
     "not_interested": "NI",
-    "do_not_knock": "DNK",
-    "callback": "CB",
+    "renter": "RN",
+    "follow_up": "FU",
     "appointment": "AP",
-    "signed": "SG",
+    "deal": "DL",
+    # Legacy dispositions
+    "not_home": "NA",
+    "do_not_knock": "NI",
+    "callback": "FU",
+    "signed": "DL",
     "unmarked": None,
 }
 
@@ -60,8 +73,8 @@ BADGES = [
         "id": "first_fruits",
         "icon": "🌱",
         "name": "First Fruits",
-        "description": "First signed contract",
-        "criteria_type": "total_signed",
+        "description": "First closed deal",
+        "criteria_type": "total_deals",
         "criteria_value": 1,
         "category": "milestone",
         "rarity": "common"
@@ -90,8 +103,8 @@ BADGES = [
         "id": "closer",
         "icon": "🎯",
         "name": "Closer",
-        "description": "10 signed contracts total",
-        "criteria_type": "total_signed",
+        "description": "10 deals closed total",
+        "criteria_type": "total_deals",
         "criteria_value": 10,
         "category": "milestone",
         "rarity": "rare"
@@ -139,6 +152,11 @@ BADGES = [
 ]
 
 
+def normalize_status(status: str) -> str:
+    """Map legacy status codes to the new 6-pin system."""
+    return LEGACY_STATUS_MAP.get(status, status)
+
+
 # ============================================
 # CORE SCORING FUNCTION
 # ============================================
@@ -166,7 +184,10 @@ async def process_visit_for_scoring(
     """
     if timestamp is None:
         timestamp = datetime.now(timezone.utc)
-    
+
+    # Normalize legacy status codes to new 6-pin system
+    status = normalize_status(status)
+
     # 1. Get base points and event type
     status_info = STATUS_POINTS.get(status, {"points": 1, "event": "door_knocked"})
     base_points = status_info["points"]
@@ -289,7 +310,8 @@ async def update_user_stats(
                 "doors": 1,
                 f"status_{status}": 1,
                 "appointments": 1 if status == "AP" else 0,
-                "signed": 1 if status == "SG" else 0,
+                "deals": 1 if status == "DL" else 0,
+                "follow_ups": 1 if status == "FU" else 0,
             },
             "$setOnInsert": {
                 "user_name": user_name,
@@ -308,7 +330,8 @@ async def update_user_stats(
                 "total_points": points,
                 "total_doors": 1,
                 "total_appointments": 1 if status == "AP" else 0,
-                "total_signed": 1 if status == "SG" else 0,
+                "total_deals": 1 if status == "DL" else 0,
+                "total_follow_ups": 1 if status == "FU" else 0,
             },
             "$setOnInsert": {
                 "user_name": user_name,
@@ -336,7 +359,8 @@ async def get_user_stats(user_id: str) -> Dict[str, Any]:
             "total_points": 0,
             "total_doors": 0,
             "total_appointments": 0,
-            "total_signed": 0
+            "total_deals": 0,
+            "total_follow_ups": 0,
         }
     
     # Today's stats
@@ -347,7 +371,7 @@ async def get_user_stats(user_id: str) -> Dict[str, Any]:
     )
     
     if not today_stats:
-        today_stats = {"points": 0, "doors": 0, "appointments": 0, "signed": 0}
+        today_stats = {"points": 0, "doors": 0, "appointments": 0, "deals": 0, "follow_ups": 0}
     
     # This week stats
     week_start = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
@@ -358,11 +382,12 @@ async def get_user_stats(user_id: str) -> Dict[str, Any]:
             "points": {"$sum": "$points"},
             "doors": {"$sum": "$doors"},
             "appointments": {"$sum": "$appointments"},
-            "signed": {"$sum": "$signed"}
+            "deals": {"$sum": "$deals"},
+            "follow_ups": {"$sum": "$follow_ups"},
         }}
     ]
     week_result = await db.harvest_stats_daily.aggregate(week_pipeline).to_list(1)
-    week_stats = week_result[0] if week_result else {"points": 0, "doors": 0, "appointments": 0, "signed": 0}
+    week_stats = week_result[0] if week_result else {"points": 0, "doors": 0, "appointments": 0, "deals": 0, "follow_ups": 0}
     
     # Current streak
     streak = await calculate_streak(user_id)
@@ -427,9 +452,9 @@ async def update_competitions(
             contribution = points
         elif metric == "appointments" and status == "AP":
             contribution = 1
-        elif metric == "signed" and status == "SG":
+        elif metric in ("signed", "deals") and status == "DL":
             contribution = 1
-        elif metric == "contacts" and status in ["NI", "CB", "AP", "SG"]:
+        elif metric == "contacts" and status in ["NI", "FU", "AP", "DL"]:
             contribution = 1
         
         if contribution > 0:
@@ -531,8 +556,8 @@ async def check_and_award_badges(
         should_award = False
         
         # Check each criteria type
-        if criteria_type == "total_signed":
-            if stats["all_time"].get("total_signed", 0) >= criteria_value:
+        if criteria_type in ("total_signed", "total_deals"):
+            if stats["all_time"].get("total_deals", 0) >= criteria_value:
                 should_award = True
         
         elif criteria_type == "doors_single_day":
@@ -690,7 +715,8 @@ async def get_leaderboard(
             "value": {"$sum": f"${metric_field}"},
             "doors": {"$sum": "$doors"},
             "appointments": {"$sum": "$appointments"},
-            "signed": {"$sum": "$signed"},
+            "deals": {"$sum": "$deals"},
+            "follow_ups": {"$sum": "$follow_ups"},
             "points": {"$sum": "$points"}
         }},
         {"$sort": {"value": -1}},
@@ -712,7 +738,8 @@ async def get_leaderboard(
             "value": r["value"],
             "doors": r["doors"],
             "appointments": r["appointments"],
-            "signed": r["signed"],
+            "deals": r.get("deals", 0),
+            "follow_ups": r.get("follow_ups", 0),
             "points": r["points"],
             "streak": streak
         })

@@ -5,7 +5,19 @@
  * @deprecated Use api.js or ApiService.js instead for new code
  */
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? 'https://eden-gsot.onrender.com';
+const normalizeBackendBase = (value) => {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '');
+  }
+  if (/^[a-z0-9.-]+(?::\d+)?$/i.test(trimmed)) {
+    return `https://${trimmed}`.replace(/\/+$/, '');
+  }
+  return trimmed.replace(/\/+$/, '');
+};
+
+const API_URL = normalizeBackendBase(import.meta.env.REACT_APP_BACKEND_URL ?? 'https://eden-gsot.onrender.com');
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;

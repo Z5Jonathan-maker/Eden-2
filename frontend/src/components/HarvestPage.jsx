@@ -1,21 +1,20 @@
 /**
  * HarvestPage - Operation Eden Tactical Canvassing Experience
  *
- * "Tactical Ops" design system with phone-first mobile experience.
- * Features a modern 5-tab bottom navigation with gamification elements.
+ * Two modes:
+ * - BASE MODE: 5-tab gamification dashboard (Map, Today, Leaderboard, Challenges, Profile)
+ * - FIELD MODE: Map-only canvassing with 6-button quick-tap (DoorMamba-class UX)
  *
- * Tabs:
- * 1. Map - Full-screen interactive canvassing map
- * 2. Today - Daily goals with animated progress ring
- * 3. Leaderboard - Podium view with team rankings
- * 4. Challenges - Active competitions with rewards
- * 5. Profile - Stats, badges, and achievements
+ * Field Mode entry: Prominent "GO FIELD" button on the map tab.
+ * Field Mode exit: END button → Session Summary → back to base.
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import HarvestMap from './HarvestMap';
 import HarvestTodayTab from './HarvestTodayTab';
 import HarvestProfileTab from './HarvestProfileTab';
 import HarvestChallengesTab from './HarvestChallengesTab';
+import FieldMode from './harvest/FieldMode';
+import SessionSummary from './harvest/SessionSummary';
 import { Badge } from '../shared/ui/badge';
 import { Progress } from '../shared/ui/progress';
 import {
@@ -35,6 +34,7 @@ import {
   Medal,
   Award,
   Zap,
+  Crosshair,
 } from 'lucide-react';
 import { FEATURE_ICONS } from '../assets/badges';
 import { apiGet } from '@/lib/api';
@@ -53,12 +53,10 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
     { value: 'all', label: 'All Time' },
   ];
 
-  // Get top 3 for podium
   const podiumPlayers = leaderboard.slice(0, 3);
   const restOfLeaderboard = leaderboard.slice(3);
 
   const getPodiumOrder = () => {
-    // Display order: 2nd, 1st, 3rd
     if (podiumPlayers.length < 3) return podiumPlayers;
     return [podiumPlayers[1], podiumPlayers[0], podiumPlayers[2]];
   };
@@ -71,7 +69,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
 
   return (
     <div className="flex flex-col h-full bg-zinc-900/95">
-      {/* Period Filter - Tactical Style */}
+      {/* Period Filter */}
       <div className="px-4 pt-4 pb-2 bg-zinc-900 border-b border-zinc-700/50">
         <div className="flex items-center gap-3">
           <div className="flex-1 flex bg-zinc-800/50 rounded-full p-1 border border-zinc-700/30">
@@ -118,7 +116,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
           </div>
         ) : (
           <>
-            {/* Podium Section */}
+            {/* Podium */}
             {podiumPlayers.length >= 3 && (
               <div className="px-4 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-zinc-900/95">
                 <div className="harvest-podium">
@@ -167,7 +165,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
               </div>
             )}
 
-            {/* Rest of Leaderboard */}
+            {/* Rest */}
             <div className="px-4 space-y-2 pb-4">
               {(podiumPlayers.length < 3 ? leaderboard : restOfLeaderboard).map((entry, idx) => {
                 const rank = podiumPlayers.length < 3 ? idx + 1 : idx + 4;
@@ -177,7 +175,6 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                     className="card-tactical flex items-center gap-3 p-4 harvest-animate-in"
                     style={{ animationDelay: `${idx * 0.05}s` }}
                   >
-                    {/* Rank */}
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-tactical font-bold text-sm ${
                         rank <= 3
@@ -188,7 +185,6 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                       {rank}
                     </div>
 
-                    {/* Avatar */}
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-tactical font-semibold"
                       style={{
@@ -198,17 +194,15 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                       {(entry.user_name || entry.name || '?').charAt(0).toUpperCase()}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-tactical font-semibold text-white truncate">
                         {entry.user_name || entry.name}
                       </p>
                       <p className="text-xs text-zinc-500 font-mono">
-                        {entry.visits || entry.total_visits || 0} doors • {entry.signed || 0} signed
+                        {entry.visits || entry.total_visits || 0} doors
                       </p>
                     </div>
 
-                    {/* Points & Trend */}
                     <div className="text-right flex items-center gap-2 shrink-0">
                       <div className="flex flex-col items-end">
                         <p className="font-tactical font-bold text-orange-400 text-lg">
@@ -236,7 +230,11 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
 const HarvestPage = () => {
   const [activeTab, setActiveTab] = useState('map');
   const [showFilters, setShowFilters] = useState(false);
-  const [activeFilters, setActiveFilters] = useState(['NH', 'NI', 'CB', 'AP', 'SG', 'DNK']); // All visible by default
+  const [activeFilters, setActiveFilters] = useState(['NA', 'NI', 'RN', 'FU', 'AP', 'DL']);
+
+  // Field Mode state
+  const [fieldModeActive, setFieldModeActive] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState(null);
 
   // Data states
   const [leaderboard, setLeaderboard] = useState([]);
@@ -251,14 +249,14 @@ const HarvestPage = () => {
     multiplier: 1.0,
   });
 
-  // Filter options for pins
+  // Filter options — new 6-pin system
   const filterOptions = [
-    { code: 'NH', label: 'Not Home', color: '#F59E0B' },
+    { code: 'NA', label: 'No Answer', color: '#FBBF24' },
     { code: 'NI', label: 'Not Interested', color: '#EF4444' },
-    { code: 'CB', label: 'Callback', color: '#8B5CF6' },
+    { code: 'RN', label: 'Renter', color: '#F97316' },
+    { code: 'FU', label: 'Follow Up', color: '#8B5CF6' },
     { code: 'AP', label: 'Appointment', color: '#3B82F6' },
-    { code: 'SG', label: 'Signed', color: '#10B981' },
-    { code: 'DNK', label: 'Do Not Knock', color: '#1F2937' },
+    { code: 'DL', label: 'Deal', color: '#10B981' },
   ];
 
   const toggleFilter = (code) => {
@@ -267,13 +265,8 @@ const HarvestPage = () => {
     );
   };
 
-  const selectAllFilters = () => {
-    setActiveFilters(filterOptions.map((f) => f.code));
-  };
-
-  const clearAllFilters = () => {
-    setActiveFilters([]);
-  };
+  const selectAllFilters = () => setActiveFilters(filterOptions.map((f) => f.code));
+  const clearAllFilters = () => setActiveFilters([]);
 
   // Fetch functions
   const fetchLeaderboard = useCallback(async () => {
@@ -301,23 +294,34 @@ const HarvestPage = () => {
     }
   }, []);
 
-  // Load data based on active tab
   useEffect(() => {
     fetchMyStats();
-
-    if (activeTab === 'leaderboard') {
-      fetchLeaderboard();
-    }
+    if (activeTab === 'leaderboard') fetchLeaderboard();
   }, [activeTab, fetchLeaderboard, fetchMyStats]);
 
-  // Refetch leaderboard when period changes
   useEffect(() => {
-    if (activeTab === 'leaderboard') {
-      fetchLeaderboard();
-    }
+    if (activeTab === 'leaderboard') fetchLeaderboard();
   }, [leaderboardPeriod, fetchLeaderboard, activeTab]);
 
-  // Tab configuration with Enzy-style icons
+  // Field Mode handlers
+  const handleEnterFieldMode = () => {
+    setFieldModeActive(true);
+    setSessionSummary(null);
+  };
+
+  const handleEndFieldMode = (summary) => {
+    setFieldModeActive(false);
+    if (summary) {
+      setSessionSummary(summary);
+    }
+    fetchMyStats();
+  };
+
+  const handleCloseSummary = () => {
+    setSessionSummary(null);
+  };
+
+  // Tab configuration
   const tabs = [
     { id: 'map', label: 'Map', icon: MapIcon },
     { id: 'today', label: 'Today', icon: Calendar },
@@ -326,6 +330,17 @@ const HarvestPage = () => {
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
+  // ---- FIELD MODE: Full takeover ----
+  if (fieldModeActive) {
+    return <FieldMode onEndSession={handleEndFieldMode} />;
+  }
+
+  // ---- SESSION SUMMARY: Payoff screen ----
+  if (sessionSummary) {
+    return <SessionSummary summary={sessionSummary} onClose={handleCloseSummary} />;
+  }
+
+  // ---- BASE MODE: Normal 5-tab dashboard ----
   return (
     <div className="h-[calc(100dvh-64px)] flex flex-col bg-zinc-900" data-testid="harvest-page">
       {/* Main Content Area */}
@@ -333,8 +348,19 @@ const HarvestPage = () => {
         {/* Map Tab */}
         {activeTab === 'map' && (
           <div className="h-full flex flex-col">
-            {/* Filter toggle — small floating button, doesn't block map */}
-            <div className="absolute top-3 right-3 z-[1100]">
+            {/* Top bar: Filter + GO FIELD button */}
+            <div className="absolute top-3 right-3 z-[1100] flex items-center gap-2">
+              {/* GO FIELD MODE button */}
+              <button
+                onClick={handleEnterFieldMode}
+                className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 flex items-center gap-2 font-bold text-sm shadow-lg active:scale-95 transition-all"
+                data-testid="enter-field-mode"
+              >
+                <Crosshair className="w-4 h-4" />
+                GO FIELD
+              </button>
+
+              {/* Filter button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="bg-zinc-900/85 backdrop-blur-lg rounded-lg px-3 py-2 border border-zinc-700/50 flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-lg"
@@ -345,10 +371,10 @@ const HarvestPage = () => {
                 {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
 
-              {/* Filter Panel — drops down from button */}
+              {/* Filter Panel */}
               {showFilters && (
                 <div
-                  className="bg-zinc-900/90 backdrop-blur-lg rounded-xl mt-2 p-3 border border-zinc-700/50 min-w-[260px]"
+                  className="absolute top-full right-0 mt-2 bg-zinc-900/90 backdrop-blur-lg rounded-xl p-3 border border-zinc-700/50 min-w-[260px]"
                   data-testid="filter-panel"
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -385,7 +411,7 @@ const HarvestPage = () => {
               <HarvestMap onPinStatusChange={fetchMyStats} activeFilters={activeFilters} />
             </div>
 
-            {/* Stats Footer — slim inline bar, not overlaying map */}
+            {/* Stats Footer */}
             <div className="bg-zinc-900 border-t border-zinc-800/50 px-3 py-1.5">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
@@ -396,7 +422,7 @@ const HarvestPage = () => {
                   {myStats.streak > 0 && (
                     <span className="text-orange-400 font-bold">🔥{myStats.streak}</span>
                   )}
-                  <span className="text-zinc-500 font-mono">SIGNED <span className="text-green-400 font-bold">{myStats.signed || 0}</span></span>
+                  <span className="text-zinc-500 font-mono">DEALS <span className="text-green-400 font-bold">{myStats.signed || myStats.deals || 0}</span></span>
                 </div>
               </div>
             </div>
@@ -424,7 +450,7 @@ const HarvestPage = () => {
         {activeTab === 'profile' && <HarvestProfileTab />}
       </div>
 
-      {/* Bottom Navigation - Compact */}
+      {/* Bottom Navigation */}
       <div className="bg-zinc-900 border-t border-zinc-700/50 px-1 py-1 safe-area-inset-bottom">
         <div className="grid grid-cols-5 max-w-lg mx-auto">
           {tabs.map((tab) => {

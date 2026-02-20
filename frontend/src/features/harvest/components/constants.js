@@ -1,19 +1,18 @@
 /**
- * Harvest Module Constants
+ * Harvest Module Constants — DoorMamba-class 6-pin system
  * Centralized configuration for the canvassing/harvest system
  */
 
-import { Home, Phone, Calendar, Check, X, User } from 'lucide-react';
+import { Home, Phone, Calendar, Check, X, User, DoorOpen, FileText, Handshake } from 'lucide-react';
 
-// Pin status configuration (Enzy-style)
+// DoorMamba-class 6-pin status system
 export const STATUSES = {
-  unmarked: { label: 'Unmarked', color: '#9CA3AF', bgClass: 'bg-gray-400', icon: Home },
-  not_home: {
-    label: 'Not Home',
+  no_answer: {
+    label: 'No Answer',
     color: '#FBBF24',
-    bgClass: 'bg-yellow-400',
-    icon: Home,
-    key: 'NH',
+    bgClass: 'bg-amber-400',
+    icon: DoorOpen,
+    key: 'NA',
   },
   not_interested: {
     label: 'Not Interested',
@@ -22,12 +21,19 @@ export const STATUSES = {
     icon: X,
     key: 'NI',
   },
-  callback: {
-    label: 'Callback',
+  renter: {
+    label: 'Renter',
+    color: '#F97316',
+    bgClass: 'bg-orange-500',
+    icon: Home,
+    key: 'RN',
+  },
+  follow_up: {
+    label: 'Follow Up',
     color: '#8B5CF6',
     bgClass: 'bg-purple-500',
-    icon: Phone,
-    key: 'CB',
+    icon: FileText,
+    key: 'FU',
   },
   appointment: {
     label: 'Appointment',
@@ -36,30 +42,44 @@ export const STATUSES = {
     icon: Calendar,
     key: 'AP',
   },
-  signed: { label: 'Signed', color: '#10B981', bgClass: 'bg-green-500', icon: Check, key: 'SG' },
-  do_not_knock: { label: 'DNK', color: '#1F2937', bgClass: 'bg-gray-800', icon: X, key: 'DNK' },
-  renter: { label: 'Renter', color: '#F97316', bgClass: 'bg-orange-500', icon: User, key: 'RN' },
-};
-
-// Map tile layer configurations
-export const TILE_LAYERS = {
-  satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    name: 'Satellite',
-  },
-  hybrid: {
-    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    name: 'Hybrid',
-  },
-  street: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    subdomains: ['a', 'b', 'c'],
-    name: 'Street',
+  deal: {
+    label: 'Deal',
+    color: '#10B981',
+    bgClass: 'bg-green-500',
+    icon: Handshake,
+    key: 'DL',
   },
 };
 
-// Default map center (Tampa, FL)
-export const DEFAULT_CENTER = [27.9506, -82.4572];
+// Quick lookup by status code
+export const STATUS_BY_CODE = Object.fromEntries(
+  Object.entries(STATUSES).map(([disposition, info]) => [info.key, { ...info, disposition }])
+);
+
+// Field Mode pin configuration — the 6-button quick-tap order
+export const FIELD_MODE_PINS = [
+  { code: 'NA', label: 'No Answer', color: '#FBBF24', shortLabel: 'NA', tier: 'cold' },
+  { code: 'NI', label: 'Not Interested', color: '#EF4444', shortLabel: 'NI', tier: 'cold' },
+  { code: 'RN', label: 'Renter', color: '#F97316', shortLabel: 'RN', tier: 'cold' },
+  { code: 'FU', label: 'Follow Up', color: '#8B5CF6', shortLabel: 'FU', tier: 'warm' },
+  { code: 'AP', label: 'Appointment', color: '#3B82F6', shortLabel: 'AP', tier: 'warm' },
+  { code: 'DL', label: 'Deal', color: '#10B981', shortLabel: 'DL', tier: 'hot' },
+];
+
+// Pin state machine — forward-only progression for warm/hot pins
+export const PIN_STATE_MACHINE = {
+  NA: ['NI', 'RN', 'FU', 'AP'],
+  NI: ['FU', 'AP'],
+  RN: ['FU'],
+  FU: ['AP', 'DL'],
+  AP: ['DL'],
+  DL: [],
+};
+
+// Map defaults
+export const DEFAULT_CENTER = { lat: 27.9506, lng: -82.4572 }; // Tampa, FL
+export const DEFAULT_ZOOM = 17;
+export const FIELD_MODE_ZOOM = 19;
 
 // Badge rarity colors
 export const RARITY_COLORS = {

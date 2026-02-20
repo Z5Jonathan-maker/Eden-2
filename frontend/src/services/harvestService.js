@@ -22,12 +22,17 @@ const normalizeUser = (user = {}) => ({
 });
 
 const STATUS_TO_DISPOSITION = {
-  NH: 'not_home',
+  NA: 'no_answer',
   NI: 'not_interested',
-  CB: 'callback',
+  RN: 'renter',
+  FU: 'follow_up',
   AP: 'appointment',
-  SG: 'signed',
-  DNK: 'do_not_knock',
+  DL: 'deal',
+  // Legacy
+  NH: 'no_answer',
+  CB: 'follow_up',
+  SG: 'deal',
+  DNK: 'not_interested',
 };
 
 const toFiniteNumber = (value, fallback = 0) => {
@@ -272,6 +277,28 @@ export const harvestService = {
 
   async getScoringBadges() {
     return unwrap(await apiGet('/api/harvest/scoring/badges', { cache: false }), 'Failed to load scoring badges');
+  },
+
+  // Field Mode session tracking
+  async startFieldSession(territoryId = null) {
+    return unwrap(
+      await apiPost('/api/harvest/v2/field-session/start', { territory_id: territoryId }),
+      'Failed to start field session'
+    );
+  },
+
+  async endFieldSession(sessionId) {
+    return unwrap(
+      await apiPost('/api/harvest/v2/field-session/end', { session_id: sessionId }),
+      'Failed to end field session'
+    );
+  },
+
+  async getFieldSessionHistory(limit = 20) {
+    return unwrap(
+      await apiGet(`/api/harvest/v2/field-session/history?limit=${limit}`, { cache: false }),
+      'Failed to load session history'
+    );
   },
 };
 

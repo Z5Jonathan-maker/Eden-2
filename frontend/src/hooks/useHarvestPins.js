@@ -6,45 +6,63 @@ import { useEffect, useState, useCallback } from 'react';
 import { recordKnockMetric } from '../lib/harvestMetrics';
 import { harvestService } from '../services/harvestService';
 
-// Default status codes (Spotio-style) - used as fallback
+// DoorMamba-class 6-pin system
 export const DEFAULT_PIN_STATUSES = {
-  NH: { label: 'Not Home', color: '#F59E0B', bgColor: 'bg-amber-500', icon: '', points: 1 },
-  NI: { label: 'Not Interested', color: '#EF4444', bgColor: 'bg-red-500', icon: '', points: 0 },
-  CB: { label: 'Callback', color: '#8B5CF6', bgColor: 'bg-purple-500', icon: '', points: 3 },
-  AP: { label: 'Appointment', color: '#3B82F6', bgColor: 'bg-blue-500', icon: '', points: 5 },
-  SG: { label: 'Signed', color: '#10B981', bgColor: 'bg-green-500', icon: '', points: 10 },
-  DNK: { label: 'Do Not Knock', color: '#1F2937', bgColor: 'bg-gray-800', icon: '', points: 0 },
+  NA: { label: 'No Answer', color: '#FBBF24', bgColor: 'bg-amber-400', icon: '🚪', points: 1 },
+  NI: { label: 'Not Interested', color: '#EF4444', bgColor: 'bg-red-500', icon: '❌', points: 3 },
+  RN: { label: 'Renter', color: '#F97316', bgColor: 'bg-orange-500', icon: '🏠', points: 2 },
+  FU: { label: 'Follow Up', color: '#8B5CF6', bgColor: 'bg-purple-500', icon: '📋', points: 5 },
+  AP: { label: 'Appointment', color: '#3B82F6', bgColor: 'bg-blue-500', icon: '📅', points: 10 },
+  DL: { label: 'Deal', color: '#10B981', bgColor: 'bg-green-500', icon: '💰', points: 50 },
 };
 
 export const PIN_STATUSES = DEFAULT_PIN_STATUSES;
 
+// Legacy code normalization
+const LEGACY_STATUS_MAP = {
+  NH: 'NA',
+  CB: 'FU',
+  SG: 'DL',
+  DNK: 'NI',
+};
+
+const normalizeStatusCode = (code) => LEGACY_STATUS_MAP[code] || code;
+
 const dispositionToStatus = {
-  not_home: 'NH',
+  no_answer: 'NA',
   not_interested: 'NI',
-  callback: 'CB',
+  renter: 'RN',
+  follow_up: 'FU',
   appointment: 'AP',
-  signed: 'SG',
-  do_not_knock: 'DNK',
+  deal: 'DL',
+  // Legacy dispositions
+  not_home: 'NA',
+  do_not_knock: 'NI',
+  callback: 'FU',
+  signed: 'DL',
   unmarked: null,
 };
 
 const statusToDisposition = {
-  NH: 'not_home',
+  NA: 'no_answer',
   NI: 'not_interested',
-  CB: 'callback',
+  RN: 'renter',
+  FU: 'follow_up',
   AP: 'appointment',
-  SG: 'signed',
-  DNK: 'do_not_knock',
+  DL: 'deal',
 };
 
-const normalizePin = (pin) => ({
-  ...pin,
-  id: pin?.id || pin?._id || pin?.pin_id || pin?.idempotency_key || `${pin?.latitude}:${pin?.longitude}:${pin?.created_at || ''}`,
-  status: dispositionToStatus[pin.disposition] || null,
-  lat: pin.latitude,
-  lng: pin.longitude,
-  visit_count: pin.visit_count || 0,
-});
+const normalizePin = (pin) => {
+  const rawStatus = dispositionToStatus[pin.disposition] || pin.last_status || null;
+  return {
+    ...pin,
+    id: pin?.id || pin?._id || pin?.pin_id || pin?.idempotency_key || `${pin?.latitude}:${pin?.longitude}:${pin?.created_at || ''}`,
+    status: rawStatus ? normalizeStatusCode(rawStatus) : null,
+    lat: pin.latitude ?? pin.lat,
+    lng: pin.longitude ?? pin.lng,
+    visit_count: pin.visit_count || 0,
+  };
+};
 
 export const useHarvestPins = (options = {}) => {
   const { territoryId, autoFetch = true } = options;

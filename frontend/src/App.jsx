@@ -36,7 +36,6 @@ const ArticleDetail = lazy(() => import('./components/ArticleDetail'));
 const UserManagement = lazy(() => import('./components/UserManagement'));
 const SupplementTracker = lazy(() => import('./components/SupplementTracker'));
 const Scales = lazy(() => import('./components/Scales'));
-const Harvest = lazy(() => import('./components/Harvest'));
 const HarvestPage = lazy(() => import('./components/HarvestPage'));
 const SalesEnablement = lazy(() => import('./components/SalesEnablement'));
 const InteractiveVisionBoard = lazy(() => import('./components/InteractiveVisionBoard'));
@@ -236,7 +235,7 @@ function AppRoutes() {
           <Route path="university/library/:bookId" element={<BookReader />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="scales" element={<Scales />} />
-          <Route path="canvassing" element={<Harvest />} />
+          <Route path="canvassing" element={<HarvestPage />} />
           <Route path="canvassing/leaderboard" element={<HarvestPage />} />
           <Route path="sales" element={<SalesEnablement />} />
           <Route path="property" element={<PropertyHub />} />
