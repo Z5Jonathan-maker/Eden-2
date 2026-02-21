@@ -1,6 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
-const e2eBackendUrl = process.env.E2E_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://eden-2.onrender.com';
+const e2eBackendUrl = process.env.E2E_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://eden-gsot.onrender.com';
 
 /**
  * Eden E2E Test Configuration
