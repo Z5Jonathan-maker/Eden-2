@@ -9,7 +9,7 @@
 // Empty string "" = same-origin proxy (Vercel rewrites /api/* to backend).
 // Full URL = direct cross-origin requests (needs CORS).
 // ?? preserves "" as a valid value; only null/undefined triggers next check.
-const FALLBACK_BACKEND = 'https://eden-2.onrender.com';
+const FALLBACK_BACKEND = 'https://eden-gsot.onrender.com';
 
 const normalizeBackendBase = (value) => {
   if (value == null) return value;
