@@ -37,6 +37,7 @@ async def scan_sent_emails(user_id: str, max_emails: int = 50) -> list:
         raise ValueError("Google not connected. Connect via Settings.")
 
     async def _gmail_get(url, params=None):
+        nonlocal token
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
                 url,
@@ -44,7 +45,6 @@ async def scan_sent_emails(user_id: str, max_emails: int = 50) -> list:
                 params=params,
             )
             if resp.status_code == 401:
-                nonlocal token
                 token = await refresh_google_token(user_id)
                 if not token:
                     raise ValueError("Google token expired. Please reconnect.")
