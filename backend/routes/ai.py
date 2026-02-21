@@ -714,17 +714,21 @@ def _select_provider_and_model(
     preferred_model: Optional[str] = None,
     provider_order: Optional[List[str]] = None,
 ):
-    provider = (preferred_provider or "").strip().lower()
-    if provider in SUPPORTED_PROVIDERS:
-        return provider, _default_model_for_provider(provider, preferred_model)
-
-    ordered_supported = [p for p in (provider_order or []) if p in SUPPORTED_PROVIDERS]
-    if ordered_supported:
-        provider = ordered_supported[0]
-        return provider, _default_model_for_provider(provider, preferred_model)
-
-    # Default to ollama (free tier)
+    # LOCKED TO OLLAMA — free tier only until OpenAI/Anthropic are paid for.
+    # Once paid, remove this override and restore the provider selection logic below.
     return "ollama", OLLAMA_MODEL_DEFAULT
+
+    # --- Original provider selection (disabled until paid tiers enabled) ---
+    # provider = (preferred_provider or "").strip().lower()
+    # if provider in SUPPORTED_PROVIDERS:
+    #     return provider, _default_model_for_provider(provider, preferred_model)
+    #
+    # ordered_supported = [p for p in (provider_order or []) if p in SUPPORTED_PROVIDERS]
+    # if ordered_supported:
+    #     provider = ordered_supported[0]
+    #     return provider, _default_model_for_provider(provider, preferred_model)
+    #
+    # return "ollama", OLLAMA_MODEL_DEFAULT
 
 
 def _redact_prompt_text(text: str) -> str:

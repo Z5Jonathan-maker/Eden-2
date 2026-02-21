@@ -36,10 +36,15 @@ async def transcribe_audio(
     """
     try:
         from emergentintegrations.llm.openai import OpenAISpeechToText
-        
-        api_key = os.getenv("EMERGENT_LLM_KEY")
+
+        # Whisper requires OpenAI — Ollama has no speech-to-text support.
+        # This feature is disabled until OpenAI is enabled as a paid provider.
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("EMERGENT_LLM_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="Transcription service not configured")
+            raise HTTPException(
+                status_code=503,
+                detail="Transcription requires OpenAI (paid tier). Coming soon."
+            )
         
         # Save uploaded file to temp location
         with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as tmp:
