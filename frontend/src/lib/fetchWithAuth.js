@@ -17,7 +17,7 @@ const normalizeBackendBase = (value) => {
   return trimmed.replace(/\/+$/, '');
 };
 
-const API_URL = normalizeBackendBase(import.meta.env.REACT_APP_BACKEND_URL ?? 'https://eden-gsot.onrender.com');
+const API_URL = normalizeBackendBase(import.meta.env.REACT_APP_BACKEND_URL ?? 'https://eden-2.onrender.com');
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;

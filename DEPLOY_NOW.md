@@ -34,7 +34,7 @@ The script will:
 Add these in Vercel dashboard:
 
 ```env
-REACT_APP_BACKEND_URL=https://eden-gsot.onrender.com
+REACT_APP_BACKEND_URL=https://eden-2.onrender.com
 REACT_APP_ENVIRONMENT=production
 REACT_APP_SENTRY_DSN=<your-sentry-dsn>
 REACT_APP_VERSION=1.0.0

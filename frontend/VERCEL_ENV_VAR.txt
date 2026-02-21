@@ -1,1 +1,1 @@
-REACT_APP_BACKEND_URL=https://eden-gsot.onrender.com
+REACT_APP_BACKEND_URL=https://eden-2.onrender.com

@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "https://eden-gsot.onrender.com",
+  [string]$BaseUrl = "https://eden-2.onrender.com",
   [string]$Address = "6433 Northwest 199th Terrace",
   [string]$City = "Country Club",
   [string]$State = "FL",

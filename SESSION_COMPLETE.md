@@ -128,7 +128,7 @@ From **6/10 to 9/10** in one continuous work session.
 Currently deploying to Vercel with Vite build...
 
 **Production URL:** https://eden2-five.vercel.app
-**Backend:** https://eden-gsot.onrender.com
+**Backend:** https://eden-2.onrender.com
 
 ## Key Achievements
 
