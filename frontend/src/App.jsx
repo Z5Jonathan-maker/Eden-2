@@ -24,6 +24,7 @@ const InspectionsEnhanced = lazy(() => import('./components/InspectionsEnhanced'
 const InspectionsNew = lazy(() => import('./components/InspectionsNew'));
 const Documents = lazy(() => import('./features/documents/components/DocumentsPage'));
 const EveAI = lazy(() => import('./features/ai/components/EveAI'));
+const EmailIntelligence = lazy(() => import('./features/email-intelligence/EmailIntelligence'));
 const Contracts = lazy(() => import('./features/contracts/components/ContractsPage'));
 const Settings = lazy(() => import('./components/Settings'));
 const Adam = lazy(() => import('./components/Adam'));
@@ -226,6 +227,7 @@ function AppRoutes() {
           <Route path="inspections/classic" element={<InspectionsEnhanced />} />
           <Route path="documents" element={<Documents />} />
           <Route path="eve" element={<EveAI />} />
+          <Route path="email-intelligence" element={<EmailIntelligence />} />
           <Route path="contracts" element={<Contracts />} />
           <Route path="storage" element={<Documents />} />
           <Route path="data" element={<DataManagement />} />

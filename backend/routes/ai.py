@@ -800,6 +800,15 @@ async def _log_ai_usage(user_id: str, task_type: str, provider: str, model: str,
 
 
 async def _send_via_ai_gateway(*, user_id: str, session_key: str, system_message: str, prompt_text: str, task_type: str, preferred_provider: Optional[str] = None, preferred_model: Optional[str] = None):
+    # Inject user's Writing DNA into every AI call
+    try:
+        from services.email_intelligence import get_writing_dna_prompt
+        dna_prompt = await get_writing_dna_prompt(user_id)
+        if dna_prompt:
+            system_message = system_message + "\n\n" + dna_prompt
+    except Exception:
+        pass  # Graceful — DNA is optional enhancement
+
     safe_prompt = _redact_prompt_text(prompt_text)
     runtime_cfg = await load_policy_runtime_routing_config(db)
     configured_order = runtime_cfg.get("task_provider_order", {}).get(task_type)

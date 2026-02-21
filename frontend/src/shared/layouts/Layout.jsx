@@ -90,6 +90,7 @@ const Layout = () => {
     { icon: NAV_ICONS.eve, label: 'Agent Eve', path: '/eve' },
     { icon: NAV_ICONS.intel_hub, label: 'Intel Hub', path: '/property' },
     { icon: NAV_ICONS.scales, label: 'Scales', path: '/scales' },
+    { icon: NAV_ICONS.eve, label: 'Email DNA', path: '/email-intelligence' },
   ];
 
   const growthItems = [

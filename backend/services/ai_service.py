@@ -224,7 +224,16 @@ async def generate(request: AIRequest) -> AIResponse:
                     context_str += f"- {k}: {v}\n"
         
         full_system = system_prompt + context_str
-        
+
+        # Inject user's Writing DNA into system prompt
+        try:
+            from services.email_intelligence import get_writing_dna_prompt
+            dna_prompt = await get_writing_dna_prompt(request.user_id)
+            if dna_prompt:
+                full_system += "\n\n" + dna_prompt
+        except Exception:
+            pass  # Graceful — DNA is optional enhancement
+
         # Build messages
         messages = [{"role": "system", "content": full_system}]
         
