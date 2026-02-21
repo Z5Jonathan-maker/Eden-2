@@ -1,30 +1,23 @@
 /**
  * HarvestMap - Google Maps powered canvassing map
- * Replaces Leaflet entirely. Satellite-quality tiles, native mobile gestures.
- *
- * Uses @vis.gl/react-google-maps for:
- * - AdvancedMarkerElement with custom pin styling
- * - Native pinch-zoom, tilt, rotate
- * - GPS blue dot
+ * Uses @vis.gl/react-google-maps with Marker (no Cloud Map ID needed)
  */
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   APIProvider,
   Map,
-  AdvancedMarker,
+  Marker,
   useMap,
   InfoWindow,
 } from '@vis.gl/react-google-maps';
 import { useGpsWatch } from '../hooks/useGpsWatch';
 import { useHarvestPins, DEFAULT_PIN_STATUSES } from '../hooks/useHarvestPins';
-import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import {
   MapPin,
   Navigation,
   Plus,
-  X,
   RefreshCw,
   Loader2,
   ChevronDown,
@@ -35,36 +28,17 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const DEFAULT_CENTER = { lat: 27.9506, lng: -82.4572 };
 const DEFAULT_ZOOM = 17;
 
-// Custom pin marker element
-const PinMarker = ({ status, visitCount = 0, dispositions = DEFAULT_PIN_STATUSES }) => {
-  const info = dispositions[status] || { color: '#9CA3AF' };
-  return (
-    <div
-      className="flex items-center justify-center rounded-full border-[3px] border-white shadow-md text-white text-[10px] font-bold"
-      style={{
-        width: 28,
-        height: 28,
-        backgroundColor: info.color,
-      }}
-    >
-      {visitCount > 0 ? visitCount : ''}
-    </div>
-  );
+// SVG icon generators — no mapId needed unlike AdvancedMarker
+const makePinSvg = (color, text = '') => {
+  const label = text ? `<text x="14" y="18" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="monospace">${text}</text>` : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="${color}" stroke="white" stroke-width="3"/>${label}</svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 };
 
-// Blue GPS dot
-const GpsDot = () => (
-  <div className="relative">
-    <div
-      className="w-5 h-5 rounded-full border-[3px] border-white shadow-lg"
-      style={{
-        backgroundColor: '#3B82F6',
-        boxShadow: '0 0 0 2px #3B82F6, 0 2px 8px rgba(59,130,246,0.5)',
-      }}
-    />
-    <div className="absolute inset-0 w-5 h-5 rounded-full bg-blue-500/30 animate-ping" />
-  </div>
-);
+const GPS_DOT_SVG = (() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><circle cx="11" cy="11" r="8" fill="#3B82F6" stroke="white" stroke-width="3"/><circle cx="11" cy="11" r="11" fill="#3B82F680" opacity="0.4"/></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+})();
 
 // Status button popup for a pin
 const PinPopup = ({ pin, onLogVisit, onClose, dispositions = DEFAULT_PIN_STATUSES }) => {
@@ -160,7 +134,6 @@ const MapLegend = ({ dispositions, pins, expanded, onToggle }) => {
 // Inner map component (has access to useMap hook)
 const HarvestMapInner = ({
   position,
-  accuracy,
   hasLocation,
   gpsError,
   refreshPosition,
@@ -172,7 +145,6 @@ const HarvestMapInner = ({
   fetchPins,
   dispositions,
   onPinStatusChange,
-  activeFilters,
 }) => {
   const map = useMap();
   const [selectedPin, setSelectedPin] = useState(null);
@@ -246,6 +218,16 @@ const HarvestMapInner = ({
     refreshPosition();
   }, [map, position, refreshPosition]);
 
+  // Memoize pin icon URLs to avoid re-encoding on every render
+  const pinIcons = useMemo(() => {
+    const cache = {};
+    for (const [code, info] of Object.entries(dispositions)) {
+      cache[code] = makePinSvg(info.color);
+    }
+    cache._default = makePinSvg('#9CA3AF');
+    return cache;
+  }, [dispositions]);
+
   return (
     <>
       {/* GPS Error Banner */}
@@ -278,37 +260,32 @@ const HarvestMapInner = ({
       <Map
         defaultCenter={position ? { lat: position.lat, lng: position.lng } : DEFAULT_CENTER}
         defaultZoom={hasLocation ? DEFAULT_ZOOM : 14}
-        mapId="harvest-map"
         gestureHandling="greedy"
         disableDefaultUI
         clickableIcons={false}
         mapTypeId="hybrid"
         onClick={handleMapClick}
-        className="w-full h-full"
+        reuseMaps
+        style={{ width: '100%', height: '100%' }}
       >
         {/* GPS Blue Dot */}
         {position && (
-          <AdvancedMarker
+          <Marker
             position={{ lat: position.lat, lng: position.lng }}
+            icon={GPS_DOT_SVG}
             zIndex={1000}
-          >
-            <GpsDot />
-          </AdvancedMarker>
+            clickable={false}
+          />
         )}
 
         {/* Pins */}
         {filteredPins.map((pin) => (
-          <AdvancedMarker
+          <Marker
             key={pin.id}
             position={{ lat: pin.lat, lng: pin.lng }}
+            icon={pinIcons[pin.status] || pinIcons._default}
             onClick={() => setSelectedPin(pin)}
-          >
-            <PinMarker
-              status={pin.status}
-              visitCount={pin.visit_count}
-              dispositions={dispositions}
-            />
-          </AdvancedMarker>
+          />
         ))}
 
         {/* Info Window for selected pin */}
@@ -420,7 +397,6 @@ export const HarvestMap = ({
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
         <HarvestMapInner
           position={position}
-          accuracy={accuracy}
           hasLocation={hasLocation}
           gpsError={gpsError}
           refreshPosition={refreshPosition}
@@ -432,7 +408,6 @@ export const HarvestMap = ({
           fetchPins={fetchPins}
           dispositions={dispositions}
           onPinStatusChange={onPinStatusChange}
-          activeFilters={activeFilters}
         />
       </APIProvider>
     </div>

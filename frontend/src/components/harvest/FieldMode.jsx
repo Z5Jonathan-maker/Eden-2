@@ -5,7 +5,7 @@
  * All scoring/badges/streaks run silently; payoff at session end.
  *
  * Quick-tap flow:
- *   1. Rep taps map → pin drops at GPS location
+ *   1. Rep taps "DROP PIN" → pin drops at GPS location
  *   2. 6-button bar appears → one tap = status set
  *   3. Cold pins (NA/NI/RN) → instant, no form
  *   4. Warm/hot pins (FU/AP/DL) → compact conversion form slides up
@@ -15,12 +15,11 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   APIProvider,
   Map,
-  AdvancedMarker,
+  Marker,
   useMap,
-  InfoWindow,
 } from '@vis.gl/react-google-maps';
 import { useGpsWatch } from '../../hooks/useGpsWatch';
-import { useHarvestPins, DEFAULT_PIN_STATUSES } from '../../hooks/useHarvestPins';
+import { useHarvestPins } from '../../hooks/useHarvestPins';
 import { harvestService } from '../../services/harvestService';
 import { FIELD_MODE_PINS, DEFAULT_CENTER, FIELD_MODE_ZOOM } from '../../features/harvest/components/constants';
 import FieldModeConversionForm from './FieldModeConversionForm';
@@ -33,34 +32,28 @@ import {
   Square,
   Timer,
   MapPin,
+  Locate,
 } from 'lucide-react';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-// Compact pin marker for field mode — smaller, cleaner
-const FieldPin = ({ status, dispositions }) => {
-  const info = dispositions[status] || { color: '#9CA3AF' };
-  return (
-    <div
-      className="w-6 h-6 rounded-full border-2 border-white shadow-md"
-      style={{ backgroundColor: info.color }}
-    />
-  );
+// SVG icon generators — works without Cloud Map ID
+const makePinSvg = (color) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2.5"/></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 };
 
-// GPS blue dot
-const GpsDot = () => (
-  <div className="relative">
-    <div
-      className="w-4 h-4 rounded-full border-[3px] border-white"
-      style={{
-        backgroundColor: '#3B82F6',
-        boxShadow: '0 0 0 2px #3B82F6, 0 2px 8px rgba(59,130,246,0.5)',
-      }}
-    />
-    <div className="absolute inset-0 w-4 h-4 rounded-full bg-blue-500/30 animate-ping" />
-  </div>
-);
+const GPS_DOT_SVG = (() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="7" fill="#3B82F6" stroke="white" stroke-width="3"/></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+})();
+
+// Pre-generate pin icons for each status
+const PIN_ICONS = {};
+FIELD_MODE_PINS.forEach(({ code, color }) => {
+  PIN_ICONS[code] = makePinSvg(color);
+});
+PIN_ICONS._default = makePinSvg('#9CA3AF');
 
 // Session timer display
 const SessionTimer = ({ startTime }) => {
@@ -97,9 +90,7 @@ const FieldModeInner = ({
   loading,
   createPin,
   logVisit,
-  fetchPins,
   dispositions,
-  sessionId,
   sessionStats,
   setSessionStats,
   onEndSession,
@@ -109,23 +100,21 @@ const FieldModeInner = ({
   const [showConversionForm, setShowConversionForm] = useState(null);
   const [dropping, setDropping] = useState(false);
   const [sessionStartTime] = useState(Date.now());
+  const [followGps, setFollowGps] = useState(true);
   const hasCentered = useRef(false);
 
-  // Center on user once
+  // Center on user and follow GPS
   useEffect(() => {
-    if (map && position && !hasCentered.current) {
+    if (!map || !position) return;
+
+    if (!hasCentered.current) {
       map.panTo({ lat: position.lat, lng: position.lng });
       map.setZoom(FIELD_MODE_ZOOM);
       hasCentered.current = true;
-    }
-  }, [map, position]);
-
-  // Follow GPS in field mode — keep user centered
-  useEffect(() => {
-    if (map && position && hasCentered.current) {
+    } else if (followGps) {
       map.panTo({ lat: position.lat, lng: position.lng });
     }
-  }, [map, position]);
+  }, [map, position, followGps]);
 
   // Drop pin at GPS location
   const handleDropPin = useCallback(async () => {
@@ -211,6 +200,7 @@ const FieldModeInner = ({
       map.panTo({ lat: position.lat, lng: position.lng });
       map.setZoom(FIELD_MODE_ZOOM);
     }
+    setFollowGps(true);
     refreshPosition();
   }, [map, position, refreshPosition]);
 
@@ -243,8 +233,8 @@ const FieldModeInner = ({
         </div>
       )}
 
-      {/* Map */}
-      <div className="flex-1 relative">
+      {/* Map — fills all space between top bar and bottom bar */}
+      <div className="flex-1 relative overflow-hidden">
         <Map
           defaultCenter={position ? { lat: position.lat, lng: position.lng } : DEFAULT_CENTER}
           defaultZoom={FIELD_MODE_ZOOM}
@@ -252,36 +242,39 @@ const FieldModeInner = ({
           disableDefaultUI
           clickableIcons={false}
           mapTypeId="hybrid"
-          style={{ width: '100%', height: '100%' }}
+          reuseMaps
+          style={{ position: 'absolute', inset: 0 }}
+          onDragstart={() => setFollowGps(false)}
         >
           {/* GPS Dot */}
           {position && (
-            <AdvancedMarker
+            <Marker
               position={{ lat: position.lat, lng: position.lng }}
+              icon={GPS_DOT_SVG}
               zIndex={1000}
-            >
-              <GpsDot />
-            </AdvancedMarker>
+              clickable={false}
+            />
           )}
 
           {/* Existing pins */}
           {pins.map((pin) => (
-            <AdvancedMarker
+            <Marker
               key={pin.id}
               position={{ lat: pin.lat, lng: pin.lng }}
+              icon={PIN_ICONS[pin.status] || PIN_ICONS._default}
               onClick={() => handlePinClick(pin)}
-            >
-              <FieldPin status={pin.status} dispositions={dispositions} />
-            </AdvancedMarker>
+            />
           ))}
         </Map>
 
         {/* Center on me FAB */}
         <button
           onClick={handleCenterOnMe}
-          className="absolute bottom-32 right-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all"
+          className={`absolute bottom-32 right-4 z-10 w-12 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all ${
+            followGps ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'
+          }`}
         >
-          <Navigation className="w-5 h-5 text-blue-600" />
+          {followGps ? <Locate className="w-5 h-5" /> : <Navigation className="w-5 h-5" />}
         </button>
       </div>
 
@@ -299,7 +292,7 @@ const FieldModeInner = ({
       )}
 
       {/* Bottom: Drop Pin + 6-Button Quick-Tap Bar */}
-      <div className="bg-zinc-900 border-t border-zinc-800 px-3 pt-2 pb-4 safe-area-inset-bottom">
+      <div className="bg-zinc-900 border-t border-zinc-800 px-3 pt-2 pb-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         {/* Drop pin button — only when no pending pin */}
         {!pendingPin && (
           <button
@@ -399,7 +392,7 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
 
   if (!GOOGLE_MAPS_API_KEY) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-zinc-900">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900">
         <div className="text-center p-8">
           <MapPin className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-white text-lg font-bold mb-2">Google Maps API Key Required</h3>
@@ -428,9 +421,7 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
         loading={loading}
         createPin={createPin}
         logVisit={logVisit}
-        fetchPins={fetchPins}
         dispositions={dispositions}
-        sessionId={sessionId}
         sessionStats={sessionStats}
         setSessionStats={setSessionStats}
         onEndSession={handleEndSession}
