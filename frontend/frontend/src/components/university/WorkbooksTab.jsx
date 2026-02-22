@@ -3,11 +3,13 @@
  * Displays companion workbooks generated from PDF books
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Card, CardContent } from '../../shared/ui/card';
 import { Badge } from '../../shared/ui/badge';
-import { BookOpen, Clock, Layers, ChevronRight } from 'lucide-react';
+import { BookOpen, Clock, Layers, ChevronRight, RefreshCw } from 'lucide-react';
+import { apiPost } from '@/lib/api';
 
 const WorkbookCard = ({ workbook, onClick }) => {
   const componentCount = workbook.components?.length || 0;
@@ -63,17 +65,45 @@ const WorkbookCard = ({ workbook, onClick }) => {
   );
 };
 
-export const WorkbooksTab = ({ workbooks }) => {
+export const WorkbooksTab = ({ workbooks, canEdit, onRefresh }) => {
   const navigate = useNavigate();
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await apiPost('/api/university/workbooks/seed');
+      if (res.ok) {
+        toast.success(`Seeded ${res.data.workbooks_seeded} workbooks`);
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error('Failed to seed workbooks');
+      }
+    } catch (err) {
+      toast.error('Error seeding workbooks: ' + err.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   if (!workbooks || workbooks.length === 0) {
     return (
       <div className="text-center py-16">
         <BookOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
         <p className="text-zinc-500 text-lg mb-2">No workbooks yet</p>
-        <p className="text-zinc-600 text-sm">
+        <p className="text-zinc-600 text-sm mb-6">
           Upload a book to the Library and generate a companion workbook.
         </p>
+        {canEdit && (
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${seeding ? 'animate-spin' : ''}`} />
+            {seeding ? 'Seeding...' : 'Load Sample Workbooks'}
+          </button>
+        )}
       </div>
     );
   }

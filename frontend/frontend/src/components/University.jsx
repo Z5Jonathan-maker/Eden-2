@@ -415,7 +415,7 @@ function University() {
       )}
 
       {activeTab === 'workbooks' && (
-        <WorkbooksTab workbooks={workbooks} />
+        <WorkbooksTab workbooks={workbooks} canEdit={canEdit} onRefresh={fetchWorkbooks} />
       )}
 
       {/* Add Book Modal */}

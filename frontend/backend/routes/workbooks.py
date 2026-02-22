@@ -186,6 +186,19 @@ async def toggle_publish(
     return {"is_published": new_status, "message": f"Workbook {'published' if new_status else 'unpublished'}"}
 
 
+@router.post("/seed")
+async def seed_workbooks_endpoint(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Seed sample workbooks (admin/manager only)"""
+    if current_user.get("role") not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Only admins and managers can seed workbooks")
+
+    await seed_workbooks()
+    count = await db.workbooks.count_documents({})
+    return {"status": "ok", "workbooks_seeded": count}
+
+
 # ========== SEED DATA ==========
 
 async def seed_workbooks():
