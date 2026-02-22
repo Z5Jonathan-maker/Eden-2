@@ -539,46 +539,43 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Show flash effect
+    // Show flash + haptic feedback (critical for field use — adjusters can't hear toasts on roofs)
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 150);
-    
-    // Get GPS coordinates
-    let latitude = null;
-    let longitude = null;
-    
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 60000
-          });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-      } catch (geoErr) {
-        // console.log('[RapidCapture] GPS not available:', geoErr.message);
-      }
-    }
-    
-    // Convert canvas to blob
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    // Start GPS in parallel — NEVER block the shutter. Use cached position if available.
+    const geoPromise = navigator.geolocation
+      ? new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),
+            { enableHighAccuracy: false, timeout: 1000, maximumAge: 300000 }
+          );
+        })
+      : Promise.resolve(null);
+
+    // Convert canvas to blob (fires immediately — GPS resolves in parallel)
     canvas.toBlob(async (blob) => {
       if (!blob) {
         toast.error('Failed to capture photo');
         return;
       }
       
-      const offset = recordingStartRef.current 
-        ? (Date.now() - recordingStartRef.current) / 1000 
+      // Resolve GPS (should be cached/instant, max 1s wait)
+      const geo = await geoPromise;
+      const latitude = geo?.lat || null;
+      const longitude = geo?.lng || null;
+
+      const offset = recordingStartRef.current
+        ? (Date.now() - recordingStartRef.current) / 1000
         : photos.length;
-      
+
       const photoId = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Create local preview URL
       const localUrl = URL.createObjectURL(blob);
-      
+
       // Add to local state immediately (optimistic)
       const newPhoto = {
         id: photoId,
