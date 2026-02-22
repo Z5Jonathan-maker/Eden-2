@@ -188,12 +188,15 @@ async def toggle_publish(
 
 # ========== SEED DATA ==========
 
+EXTREME_OWNERSHIP_WORKBOOK_ID = "extreme-ownership-care-claims-v1"
+
+
 async def seed_workbooks():
-    """Seed the Extreme Ownership companion workbook"""
-    await db.workbooks.delete_many({})
+    """Seed the Extreme Ownership companion workbook (idempotent upsert)."""
+    print("[seed_workbooks] Starting workbook seed...")
 
     workbook = {
-        "id": str(uuid.uuid4()),
+        "id": EXTREME_OWNERSHIP_WORKBOOK_ID,
         "title": "Extreme Ownership — Care Claims Field Application",
         "description": "A hands-on companion workbook applying Jocko Willink's Extreme Ownership principles to public adjusting. Built for Care Claims adjusters who lead from the front.",
         "source_book": "Extreme Ownership by Jocko Willink & Leif Babin",
@@ -686,5 +689,11 @@ async def seed_workbooks():
         ]
     }
 
-    await db.workbooks.insert_one(workbook)
-    logger.info("Extreme Ownership workbook seeded successfully")
+    result = await db.workbooks.update_one(
+        {"id": EXTREME_OWNERSHIP_WORKBOOK_ID},
+        {"$set": workbook},
+        upsert=True,
+    )
+    action = "inserted" if result.upserted_id else "updated"
+    print(f"[seed_workbooks] Extreme Ownership workbook {action} successfully")
+    logger.info(f"Extreme Ownership workbook seeded ({action})")

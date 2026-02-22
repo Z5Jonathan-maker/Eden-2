@@ -115,13 +115,30 @@ async def startup_event():
     logger.info("="*70)
 
     await seed_university_data()
+    print("[startup] seed_university_data complete — starting seed_workbooks...")
     try:
         await seed_workbooks()
+        print("[startup] seed_workbooks COMPLETE")
     except Exception as e:
-        logging.error(f"[startup] seed_workbooks failed: {e}")
+        print(f"[startup] seed_workbooks FAILED: {e}")
+        logging.error(f"[startup] seed_workbooks failed: {e}", exc_info=True)
     await ensure_admin_user()
     await initialize_harvest_gamification()
     await initialize_background_scheduler()
+
+    # Inspection collection indexes for query performance
+    try:
+        await db.inspection_photos.create_index("claim_id")
+        await db.inspection_photos.create_index("session_id")
+        await db.inspection_photos.create_index("uploaded_by")
+        await db.inspection_sessions.create_index("id")
+        await db.inspection_sessions.create_index("claim_id")
+        await db.inspection_sessions.create_index("created_by")
+        await db.inspection_reports.create_index("session_id")
+        print("[startup] Inspection indexes created")
+    except Exception as e:
+        print(f"[startup] Failed to create inspection indexes: {e}")
+        logging.error(f"[startup] Inspection index creation failed: {e}")
 
 
 

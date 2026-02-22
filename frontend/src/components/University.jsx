@@ -171,7 +171,8 @@ function University() {
     fetchCompanySettings();
     fetchData();
     fetchCustomContent();
-  }, [fetchCompanySettings, fetchData, fetchCustomContent]);
+    fetchWorkbooks();
+  }, [fetchCompanySettings, fetchData, fetchCustomContent, fetchWorkbooks]);
 
   // Content Management Functions
   const handleCreateContent = async () => {

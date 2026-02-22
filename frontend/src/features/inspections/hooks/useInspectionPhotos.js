@@ -63,8 +63,9 @@ export function useInspectionPhotos(options = {}) {
     setError(null);
     
     try {
+      const sessionSuffix = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
       const { ok, data, error: apiError } = await api(
-        `/api/inspections/claim/${targetClaimId}/photos`,
+        `/api/inspections/claim/${targetClaimId}/photos${sessionSuffix}`,
         { cache: false }
       );
       
