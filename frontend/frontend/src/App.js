@@ -31,6 +31,7 @@ const DataManagement = lazy(() => import("./components/DataManagement"));
 const University = lazy(() => import("./components/University"));
 const CourseDetail = lazy(() => import("./components/CourseDetail"));
 const ArticleDetail = lazy(() => import("./components/ArticleDetail"));
+const WorkbookViewer = lazy(() => import("./components/university/WorkbookViewer"));
 const UserManagement = lazy(() => import("./components/UserManagement"));
 const SupplementTracker = lazy(() => import("./components/SupplementTracker"));
 const Scales = lazy(() => import("./components/Scales"));
@@ -179,6 +180,7 @@ function AppRoutes() {
         <Route path="university" element={<University />} />
         <Route path="university/course/:courseId" element={<CourseDetail />} />
         <Route path="university/article/:articleId" element={<ArticleDetail />} />
+        <Route path="university/workbook/:workbookId" element={<WorkbookViewer />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="scales" element={<Scales />} />
         <Route path="canvassing" element={<Harvest />} />

@@ -16,7 +16,9 @@ import {
   Upload,
   CheckCircle,
   Download,
-  AlertTriangle
+  AlertTriangle,
+  Layers,
+  Loader2
 } from 'lucide-react';
 import { API_URL } from '@/lib/api';
 
@@ -27,7 +29,7 @@ const formatFileType = (fileName, fileFormat) => {
   return ext ? ext.toUpperCase() : 'FILE';
 };
 
-const BookCard = ({ book, onUpdateProgress, onMarkComplete }) => {
+const BookCard = ({ book, onUpdateProgress, onMarkComplete, onGenerateWorkbook, generatingWorkbook }) => {
   const [progressValue, setProgressValue] = useState(book.progress_percent || 0);
   const isCompleted = book.is_completed || book.progress_percent >= 100;
   const isPdf = (book.file_name || '').toLowerCase().endsWith('.pdf');
@@ -111,6 +113,22 @@ const BookCard = ({ book, onUpdateProgress, onMarkComplete }) => {
             Mark Complete
           </Button>
         </div>
+
+        {isPdf && onGenerateWorkbook && (
+          <Button
+            variant="outline"
+            className="w-full mt-2 border-orange-600/40 text-orange-500 hover:bg-orange-600/10"
+            onClick={() => onGenerateWorkbook(book.id, book.title)}
+            disabled={generatingWorkbook === book.id}
+          >
+            {generatingWorkbook === book.id ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Layers className="w-4 h-4 mr-2" />
+            )}
+            {generatingWorkbook === book.id ? 'Generating Workbook...' : 'Generate Companion Workbook'}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -122,7 +140,9 @@ export const BooksTab = ({
   onCreateBook,
   uploading,
   onUpdateProgress,
-  onMarkComplete
+  onMarkComplete,
+  onGenerateWorkbook,
+  generatingWorkbook
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -248,6 +268,8 @@ export const BooksTab = ({
               book={book}
               onUpdateProgress={onUpdateProgress}
               onMarkComplete={onMarkComplete}
+              onGenerateWorkbook={onGenerateWorkbook}
+              generatingWorkbook={generatingWorkbook}
             />
           ))}
         </div>

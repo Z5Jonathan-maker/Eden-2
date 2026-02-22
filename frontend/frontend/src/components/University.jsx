@@ -16,6 +16,7 @@ import VideosTab from './university/VideosTab';
 import CertificatesTab from './university/CertificatesTab';
 import FirmContentTab from './university/FirmContentTab';
 import CreateContentModal from './university/CreateContentModal';
+import WorkbooksTab from './university/WorkbooksTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -35,6 +36,7 @@ function University() {
   const [certificates, setCertificates] = useState([]);
   const [videoSources, setVideoSources] = useState({ sources: [], playlists: [] });
   const [customContent, setCustomContent] = useState({ courses: [], articles: [], documents: [] });
+  const [workbooks, setWorkbooks] = useState([]);
   
   // University Name State
   const [companyName, setCompanyName] = useState('');
@@ -155,6 +157,20 @@ function University() {
       setCustomContent(data);
     } catch (err) {
       console.error('Failed to fetch custom content:', err);
+    }
+  };
+
+  const fetchWorkbooks = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/university/workbooks`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWorkbooks(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch workbooks:', err);
     }
   };
 
@@ -345,6 +361,7 @@ function University() {
   const handleTabChange = (tabId) => {
     if (tabId === 'videos') fetchVideoSources();
     if (tabId === 'firm') fetchCustomContent();
+    if (tabId === 'workbooks') fetchWorkbooks();
   };
 
   // Loading state
@@ -415,6 +432,10 @@ function University() {
           onTogglePublish={togglePublish}
           onDelete={handleDeleteContent}
         />
+      )}
+
+      {activeTab === 'workbooks' && (
+        <WorkbooksTab workbooks={workbooks} />
       )}
 
       {/* Create Content Modal */}

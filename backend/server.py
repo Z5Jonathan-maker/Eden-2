@@ -25,6 +25,7 @@ from routes.notifications import router as notifications_router
 from routes.email import router as email_router
 from routes.data import router as data_router
 from routes.university import router as university_router, seed_university_data
+from routes.workbooks import router as workbooks_router
 from routes.users import router as users_router
 from routes.supplements import router as supplements_router
 from routes.scales import router as scales_router
@@ -414,6 +415,7 @@ app.include_router(notifications_router)
 app.include_router(email_router)
 app.include_router(data_router)
 app.include_router(university_router)
+app.include_router(workbooks_router)
 app.include_router(users_router)
 app.include_router(supplements_router)
 app.include_router(scales_router)

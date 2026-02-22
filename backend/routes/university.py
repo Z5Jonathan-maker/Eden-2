@@ -804,9 +804,333 @@ The difference between ACV and RCV can be 20-40% of the claim. Don't surrender i
                     explanation="Florida statute specifically prohibits the depreciation of labor costs. Know your state's rules—this can significantly impact claim payments."
                 )
             ]
+        ),
+        Course(
+            title="Door-to-Door: Authority-Led Field Canvassing",
+            description="The complete field manual for Care Claims door-to-door canvassing. Learn the mindset, scripts, objection handling, and daily rhythm required to knock 75-100 doors per day and sign 3+ claims per week.",
+            category="training",
+            thumbnail="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400",
+            lessons=[
+                Lesson(
+                    title="The Door Knock Mindset",
+                    description="Why authority beats hope at the door",
+                    content="""# The Door Knock Mindset
+
+## You Are Not Selling. You Are Notifying.
+
+You are a licensed public adjuster arriving to inform a homeowner that they have storm damage, a filing deadline, and a right to professional representation that costs them nothing out of pocket.
+
+## Authority vs. Hope
+
+Hope: "Hi, sorry to bother you, I was just wondering if maybe you had any damage?"
+
+Authority: "Good afternoon. I'm a licensed public adjuster with Care Claims. The storm on [date] caused significant damage in this neighborhood. I'm doing free inspections today — 15 minutes. Let me take a look at your roof."
+
+## The Three Truths at Every Door
+
+1. **There was a storm.** NOAA data confirms it.
+2. **There is a deadline.** Florida statute limits the filing window.
+3. **You only get paid if they get paid.** Zero risk to the homeowner.
+
+## Daily Affirmation
+
+> "I am here because the storm was here. I am qualified. I am legally authorized. I knock with certainty."
+""",
+                    duration_minutes=10,
+                    order=1
+                ),
+                Lesson(
+                    title="Pre-Knock Preparation",
+                    description="Route planning, storm data, and the 30 minutes that determine your day",
+                    content="""# Pre-Knock Preparation
+
+## Your Field Kit
+
+- Company ID badge (visible at all times)
+- Storm report printout
+- Authorization forms (minimum 10 copies)
+- Leave-behind flyers
+- Tablet or phone with CRM loaded
+- Ladder (in vehicle)
+
+## Time Blocks
+
+- **9:00-11:30 AM** — Block 1 (retirees, WFH)
+- **12:30-3:00 PM** — Block 2
+- **3:30-6:00 PM** — Block 3 (highest contact rate)
+
+This puts you at 75-100 doors per day.
+""",
+                    duration_minutes=12,
+                    order=2
+                ),
+                Lesson(
+                    title="The Opening 15 Seconds",
+                    description="The exact words when the door opens",
+                    content="""# The Opening 15 Seconds
+
+## The Primary Script
+
+> "Good afternoon. My name is [First Name], I'm a licensed public adjuster with Care Claims. The storm that came through on [date] caused damage across this neighborhood — a lot of homeowners have roof damage they can't see from the ground. We're doing free inspections today before your filing deadline passes. Takes about 15 minutes. Mind if I take a look?"
+
+What it does:
+- **"Licensed public adjuster"** — credential stated
+- **"Can't see from the ground"** — education
+- **"Filing deadline passes"** — real urgency
+- **"Mind if I take a look?"** — transitions to inspection
+
+## Delivery: Stand 4-5 feet from door. Badge visible. No apology in your voice.
+""",
+                    duration_minutes=10,
+                    order=3
+                ),
+                Lesson(
+                    title="The Inspection-First Ask",
+                    description="The inspection is the close — everything else is paperwork",
+                    content="""# The Inspection-First Ask
+
+## The Inspection IS the Close
+
+When a homeowner lets you inspect, the claim is 80% signed. You are not closing at the kitchen table. You are closing on the roof.
+
+## The Reveal
+
+> "Here's what I found. You've got [X] shingles with wind damage, your ridge cap is lifted in two spots, and there's impact damage on three soffit panels. This is absolutely a claimable event. What I'd like to do is get the paperwork started today."
+
+"What I'd like to do" — not "would you like to file." You are leading.
+
+## If the Roof Is Clean
+
+> "Good news — your roof looks solid. Here's my card."
+
+Integrity is a long-term canvassing strategy.
+""",
+                    duration_minutes=15,
+                    order=4
+                ),
+                Lesson(
+                    title="Handling Objections",
+                    description="Word-for-word responses to the five most common objections",
+                    content="""# Handling Objections
+
+## "I already have someone handling it."
+> "A roofer works for himself. I'm a licensed public adjuster — I work for you. Let me do a free inspection so you have a second set of eyes."
+
+## "My insurance will handle it."
+> "Their adjuster works for the carrier, not for you. Their job is to minimize the payout. Mine is to maximize it."
+
+## "I'm not interested."
+> "Totally understand. The storm has a filing deadline and most damage isn't visible from the ground. I'll leave my card."
+
+Hand them the card. Move on.
+
+## "Let me think about it."
+> "Let me do the inspection now while I'm here. It's free and takes 15 minutes. Right now you're thinking about it with no data — let me get you the data."
+
+## The Three-Second Rule: After your reframe, stop talking. Count to three. Two objections maximum.
+""",
+                    duration_minutes=15,
+                    order=5
+                ),
+                Lesson(
+                    title="The Close and Paperwork",
+                    description="Moving from inspection to signed authorization",
+                    content="""# The Close and Paperwork
+
+## Assume the Close
+
+> "What I need from you is about five minutes to get the paperwork done. I'll need your full name as it appears on your homeowner's insurance, your policy number if you have it, and a signature."
+
+That is an instruction, not a question.
+
+## Information You Need
+
+1. Full legal name (as on the policy)
+2. Property address
+3. Insurance carrier name
+4. Policy number
+5. Date of loss
+6. Phone number and email
+7. Signature and date
+
+## Setting Expectations
+
+> "I'm filing this claim within 24-48 hours. You don't negotiate with anyone. That's my job."
+
+## Never: Talk past the close, apologize for the fee, leave without complete info.
+""",
+                    duration_minutes=12,
+                    order=6
+                ),
+                Lesson(
+                    title="Reading the Homeowner",
+                    description="Body language, interest signals, and when to move on",
+                    content="""# Reading the Homeowner
+
+## Green Light (invest up to 20 min)
+- They step outside or open the screen door
+- They ask questions or look at their roof
+- They mention a leak or prior issue
+
+## Yellow Light (3 min max at door)
+- Stay behind screen door but keep talking
+- "How much does it cost?"
+- They look back into the house
+
+## Red Light (10 seconds — card and leave)
+- "Not interested" with door closing
+- Arms crossed, no eye contact
+- "We're renters" / "No soliciting" sign
+
+If you spend 15 min at every red light door, you knock 30 instead of 90.
+""",
+                    duration_minutes=10,
+                    order=7
+                ),
+                Lesson(
+                    title="Daily Rhythm and Route Management",
+                    description="How to hit 75-100 doors consistently",
+                    content="""# Daily Rhythm and Route Management
+
+## The Math
+
+- 75-100 doors/day → 30-40% contact rate → 20-25% inspection conversion → 60-70% sign rate
+- Result: 4-7 inspections/day, 2-5 signs/day → **3 minimum per week**
+
+## Daily Schedule
+
+| Time | Activity |
+|------|----------|
+| 8:00 AM | Load kit, review route |
+| 9:00 AM | First knock — non-negotiable |
+| 9:00-11:30 | Block 1 — 30-35 doors |
+| 11:30-12:30 | Lunch, log data |
+| 12:30-3:00 | Block 2 — 25-30 doors |
+| 3:30-6:00 | Block 3 — 20-25 doors + callbacks |
+| 6:00-6:30 | Log data, submit daily report |
+
+## CRM Tags: SIGNED / CALLBACK / NO ANSWER / NOT INTERESTED / RENTER
+
+## Non-Negotiables: First knock by 9 AM. 75 doors minimum — the floor, not the ceiling.
+""",
+                    duration_minutes=12,
+                    order=8
+                ),
+                Lesson(
+                    title="Follow-Up and Callback Strategy",
+                    description="Converting the 'not yet' into a signed claim",
+                    content="""# Follow-Up and Callback Strategy
+
+## The Callback Script
+
+> "Hi [Name], it's [Your Name] with Care Claims — I was out here [day] and took a look at your roof. You've definitely got enough damage to support a claim. Do you have five minutes?"
+
+## Timing Rules
+
+- "Let me talk to my spouse" — revisit within 24 hours
+- "Call me next week" — call the exact day they said
+- No answer on callback — leave handwritten note on flyer
+
+## Text Template
+
+> "Hi [Name], this is [Name] with Care Claims. Your property has storm damage that qualifies for a claim. The filing deadline is approaching. No cost unless your claim pays."
+
+No emojis. No exclamation points.
+
+## Follow-Up Cadence: Day 0 → Day 1 in person → Day 3 call → Day 5 final text → Day 7+ dormant
+
+Three contacts maximum after the initial knock.
+""",
+                    duration_minutes=10,
+                    order=9
+                ),
+                Lesson(
+                    title="Team Standards and Accountability",
+                    description="What Care Claims expects from every field adjuster",
+                    content="""# Team Standards and Accountability
+
+## Weekly Minimums
+
+| Metric | Minimum | Strong | Elite |
+|--------|---------|--------|-------|
+| Doors/day | 75 | 90 | 100+ |
+| Signs/week | 3 | 5 | 7+ |
+| CRM compliance | 100% | 100% | 100% |
+
+## Professional Conduct
+
+- Company shirt tucked in. Badge visible.
+- No profanity. No bashing competitors or carriers.
+- No promises about claim amounts.
+
+## Daily Report (by 7 PM): Total doors, contacts, inspections, authorizations, callbacks.
+
+## When You Miss the Standard
+- Week 1: coaching conversation
+- Week 2: performance plan
+- Week 3: the field is not for you
+
+You are a licensed professional. Act like it. Knock like it.
+""",
+                    duration_minutes=10,
+                    order=10
+                )
+            ],
+            quiz=[
+                QuizQuestion(
+                    question="A homeowner says 'We already had a roofer come out.' Best response?",
+                    options=["Tell the homeowner the roofer was probably wrong", "Say 'That's good to hear' and leave", "Explain that a roofer evaluates for repair, but you evaluate for insurance claim eligibility, and offer a free second opinion", "Ask for the roofer's name"],
+                    correct_answer=2
+                ),
+                QuizQuestion(
+                    question="It is 10:45 AM and you have knocked 18 doors with zero contacts. What should you do?",
+                    options=["Drive to a different area", "Take an early lunch", "Keep knocking — log every no-answer for callback", "Start calling your callback list"],
+                    correct_answer=2
+                ),
+                QuizQuestion(
+                    question="A homeowner says 'I'm not interested' before you finish. What do you do?",
+                    options=["Restart your script", "Say the storm has a filing deadline, leave your card, and move on", "Ask why they're not interested", "Tell them their neighbors are filing claims"],
+                    correct_answer=1
+                ),
+                QuizQuestion(
+                    question="You inspect a roof and find zero storm damage. Correct action?",
+                    options=["Find minor issues and file anyway", "Tell them the roof is clean, hand your card, and move on", "Suggest they file for interior damage", "Tell them their roof is old"],
+                    correct_answer=1
+                ),
+                QuizQuestion(
+                    question="During your opening script, what three things must you communicate in 15 seconds?",
+                    options=["Name, founding year, phone number", "Storm date, claim estimate, fee structure", "Who you are, why you're here (storm + deadline), what you're offering (free inspection)", "License number, success rate, neighbor count"],
+                    correct_answer=2
+                ),
+                QuizQuestion(
+                    question="At 3 minutes per door, how many doors can you knock in a 2.5-hour block?",
+                    options=["25 doors", "50 doors", "75 doors", "100 doors"],
+                    correct_answer=1
+                ),
+                QuizQuestion(
+                    question="A homeowner asks 'How much do you charge?' Correct response?",
+                    options=["Avoid the question and redirect", "Tell them the fee is negotiable", "State the contingency fee directly — you only get paid if they get paid", "Tell them it's free"],
+                    correct_answer=2
+                ),
+                QuizQuestion(
+                    question="You see a 'No Soliciting' sign. What do you do?",
+                    options=["Knock anyway", "Knock but acknowledge the sign", "Respect the sign, leave a flyer without knocking, move on", "Skip entirely with no materials"],
+                    correct_answer=2
+                ),
+                QuizQuestion(
+                    question="It is 6:15 PM and you have knocked 72 doors. You're tired. What do you do?",
+                    options=["Log 72 and call it a day", "Knock 3 more to hit 75 minimum before ending", "Make up for it tomorrow", "Text your team lead explaining why 72 is acceptable"],
+                    correct_answer=1
+                ),
+                QuizQuestion(
+                    question="A homeowner: outside, asking questions, looks at roof, mentions a ceiling stain. Signal?",
+                    options=["Yellow light — offer to come back", "Green light — slow down, listen, transition to inspection", "Red light — they're just being polite", "Green light — start paperwork immediately"],
+                    correct_answer=1
+                )
+            ]
         )
     ]
-    
+
     # ========== ADVANCED COURSES ==========
     
     advanced_courses = [
@@ -2286,6 +2610,13 @@ Appraisal is a powerful tool when used appropriately. It's faster and cheaper th
         await db.articles.insert_one(article.dict())
     
     logger.info("Care Claims University data seeded successfully")
+
+    # Seed companion workbooks
+    try:
+        from routes.workbooks import seed_workbooks
+        await seed_workbooks()
+    except Exception as e:
+        logger.error(f"Failed to seed workbooks: {e}")
 
 
 # ========== ROUTES ==========
