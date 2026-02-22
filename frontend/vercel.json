@@ -8,15 +8,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://eden-gsot.onrender.com/api/:path*"
+      "destination": "https://eden-2.onrender.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://eden-gsot.onrender.com/health"
+      "destination": "https://eden-2.onrender.com/health"
     },
     {
       "source": "/ws/:path*",
-      "destination": "https://eden-gsot.onrender.com/ws/:path*"
+      "destination": "https://eden-2.onrender.com/ws/:path*"
     },
     {
       "source": "/(.*)",
