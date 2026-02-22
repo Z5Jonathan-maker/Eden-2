@@ -474,8 +474,26 @@ async def startup_event():
     await log_startup_config()
     await seed_university_data()
     await ensure_admin_user()
+    await ensure_workbooks_exist()
     await initialize_harvest_gamification()
     await initialize_background_scheduler()
+
+
+async def ensure_workbooks_exist():
+    """Ensure workbooks collection has data — seed if empty"""
+    try:
+        from dependencies import db
+        count = await db.workbooks.count_documents({})
+        if count == 0:
+            logging.info("No workbooks found — seeding sample workbooks...")
+            from routes.workbooks import seed_workbooks
+            await seed_workbooks()
+            count = await db.workbooks.count_documents({})
+            logging.info(f"Workbooks seeded: {count} workbooks created")
+        else:
+            logging.info(f"Workbooks OK: {count} workbooks in database")
+    except Exception as e:
+        logging.error(f"Failed to ensure workbooks: {e}")
 
 
 async def initialize_harvest_gamification():

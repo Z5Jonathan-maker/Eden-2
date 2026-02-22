@@ -1,23 +1,24 @@
 """
 File Upload API for Doctrine Content
 Handles PDFs, images, and video uploads for custom training materials
+
+Storage: MongoDB GridFS (persistent across Render deploys)
 """
 import os
 import uuid
-import shutil
 from datetime import datetime, timezone
-from typing import Optional, List
-from pathlib import Path
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
 from dependencies import db, get_current_active_user
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+import io
 
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
-# Configuration - repo-relative upload directory
-BACKEND_DIR = Path(__file__).parent.parent
-UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BACKEND_DIR / "uploads"))
+# GridFS bucket for file storage
+fs = AsyncIOMotorGridFSBucket(db)
+
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_EXTENSIONS = {
     "image": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
@@ -25,25 +26,6 @@ ALLOWED_EXTENSIONS = {
     "video": [".mp4", ".webm", ".mov", ".avi"],
     "audio": [".mp3", ".wav", ".ogg", ".m4a"]
 }
-
-# Ensure upload directory exists - create safely at startup
-try:
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-except Exception as e:
-    raise RuntimeError(f"Failed to create upload directory '{UPLOAD_DIR}': {e}")
-
-
-class FileMetadata(BaseModel):
-    id: str
-    filename: str
-    original_name: str
-    file_type: str  # image, document, video, audio
-    mime_type: str
-    size: int
-    uploaded_by: str
-    uploaded_at: str
-    content_id: Optional[str] = None  # Associated document/article/course ID
-    content_type: Optional[str] = None  # document, article, course
 
 
 def get_file_type(extension: str) -> Optional[str]:
@@ -73,6 +55,7 @@ def get_mime_type(extension: str) -> str:
         ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         ".txt": "text/plain",
         ".md": "text/markdown",
+        ".epub": "application/epub+zip",
         ".mp4": "video/mp4",
         ".webm": "video/webm",
         ".mov": "video/quicktime",
@@ -92,63 +75,72 @@ async def upload_file(
     content_type: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Upload a file for Doctrine content"""
-    
+    """Upload a file — stored in MongoDB GridFS for persistence"""
+
     # Check user permissions
     if current_user.get("role") not in ["admin", "manager"]:
         raise HTTPException(status_code=403, detail="Only admins and managers can upload files")
-    
+
     # Validate file
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
-    
+
     # Get file extension
     _, ext = os.path.splitext(file.filename)
     if not ext:
         raise HTTPException(status_code=400, detail="File must have an extension")
-    
+
     # Check file type
     file_type = get_file_type(ext)
     if not file_type:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"File type not allowed. Allowed: {', '.join([e for exts in ALLOWED_EXTENSIONS.values() for e in exts])}"
         )
-    
+
     # Read file content
     content = await file.read()
-    
+
     # Check file size
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB")
-    
-    # Generate unique filename
+
+    # Generate unique ID
     file_id = str(uuid.uuid4())
     safe_filename = f"{file_id}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(content)
-    
-    # Create metadata
+    mime_type = get_mime_type(ext)
+
+    # Store file in GridFS
+    grid_id = await fs.upload_from_stream(
+        safe_filename,
+        io.BytesIO(content),
+        metadata={
+            "file_id": file_id,
+            "original_name": file.filename,
+            "mime_type": mime_type,
+            "file_type": file_type,
+        }
+    )
+
+    # Create metadata record
     metadata = {
         "id": file_id,
         "filename": safe_filename,
         "original_name": file.filename,
         "file_type": file_type,
-        "mime_type": get_mime_type(ext),
+        "mime_type": mime_type,
         "size": len(content),
         "uploaded_by": current_user.get("email", "unknown"),
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
         "content_id": content_id,
-        "content_type": content_type
+        "content_type": content_type,
+        "grid_id": str(grid_id),
+        "storage": "gridfs",
     }
-    
-    # Store in database
+
+    # Store metadata in database
     await db.uploaded_files.insert_one(metadata)
-    
-    # Return without _id
+
     return {
         "id": file_id,
         "filename": safe_filename,
@@ -161,44 +153,75 @@ async def upload_file(
 
 @router.get("/file/{file_id}")
 async def get_file(file_id: str, current_user: dict = Depends(get_current_active_user)):
-    """Download/view a file"""
-    
+    """Download/view a file from GridFS"""
+
     # Find file metadata
     file_meta = await db.uploaded_files.find_one({"id": file_id})
     if not file_meta:
         raise HTTPException(status_code=404, detail="File not found")
-    
+
+    mime_type = file_meta.get("mime_type", "application/octet-stream")
+    original_name = file_meta.get("original_name", file_meta.get("filename", "file"))
+
+    # Try GridFS first (new storage)
+    try:
+        grid_stream = await fs.open_download_stream_by_name(file_meta["filename"])
+        file_bytes = await grid_stream.read()
+        return StreamingResponse(
+            io.BytesIO(file_bytes),
+            media_type=mime_type,
+            headers={"Content-Disposition": f'inline; filename="{original_name}"'}
+        )
+    except Exception:
+        pass
+
+    # Fallback: try legacy filesystem storage
+    from pathlib import Path
+    BACKEND_DIR = Path(__file__).parent.parent
+    UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BACKEND_DIR / "uploads"))
     file_path = os.path.join(UPLOAD_DIR, file_meta["filename"])
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found on disk")
-    
-    return FileResponse(
-        file_path, 
-        filename=file_meta["original_name"],
-        media_type=file_meta.get("mime_type", "application/octet-stream")
-    )
+    if os.path.exists(file_path):
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            file_path,
+            filename=original_name,
+            media_type=mime_type
+        )
+
+    raise HTTPException(status_code=404, detail="File not found in storage")
 
 
 @router.delete("/file/{file_id}")
 async def delete_file(file_id: str, current_user: dict = Depends(get_current_active_user)):
-    """Delete a file"""
-    
+    """Delete a file from GridFS and metadata"""
+
     if current_user.get("role") not in ["admin", "manager"]:
         raise HTTPException(status_code=403, detail="Only admins and managers can delete files")
-    
+
     # Find file metadata
     file_meta = await db.uploaded_files.find_one({"id": file_id})
     if not file_meta:
         raise HTTPException(status_code=404, detail="File not found")
-    
-    # Delete from disk
+
+    # Delete from GridFS
+    if file_meta.get("grid_id"):
+        try:
+            from bson import ObjectId
+            await fs.delete(ObjectId(file_meta["grid_id"]))
+        except Exception:
+            pass
+
+    # Also clean up legacy filesystem if exists
+    from pathlib import Path
+    BACKEND_DIR = Path(__file__).parent.parent
+    UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BACKEND_DIR / "uploads"))
     file_path = os.path.join(UPLOAD_DIR, file_meta["filename"])
     if os.path.exists(file_path):
         os.remove(file_path)
-    
-    # Delete from database
+
+    # Delete metadata
     await db.uploaded_files.delete_one({"id": file_id})
-    
+
     return {"message": "File deleted successfully"}
 
 
@@ -209,16 +232,16 @@ async def get_content_files(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get all files attached to a specific content item"""
-    
+
     files = await db.uploaded_files.find(
         {"content_id": content_id, "content_type": content_type},
         {"_id": 0}
     ).to_list(100)
-    
+
     # Add URLs
     for f in files:
         f["url"] = f"/api/uploads/file/{f['id']}"
-    
+
     return {"files": files}
 
 
@@ -230,31 +253,31 @@ async def attach_file_to_content(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Attach an existing file to content"""
-    
+
     if current_user.get("role") not in ["admin", "manager"]:
         raise HTTPException(status_code=403, detail="Only admins and managers can manage files")
-    
+
     result = await db.uploaded_files.update_one(
         {"id": file_id},
         {"$set": {"content_id": content_id, "content_type": content_type}}
     )
-    
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     return {"message": "File attached successfully"}
 
 
 @router.get("/my-files")
 async def get_my_files(current_user: dict = Depends(get_current_active_user)):
     """Get all files uploaded by current user"""
-    
+
     files = await db.uploaded_files.find(
         {"uploaded_by": current_user.get("email")},
         {"_id": 0}
     ).sort("uploaded_at", -1).to_list(100)
-    
+
     for f in files:
         f["url"] = f"/api/uploads/file/{f['id']}"
-    
+
     return {"files": files}
