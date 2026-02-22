@@ -10,23 +10,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '../shared/ui/button';
-import { Badge } from '../shared/ui/badge';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import {
-  FileText,
-  Loader2,
-  Copy,
-  Download,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  X,
-  History,
+  FileText, Loader2, Copy, Download, RefreshCw,
+  ChevronDown, ChevronUp, Clock, CheckCircle2, AlertCircle,
+  Sparkles, X, History
 } from 'lucide-react';
 import { useInspectionReport } from '../hooks/useInspectionReport';
 
@@ -41,7 +33,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
     fetchReport,
     copyReportToClipboard,
     downloadReport,
-    clearReport,
+    clearReport
   } = useInspectionReport();
 
   const [showHistory, setShowHistory] = useState(false);
@@ -260,14 +252,14 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                 </div>
               )}
 
-              {/* Markdown Content — rendered as formatted text */}
+              {/* Markdown Content — rendered as formatted HTML */}
               <div
-                className="bg-zinc-800/60 rounded-lg p-4 max-h-[500px] overflow-y-auto"
+                className="bg-zinc-800/60 rounded-lg p-4 max-h-[500px] overflow-y-auto prose prose-invert prose-sm max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-300 prose-strong:text-zinc-200 prose-li:text-zinc-300 prose-a:text-purple-400"
                 data-testid="report-content"
               >
-                <pre className="whitespace-pre-wrap font-mono text-sm text-zinc-200 leading-relaxed">
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                   {report.report_markdown}
-                </pre>
+                </ReactMarkdown>
               </div>
 
               {/* Meta Info */}
@@ -276,7 +268,9 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                   <Clock className="w-3 h-3" />
                   Generated {new Date(report.generated_at).toLocaleString()}
                 </span>
-                <span>By {report.generated_by || 'Eve AI'}</span>
+                <span>
+                  By {report.generated_by || 'Eve AI'}
+                </span>
               </div>
             </>
           )}
