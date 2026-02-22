@@ -328,10 +328,10 @@ async def seed_workbooks():
                     "scenario": "You're a door knocker who just signed a homeowner. Your adjuster teammate is overwhelmed with 15 open inspections. The homeowner asks when the inspection will happen. What do you do?",
                     "decision_point": "How do you apply Cover and Move?",
                     "options": [
-                        {"label": "Tell the homeowner your adjuster will call them within a week.", "is_correct": false, "explanation": "This is passing the problem. The homeowner will feel abandoned and may cancel."},
-                        {"label": "Offer to do the initial photo documentation yourself and brief the adjuster with a complete package.", "is_correct": true, "explanation": "Cover and Move. You're supporting your teammate by reducing their workload and keeping the homeowner engaged. The mission moves forward."},
-                        {"label": "Escalate to your manager and ask them to reassign the file.", "is_correct": false, "explanation": "This might be necessary eventually, but the first move is to support your teammate directly. Leadership means acting before escalating."},
-                        {"label": "Tell the homeowner you'll find them a different adjuster.", "is_correct": false, "explanation": "This undermines your teammate and creates confusion. Cover and Move means supporting the team, not replacing them."}
+                        {"label": "Tell the homeowner your adjuster will call them within a week.", "is_correct": False, "explanation": "This is passing the problem. The homeowner will feel abandoned and may cancel."},
+                        {"label": "Offer to do the initial photo documentation yourself and brief the adjuster with a complete package.", "is_correct": True, "explanation": "Cover and Move. You're supporting your teammate by reducing their workload and keeping the homeowner engaged. The mission moves forward."},
+                        {"label": "Escalate to your manager and ask them to reassign the file.", "is_correct": False, "explanation": "This might be necessary eventually, but the first move is to support your teammate directly. Leadership means acting before escalating."},
+                        {"label": "Tell the homeowner you'll find them a different adjuster.", "is_correct": False, "explanation": "This undermines your teammate and creates confusion. Cover and Move means supporting the team, not replacing them."}
                     ]
                 }
             },
@@ -377,9 +377,9 @@ async def seed_workbooks():
                 "content_payload": {
                     "prompt": "A homeowner asks: 'What's the difference between ACV and RCV?' Which response keeps it simple?",
                     "options": [
-                        {"label": "ACV is actual cash value accounting for depreciation, while RCV is replacement cost value representing the full cost before depreciation is applied under the dwelling coverage section of your HO-3 policy.", "is_recommended": false, "feedback": "Too much jargon. The homeowner is now more confused than before they asked."},
-                        {"label": "The first check covers part of the repair cost minus the age of your roof. Once repairs are done, insurance sends a second check for the rest. We manage both for you.", "is_recommended": true, "feedback": "Keep It Simple. Plain language, clear sequence, and it tells them what to expect. This is how you build trust."},
-                        {"label": "Don't worry about it — we handle all of that for you.", "is_recommended": false, "feedback": "Dismissive. The homeowner asked a question because they want to understand. Educate them simply, don't wave them off."}
+                        {"label": "ACV is actual cash value accounting for depreciation, while RCV is replacement cost value representing the full cost before depreciation is applied under the dwelling coverage section of your HO-3 policy.", "is_recommended": False, "feedback": "Too much jargon. The homeowner is now more confused than before they asked."},
+                        {"label": "The first check covers part of the repair cost minus the age of your roof. Once repairs are done, insurance sends a second check for the rest. We manage both for you.", "is_recommended": True, "feedback": "Keep It Simple. Plain language, clear sequence, and it tells them what to expect. This is how you build trust."},
+                        {"label": "Don't worry about it — we handle all of that for you.", "is_recommended": False, "feedback": "Dismissive. The homeowner asked a question because they want to understand. Educate them simply, don't wave them off."}
                     ]
                 }
             },
@@ -480,10 +480,10 @@ async def seed_workbooks():
                     "scenario": "During a carrier inspection, the insurance adjuster calls obvious wind damage 'wear and tear.' Your manager is not present. What do you do?",
                     "decision_point": "Decentralized Command — act or wait?",
                     "options": [
-                        {"label": "Politely note the disagreement and let your manager handle it in the written response.", "is_correct": false, "explanation": "Waiting allows an incorrect characterization to be documented. By then, the carrier has set the narrative."},
-                        {"label": "Respectfully correct the misidentification on-site, point to specific damage indicators, and note the disagreement in your field report.", "is_correct": true, "explanation": "Decentralized Command. You have the knowledge and authority to act at the point of contact. Correct it now, document it, brief your manager after."},
-                        {"label": "Agree with the carrier to maintain the relationship and fight it on paper later.", "is_correct": false, "explanation": "Never agree with an inaccurate assessment. Agreeing weakens your position and signals acceptance."},
-                        {"label": "Take additional photos and submit a separate report without addressing the carrier's assessment.", "is_correct": false, "explanation": "Photos help, but failing to challenge the on-site assessment in real-time lets the carrier's version become the default record."}
+                        {"label": "Politely note the disagreement and let your manager handle it in the written response.", "is_correct": False, "explanation": "Waiting allows an incorrect characterization to be documented. By then, the carrier has set the narrative."},
+                        {"label": "Respectfully correct the misidentification on-site, point to specific damage indicators, and note the disagreement in your field report.", "is_correct": True, "explanation": "Decentralized Command. You have the knowledge and authority to act at the point of contact. Correct it now, document it, brief your manager after."},
+                        {"label": "Agree with the carrier to maintain the relationship and fight it on paper later.", "is_correct": False, "explanation": "Never agree with an inaccurate assessment. Agreeing weakens your position and signals acceptance."},
+                        {"label": "Take additional photos and submit a separate report without addressing the carrier's assessment.", "is_correct": False, "explanation": "Photos help, but failing to challenge the on-site assessment in real-time lets the carrier's version become the default record."}
                     ]
                 }
             },
