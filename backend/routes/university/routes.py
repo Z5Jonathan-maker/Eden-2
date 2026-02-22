@@ -623,3 +623,146 @@ async def get_all_custom_content(current_user: dict = Depends(get_current_active
             "documents": len(documents)
         }
     }
+
+
+# ══════════════════════════════════════════════════════════════════════
+# E-Book Library
+# ══════════════════════════════════════════════════════════════════════
+
+@router.post("/library/books")
+async def add_library_book(body: dict, current_user: dict = Depends(get_current_active_user)):
+    """Add a book to the shared library (admin/manager only)"""
+    if current_user.get("role") not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Admin or manager role required")
+
+    book = {
+        "id": str(uuid.uuid4()),
+        "title": body.get("title", "Untitled"),
+        "author": body.get("author", "Unknown"),
+        "description": body.get("description", ""),
+        "category": body.get("category", "other"),
+        "file_id": body["file_id"],
+        "file_type": body.get("file_type", "epub"),
+        "cover_file_id": body.get("cover_file_id"),
+        "tags": body.get("tags", []),
+        "added_by": current_user.get("email"),
+        "added_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.library_books.insert_one(book)
+    book.pop("_id", None)
+    return book
+
+
+@router.get("/library/books")
+async def list_library_books(
+    category: str = None,
+    search: str = None,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """List all books in the shared library, with per-user progress"""
+    query = {}
+    if category and category != "all":
+        query["category"] = category
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"author": {"$regex": search, "$options": "i"}},
+        ]
+
+    books = await db.library_books.find(query, {"_id": 0}).sort("added_at", -1).to_list(200)
+
+    # Attach per-user progress
+    email = current_user.get("email")
+    book_ids = [b["id"] for b in books]
+    progress_docs = await db.library_progress.find(
+        {"book_id": {"$in": book_ids}, "user_email": email}, {"_id": 0}
+    ).to_list(200)
+    progress_map = {p["book_id"]: p for p in progress_docs}
+
+    for b in books:
+        prog = progress_map.get(b["id"])
+        b["progress"] = {
+            "percentage": prog.get("percentage", 0) if prog else 0,
+            "last_read": prog.get("last_read") if prog else None,
+        }
+
+    return books
+
+
+@router.get("/library/books/{book_id}")
+async def get_library_book(book_id: str, current_user: dict = Depends(get_current_active_user)):
+    """Get a single book's details"""
+    book = await db.library_books.find_one({"id": book_id}, {"_id": 0})
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    prog = await db.library_progress.find_one(
+        {"book_id": book_id, "user_email": current_user.get("email")}, {"_id": 0}
+    )
+    book["progress"] = prog or {}
+    return book
+
+
+@router.put("/library/books/{book_id}")
+async def update_library_book(book_id: str, body: dict, current_user: dict = Depends(get_current_active_user)):
+    """Update book metadata (admin/manager only)"""
+    if current_user.get("role") not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Admin or manager role required")
+
+    updates = {}
+    for field in ["title", "author", "description", "category", "tags", "cover_file_id"]:
+        if field in body:
+            updates[field] = body[field]
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    result = await db.library_books.update_one({"id": book_id}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    book = await db.library_books.find_one({"id": book_id}, {"_id": 0})
+    return book
+
+
+@router.delete("/library/books/{book_id}")
+async def delete_library_book(book_id: str, current_user: dict = Depends(get_current_active_user)):
+    """Remove a book from the library (admin/manager only)"""
+    if current_user.get("role") not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Admin or manager role required")
+
+    result = await db.library_books.delete_one({"id": book_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    await db.library_progress.delete_many({"book_id": book_id})
+    return {"message": "Book deleted"}
+
+
+@router.put("/library/books/{book_id}/progress")
+async def save_reading_progress(book_id: str, body: dict, current_user: dict = Depends(get_current_active_user)):
+    """Save reading position for the current user"""
+    email = current_user.get("email")
+    update = {
+        "book_id": book_id,
+        "user_email": email,
+        "position": body.get("position"),
+        "percentage": body.get("percentage", 0),
+        "last_read": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.library_progress.update_one(
+        {"book_id": book_id, "user_email": email},
+        {"$set": update},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@router.get("/library/books/{book_id}/progress")
+async def get_reading_progress(book_id: str, current_user: dict = Depends(get_current_active_user)):
+    """Get current user's reading progress for a book"""
+    prog = await db.library_progress.find_one(
+        {"book_id": book_id, "user_email": current_user.get("email")}, {"_id": 0}
+    )
+    return prog or {"book_id": book_id, "position": None, "percentage": 0}

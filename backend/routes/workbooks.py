@@ -688,3 +688,338 @@ async def seed_workbooks():
 
     await db.workbooks.insert_one(workbook)
     logger.info("Extreme Ownership workbook seeded successfully")
+
+    # ========== WORKBOOK 2: The Supplement Process ==========
+    supplement_workbook = {
+        "id": str(uuid.uuid4()),
+        "title": "The Supplement Process — Maximizing Every Claim",
+        "description": "A step-by-step companion workbook for mastering insurance claim supplements. Learn when, why, and how to file supplements that recover the full amount owed.",
+        "source_book": "Care Claims Supplement Training",
+        "category": "insurance",
+        "estimated_time": "60 min",
+        "is_published": True,
+        "created_by": "system",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "components": [
+            {
+                "component_type": "SectionHeader",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "read",
+                "content_payload": {
+                    "title": "Why Supplements Exist",
+                    "subtitle": "The initial estimate is almost never complete. Supplements are how you close the gap between what was paid and what is owed.",
+                    "section_number": 1
+                }
+            },
+            {
+                "component_type": "BodyBlock",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "read",
+                "content_payload": {
+                    "text": "A supplement is an additional claim submission that documents damage or costs not captured in the carrier's initial estimate. This is not 'asking for more money' — it is enforcing the policy's indemnification promise. The carrier's adjuster spent 45 minutes on a property you will spend days documenting. The gap is structural, not accidental.",
+                    "emphasis": "Every supplement must be backed by evidence: photos, measurements, code requirements, and manufacturer specs. Opinion loses. Documentation wins.",
+                    "label": "Foundation"
+                }
+            },
+            {
+                "component_type": "FlashcardSet",
+                "visual_weight": "secondary",
+                "layout_style": "card_grid",
+                "interaction_mode": "flip",
+                "content_payload": {
+                    "title": "Supplement Terminology — Know the Language",
+                    "cards": [
+                        {
+                            "front": "ACV (Actual Cash Value)",
+                            "back": "Replacement cost minus depreciation. This is what the carrier pays initially on most RCV policies. The recoverable depreciation is released after repairs.",
+                            "card_type": "Definition"
+                        },
+                        {
+                            "front": "RCV (Replacement Cost Value)",
+                            "back": "The full cost to replace damaged property with materials of like kind and quality, without deduction for depreciation.",
+                            "card_type": "Definition"
+                        },
+                        {
+                            "front": "O&P (Overhead & Profit)",
+                            "back": "The 10% overhead + 10% profit (20% combined) that general contractors charge. Carriers often exclude this — it's one of the most supplemented items.",
+                            "card_type": "Definition"
+                        },
+                        {
+                            "front": "Code Upgrade",
+                            "back": "When current building codes require materials or methods that differ from the original construction. Florida Building Code changes frequently — this is a major supplement source.",
+                            "card_type": "Definition"
+                        },
+                        {
+                            "front": "Scope of Loss",
+                            "back": "The complete list of damaged items and areas included in a claim. Carriers routinely under-scope. Your job is to document the FULL scope.",
+                            "card_type": "Definition"
+                        }
+                    ]
+                }
+            },
+            {
+                "component_type": "ScenarioDrill",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "decision",
+                "content_payload": {
+                    "scenario": "You receive the carrier's initial estimate for a roof claim. It covers 15 squares of 3-tab shingles. Your inspection found 22 squares of architectural shingles, plus damaged drip edge on three sides and two damaged plumbing boots. The carrier also excluded O&P.",
+                    "decision_point": "What is your first action?",
+                    "options": [
+                        {"text": "Call the carrier adjuster to negotiate verbally", "is_correct": False, "feedback": "Never negotiate verbally first. You need a documented supplement with photos, measurements, and line items. Verbal agreements are unenforceable."},
+                        {"text": "File a written supplement with corrected measurements, material specs, photos of each missed item, and a line-by-line comparison to the carrier estimate", "is_correct": True, "feedback": "Correct. The supplement must be written, documented, and specific. Include your measurements vs theirs, correct material type (architectural vs 3-tab), photos of missed drip edge and boots, and an O&P demand with three-trade justification."},
+                        {"text": "Accept the estimate and start repairs", "is_correct": False, "feedback": "Accepting an incomplete estimate means the homeowner is underpaid. Your duty is to document the full scope and fight for proper indemnification."},
+                        {"text": "File a complaint with the state insurance department", "is_correct": False, "feedback": "Premature. A supplement should be filed first. Regulatory complaints are an escalation tool after the carrier has refused to adjust."}
+                    ],
+                    "ideal_response": "Build the supplement document: re-measure the roof, photograph every missed item, include manufacturer specs for the correct shingle type, cite Florida Building Code for any code upgrades, and prepare a three-trade letter for O&P.",
+                    "explanation": "Supplements win on documentation, not persuasion. Every claim needs a paper trail that makes your position undeniable."
+                }
+            },
+            {
+                "component_type": "SectionHeader",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "read",
+                "content_payload": {
+                    "title": "The Supplement Checklist",
+                    "subtitle": "Before you submit any supplement, make sure you have all of these.",
+                    "section_number": 2
+                }
+            },
+            {
+                "component_type": "QuizBlock",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "quiz",
+                "content_payload": {
+                    "title": "Supplement Process Knowledge Check",
+                    "passing_score": 70,
+                    "questions": [
+                        {
+                            "question": "When should you file a supplement?",
+                            "options": ["Only after the homeowner complains", "Whenever the carrier's estimate is missing documented damage, incorrect materials, or excluded line items", "Only for amounts over $5,000", "After repairs are completed"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "What is the most common item carriers exclude from roof claims?",
+                            "options": ["Shingles", "Overhead & Profit (O&P)", "Underlayment", "Gutters"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Why should you never negotiate a supplement verbally first?",
+                            "options": ["It's illegal", "Verbal agreements are unenforceable and leave no paper trail", "Carriers don't answer phone calls", "It's faster to email"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "What does 'three-trade justification' mean for O&P?",
+                            "options": ["Three different insurance carriers must agree", "The job requires three or more distinct trade categories (roofing, gutters, drywall, etc.)", "You need three bids from contractors", "Three supplements must be filed"],
+                            "correct_answer": 1
+                        }
+                    ]
+                }
+            },
+            {
+                "component_type": "ReflectionBlock",
+                "visual_weight": "secondary",
+                "layout_style": "full_width",
+                "interaction_mode": "write",
+                "content_payload": {
+                    "prompt": "Think about your most recent claim. Was the carrier's initial estimate complete? List three items that were missing or undervalued. What documentation would you need to supplement each one?",
+                    "min_words": 50,
+                    "context": "This exercise builds the habit of reading carrier estimates critically rather than accepting them as final."
+                }
+            }
+        ]
+    }
+    await db.workbooks.insert_one(supplement_workbook)
+    logger.info("Supplement Process workbook seeded successfully")
+
+    # ========== WORKBOOK 3: D2D Field Manual ==========
+    d2d_workbook = {
+        "id": str(uuid.uuid4()),
+        "title": "D2D Field Manual — Scripts, Drills & Daily Rhythm",
+        "description": "An interactive companion workbook for the Door-to-Door canvassing course. Practice scripts, drill objection handling, and build the daily discipline to knock 75+ doors.",
+        "source_book": "Care Claims D2D Training",
+        "category": "sales",
+        "estimated_time": "45 min",
+        "is_published": True,
+        "created_by": "system",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "components": [
+            {
+                "component_type": "SectionHeader",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "read",
+                "content_payload": {
+                    "title": "The Authority Knock",
+                    "subtitle": "You are not selling. You are notifying. Every word, posture, and second at the door must communicate certainty.",
+                    "section_number": 1
+                }
+            },
+            {
+                "component_type": "FlashcardSet",
+                "visual_weight": "primary",
+                "layout_style": "card_grid",
+                "interaction_mode": "flip",
+                "content_payload": {
+                    "title": "Opening Scripts — Memorize These",
+                    "cards": [
+                        {
+                            "front": "Primary Opening Script",
+                            "back": "Good afternoon. My name is [First Name], I'm a licensed public adjuster with Care Claims. The storm that came through on [date] caused damage across this neighborhood — a lot of homeowners have roof damage they can't see from the ground. We're doing free inspections today before your filing deadline passes. Takes about 15 minutes. Mind if I take a look?",
+                            "card_type": "Script"
+                        },
+                        {
+                            "front": "Callback Script",
+                            "back": "Hi [Name], it's [Your Name] with Care Claims — I was out here [day] and took a look at your roof. You've definitely got enough damage to support a claim. Do you have five minutes?",
+                            "card_type": "Script"
+                        },
+                        {
+                            "front": "The Close Script",
+                            "back": "What I need from you is about five minutes to get the paperwork done. I'll need your full name as it appears on your homeowner's insurance, your policy number if you have it, and a signature.",
+                            "card_type": "Script"
+                        },
+                        {
+                            "front": "Clean Roof Script",
+                            "back": "Good news — your roof looks solid. Here's my card. If you notice anything down the road or if another storm comes through, give me a call.",
+                            "card_type": "Script"
+                        }
+                    ]
+                }
+            },
+            {
+                "component_type": "ScenarioDrill",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "decision",
+                "content_payload": {
+                    "scenario": "You knock on a door at 10:15 AM. A homeowner opens and immediately says: 'We already had a roofer come out and he said everything was fine.'",
+                    "decision_point": "What do you say?",
+                    "options": [
+                        {"text": "Tell them the roofer was probably wrong and push to inspect", "is_correct": False, "feedback": "Never bash another professional. It makes you look desperate and unprofessional."},
+                        {"text": "Say 'That's great!' and leave", "is_correct": False, "feedback": "A roofer evaluates for repair. You evaluate for insurance. These are different things. Don't walk away from a valid opportunity."},
+                        {"text": "Explain: 'A roofer evaluates for repair — I evaluate for insurance claim eligibility. Different lens, different outcome. Let me do a free second opinion, takes 15 minutes.'", "is_correct": True, "feedback": "Perfect. You reframed without bashing, educated the homeowner, and asked for the inspection. This is authority."},
+                        {"text": "Ask for the roofer's contact info to compare notes", "is_correct": False, "feedback": "Irrelevant. You don't need the roofer's opinion. You need to inspect the roof yourself."}
+                    ],
+                    "ideal_response": "Reframe the roofer's role vs. yours, then transition directly to the inspection ask.",
+                    "explanation": "The key principle: never argue, always reframe. A roofer and a public adjuster serve different functions."
+                }
+            },
+            {
+                "component_type": "ScenarioDrill",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "decision",
+                "content_payload": {
+                    "scenario": "It's 2:30 PM. You've knocked 52 doors with 3 contacts and zero signs. Your energy is dropping.",
+                    "decision_point": "What do you do?",
+                    "options": [
+                        {"text": "Call it a day and try again tomorrow", "is_correct": False, "feedback": "52 doors is well below the 75 minimum. Block 3 (3:30-6:00 PM) has the highest contact rate. Quitting now means missing your best window."},
+                        {"text": "Drive to a new neighborhood", "is_correct": False, "feedback": "Route hopping wastes time and breaks your rhythm. Finish the route. The storm hit here too."},
+                        {"text": "Take a 15-minute reset, then push through Block 3 to hit 75+ doors", "is_correct": True, "feedback": "Correct. A short reset is fine. Block 3 is the highest-contact window. The 75 door minimum is the floor, not the ceiling."},
+                        {"text": "Start calling your callback list instead", "is_correct": False, "feedback": "Callbacks are supplemental, not a replacement for fresh doors. Hit your minimum first."}
+                    ],
+                    "ideal_response": "Brief reset, then execute Block 3 with discipline. 75 doors is non-negotiable.",
+                    "explanation": "Discipline is doing what you don't want to do, when you don't want to do it. The afternoon block is where elite reps separate themselves."
+                }
+            },
+            {
+                "component_type": "SectionHeader",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "read",
+                "content_payload": {
+                    "title": "Reading the Homeowner",
+                    "subtitle": "Time is your most valuable resource. Allocate it based on signals, not hope.",
+                    "section_number": 2
+                }
+            },
+            {
+                "component_type": "FlashcardSet",
+                "visual_weight": "secondary",
+                "layout_style": "card_grid",
+                "interaction_mode": "flip",
+                "content_payload": {
+                    "title": "Traffic Light System — Know When to Stay, When to Go",
+                    "cards": [
+                        {
+                            "front": "GREEN LIGHT — invest up to 20 minutes",
+                            "back": "They step outside. They ask questions. They look at their roof. They mention a leak or prior issue. These homeowners are ready — slow down, listen, and transition to inspection.",
+                            "card_type": "Signal"
+                        },
+                        {
+                            "front": "YELLOW LIGHT — 3 minutes maximum",
+                            "back": "They stay behind the screen door but keep talking. They ask 'How much does it cost?' They look back into the house (checking with spouse). Give your best pitch quickly and offer to come back.",
+                            "card_type": "Signal"
+                        },
+                        {
+                            "front": "RED LIGHT — 10 seconds, card and leave",
+                            "back": "'Not interested' with door closing. Arms crossed, no eye contact. 'We're renters.' 'No Soliciting' sign. Hand the card, say 'Have a great day,' and move. Do not linger.",
+                            "card_type": "Signal"
+                        }
+                    ]
+                }
+            },
+            {
+                "component_type": "QuizBlock",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "quiz",
+                "content_payload": {
+                    "title": "D2D Field Knowledge Check",
+                    "passing_score": 70,
+                    "questions": [
+                        {
+                            "question": "What are the three truths you communicate at every door?",
+                            "options": ["Your name, your company, your fee", "There was a storm, there is a deadline, you only get paid if they get paid", "The roof is damaged, you're the best, call today", "Storm data, license number, success rate"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "What is the daily door minimum for a Care Claims field adjuster?",
+                            "options": ["50 doors", "75 doors", "100 doors", "25 doors"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "A homeowner says 'Let me think about it.' Best response?",
+                            "options": ["Leave your card and follow up next week", "Offer the free inspection now so they have data to think about, not just uncertainty", "Push harder for the signature", "Tell them their neighbors already signed"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Which time block typically has the highest contact rate?",
+                            "options": ["Block 1: 9:00-11:30 AM", "Block 2: 12:30-3:00 PM", "Block 3: 3:30-6:00 PM", "Early morning: 7:00-9:00 AM"],
+                            "correct_answer": 2
+                        }
+                    ]
+                }
+            },
+            {
+                "component_type": "FieldChallenge",
+                "visual_weight": "primary",
+                "layout_style": "full_width",
+                "interaction_mode": "challenge",
+                "content_payload": {
+                    "title": "The 5-Day D2D Challenge",
+                    "description": "Prove you can execute the full D2D system under real field conditions.",
+                    "success_criteria": [
+                        "Day 1: Hit 75 doors minimum. Log every door in CRM with correct tags (SIGNED / CALLBACK / NO ANSWER / NOT INTERESTED / RENTER).",
+                        "Day 2: Deliver the opening script from memory at every door. No reading from notes. Record yourself once for self-review.",
+                        "Day 3: Handle at least 3 objections using the trained responses. Log which objections you heard and how you responded.",
+                        "Day 4: Execute the full daily schedule including Block 3. Submit your daily report by 7 PM.",
+                        "Day 5: Achieve at least 1 signed authorization. Complete the follow-up cadence for all callbacks from the week."
+                    ],
+                    "proof_requirements": [
+                        "CRM log showing 75+ doors each day with proper tagging.",
+                        "At least one self-recorded opening script delivery.",
+                        "Daily report submitted by 7 PM each day.",
+                        "Signed authorization or documented callback pipeline."
+                    ],
+                    "time_limit": "5 business days"
+                }
+            }
+        ]
+    }
+    await db.workbooks.insert_one(d2d_workbook)
+    logger.info("D2D Field Manual workbook seeded successfully")
