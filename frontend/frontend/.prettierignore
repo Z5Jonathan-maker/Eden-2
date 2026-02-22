@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+build
+dist
+.next
+out
+
+# Cache
+.cache
+.parcel-cache
+.vite
+
+# Misc
+coverage
+.env
+.env.*
+*.log
+
+# IDE
+.vscode
+.idea
+
+# Generated files
+*.min.js
+*.bundle.js

@@ -1,0 +1,134 @@
+{
+  "design_system": {
+    "name": "Eden Tactical Ops",
+    "theme": "dark",
+    "description": "A high-end, AAA gaming-inspired design system focusing on tactical aesthetics, metallic textures, and gamified progression elements.",
+    "typography": {
+      "font_family": {
+        "heading": "\"Rajdhani\", sans-serif",
+        "body": "\"Inter\", sans-serif",
+        "mono": "\"JetBrains Mono\", monospace"
+      },
+      "weights": {
+        "heading": "700",
+        "body": "400",
+        "bold": "600"
+      },
+      "imports": [
+        "https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      ]
+    },
+    "colors": {
+      "background": {
+        "app": "#09090B",
+        "card": "#18181B",
+        "overlay": "rgba(9, 9, 11, 0.8)"
+      },
+      "text": {
+        "primary": "#FAFAFA",
+        "secondary": "#A1A1AA",
+        "muted": "#52525B"
+      },
+      "brand": {
+        "primary": "#EA580C",
+        "primary_glow": "rgba(234, 88, 12, 0.5)",
+        "secondary": "#3B82F6",
+        "accent": "#22C55E"
+      },
+      "rarity": {
+        "common": "#94A3B8",
+        "uncommon": "#22C55E",
+        "rare": "#3B82F6",
+        "epic": "#A855F7",
+        "legendary": "#EAB308",
+        "mythic": "#EF4444"
+      },
+      "gradients": {
+        "battle_pass": "linear-gradient(90deg, #EA580C 0%, #F97316 100%)",
+        "metallic": "linear-gradient(180deg, #27272A 0%, #18181B 100%)",
+        "glass": "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)"
+      }
+    },
+    "shapes": {
+      "chamfer": "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)",
+      "slant": "skewX(-12deg)",
+      "hexagon": "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "grid_gap": "gap-6"
+    },
+    "effects": {
+      "glass_blur": "backdrop-blur-xl",
+      "neon_glow": "0 0 10px rgba(234, 88, 12, 0.5), 0 0 20px rgba(234, 88, 12, 0.3)",
+      "border_glow": "1px solid rgba(255,255,255,0.1)"
+    }
+  },
+  "components": {
+    "Card": {
+      "base_classes": "relative bg-zinc-900/80 border border-white/10 overflow-hidden backdrop-blur-md",
+      "style_overrides": {
+        "clipPath": "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)"
+      },
+      "instructions": "Use the 'chamfer' clip-path for all cards. Add a subtle top border gradient using a pseudo-element to simulate a light source."
+    },
+    "Button": {
+      "base_classes": "relative font-rajdhani font-bold uppercase tracking-wider transition-all duration-200 active:scale-95",
+      "variants": {
+        "primary": "bg-orange-600 hover:bg-orange-500 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)] hover:shadow-[0_0_25px_rgba(234,88,12,0.6)]",
+        "secondary": "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10",
+        "ghost": "hover:bg-white/5 text-zinc-400 hover:text-white"
+      },
+      "style_overrides": {
+        "transform": "skewX(-12deg)"
+      },
+      "inner_content_style": {
+        "transform": "skewX(12deg)"
+      }
+    },
+    "Badge": {
+      "base_classes": "inline-flex items-center justify-center px-3 py-1 text-xs font-bold uppercase tracking-widest",
+      "variants": {
+        "rank": "bg-gradient-to-r from-yellow-600 to-yellow-500 text-black clip-hexagon",
+        "status": "bg-zinc-800 border border-white/10 text-zinc-300"
+      }
+    },
+    "ProgressBar": {
+      "container": "h-4 bg-zinc-900/50 border border-white/10 skew-x-[-12deg] overflow-hidden",
+      "fill": "h-full bg-gradient-to-r from-orange-600 to-yellow-500 shadow-[0_0_10px_rgba(234,88,12,0.5)]"
+    },
+    "Navigation": {
+      "sidebar": "bg-zinc-950/90 border-r border-white/5 backdrop-blur-xl",
+      "item": "flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-white/5 transition-colors border-l-2 border-transparent hover:border-orange-500"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "type": "bento_grid",
+      "classes": "grid grid-cols-1 md:grid-cols-4 gap-6",
+      "areas": [
+        "Hero Stats: col-span-full md:col-span-4",
+        "Main Chart: col-span-full md:col-span-3 row-span-2",
+        "Side List: col-span-full md:col-span-1 row-span-2"
+      ]
+    }
+  },
+  "assets": {
+    "background_texture": "https://images.unsplash.com/photo-1764265992267-6e47c1a51023?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "icons": "Use Lucide React icons. Apply 'drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]' to simulate neon tubes."
+  },
+  "instructions_to_main_agent": [
+    "1. INSTALL FONTS: Add the Google Fonts import to 'frontend/src/index.css' immediately.",
+    "2. GLOBAL STYLES: Update 'frontend/src/index.css' to set the body background to #09090B and apply the background texture with low opacity (5%).",
+    "3. COMPONENT OVERRIDES: Do not delete Shadcn components. Instead, wrap them or apply the 'chamfer' clip-path and custom colors via className overrides.",
+    "4. REMOVE EMOJIS: Replace all emojis with Lucide icons. Use specific colors for meaning (Green=Check, Red=Alert, Orange=Action).",
+    "5. GAMIFICATION: Implement the 'Battle Pass' style progress bars on the Harvest page. Use the 'skew-x-[-12deg]' utility heavily for that 'fast/tactical' look.",
+    "6. DATA-TESTID: Ensure every interactive element has a data-testid attribute."
+  ],
+  "universal_guidelines": [
+    "Avoid gradients for dark colors.",
+    "Do not center align the app container.",
+    "Use 'sonner' for toasts.",
+    "Use named exports for components, default for pages."
+  ]
+}
