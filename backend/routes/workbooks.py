@@ -190,10 +190,7 @@ async def toggle_publish(
 
 async def seed_workbooks():
     """Seed the Extreme Ownership companion workbook"""
-    existing = await db.workbooks.count_documents({})
-    if existing > 0:
-        logger.info("Workbooks already seeded, skipping")
-        return
+    await db.workbooks.delete_many({})
 
     workbook = {
         "id": str(uuid.uuid4()),
