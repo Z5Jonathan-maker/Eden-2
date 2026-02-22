@@ -34,6 +34,7 @@ from routes.settings import router as settings_router
 from routes.admin import router as admin_router
 from routes.uploads import router as uploads_router
 from routes.inspection_photos import router as inspection_photos_router
+from routes.inspection import router as inspection_router
 from routes.canvassing_map import router as canvassing_map_router
 from routes.weather import router as weather_router
 from routes.client_education import router as client_education_router
@@ -100,13 +101,11 @@ logger = logging.getLogger("eden.startup")
 
 @app.on_event("startup")
 async def startup_event():
-    """Log environment configuration at startup"""
+    """Initialize app: log config, seed data, ensure admin, start scheduler"""
     logger.info("="*70)
     logger.info("🚀 EDEN BACKEND STARTING")
     logger.info("="*70)
     logger.info(f"Environment: {os.environ.get('ENVIRONMENT', 'unknown')}")
-    
-    # Mask sensitive parts of MongoDB URL
     masked_mongo = mongo_url[:50] + "..." if len(mongo_url) > 50 else mongo_url
     logger.info(f"Database: {masked_mongo}")
     logger.info(f"Database Name: {os.environ.get('DB_NAME', 'eden_claims')}")
@@ -114,6 +113,15 @@ async def startup_event():
     logger.info(f"CORS Origins: {os.environ.get('CORS_ORIGINS', 'not configured')}")
     logger.info(f"Frontend URL: {os.environ.get('FRONTEND_URL', 'not configured')}")
     logger.info("="*70)
+
+    await seed_university_data()
+    try:
+        await seed_workbooks()
+    except Exception as e:
+        logging.error(f"[startup] seed_workbooks failed: {e}")
+    await ensure_admin_user()
+    await initialize_harvest_gamification()
+    await initialize_background_scheduler()
 
 
 
@@ -323,6 +331,7 @@ app.include_router(settings_router)
 app.include_router(admin_router)
 app.include_router(uploads_router)
 app.include_router(inspection_photos_router)
+app.include_router(inspection_router)
 app.include_router(canvassing_map_router)
 app.include_router(weather_router)
 app.include_router(client_education_router)
@@ -357,15 +366,6 @@ app.include_router(integrations_router)
 app.include_router(google_router)
 app.include_router(signnow_router)
 
-# Startup event to seed data
-@app.on_event("startup")
-async def startup_event():
-    """Seed university data, ensure admin user exists, initialize gamification, and start scheduler"""
-    await seed_university_data()
-    await seed_workbooks()
-    await ensure_admin_user()
-    await initialize_harvest_gamification()
-    await initialize_background_scheduler()
 
 
 async def initialize_harvest_gamification():

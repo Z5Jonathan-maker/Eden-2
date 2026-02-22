@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { api, API_URL } from '../lib/api';
+import { api, apiPost, API_URL } from '../lib/api';
 
 export function useInspectionReport() {
   const [generating, setGenerating] = useState(false);
@@ -29,22 +29,14 @@ export function useInspectionReport() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/inspections/sessions/${sessionId}/report`, {
-        method: 'POST',
-        headers: {
-          credentials: 'include',
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await apiPost(`/api/inspections/sessions/${sessionId}/report`, {});
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to generate report');
+        throw new Error(res.error || 'Failed to generate report');
       }
 
-      const data = await res.json();
-      setReport(data);
-      return data;
+      setReport(res.data);
+      return res.data;
     } catch (err) {
       console.error('[useInspectionReport] Generation error:', err);
       setError(err.message);
@@ -61,14 +53,10 @@ export function useInspectionReport() {
     if (!sessionId) return [];
 
     try {
-      const res = await fetch(`${API_URL}/api/inspections/sessions/${sessionId}/reports`, {
-        credentials: 'include'
-      });
-
+      const res = await api(`/api/inspections/sessions/${sessionId}/reports`);
       if (res.ok) {
-        const data = await res.json();
-        setReportHistory(data.reports || []);
-        return data.reports || [];
+        setReportHistory(res.data.reports || []);
+        return res.data.reports || [];
       }
     } catch (err) {
       console.error('[useInspectionReport] Fetch history error:', err);
@@ -83,14 +71,10 @@ export function useInspectionReport() {
     if (!reportId) return null;
 
     try {
-      const res = await fetch(`${API_URL}/api/inspections/reports/${reportId}`, {
-        credentials: 'include'
-      });
-
+      const res = await api(`/api/inspections/reports/${reportId}`);
       if (res.ok) {
-        const data = await res.json();
-        setReport(data);
-        return data;
+        setReport(res.data);
+        return res.data;
       }
     } catch (err) {
       console.error('[useInspectionReport] Fetch report error:', err);
