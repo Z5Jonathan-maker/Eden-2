@@ -7,9 +7,11 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
-  Search, BookOpen, Plus, FileText, Filter,
+  Search, BookOpen, Plus, Trash2,
 } from 'lucide-react';
+import { apiDelete } from '@/lib/api';
 
 const CATEGORIES = [
   { id: 'all', label: 'All' },
@@ -26,10 +28,26 @@ const FORMAT_BADGE = {
   pdf:  { bg: 'bg-red-500/20',  text: 'text-red-300',  border: 'border-red-500/30' },
 };
 
-const LibraryTab = ({ books = [], loading, onAddClick, canEdit }) => {
+const LibraryTab = ({ books = [], loading, onAddClick, canEdit, onRefresh }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+
+  const handleDeleteBook = async (e, bookId, bookTitle) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${bookTitle}"? This cannot be undone.`)) return;
+    try {
+      const res = await apiDelete(`/api/university/library/books/${bookId}`);
+      if (res.ok) {
+        toast.success('Book deleted');
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error(res.error || 'Failed to delete book');
+      }
+    } catch (err) {
+      toast.error('Error deleting book: ' + err.message);
+    }
+  };
 
   const filtered = books.filter((b) => {
     if (category !== 'all' && b.category !== category) return false;
@@ -160,9 +178,20 @@ const LibraryTab = ({ books = [], loading, onAddClick, canEdit }) => {
 
                 {/* Info */}
                 <div className="p-3">
-                  <h4 className="text-sm font-semibold text-zinc-200 truncate group-hover:text-white transition-colors">
-                    {book.title}
-                  </h4>
+                  <div className="flex items-start justify-between gap-1">
+                    <h4 className="text-sm font-semibold text-zinc-200 truncate group-hover:text-white transition-colors">
+                      {book.title}
+                    </h4>
+                    {canEdit && (
+                      <button
+                        onClick={(e) => handleDeleteBook(e, book.id, book.title)}
+                        className="flex-shrink-0 p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Delete book"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[11px] text-zinc-500 font-mono truncate mt-0.5">
                     {book.author}
                   </p>

@@ -411,6 +411,7 @@ function University() {
           loading={libraryLoading}
           onAddClick={() => setShowAddBookModal(true)}
           canEdit={canEdit}
+          onRefresh={fetchLibraryBooks}
         />
       )}
 

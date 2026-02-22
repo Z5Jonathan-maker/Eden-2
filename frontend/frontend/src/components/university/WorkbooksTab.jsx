@@ -8,11 +8,18 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../../shared/ui/card';
 import { Badge } from '../../shared/ui/badge';
-import { BookOpen, Clock, Layers, ChevronRight, RefreshCw } from 'lucide-react';
-import { apiPost } from '@/lib/api';
+import { BookOpen, Clock, Layers, ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
+import { apiPost, apiDelete } from '@/lib/api';
 
-const WorkbookCard = ({ workbook, onClick }) => {
+const WorkbookCard = ({ workbook, onClick, canEdit, onDelete }) => {
   const componentCount = workbook.components?.length || 0;
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    if (window.confirm(`Delete "${workbook.title}"? This cannot be undone.`)) {
+      onDelete(workbook.id);
+    }
+  };
 
   return (
     <Card
@@ -31,6 +38,15 @@ const WorkbookCard = ({ workbook, onClick }) => {
               </Badge>
             )}
           </div>
+          {canEdit && (
+            <button
+              onClick={handleDelete}
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Delete workbook"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <h3 className="font-semibold text-lg text-white mb-2">{workbook.title}</h3>
@@ -68,6 +84,20 @@ const WorkbookCard = ({ workbook, onClick }) => {
 export const WorkbooksTab = ({ workbooks, canEdit, onRefresh }) => {
   const navigate = useNavigate();
   const [seeding, setSeeding] = useState(false);
+
+  const handleDelete = async (workbookId) => {
+    try {
+      const res = await apiDelete(`/api/university/workbooks/${workbookId}`);
+      if (res.ok) {
+        toast.success('Workbook deleted');
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error(res.error || 'Failed to delete workbook');
+      }
+    } catch (err) {
+      toast.error('Error deleting workbook: ' + err.message);
+    }
+  };
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -114,6 +144,8 @@ export const WorkbooksTab = ({ workbooks, canEdit, onRefresh }) => {
         <WorkbookCard
           key={workbook.id}
           workbook={workbook}
+          canEdit={canEdit}
+          onDelete={handleDelete}
           onClick={() => navigate(`/university/workbook/${workbook.id}`)}
         />
       ))}
