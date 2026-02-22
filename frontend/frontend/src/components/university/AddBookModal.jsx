@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   X, Upload, Loader2, BookOpen, FileText,
 } from 'lucide-react';
-import { apiPost, apiGet } from '@/lib/api';
+import { apiPost, apiUpload } from '@/lib/api';
 
 const CATEGORIES = [
   { id: 'insurance', label: 'Insurance' },
@@ -68,7 +68,7 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
     formData.append('file', file);
 
     try {
-      const res = await apiPost('/api/uploads/file', formData);
+      const res = await apiUpload('/api/uploads/file', formData);
       if (!res.ok) throw new Error(res.error || 'Upload failed');
 
       setUploadedFile({
