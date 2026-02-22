@@ -20,6 +20,7 @@ import FirmContentTab from './university/FirmContentTab';
 import CreateContentModal from './university/CreateContentModal';
 import LibraryTab from './university/LibraryTab';
 import AddBookModal from './university/AddBookModal';
+import WorkbooksTab from './university/WorkbooksTab';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -42,6 +43,7 @@ function University() {
   const [libraryBooks, setLibraryBooks] = useState([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [workbooks, setWorkbooks] = useState([]);
   
   // University Name State
   const [companyName, setCompanyName] = useState('');
@@ -152,6 +154,15 @@ function University() {
       console.error('Failed to fetch library books:', err);
     } finally {
       setLibraryLoading(false);
+    }
+  }, []);
+
+  const fetchWorkbooks = useCallback(async () => {
+    try {
+      const res = await apiGet('/api/university/workbooks');
+      if (res.ok) setWorkbooks(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch workbooks:', err);
     }
   }, []);
 
@@ -320,6 +331,7 @@ function University() {
     if (tabId === 'videos') fetchVideoSources();
     if (tabId === 'firm') fetchCustomContent();
     if (tabId === 'library') fetchLibraryBooks();
+    if (tabId === 'workbooks') fetchWorkbooks();
   };
 
   // Loading state
@@ -399,6 +411,10 @@ function University() {
           onAddClick={() => setShowAddBookModal(true)}
           canEdit={canEdit}
         />
+      )}
+
+      {activeTab === 'workbooks' && (
+        <WorkbooksTab workbooks={workbooks} />
       )}
 
       {/* Add Book Modal */}

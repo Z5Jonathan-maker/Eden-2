@@ -60,6 +60,7 @@ const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
 const RepHome = lazy(() => import('./components/rep/RepHome'));
 const PerformanceConsole = lazy(() => import('./components/performance/PerformanceConsole'));
 const BookReader = lazy(() => import('./components/university/BookReader'));
+const WorkbookViewer = lazy(() => import('./components/university/WorkbookViewer'));
 
 // Suspense fallback
 const PageLoader = () => (
@@ -235,6 +236,7 @@ function AppRoutes() {
           <Route path="university/course/:courseId" element={<CourseDetail />} />
           <Route path="university/article/:articleId" element={<ArticleDetail />} />
           <Route path="university/library/:bookId" element={<BookReader />} />
+          <Route path="university/workbook/:workbookId" element={<WorkbookViewer />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="scales" element={<Scales />} />
           <Route path="canvassing" element={<HarvestPage />} />
