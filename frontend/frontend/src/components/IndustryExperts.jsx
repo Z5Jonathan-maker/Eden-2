@@ -4,30 +4,57 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { ScrollArea } from './ui/scroll-area';
-import { 
-  User, Book, FileText, Link, ExternalLink, Search,
-  Lightbulb, Award, Youtube, Globe, Linkedin, ChevronRight,
-  BookOpen, Briefcase, Scale, Home, Sparkles
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
+import { ScrollArea } from '../shared/ui/scroll-area';
+import {
+  User,
+  Book,
+  FileText,
+  Link,
+  ExternalLink,
+  Search,
+  Lightbulb,
+  Award,
+  Youtube,
+  Globe,
+  Linkedin,
+  ChevronRight,
+  BookOpen,
+  Briefcase,
+  Scale,
+  Home,
+  Sparkles,
+  TrendingUp,
+  Heart,
 } from 'lucide-react';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { apiGet } from '@/lib/api';
 
 const getCategoryIcon = (category) => {
   switch (category) {
-    case 'Roofing & Claims': return <Home className="w-4 h-4" />;
-    case 'Public Adjusting': return <Briefcase className="w-4 h-4" />;
-    case 'Insurance Law': return <Scale className="w-4 h-4" />;
-    case 'Insurance Coverage': return <FileText className="w-4 h-4" />;
-    case 'Insurance Appraisal': return <Award className="w-4 h-4" />;
-    case 'Public Adjusting Business': return <Sparkles className="w-4 h-4" />;
-    case 'Leadership': return <User className="w-4 h-4" />;
-    default: return <BookOpen className="w-4 h-4" />;
+    case 'Roofing & Claims':
+      return <Home className="w-4 h-4" />;
+    case 'Public Adjusting':
+      return <Briefcase className="w-4 h-4" />;
+    case 'Insurance Law':
+      return <Scale className="w-4 h-4" />;
+    case 'Insurance Coverage':
+      return <FileText className="w-4 h-4" />;
+    case 'Insurance Appraisal':
+      return <Award className="w-4 h-4" />;
+    case 'Public Adjusting Business':
+      return <Sparkles className="w-4 h-4" />;
+    case 'Leadership':
+      return <User className="w-4 h-4" />;
+    case 'Business Growth':
+      return <TrendingUp className="w-4 h-4" />;
+    case 'Faith & Purpose':
+      return <Heart className="w-4 h-4" />;
+    default:
+      return <BookOpen className="w-4 h-4" />;
   }
 };
 
@@ -39,7 +66,9 @@ const getCategoryColor = (category) => {
     'Insurance Coverage': 'bg-green-100 text-green-700 border-green-200',
     'Insurance Appraisal': 'bg-yellow-100 text-yellow-700 border-yellow-200',
     'Public Adjusting Business': 'bg-pink-100 text-pink-700 border-pink-200',
-    'Leadership': 'bg-indigo-100 text-indigo-700 border-indigo-200'
+    Leadership: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    'Business Growth': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'Faith & Purpose': 'bg-rose-100 text-rose-700 border-rose-200',
   };
   return colors[category] || 'bg-gray-100 text-zinc-300 border-gray-200';
 };
@@ -48,6 +77,7 @@ const IndustryExperts = () => {
   const [experts, setExperts] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [selectedExpert, setSelectedExpert] = useState(null);
+  const [selectedMentor, setSelectedMentor] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,18 +90,16 @@ const IndustryExperts = () => {
   const fetchData = async () => {
     try {
       const [expertsRes, mentorsRes] = await Promise.all([
-        fetch(`${API_URL}/api/knowledge-base/experts`),
-        fetch(`${API_URL}/api/knowledge-base/mentors`)
+        apiGet('/api/knowledge-base/experts'),
+        apiGet('/api/knowledge-base/mentors'),
       ]);
-      
+
       if (expertsRes.ok) {
-        const data = await expertsRes.json();
-        setExperts(data.experts || []);
+        setExperts(expertsRes.data.experts || []);
       }
-      
+
       if (mentorsRes.ok) {
-        const data = await mentorsRes.json();
-        setMentors(data.mentors || []);
+        setMentors(mentorsRes.data.mentors || []);
       }
     } catch (err) {
       console.error('Failed to fetch experts:', err);
@@ -81,10 +109,9 @@ const IndustryExperts = () => {
 
   const fetchExpertDetail = async (expertId) => {
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/experts/${expertId}`);
+      const res = await apiGet(`/api/knowledge-base/experts/${expertId}`);
       if (res.ok) {
-        const data = await res.json();
-        setSelectedExpert(data);
+        setSelectedExpert(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch expert detail:', err);
@@ -96,12 +123,11 @@ const IndustryExperts = () => {
       setSearchResults(null);
       return;
     }
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`);
+      const res = await apiGet(`/api/knowledge-base/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.results);
+        setSearchResults(res.data.results);
       }
     } catch (err) {
       console.error('Search failed:', err);
@@ -109,7 +135,7 @@ const IndustryExperts = () => {
   };
 
   const ExpertCard = ({ expert, onClick }) => (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-lg transition-all hover:border-orange-300 group"
       onClick={() => onClick(expert.id)}
       data-testid={`expert-card-${expert.id}`}
@@ -118,15 +144,16 @@ const IndustryExperts = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg">
-              {expert.name.split(' ').map(n => n[0]).join('')}
+              {expert.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')}
             </div>
             <div>
               <CardTitle className="text-lg group-hover:text-orange-600 transition-colors">
                 {expert.name}
               </CardTitle>
-              {expert.alias && (
-                <p className="text-sm text-zinc-500 italic">"{expert.alias}"</p>
-              )}
+              {expert.alias && <p className="text-sm text-zinc-500 italic">"{expert.alias}"</p>}
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
@@ -164,20 +191,19 @@ const IndustryExperts = () => {
       {/* Header */}
       <div className="flex items-start gap-4">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
-          {expert.name.split(' ').map(n => n[0]).join('')}
+          {expert.name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')}
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">{expert.name}</h2>
-          {expert.alias && (
-            <p className="text-zinc-500 italic">"{expert.alias}"</p>
-          )}
+          {expert.alias && <p className="text-zinc-500 italic">"{expert.alias}"</p>}
           <Badge className={`${getCategoryColor(expert.category)} mt-2`}>
             {getCategoryIcon(expert.category)}
             <span className="ml-1">{expert.category}</span>
           </Badge>
-          {expert.location && (
-            <p className="text-sm text-zinc-500 mt-1">📍 {expert.location}</p>
-          )}
+          {expert.location && <p className="text-sm text-zinc-500 mt-1">📍 {expert.location}</p>}
         </div>
       </div>
 
@@ -252,16 +278,14 @@ const IndustryExperts = () => {
               {expert.books.map((book, i) => (
                 <div key={i} className="border rounded-lg p-4 bg-blue-50/30">
                   <h4 className="font-semibold text-white">{book.title}</h4>
-                  {book.coauthor && (
-                    <p className="text-sm text-zinc-500">with {book.coauthor}</p>
-                  )}
+                  {book.coauthor && <p className="text-sm text-zinc-500">with {book.coauthor}</p>}
                   {book.excerpt && (
                     <p className="text-sm text-zinc-400 mt-2 italic">"{book.excerpt}"</p>
                   )}
                   {book.url && (
-                    <a 
-                      href={book.url} 
-                      target="_blank" 
+                    <a
+                      href={book.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
                     >
@@ -295,9 +319,9 @@ const IndustryExperts = () => {
                       <FileText className="w-4 h-4 text-green-500 mt-1 flex-shrink-0" />
                     )}
                     <div>
-                      <a 
-                        href={article.url} 
-                        target="_blank" 
+                      <a
+                        href={article.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-white hover:text-orange-600 transition-colors"
                       >
@@ -354,11 +378,7 @@ const IndustryExperts = () => {
         </Card>
       )}
 
-      <Button 
-        variant="outline" 
-        onClick={() => setSelectedExpert(null)}
-        className="w-full"
-      >
+      <Button variant="outline" onClick={() => setSelectedExpert(null)} className="w-full">
         ← Back to All Experts
       </Button>
     </div>
@@ -378,12 +398,18 @@ const IndustryExperts = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-2 tracking-wide">
-            <img src="/icons/experts.png" alt="Experts" className="w-10 h-10 object-contain icon-3d-shadow" />
+            <img
+              src="/icons/experts.png"
+              alt="Experts"
+              className="w-10 h-10 object-contain icon-3d-shadow"
+            />
             Industry Experts
           </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Learn from the best in public adjusting</p>
+          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
+            Learn from the best in public adjusting
+          </p>
         </div>
-        
+
         {/* Search */}
         <div className="flex gap-2">
           <Input
@@ -412,7 +438,7 @@ const IndustryExperts = () => {
             ) : (
               <div className="space-y-3">
                 {searchResults.map((result, i) => (
-                  <div 
+                  <div
                     key={i}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-800/50 cursor-pointer"
                     onClick={() => fetchExpertDetail(result.expert_id)}
@@ -428,16 +454,14 @@ const IndustryExperts = () => {
                         ))}
                       </div>
                     </div>
-                    <Badge className="bg-orange-100 text-orange-700">
-                      Score: {result.score}
-                    </Badge>
+                    <Badge className="bg-orange-100 text-orange-700">Score: {result.score}</Badge>
                   </div>
                 ))}
               </div>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSearchResults(null)}
               className="mt-4"
             >
@@ -466,80 +490,191 @@ const IndustryExperts = () => {
           <TabsContent value="experts" className="mt-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {experts.map((expert) => (
-                <ExpertCard 
-                  key={expert.id} 
-                  expert={expert} 
-                  onClick={fetchExpertDetail}
-                />
+                <ExpertCard key={expert.id} expert={expert} onClick={fetchExpertDetail} />
               ))}
             </div>
           </TabsContent>
 
           <TabsContent value="mentors" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              {mentors.map((mentor) => (
-                <Card 
-                  key={mentor.id}
-                  className="hover:shadow-lg transition-all hover:border-indigo-300"
-                  data-testid={`mentor-card-${mentor.id}`}
-                >
+            {selectedMentor ? (
+              <div className="space-y-6" data-testid="mentor-detail-view">
+                {/* Header */}
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                    {selectedMentor.name.split(' ').map((n) => n[0]).join('')}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">{selectedMentor.name}</h2>
+                    <Badge className="bg-indigo-100 text-indigo-700 mt-2">
+                      {getCategoryIcon(selectedMentor.category)}
+                      <span className="ml-1">{selectedMentor.category}</span>
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <Card>
                   <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                        {mentor.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <CardTitle>{mentor.name}</CardTitle>
-                        <Badge className="bg-indigo-100 text-indigo-700 mt-1">
-                          {mentor.category}
-                        </Badge>
-                      </div>
-                    </div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="w-5 h-5 text-indigo-500" />
+                      About
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-zinc-400">{mentor.bio}</p>
-                    
-                    {mentor.relevance && (
-                      <p className="text-sm text-indigo-600">
-                        <strong>Relevance:</strong> {mentor.relevance}
+                  <CardContent>
+                    <p className="text-zinc-300 leading-relaxed">{selectedMentor.bio}</p>
+                    {selectedMentor.relevance && (
+                      <p className="text-sm text-indigo-400 mt-3">
+                        <strong>Why this matters:</strong> {selectedMentor.relevance}
                       </p>
-                    )}
-
-                    {mentor.books && mentor.books.length > 0 && (
-                      <div>
-                        <p className="font-medium text-sm text-zinc-300 mb-2">Key Books:</p>
-                        {mentor.books.map((book, i) => (
-                          <div key={i} className="text-sm">
-                            <a 
-                              href={book.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              {book.title}
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {mentor.key_insights && mentor.key_insights.length > 0 && (
-                      <div className="bg-indigo-50 rounded-lg p-3">
-                        <p className="font-medium text-sm text-indigo-700 mb-2">Key Insights:</p>
-                        <ul className="space-y-1">
-                          {mentor.key_insights.map((insight, i) => (
-                            <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
-                              <span className="text-indigo-500">•</span>
-                              {insight}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     )}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+
+                {/* Key Insights */}
+                {selectedMentor.key_insights && selectedMentor.key_insights.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-yellow-500" />
+                        Key Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {selectedMentor.key_insights.map((insight, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                            <span className="text-indigo-400 font-bold mt-0.5">{i + 1}</span>
+                            <p className="text-zinc-300">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Books */}
+                {selectedMentor.books && selectedMentor.books.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Book className="w-5 h-5 text-blue-500" />
+                        Books & Reading
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {selectedMentor.books.map((book, i) => (
+                          <a
+                            key={i}
+                            href={book.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-zinc-800/30 transition-colors group"
+                          >
+                            <BookOpen className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-white group-hover:text-indigo-400 transition-colors">
+                                {book.title}
+                              </p>
+                              {book.author && <p className="text-sm text-zinc-500">by {book.author}</p>}
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-zinc-600 ml-auto flex-shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Resources */}
+                {selectedMentor.resources && selectedMentor.resources.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Link className="w-5 h-5 text-purple-500" />
+                        Resources & Links
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {selectedMentor.resources.map((resource, i) => (
+                          <a
+                            key={i}
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-3 p-3 border rounded-lg hover:bg-zinc-800/30 transition-colors group"
+                          >
+                            {resource.type === 'YouTube' ? (
+                              <Youtube className="w-5 h-5 text-red-500 flex-shrink-0" />
+                            ) : resource.type === 'LinkedIn' ? (
+                              <Linkedin className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                            ) : (
+                              <Globe className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+                            )}
+                            <div>
+                              <p className="font-medium text-white group-hover:text-indigo-400 transition-colors">
+                                {resource.type}
+                              </p>
+                              <p className="text-sm text-zinc-400">{resource.description}</p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Button variant="outline" onClick={() => setSelectedMentor(null)} className="w-full">
+                  ← Back to All Leaders
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {mentors.map((mentor) => (
+                  <Card
+                    key={mentor.id}
+                    className="cursor-pointer hover:shadow-lg transition-all hover:border-indigo-300 group"
+                    onClick={() => setSelectedMentor(mentor)}
+                    data-testid={`mentor-card-${mentor.id}`}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                            {mentor.name.split(' ').map((n) => n[0]).join('')}
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg group-hover:text-indigo-400 transition-colors">
+                              {mentor.name}
+                            </CardTitle>
+                            <Badge className="bg-indigo-100 text-indigo-700 mt-1">
+                              {mentor.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-zinc-400 line-clamp-3">{mentor.bio}</p>
+                      <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+                        {mentor.books && mentor.books.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Book className="w-3 h-3" /> {mentor.books.length} books
+                          </span>
+                        )}
+                        {mentor.key_insights && mentor.key_insights.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Lightbulb className="w-3 h-3" /> {mentor.key_insights.length} insights
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       )}

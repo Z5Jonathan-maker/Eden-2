@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { 
-  FileText, Plus, DollarSign, Clock, CheckCircle, XCircle, 
-  AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Badge } from '../shared/ui/badge';
+import {
+  FileText, Plus, DollarSign, Clock, CheckCircle, XCircle,
+  AlertCircle, ArrowLeft, Send, Trash2, Edit, ChevronDown, ChevronUp, Sparkles, Loader2
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
-
-var API_URL = process.env.REACT_APP_BACKEND_URL;
+import { toast } from 'sonner';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 var STATUS_COLORS = {
   draft: 'bg-gray-500',
@@ -47,35 +47,34 @@ function SupplementTracker() {
   var [expandedSupplement, setExpandedSupplement] = useState(null);
   var [newSupplement, setNewSupplement] = useState({ title: '', description: '', line_items: [] });
   var [newLineItem, setNewLineItem] = useState({ description: '', category: 'general', quantity: 1, unit: 'EA', unit_price: 0, total: 0 });
+  var [aiJustifications, setAiJustifications] = useState({});
+  var [loadingAiBySupplement, setLoadingAiBySupplement] = useState({});
 
-  function getToken() {
-    return localStorage.getItem('eden_token');
-  }
+  const fetchData = useCallback(async function fetchData() {
+    setLoading(true);
+    try {
+      var [claimRes, suppsRes, catsRes] = await Promise.all([
+        apiGet('/api/claims/' + claimId),
+        apiGet('/api/supplements/claim/' + claimId),
+        apiGet('/api/supplements/categories')
+      ]);
+
+      if (claimRes.ok) setClaim(claimRes.data);
+      if (suppsRes.ok) {
+        setSupplements(suppsRes.data.supplements || []);
+        setTotals(suppsRes.data.totals || {});
+      }
+      if (catsRes.ok) setCategories(catsRes.data || []);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [claimId]);
 
   useEffect(function() {
     fetchData();
-  }, [claimId]);
-
-  function fetchData() {
-    setLoading(true);
-    var headers = { 'Authorization': 'Bearer ' + getToken() };
-    
-    Promise.all([
-      fetch(API_URL + '/api/claims/' + claimId, { headers }),
-      fetch(API_URL + '/api/supplements/claim/' + claimId, { headers }),
-      fetch(API_URL + '/api/supplements/categories', { headers })
-    ]).then(function(responses) {
-      return Promise.all(responses.map(function(r) { return r.json(); }));
-    }).then(function(data) {
-      setClaim(data[0]);
-      setSupplements(data[1].supplements || []);
-      setTotals(data[1].totals || {});
-      setCategories(data[2] || []);
-      setLoading(false);
-    }).catch(function() {
-      setLoading(false);
-    });
-  }
+  }, [fetchData]);
 
   function formatCurrency(amount) {
     return '$' + (amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -100,69 +99,95 @@ function SupplementTracker() {
     }));
   }
 
-  function createSupplement() {
+  async function createSupplement() {
     if (!newSupplement.title || newSupplement.line_items.length === 0) {
-      alert('Please add a title and at least one line item');
+      toast.error('Please add a title and at least one line item');
       return;
     }
 
-    fetch(API_URL + '/api/supplements/', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        claim_id: claimId,
-        claim_number: claim ? claim.claim_number : '',
-        title: newSupplement.title,
-        description: newSupplement.description,
-        line_items: newSupplement.line_items
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function() {
+    var res = await apiPost('/api/supplements/', {
+      claim_id: claimId,
+      claim_number: claim ? claim.claim_number : '',
+      title: newSupplement.title,
+      description: newSupplement.description,
+      line_items: newSupplement.line_items
+    });
+
+    if (res.ok) {
       setShowNewForm(false);
       setNewSupplement({ title: '', description: '', line_items: [] });
       fetchData();
+    }
+  }
+
+  async function submitSupplement(supplementId) {
+    var res = await apiPost('/api/supplements/' + supplementId + '/submit', {});
+    if (res.ok) fetchData();
+  }
+
+  async function updateSupplementStatus(supplementId, status, approvedAmount) {
+    var res = await apiPut('/api/supplements/' + supplementId, {
+      status: status,
+      carrier_approved_amount: approvedAmount,
+      carrier_response_date: new Date().toISOString()
     });
-  }
 
-  function submitSupplement(supplementId) {
-    fetch(API_URL + '/api/supplements/' + supplementId + '/submit', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + getToken() }
-    })
-    .then(function() { fetchData(); });
-  }
-
-  function updateSupplementStatus(supplementId, status, approvedAmount) {
-    fetch(API_URL + '/api/supplements/' + supplementId, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        status: status,
-        carrier_approved_amount: approvedAmount,
-        carrier_response_date: new Date().toISOString()
-      })
-    })
-    .then(function() { 
+    if (res.ok) {
       setEditingSupplement(null);
-      fetchData(); 
-    });
+      fetchData();
+    }
   }
 
-  function deleteSupplement(supplementId) {
+  async function deleteSupplement(supplementId) {
     if (!window.confirm('Delete this draft supplement?')) return;
-    
-    fetch(API_URL + '/api/supplements/' + supplementId, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + getToken() }
-    })
-    .then(function() { fetchData(); });
+
+    var res = await apiDelete('/api/supplements/' + supplementId);
+    if (res.ok) fetchData();
+  }
+
+  function buildEstimateFromSupplement(supp, mode) {
+    var lineItems = (supp.line_items || []).map(function(item) {
+      var amount = mode === 'carrier' ? (item.carrier_approved || 0) : (item.total || 0);
+      return {
+        name: item.description || 'Line Item',
+        amount: Number(amount) || 0
+      };
+    });
+    return { line_items: lineItems };
+  }
+
+  async function generateAiJustification(supp) {
+    setLoadingAiBySupplement(Object.assign({}, loadingAiBySupplement, { [supp.id]: true }));
+
+    try {
+      var res = await apiPost('/api/ai/task', {
+        task: 'supplement_justification',
+        claim_id: claimId,
+        payload: {
+          carrier_estimate: buildEstimateFromSupplement(supp, 'carrier'),
+          contractor_estimate: buildEstimateFromSupplement(supp, 'contractor'),
+          scope_notes: supp.description || ''
+        }
+      });
+
+      if (res.ok) {
+        var output = res.data.output || res.data;
+        if (output && output.executive_summary) {
+          setAiJustifications(Object.assign({}, aiJustifications, { [supp.id]: output }));
+          toast.success('AI supplement justification generated');
+        } else {
+          toast.error('Failed to generate AI justification');
+        }
+      } else {
+        toast.error(res.error || 'Failed to generate AI justification');
+      }
+    } catch (err) {
+      toast.error('Failed to generate AI justification');
+    } finally {
+      setLoadingAiBySupplement(function(prev) {
+        return Object.assign({}, prev, { [supp.id]: false });
+      });
+    }
   }
 
   if (loading) {
@@ -446,6 +471,27 @@ function SupplementTracker() {
                         </table>
                       )}
 
+                      {/* AI Justification */}
+                      {aiJustifications[supp.id] && (
+                        <div className="mb-4 rounded-lg border border-cyan-300/40 bg-cyan-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-cyan-700 mb-1">AI Justification</p>
+                          <p className="text-sm text-gray-900 mb-2">{aiJustifications[supp.id].executive_summary}</p>
+                          {aiJustifications[supp.id].rebuttal_points && aiJustifications[supp.id].rebuttal_points.length > 0 && (
+                            <ul className="text-xs text-gray-700 space-y-1 mb-2">
+                              {aiJustifications[supp.id].rebuttal_points.slice(0, 3).map(function(point, idx) {
+                                return <li key={supp.id + '-rebuttal-' + idx}>- {point}</li>;
+                              })}
+                            </ul>
+                          )}
+                          {aiJustifications[supp.id].line_items && aiJustifications[supp.id].line_items.length > 0 && (
+                            <div className="text-xs text-gray-600">
+                              Top Delta: {aiJustifications[supp.id].line_items[0].line_item} (
+                              {formatCurrency(aiJustifications[supp.id].line_items[0].delta)})
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Actions */}
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-500">
@@ -453,6 +499,21 @@ function SupplementTracker() {
                           {supp.carrier_response_date && <span className="ml-4">Response: {new Date(supp.carrier_response_date).toLocaleDateString()}</span>}
                         </div>
                         <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={function(e) {
+                              e.stopPropagation();
+                              generateAiJustification(supp);
+                            }}
+                            disabled={!!loadingAiBySupplement[supp.id]}
+                          >
+                            {loadingAiBySupplement[supp.id] ? (
+                              <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Analyzing...</>
+                            ) : (
+                              <><Sparkles className="w-4 h-4 mr-1" />AI Justification</>
+                            )}
+                          </Button>
                           {supp.status === 'draft' && (
                             <>
                               <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={function(e) { e.stopPropagation(); submitSupplement(supp.id); }}>

@@ -8,6 +8,21 @@ from datetime import datetime, timezone
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 logger = get_logger("eden.admin")
 
+@router.get("/users")
+async def list_admin_users(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: dict = Depends(require_role(["admin", "manager"]))
+):
+    """
+    List users for admin turf assignment and management surfaces.
+    Returns a compact payload with stable `id` and no sensitive fields.
+    """
+    users = await db.users.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0, "password": 0}
+    ).to_list(500)
+    return users
+
 @router.get("/metrics")
 async def get_system_metrics(
     current_user: dict = Depends(require_role(["admin"]))

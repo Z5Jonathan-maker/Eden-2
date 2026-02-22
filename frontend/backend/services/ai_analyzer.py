@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 class AIAnalyzer:
     """AI-powered analysis of Xactimate estimate comparisons"""
-    
+
     def __init__(self):
-        self.api_key = os.environ.get('EMERGENT_LLM_KEY')
-        self.model_provider = "openai"
-        self.model_name = "gpt-4o"
+        from services.ollama_config import get_ollama_api_key, get_ollama_model
+        self.api_key = get_ollama_api_key() or os.environ.get('EMERGENT_LLM_KEY')
+        self.model_provider = "ollama"
+        self.model_name = get_ollama_model()
     
     async def analyze_comparison(
         self, 

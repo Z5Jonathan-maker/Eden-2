@@ -3,8 +3,7 @@
  * Supports multiple audience types with database-driven content
  */
 import { useState } from 'react';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 // Audience types for different presentations
 export const GAMMA_AUDIENCES = {
@@ -60,23 +59,16 @@ export const useGamma = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('eden_token');
-      
-      const res = await fetch(`${API_URL}/api/gamma/presentation/${audience}?claim_id=${claimId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiPost(`/api/gamma/presentation/${audience}?claim_id=${claimId}`, {});
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to create presentation');
+        throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
       }
 
-      const data = await res.json();
       setLoading(false);
+      // Normalize response: backend returns edit_url/share_url
+      const data = res.data || {};
+      if (!data.url) data.url = data.share_url || data.edit_url || null;
       return data;
     } catch (err) {
       setError(err.message);
@@ -94,8 +86,6 @@ export const useGamma = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('eden_token');
-      
       const payload = {
         title,
         content,
@@ -103,22 +93,16 @@ export const useGamma = () => {
         template: 'presentation'
       };
 
-      const res = await fetch(`${API_URL}/api/gamma/presentation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await apiPost('/api/gamma/presentation', payload);
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to create presentation');
+        throw new Error(res.error?.detail || res.error || 'Failed to create presentation');
       }
 
-      const data = await res.json();
       setLoading(false);
+      // Normalize response: backend returns edit_url/share_url
+      const data = res.data || {};
+      if (!data.url) data.url = data.share_url || data.edit_url || null;
       return data;
     } catch (err) {
       setError(err.message);
@@ -155,13 +139,8 @@ Estimated Value: $${(claim.estimated_value || claim.estimatedValue || claim.amou
    */
   const checkStatus = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('eden_token');
-      const res = await fetch(`${API_URL}/api/gamma/status`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      return res.json();
+      const res = await apiGet('/api/gamma/status');
+      return res.data;
     } catch (err) {
       return { enabled: false, error: err.message };
     }

@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel
 from dependencies import db
+from services.ollama_config import get_ollama_api_key, get_ollama_model
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +19,17 @@ logger = logging.getLogger(__name__)
 _llm_client = None
 
 def get_llm_client():
-    """Get or create LLM client"""
+    """Get or create LLM client — defaults to Ollama (free), falls back to OpenAI"""
     global _llm_client
     if _llm_client is None:
         try:
             from emergentintegrations.llm.chat import LlmChat
             _llm_client = LlmChat(
-                api_key=os.environ.get("EMERGENT_LLM_KEY"),
-                model="gpt-4o"
+                api_key=get_ollama_api_key() or os.environ.get("EMERGENT_LLM_KEY"),
+                model=get_ollama_model()
             )
+            # Auto-select best available provider
+            _llm_client._resolve_default_provider()
         except Exception as e:
             logger.error(f"Failed to initialize LLM client: {e}")
             raise
@@ -221,7 +224,16 @@ async def generate(request: AIRequest) -> AIResponse:
                     context_str += f"- {k}: {v}\n"
         
         full_system = system_prompt + context_str
-        
+
+        # Inject user's Writing DNA into system prompt
+        try:
+            from services.email_intelligence import get_writing_dna_prompt
+            dna_prompt = await get_writing_dna_prompt(request.user_id)
+            if dna_prompt:
+                full_system += "\n\n" + dna_prompt
+        except Exception:
+            pass  # Graceful — DNA is optional enhancement
+
         # Build messages
         messages = [{"role": "system", "content": full_system}]
         

@@ -1,5 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build && cp -r build/. ../build/",
+  "outputDirectory": "build",
+  "framework": null,
+  "installCommand": "cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
   "rewrites": [
     {
       "source": "/api/:path*",

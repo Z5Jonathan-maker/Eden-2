@@ -15,7 +15,7 @@ export const DashboardTab = ({
   onViewReports,
   onRunScan,
   isRunning,
-  isScanRunning
+  isScanRunning,
 }) => {
   return (
     <div className="space-y-6">

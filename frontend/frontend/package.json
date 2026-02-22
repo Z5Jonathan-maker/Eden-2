@@ -31,6 +31,7 @@
     "@radix-ui/react-toggle-group": "^1.1.7",
     "@radix-ui/react-tooltip": "^1.2.4",
     "@react-leaflet/core": "^2.1.0",
+    "@tailwindcss/typography": "^0.5.19",
     "ajv": "^6.12.6",
     "ajv-keywords": "^3.5.2",
     "class-variance-authority": "^0.7.1",

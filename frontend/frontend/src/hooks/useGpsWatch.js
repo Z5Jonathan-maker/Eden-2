@@ -4,19 +4,22 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 
+const GPS_ERROR_MESSAGES = {
+  1: 'Location permission denied. Please enable location access in your browser settings.',
+  2: 'Unable to determine your position. Check GPS signal.',
+  3: 'Location request timed out. Please try again.',
+};
+
 export const useGpsWatch = () => {
   const [position, setPosition] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const [error, setError] = useState(null);
-  const [watching, setWatching] = useState(false);
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
       setError('Location not supported on this device');
       return;
     }
-
-    setWatching(true);
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -28,23 +31,22 @@ export const useGpsWatch = () => {
         setError(null);
       },
       (err) => {
-        console.error('GPS Error:', err.message);
-        setError(err.message || 'Unable to get location');
+        console.error('GPS Error:', err.code, err.message);
+        setError(GPS_ERROR_MESSAGES[err.code] || err.message || 'Unable to get location');
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000,
+        maximumAge: 5000,
+        timeout: 15000,
       }
     );
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
-      setWatching(false);
     };
   }, []);
 
-  // Manual refresh
+  // Manual refresh — always forces fresh fix
   const refreshPosition = useCallback(() => {
     if (!('geolocation' in navigator)) {
       setError('Location not supported');
@@ -61,12 +63,12 @@ export const useGpsWatch = () => {
         setError(null);
       },
       (err) => {
-        setError(err.message || 'Unable to get location');
+        setError(GPS_ERROR_MESSAGES[err.code] || err.message || 'Unable to get location');
       },
       {
         enableHighAccuracy: true,
         maximumAge: 0,
-        timeout: 10000,
+        timeout: 15000,
       }
     );
   }, []);
@@ -75,7 +77,6 @@ export const useGpsWatch = () => {
     position,
     accuracy,
     error,
-    watching,
     refreshPosition,
     hasLocation: !!position,
   };

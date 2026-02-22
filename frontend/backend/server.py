@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -25,7 +25,7 @@ from routes.notifications import router as notifications_router
 from routes.email import router as email_router
 from routes.data import router as data_router
 from routes.university import router as university_router, seed_university_data
-from routes.workbooks import router as workbooks_router, seed_workbooks
+from routes.workbooks import router as workbooks_router
 from routes.users import router as users_router
 from routes.supplements import router as supplements_router
 from routes.scales import router as scales_router
@@ -33,8 +33,7 @@ from routes.payments import router as payments_router
 from routes.settings import router as settings_router
 from routes.admin import router as admin_router
 from routes.uploads import router as uploads_router
-from routes.inspection_photos import router as inspection_photos_router
-from routes.inspection import router as inspection_router
+from routes.inspection import router as inspection_photos_router
 from routes.canvassing_map import router as canvassing_map_router
 from routes.weather import router as weather_router
 from routes.client_education import router as client_education_router
@@ -45,23 +44,33 @@ from routes.harvest_scoring import router as harvest_scoring_router
 from routes.contracts import router as contracts_router
 from routes.oauth import router as oauth_router
 from routes.ai import router as ai_router
+from routes.ai_claim_workspace import router as ai_claim_workspace_router
 from routes.gamma import router as gamma_router
 from routes.cqil import router as cqil_router
 from routes.centurion import router as centurion_router
 from routes.regrid import router as regrid_router
+from services.ollama_config import get_ollama_api_key
 from routes.knowledge_base import router as knowledge_base_router
 from routes.florida_statutes import router as florida_statutes_router
 from routes.client_status import router as client_status_router
-from routes.harvest_v2 import router as harvest_v2_router
+from routes.harvest import router as harvest_v2_router
 from routes.harvest_territories import router as harvest_territories_router
 from routes.messaging_sms import router as messaging_sms_router
 from routes.bots import router as bots_router
 from routes.twilio_voice import router as twilio_voice_router
 from routes.voice_assistant_console import router as voice_assistant_console_router
 from routes.harvest_rewards_campaigns import router as harvest_rewards_campaigns_router
-from routes.incentives_engine import router as incentives_engine_router
+from routes.incentives import router as incentives_engine_router
 from routes.battle_pass import router as battle_pass_router
 from routes.mycard import router as mycard_router
+from routes.comm_conversations import router as comm_conversations_router
+from routes.integrations import router as integrations_services_router
+from routes.imagery import router as imagery_router
+from routes.evidence import router as evidence_router
+from routes.ops_manifest import router as ops_manifest_router
+from routes.tasks import router as tasks_router
+from routes.garden_dashboard import router as garden_dashboard_router
+from routes.email_intelligence import router as email_intelligence_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -99,46 +108,33 @@ app.add_middleware(StructuredLoggingMiddleware)
 # Startup logging
 logger = logging.getLogger("eden.startup")
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize app: log config, seed data, ensure admin, start scheduler"""
+async def log_startup_config():
+    """Log environment configuration at startup"""
     logger.info("="*70)
-    logger.info("🚀 EDEN BACKEND STARTING")
+    logger.info("EDEN BACKEND STARTING")
     logger.info("="*70)
     logger.info(f"Environment: {os.environ.get('ENVIRONMENT', 'unknown')}")
+
+    # Mask sensitive parts of MongoDB URL
     masked_mongo = mongo_url[:50] + "..." if len(mongo_url) > 50 else mongo_url
     logger.info(f"Database: {masked_mongo}")
     logger.info(f"Database Name: {os.environ.get('DB_NAME', 'eden_claims')}")
     logger.info(f"JWT Algorithm: {os.environ.get('JWT_ALGORITHM', 'HS256')}")
     logger.info(f"CORS Origins: {os.environ.get('CORS_ORIGINS', 'not configured')}")
     logger.info(f"Frontend URL: {os.environ.get('FRONTEND_URL', 'not configured')}")
+    logger.info(f"Base URL: {os.environ.get('BASE_URL', 'not configured')}")
+    logger.info("-"*70)
+    logger.info("INTEGRATION CONFIG:")
+    logger.info(f"  GOOGLE_CLIENT_ID: {'SET' if os.environ.get('GOOGLE_CLIENT_ID') else 'MISSING'}")
+    logger.info(f"  GOOGLE_CLIENT_SECRET: {'SET' if os.environ.get('GOOGLE_CLIENT_SECRET') else 'MISSING'}")
+    logger.info(f"  SIGNNOW_CLIENT_ID: {'SET' if os.environ.get('SIGNNOW_CLIENT_ID') else 'MISSING'}")
+    logger.info(f"  SIGNNOW_CLIENT_SECRET: {'SET' if os.environ.get('SIGNNOW_CLIENT_SECRET') else 'MISSING'}")
+    logger.info(f"  GAMMA_API_KEY: {'SET' if os.environ.get('GAMMA_API_KEY') else 'MISSING'}")
+    logger.info(f"  STRIPE_SECRET_KEY: {'SET' if os.environ.get('STRIPE_SECRET_KEY') else 'MISSING'}")
+    logger.info(f"  OLLAMA_API_KEY: {'SET' if get_ollama_api_key() else 'MISSING'}")
+    logger.info(f"  OLLAMA_BASE_URL: {os.environ.get('OLLAMA_BASE_URL', 'not set')}")
+    logger.info(f"  OPENAI_API_KEY: {'SET' if os.environ.get('OPENAI_API_KEY') else 'MISSING'}")
     logger.info("="*70)
-
-    await seed_university_data()
-    print("[startup] seed_university_data complete — starting seed_workbooks...")
-    try:
-        await seed_workbooks()
-        print("[startup] seed_workbooks COMPLETE")
-    except Exception as e:
-        print(f"[startup] seed_workbooks FAILED: {e}")
-        logging.error(f"[startup] seed_workbooks failed: {e}", exc_info=True)
-    await ensure_admin_user()
-    await initialize_harvest_gamification()
-    await initialize_background_scheduler()
-
-    # Inspection collection indexes for query performance
-    try:
-        await db.inspection_photos.create_index("claim_id")
-        await db.inspection_photos.create_index("session_id")
-        await db.inspection_photos.create_index("uploaded_by")
-        await db.inspection_sessions.create_index("id")
-        await db.inspection_sessions.create_index("claim_id")
-        await db.inspection_sessions.create_index("created_by")
-        await db.inspection_reports.create_index("session_id")
-        print("[startup] Inspection indexes created")
-    except Exception as e:
-        print(f"[startup] Failed to create inspection indexes: {e}")
-        logging.error(f"[startup] Inspection index creation failed: {e}")
 
 
 
@@ -247,14 +243,94 @@ async def health_check():
             "database": db_status,
             "storage": storage_status
         },
+        "integrations": {
+            "google_oauth": bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET")),
+            "signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET")),
+            "gamma": bool(os.environ.get("GAMMA_API_KEY")),
+            "stripe": bool(os.environ.get("STRIPE_SECRET_KEY")),
+            "ollama": bool(get_ollama_api_key()),
+            "openai": bool(os.environ.get("OPENAI_API_KEY")),
+        },
+        "env_debug": {
+            k: (v[:4] + "..." if v else "NOT SET")
+            for k, v in {
+                "GOOGLE_CLIENT_ID": os.environ.get("GOOGLE_CLIENT_ID", ""),
+                "GOOGLE_CLIENT_SECRET": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+                "SIGNNOW_CLIENT_ID": os.environ.get("SIGNNOW_CLIENT_ID", ""),
+                "SIGNNOW_CLIENT_SECRET": os.environ.get("SIGNNOW_CLIENT_SECRET", ""),
+                "GAMMA_API_KEY": os.environ.get("GAMMA_API_KEY", ""),
+                "OLLAMA_API_KEY_raw": os.environ.get("OLLAMA_API_KEY", ""),
+                "OLLAMA_API_TOKEN_raw": os.environ.get("OLLAMA_API_TOKEN", ""),
+                "OLLAMA_TOKEN_raw": os.environ.get("OLLAMA_TOKEN", ""),
+                "OLLAMA_resolved": get_ollama_api_key(),
+                "OLLAMA_BASE_URL": os.environ.get("OLLAMA_BASE_URL", ""),
+                "OLLAMA_MODEL": os.environ.get("OLLAMA_MODEL", ""),
+                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+                "BASE_URL": os.environ.get("BASE_URL", ""),
+                "FRONTEND_URL": os.environ.get("FRONTEND_URL", ""),
+                "CORS_ORIGINS": os.environ.get("CORS_ORIGINS", ""),
+            }.items()
+        },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
+@app.get("/api/ai/ping")
+async def ai_ping():
+    """Public endpoint — tests Ollama Cloud connectivity (no auth needed)."""
+    import httpx
+    from services.ollama_config import normalize_ollama_base_url, ollama_endpoint, get_ollama_model
+
+    key = get_ollama_api_key()
+    base = normalize_ollama_base_url(os.environ.get("OLLAMA_BASE_URL"))
+    model = get_ollama_model()
+    url = ollama_endpoint(base, "/api/chat")
+
+    if not key:
+        return {"status": "no_key", "detail": "OLLAMA_API_KEY not set", "key_preview": "EMPTY", "url": url}
+
+    try:
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+        payload = {"model": model, "messages": [{"role": "user", "content": "Say OK"}], "stream": False}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            content = data.get("message", {}).get("content", "")[:100]
+            return {"status": "ok", "model": model, "url": url, "key_preview": key[:4] + "...", "response_preview": content}
+        else:
+            return {"status": "error", "http_code": resp.status_code, "detail": resp.text[:300], "key_preview": key[:4] + "...", "url": url}
+    except Exception as e:
+        return {"status": "exception", "detail": str(e)[:300], "key_preview": key[:4] + "...", "url": url}
+
+
+async def require_admin_user(authorization: str = Header(default=None)):
+    """Require a valid bearer token for an active admin user."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(" ", 1)[1].strip()
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Inactive or missing user")
+
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return user
+
+
 @app.get("/api/debug/info")
-async def debug_info():
+async def debug_info(current_user: dict = Depends(require_admin_user)):
     """Debug info endpoint - version, build date, configuration"""
-    # This should be protected in production
     return {
         "version": "1.0.0",
         "build_date": "2026-02-05",
@@ -265,13 +341,13 @@ async def debug_info():
             "regrid_enabled": bool(os.environ.get("REGRID_API_TOKEN")),
             "oauth_google": bool(os.environ.get("GOOGLE_CLIENT_ID")),
             "oauth_signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID")),
-            "oauth_notion": bool(os.environ.get("NOTION_CLIENT_ID"))
+            "oauth_gamma": bool(os.environ.get("GAMMA_CLIENT_ID"))
         }
     }
 
 
 @app.post("/api/demo/seed")
-async def seed_demo():
+async def seed_demo(current_user: dict = Depends(require_admin_user)):
     """Seed demo data for testing/staging"""
     from demo_data import seed_demo_data
     result = await seed_demo_data(db)
@@ -279,7 +355,7 @@ async def seed_demo():
 
 
 @app.delete("/api/demo/clear")
-async def clear_demo():
+async def clear_demo(current_user: dict = Depends(require_admin_user)):
     """Clear demo data"""
     from demo_data import clear_demo_data
     result = await clear_demo_data(db)
@@ -348,7 +424,6 @@ app.include_router(settings_router)
 app.include_router(admin_router)
 app.include_router(uploads_router)
 app.include_router(inspection_photos_router)
-app.include_router(inspection_router)
 app.include_router(canvassing_map_router)
 app.include_router(weather_router)
 app.include_router(client_education_router)
@@ -359,6 +434,7 @@ app.include_router(harvest_scoring_router)
 app.include_router(contracts_router)
 app.include_router(oauth_router)
 app.include_router(ai_router)
+app.include_router(ai_claim_workspace_router)
 app.include_router(gamma_router)
 app.include_router(cqil_router)
 app.include_router(centurion_router)
@@ -376,13 +452,30 @@ app.include_router(harvest_rewards_campaigns_router)
 app.include_router(incentives_engine_router)
 app.include_router(battle_pass_router)
 app.include_router(mycard_router)
+app.include_router(comm_conversations_router)
 app.include_router(feature_flags_router)
+app.include_router(evidence_router)
+app.include_router(ops_manifest_router)
 
 # Include integrations routers
 app.include_router(integrations_router)
+app.include_router(integrations_services_router)
 app.include_router(google_router)
 app.include_router(signnow_router)
+app.include_router(imagery_router)
+app.include_router(tasks_router)
+app.include_router(garden_dashboard_router)
+app.include_router(email_intelligence_router)
 
+# Startup event to seed data
+@app.on_event("startup")
+async def startup_event():
+    """Log config, seed data, ensure admin, initialize gamification, start scheduler"""
+    await log_startup_config()
+    await seed_university_data()
+    await ensure_admin_user()
+    await initialize_harvest_gamification()
+    await initialize_background_scheduler()
 
 
 async def initialize_harvest_gamification():
@@ -410,25 +503,34 @@ async def ensure_admin_user():
     """Ensure at least one admin user exists"""
     admin_count = await db.users.count_documents({"role": "admin"})
     if admin_count == 0:
-        # Upgrade existing test user to admin or create one
+        environment = os.environ.get("ENVIRONMENT", "development").lower()
         existing_user = await db.users.find_one({"email": "test@eden.com"})
-        if existing_user:
+        if existing_user and environment in ["development", "local", "test"]:
             await db.users.update_one({"email": "test@eden.com"}, {"$set": {"role": "admin"}})
-            logging.info("Upgraded test@eden.com to admin")
-        else:
-            # Create admin user
-            admin_password = os.environ.get("ADMIN_INITIAL_PASSWORD", "admin123")
-            admin_user = {
-                "id": str(uuid.uuid4()),
-                "email": "admin@eden.com",
-                "full_name": "System Admin",
-                "role": "admin",
-                "password": get_password_hash(admin_password),
-                "is_active": True,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.users.insert_one(admin_user)
-            logging.info(f"Created admin user: admin@eden.com / {'*' * len(admin_password)} (set via ADMIN_INITIAL_PASSWORD)")
+            logging.warning("Upgraded test@eden.com to admin in non-production environment")
+            return
+
+        admin_password = os.environ.get("ADMIN_INITIAL_PASSWORD", "").strip()
+        if not admin_password:
+            logging.error(
+                "No admin user exists and ADMIN_INITIAL_PASSWORD is not set. "
+                "Refusing insecure default password bootstrap."
+            )
+            return
+
+        admin_user = {
+            "id": str(uuid.uuid4()),
+            "email": "admin@eden.com",
+            "full_name": "System Admin",
+            "role": "admin",
+            "password": get_password_hash(admin_password),
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(admin_user)
+        logging.info(
+            "Created admin user admin@eden.com using ADMIN_INITIAL_PASSWORD bootstrap"
+        )
 
 # WebSocket endpoint for real-time notifications
 @app.websocket("/ws/notifications")
@@ -481,15 +583,24 @@ async def websocket_notifications(websocket: WebSocket, token: str = None):
         if user_id:
             manager.disconnect(websocket, user_id)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    # Strict CORS - only allow configured origins. Default to local frontend
-    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
-    expose_headers=["X-RateLimit-Remaining", "Retry-After"],
-)
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+cors_origin_regex = os.environ.get("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
+
+cors_options = {
+    "allow_credentials": True,
+    "allow_origins": cors_origins,
+    "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    "allow_headers": ["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    "expose_headers": ["X-RateLimit-Remaining", "Retry-After"],
+}
+if cors_origin_regex:
+    cors_options["allow_origin_regex"] = cors_origin_regex
+
+app.add_middleware(CORSMiddleware, **cors_options)
 
 # Configure logging
 logging.basicConfig(

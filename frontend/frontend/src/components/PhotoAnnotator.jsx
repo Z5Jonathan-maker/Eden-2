@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { 
   Pencil, ArrowUpRight, Circle, Square, Type, 
   Undo, Redo, Save, X, Trash2, Minus, Plus

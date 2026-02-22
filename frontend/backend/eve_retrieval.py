@@ -4,7 +4,7 @@ Eve AI Retrieval Layer
 Provides unified knowledge retrieval for the Eve AI assistant:
 - Florida Statutes
 - Industry Experts
-- Firm Documentation (Notion)
+- Firm Documentation (Gamma)
 
 Usage:
     context = await get_eve_context(query, user)
@@ -121,13 +121,13 @@ async def get_expert_insights(topic: str, limit: int = 2) -> List[Dict[str, Any]
     return experts
 
 
-async def get_notion_context(query: str, user: dict) -> Optional[str]:
+async def get_gamma_context(query: str, user: dict) -> Optional[str]:
     """
-    Get relevant context from connected Notion workspace.
-    Returns None if Notion not connected.
+    Get relevant context from connected Gamma workspace.
+    Returns None if Gamma not connected.
     """
     try:
-        # Check if user has Notion connected
+        # Check if user has Gamma connected
         user_id = user.get("id")
         settings = await db.oauth_connections.find_one({
             "user_id": user_id,
@@ -192,7 +192,7 @@ async def get_eve_context(
         context["experts"] = await get_expert_insights(query, max_experts)
     
     if include_notion and user:
-        context["notion_context"] = await get_notion_context(query, user)
+        context["notion_context"] = await get_gamma_context(query, user)
     
     # Build summary
     parts = []
@@ -354,7 +354,7 @@ async def submit_eve_feedback(
 __all__ = [
     'search_statutes',
     'get_expert_insights',
-    'get_notion_context',
+    'get_gamma_context',
     'get_eve_context',
     'format_statute_for_prompt',
     'format_expert_for_prompt',

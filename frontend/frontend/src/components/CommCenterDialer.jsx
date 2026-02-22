@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { PhoneCall, Loader2 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
+import { Button } from '../shared/ui/button';
+import { Input } from '../shared/ui/input';
+import { Textarea } from '../shared/ui/textarea';
 import { toast } from 'sonner';
 import { apiPost } from '../lib/api';
 
@@ -23,7 +23,7 @@ const CommCenterDialer = ({ claimId, defaultNumber }) => {
       to: phoneNumber,
       claim_id: claimId || null,
       script: script || null,
-      record: recordCall
+      record: recordCall,
     });
     setCalling(false);
 
@@ -62,11 +62,7 @@ const CommCenterDialer = ({ claimId, defaultNumber }) => {
         />
         Record call
       </label>
-      <Button
-        onClick={handleCall}
-        className="btn-tactical w-full"
-        disabled={calling}
-      >
+      <Button onClick={handleCall} className="btn-tactical w-full" disabled={calling}>
         {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
         <span>Initiate Call</span>
       </Button>

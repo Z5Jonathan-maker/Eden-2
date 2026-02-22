@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import ApiService from '../services/ApiService';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
+import { apiGet } from '@/lib/api';
 import NotificationBell from './NotificationBell';
-import { 
-  FolderOpen, 
-  Clock, 
-  CheckCircle2, 
-  FileText, 
+import {
+  FolderOpen,
+  Clock,
+  CheckCircle2,
+  FileText,
   LogOut,
   User,
   Loader2,
@@ -18,7 +18,7 @@ import {
   Phone,
   Mail,
   BookOpen,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react';
 
 const ClientPortal = () => {
@@ -36,8 +36,13 @@ const ClientPortal = () => {
   const fetchClaims = async () => {
     try {
       setLoading(true);
-      const data = await ApiService.getClaims();
-      setClaims(data);
+      const res = await apiGet('/api/claims/');
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to fetch claims');
+      }
+
+      setClaims(res.data || []);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -53,11 +58,11 @@ const ClientPortal = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      'New': 'bg-blue-100 text-blue-800',
+      New: 'bg-blue-100 text-blue-800',
       'In Progress': 'bg-yellow-100 text-yellow-800',
       'Under Review': 'bg-purple-100 text-purple-800',
-      'Completed': 'bg-green-100 text-green-800',
-      'Closed': 'bg-gray-100 text-gray-800'
+      Completed: 'bg-green-100 text-green-800',
+      Closed: 'bg-gray-100 text-gray-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -74,14 +79,14 @@ const ClientPortal = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const stats = {
     total: claims.length,
-    active: claims.filter(c => !['Completed', 'Closed'].includes(c.status)).length,
-    completed: claims.filter(c => c.status === 'Completed').length
+    active: claims.filter((c) => !['Completed', 'Closed'].includes(c.status)).length,
+    completed: claims.filter((c) => c.status === 'Completed').length,
   };
 
   if (loading) {
@@ -127,9 +132,7 @@ const ClientPortal = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome back, {user?.full_name?.split(' ')[0]}!
           </h2>
-          <p className="text-gray-600">
-            Here's the status of your insurance claims
-          </p>
+          <p className="text-gray-600">Here's the status of your insurance claims</p>
         </div>
 
         {/* Stats Cards */}
@@ -181,10 +184,12 @@ const ClientPortal = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Client Resource Center</h3>
-                  <p className="text-sm text-gray-600">Learn about your claim, timelines, and FAQs</p>
+                  <p className="text-sm text-gray-600">
+                    Learn about your claim, timelines, and FAQs
+                  </p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => navigate('/client/learn')}
                 className="bg-orange-600 hover:bg-orange-700"
               >
@@ -200,9 +205,9 @@ const ClientPortal = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Your Claims</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={fetchClaims}
                 data-testid="refresh-claims"
               >
@@ -211,19 +216,13 @@ const ClientPortal = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">
-                {error}
-              </div>
-            )}
+            {error && <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>}
 
             {claims.length === 0 ? (
               <div className="text-center py-12">
                 <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 mb-2">No claims found</p>
-                <p className="text-sm text-gray-600">
-                  Contact us if you believe this is an error
-                </p>
+                <p className="text-sm text-gray-600">Contact us if you believe this is an error</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -231,8 +230,8 @@ const ClientPortal = () => {
                   <div
                     key={claim.id}
                     className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                      selectedClaim?.id === claim.id 
-                        ? 'border-orange-500 bg-orange-50' 
+                      selectedClaim?.id === claim.id
+                        ? 'border-orange-500 bg-orange-50'
                         : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                     }`}
                     onClick={() => setSelectedClaim(selectedClaim?.id === claim.id ? null : claim)}
@@ -272,11 +271,15 @@ const ClientPortal = () => {
                           </div>
                           <div>
                             <p className="text-gray-500">Assigned Adjuster</p>
-                            <p className="font-medium text-gray-900">{claim.assigned_to || 'Pending Assignment'}</p>
+                            <p className="font-medium text-gray-900">
+                              {claim.assigned_to || 'Pending Assignment'}
+                            </p>
                           </div>
                           <div>
                             <p className="text-gray-500">Last Updated</p>
-                            <p className="font-medium text-gray-900">{formatDate(claim.updated_at)}</p>
+                            <p className="font-medium text-gray-900">
+                              {formatDate(claim.updated_at)}
+                            </p>
                           </div>
                         </div>
                         {claim.description && (
@@ -286,8 +289,8 @@ const ClientPortal = () => {
                           </div>
                         )}
                         <div className="mt-4 flex space-x-2">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             className="bg-orange-600 hover:bg-orange-700"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -334,7 +337,7 @@ const ClientPortal = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-6xl mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-          <p>© 2024 Eden Claims Management. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Eden Claims Management. All rights reserved.</p>
         </div>
       </footer>
     </div>

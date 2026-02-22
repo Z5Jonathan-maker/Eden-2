@@ -7,6 +7,31 @@ This project is set up to be deployed as two separate services:
 
 ---
 
+## Canonical Frontend Deploy (Required)
+
+Always deploy frontend with:
+
+```powershell
+cd C:\Users\HP\Documents\trae_projects\eden 2\frontend
+npm --prefix frontend run deploy:prod
+```
+
+This command is guarded by `scripts/deploy-eden2.ps1` and will:
+- verify/re-link `.vercel/project.json` to project `eden2`
+- deploy only from `frontend/`
+- verify production alias `https://eden2-five.vercel.app`
+
+Optional token-file flow:
+
+```powershell
+$env:VERCEL_TOKEN_PATH='C:\path\to\vercel.token'
+npm --prefix frontend run deploy:prod
+```
+
+Do not run ad-hoc `vercel` commands from other directories.
+
+---
+
 ## 1. Deploy Backend (Render)
 
 1.  Push your code to **GitHub**.

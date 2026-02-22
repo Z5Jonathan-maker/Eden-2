@@ -2,20 +2,25 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from fastapi.responses import RedirectResponse
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 import os
+import uuid
 
 from services.gmail_service import GmailService
 from services.drive_service import DriveService
-from services.notion_service import NotionService
 from services.gamma_service import GammaService
 from services.signnow_service import SignNowService
 from services.encryption_service import encryption
+from dependencies import get_current_active_user, db
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/integrations", tags=["integrations"])
+router = APIRouter(
+    prefix="/api/integrations",
+    tags=["integrations"],
+    dependencies=[Depends(get_current_active_user)]
+)
 
 # Models
 class EmailRequest(BaseModel):
@@ -28,14 +33,14 @@ class DriveUploadRequest(BaseModel):
     folder_name: str
     user_id: str
 
-class NotionClaimRequest(BaseModel):
+class GammaClaimRequest(BaseModel):
     claim_number: str
     client_name: str
     claim_date: str
     description: str
     status: str = "New"
 
-class NotionUpdateRequest(BaseModel):
+class GammaUpdateRequest(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
 
@@ -55,17 +60,149 @@ class SignNowSignRequest(BaseModel):
     subject: str
     message: str
 
+
+class AIEmailConfirmResponse(BaseModel):
+    confirmation_token: str
+    expires_at: str
+    ttl_minutes: int = 10
+    context_type: str = "email"
+    context_id: Optional[str] = None
+    recipient: Optional[str] = None
+
+
+AI_EMAIL_CONFIRM_TTL_MINUTES = 10
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _parse_iso_datetime(value: str) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+async def _issue_ai_email_confirmation_token(
+    *,
+    current_user: dict,
+    recipient: str,
+    context_type: str = "email",
+    context_id: Optional[str] = None,
+) -> dict:
+    token = uuid.uuid4().hex
+    now_dt = _utc_now()
+    expires_at = now_dt + timedelta(minutes=AI_EMAIL_CONFIRM_TTL_MINUTES)
+    doc = {
+        "id": str(uuid.uuid4()),
+        "purpose": "ai_outbound_email",
+        "token": token,
+        "user_id": current_user.get("id"),
+        "recipient": (recipient or "").strip().lower(),
+        "context_type": context_type,
+        "context_id": context_id,
+        "used": False,
+        "created_at": now_dt.isoformat(),
+        "expires_at": expires_at.isoformat(),
+    }
+    await db.ai_outbound_confirmations.insert_one(doc)
+    return doc
+
+
+async def _consume_ai_email_confirmation_token(
+    *,
+    current_user: dict,
+    confirmation_token: str,
+    recipient: str,
+    context_type: str = "email",
+    context_id: Optional[str] = None,
+) -> dict:
+    if not confirmation_token:
+        raise HTTPException(
+            status_code=428,
+            detail="AI-generated outbound email requires confirmation token.",
+        )
+
+    query = {
+        "purpose": "ai_outbound_email",
+        "token": confirmation_token,
+        "user_id": current_user.get("id"),
+        "recipient": (recipient or "").strip().lower(),
+        "context_type": context_type,
+        "used": False,
+    }
+    if context_id:
+        query["context_id"] = context_id
+
+    doc = await db.ai_outbound_confirmations.find_one(query, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=412, detail="Invalid or already-used confirmation token")
+
+    expires_at = _parse_iso_datetime(doc.get("expires_at"))
+    if not expires_at or expires_at < _utc_now():
+        raise HTTPException(status_code=412, detail="Confirmation token expired")
+
+    await db.ai_outbound_confirmations.update_one(
+        {"id": doc["id"]},
+        {"$set": {"used": True, "used_at": _utc_now().isoformat()}},
+    )
+    return doc
+
+
 # Gmail Routes
+@router.post("/gmail/confirm-token", response_model=AIEmailConfirmResponse)
+async def issue_ai_email_confirm_token(
+    recipient: str = Form(...),
+    context_type: str = Form("email"),
+    context_id: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Issue one-time token required for AI-generated outbound email sends.
+    """
+    token_doc = await _issue_ai_email_confirmation_token(
+        current_user=current_user,
+        recipient=recipient,
+        context_type=context_type,
+        context_id=context_id,
+    )
+    return AIEmailConfirmResponse(
+        confirmation_token=token_doc["token"],
+        expires_at=token_doc["expires_at"],
+        context_type=token_doc["context_type"],
+        context_id=token_doc.get("context_id"),
+        recipient=token_doc.get("recipient"),
+    )
+
+
 @router.post("/gmail/send-email")
 async def send_email(
     recipient: str = Form(...),
     subject: str = Form(...),
     body: str = Form(...),
     user_id: str = Form(...),
-    files: Optional[List[UploadFile]] = File(None)
+    files: Optional[List[UploadFile]] = File(None),
+    ai_generated: bool = Form(False),
+    confirmation_token: Optional[str] = Form(None),
+    context_type: str = Form("email"),
+    context_id: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_active_user),
 ):
     """Send an email via Gmail with optional attachments"""
     try:
+        consumed_confirm_doc = None
+        if ai_generated:
+            consumed_confirm_doc = await _consume_ai_email_confirmation_token(
+                current_user=current_user,
+                confirmation_token=confirmation_token or "",
+                recipient=recipient,
+                context_type=context_type,
+                context_id=context_id,
+            )
+
         # In production, retrieve credentials from database based on user_id
         # For now, we'll use environment variables
         credentials_dict = {
@@ -89,7 +226,24 @@ async def send_email(
             body=body,
             attachments=attachments if attachments else None
         )
-        
+        try:
+            await db.ai_outbound_email_logs.insert_one(
+                {
+                    "id": str(uuid.uuid4()),
+                    "recipient": recipient,
+                    "subject": subject,
+                    "context_type": context_type,
+                    "context_id": context_id,
+                    "ai_generated": bool(ai_generated),
+                    "confirmation_id": consumed_confirm_doc.get("id") if consumed_confirm_doc else None,
+                    "sent_by_user_id": current_user.get("id"),
+                    "sent_at": _utc_now().isoformat(),
+                }
+            )
+        except Exception:
+            # Email send already succeeded; avoid failing request on log issues.
+            pass
+
         return result
         
     except Exception as e:
@@ -149,17 +303,17 @@ async def upload_to_drive(
         logger.error(f"Error uploading file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Notion Routes
-@router.post("/notion/create-claim")
-async def create_notion_claim(request: NotionClaimRequest):
-    """Create a new claim page in Notion"""
+# Gamma Routes
+@router.post("/gamma/create-claim")
+async def create_notion_claim(request: GammaClaimRequest):
+    """Create a new claim page in Gamma"""
     try:
-        database_id = os.getenv('NOTION_DATABASE_ID')
+        database_id = os.getenv('GAMMA_DATABASE_ID')
         if not database_id:
-            raise HTTPException(status_code=500, detail="Notion database ID not configured")
+            raise HTTPException(status_code=500, detail="Gamma database ID not configured")
         
-        notion_service = NotionService()
-        page_id = await notion_service.create_claim_page(
+        gamma_service = GammaService()
+        page_id = await gamma_service.create_claim_page(
             database_id=database_id,
             claim_data=request.dict()
         )
@@ -167,14 +321,14 @@ async def create_notion_claim(request: NotionClaimRequest):
         return {"page_id": page_id, "status": "created"}
         
     except Exception as e:
-        logger.error(f"Error creating Notion claim: {e}")
+        logger.error(f"Error creating Gamma claim: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/notion/update-claim/{page_id}")
-async def update_notion_claim(page_id: str, request: NotionUpdateRequest):
-    """Update an existing claim page in Notion"""
+@router.put("/gamma/update-claim/{page_id}")
+async def update_notion_claim(page_id: str, request: GammaUpdateRequest):
+    """Update an existing claim page in Gamma"""
     try:
-        notion_service = NotionService()
+        gamma_service = GammaService()
         
         updates = {}
         if request.status:
@@ -183,20 +337,20 @@ async def update_notion_claim(page_id: str, request: NotionUpdateRequest):
             updates['notes'] = request.notes
         updates['updated_date'] = datetime.now().isoformat()
         
-        await notion_service.update_claim_page(page_id, updates)
+        await gamma_service.update_claim_page(page_id, updates)
         
         return {"status": "updated"}
         
     except Exception as e:
-        logger.error(f"Error updating Notion claim: {e}")
+        logger.error(f"Error updating Gamma claim: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/notion/append-content/{page_id}")
+@router.post("/gamma/append-content/{page_id}")
 async def append_notion_content(page_id: str, content: str = Form(...)):
-    """Append content to a Notion page"""
+    """Append content to a Gamma page"""
     try:
-        notion_service = NotionService()
-        await notion_service.append_content(page_id, content)
+        gamma_service = GammaService()
+        await gamma_service.append_content(page_id, content)
         
         return {"status": "appended"}
         

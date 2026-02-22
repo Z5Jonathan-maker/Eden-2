@@ -9,16 +9,16 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
 import {
   Calendar, FileText, PenTool, CreditCard,
   Check, X, Loader2, ExternalLink, RefreshCw,
   Settings, Link2, Unlink, ChevronRight
 } from 'lucide-react';
-import { api, API_URL, getToken } from '../lib/api';
+import { apiGet, apiDelete, API_URL } from '../lib/api';
 
 const IntegrationCard = ({ 
   name, 
@@ -34,17 +34,17 @@ const IntegrationCard = ({
   color = "blue"
 }) => {
   const colorClasses = {
-    blue: "bg-blue-50 border-blue-200",
-    green: "bg-green-50 border-green-200",
-    purple: "bg-purple-50 border-purple-200",
-    orange: "bg-orange-50 border-orange-200"
+    blue: "bg-zinc-800/80 border-blue-500/30",
+    green: "bg-zinc-800/80 border-green-500/30",
+    purple: "bg-zinc-800/80 border-purple-500/30",
+    orange: "bg-zinc-800/80 border-orange-500/30"
   };
 
   const iconColorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600"
+    blue: "bg-blue-500/20 text-blue-400",
+    green: "bg-green-500/20 text-green-400",
+    purple: "bg-purple-500/20 text-purple-400",
+    orange: "bg-orange-500/20 text-orange-400"
   };
 
   return (
@@ -56,8 +56,8 @@ const IntegrationCard = ({
               <Icon className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">{name}</h3>
-              <p className="text-sm text-gray-600 mt-1">{description}</p>
+              <h3 className="text-lg font-bold text-white">{name}</h3>
+              <p className="text-sm text-zinc-400 mt-1">{description}</p>
               
               {/* Scopes */}
               {availableScopes.length > 0 && (
@@ -66,7 +66,7 @@ const IntegrationCard = ({
                     <Badge 
                       key={scope}
                       variant={scopes.includes(scope) ? "default" : "outline"}
-                      className={scopes.includes(scope) ? "bg-green-500" : "text-gray-400"}
+                      className={scopes.includes(scope) ? "bg-green-600" : "text-zinc-500 border-zinc-600"}
                     >
                       {scope}
                     </Badge>
@@ -96,7 +96,7 @@ const IntegrationCard = ({
                   size="sm"
                   onClick={onDisconnect}
                   disabled={loading}
-                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  className="text-red-400 border-red-500/30 hover:bg-red-500/10"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4 mr-1" />}
                   Disconnect
@@ -113,7 +113,7 @@ const IntegrationCard = ({
                 </Button>
               )
             ) : (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-zinc-500">
                 {connected ? "API Key configured" : "API Key required"}
               </span>
             )}
@@ -131,13 +131,10 @@ const IntegrationsPage = () => {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/integrations/status`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
+      const res = await apiGet('/api/integrations/status');
+
       if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
+        setStatus(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch integrations status:', err);
@@ -151,25 +148,17 @@ const IntegrationsPage = () => {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Handle Google Connect
+  // Handle Google Connect — uses the real OAuth flow from /api/oauth/google/connect
   const handleGoogleConnect = async () => {
     setActionLoading(prev => ({ ...prev, google: true }));
-    
+
     try {
-      // Get auth URL from backend
-      const redirectUri = `${window.location.origin}/settings/integrations/callback`;
-      
-      const res = await fetch(
-        `${API_URL}/api/integrations/google/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}&scopes=calendar,drive`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      
-      if (res.ok) {
-        const data = await res.json();
-        // Redirect to OAuth URL
-        window.location.href = data.auth_url;
+      const res = await apiGet('/api/oauth/google/connect');
+
+      if (res.ok && res.data?.auth_url) {
+        window.location.href = res.data.auth_url;
       } else {
-        toast.error('Failed to get auth URL');
+        toast.error(res.error || 'Google OAuth not configured. Contact administrator.');
       }
     } catch (err) {
       console.error('Google connect error:', err);
@@ -182,13 +171,10 @@ const IntegrationsPage = () => {
   // Handle Disconnect
   const handleDisconnect = async (provider) => {
     setActionLoading(prev => ({ ...prev, [provider]: true }));
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/integrations/disconnect/${provider}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      
+      const res = await apiDelete(`/api/integrations/disconnect/${provider}`);
+
       if (res.ok) {
         toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`);
         fetchStatus();
@@ -205,25 +191,25 @@ const IntegrationsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-zinc-950">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Settings className="w-5 h-5 text-orange-600" />
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Settings className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Integrations</h1>
-                <p className="text-sm text-gray-500">Connect external services</p>
+                <h1 className="text-xl font-bold text-white">Integrations</h1>
+                <p className="text-sm text-zinc-400">Connect external services</p>
               </div>
             </div>
             
@@ -269,7 +255,21 @@ const IntegrationsPage = () => {
             icon={PenTool}
             connected={status?.signnow?.connected}
             oauthRequired={true}
-            onConnect={() => toast.info('SignNow OAuth not yet implemented')}
+            onConnect={async () => {
+              setActionLoading(prev => ({ ...prev, signnow: true }));
+              try {
+                const res = await apiGet('/api/oauth/signnow/connect');
+                if (res.ok && res.data?.auth_url) {
+                  window.location.href = res.data.auth_url;
+                } else {
+                  toast.error(res.error || 'SignNow OAuth not configured. Contact administrator.');
+                }
+              } catch (err) {
+                toast.error('Failed to connect SignNow');
+              } finally {
+                setActionLoading(prev => ({ ...prev, signnow: false }));
+              }
+            }}
             onDisconnect={() => handleDisconnect('signnow')}
             loading={actionLoading.signnow}
             description="Electronic signatures for contracts and agreements"
@@ -288,12 +288,12 @@ const IntegrationsPage = () => {
         </div>
 
         {/* Integration Info */}
-        <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <h3 className="font-semibold text-amber-900 mb-2">Integration Notes</h3>
-          <ul className="text-sm text-amber-800 space-y-1">
+        <div className="mt-8 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+          <h3 className="font-semibold text-orange-400 mb-2">Integration Notes</h3>
+          <ul className="text-sm text-zinc-300 space-y-1">
             <li>• <strong>Google:</strong> Connects Calendar, Drive, and Slides with one OAuth flow</li>
             <li>• <strong>Gamma:</strong> Requires API key in server environment (GAMMA_API_KEY)</li>
-            <li>• <strong>SignNow:</strong> Full OAuth implementation coming soon</li>
+            <li>• <strong>SignNow:</strong> OAuth connect requires SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET in server environment</li>
             <li>• <strong>Stripe:</strong> Requires API keys in server environment</li>
           </ul>
         </div>

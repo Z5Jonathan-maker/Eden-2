@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Bell, Check, CheckCheck, FileText, UserPlus, RefreshCw, 
+import {
+  Bell, Check, CheckCheck, FileText, UserPlus, RefreshCw,
   Wifi, WifiOff, X, Flame, Trophy, MessageSquare, AlertCircle,
   ChevronRight
 } from 'lucide-react';
-import { Button } from './ui/button';
-import ApiService from '../services/ApiService';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { Button } from '../shared/ui/button';
+import { apiGet, apiPut, API_URL } from '@/lib/api';
 
 const NotificationBell = () => {
   const navigate = useNavigate();
@@ -30,19 +28,40 @@ const NotificationBell = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Connect to WebSocket
-  const connectWebSocket = useCallback(() => {
-    const token = localStorage.getItem('eden_token');
-    if (!token) return;
-
-    const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+  // Polling fallback
+  const startPolling = useCallback(() => {
+    if (pollIntervalRef.current) return;
     
+    // console.log('Starting notification polling');
+    pollIntervalRef.current = setInterval(() => {
+      fetchUnreadCount();
+    }, 15000);
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      // console.log('Stopping notification polling');
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
+  // Connect to WebSocket
+  // Note: WebSocket can't use httpOnly cookies, so we rely on polling fallback
+  const connectWebSocket = useCallback(() => {
+    // WebSocket auth with httpOnly cookies is not supported
+    // Fall back to polling which works with httpOnly cookies
+    startPolling();
+    return undefined;
+
+    /* WebSocket connection disabled - httpOnly cookies don't work with WebSocket URLs
+    const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+
     try {
-      const ws = new WebSocket(`${wsUrl}/ws/notifications?token=${token}`);
-      
+      const ws = new WebSocket(`${wsUrl}/ws/notifications`);
+
       const connectionTimeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.OPEN) {
-          // console.log('WebSocket connection timeout, falling back to polling');
           ws.close();
           startPolling();
         }
@@ -50,10 +69,9 @@ const NotificationBell = () => {
 
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        // console.log('WebSocket connected');
         setWsConnected(true);
         stopPolling();
-        
+
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
@@ -63,12 +81,10 @@ const NotificationBell = () => {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (data.type === 'notification') {
             setNotifications(prev => [data.data, ...prev]);
             setUnreadCount(prev => prev + 1);
-          } else if (data.type === 'connected') {
-            // console.log('WebSocket connection confirmed');
           }
         } catch (e) {
           console.error('Failed to parse WebSocket message:', e);
@@ -77,15 +93,13 @@ const NotificationBell = () => {
 
       ws.onclose = (event) => {
         clearTimeout(connectionTimeout);
-        // console.log('WebSocket disconnected:', event.code, event.reason);
         setWsConnected(false);
         wsRef.current = null;
-        
+
         startPolling();
-        
+
         if (event.code !== 1000 && event.code !== 4001) {
           reconnectTimeoutRef.current = setTimeout(() => {
-            // console.log('Attempting to reconnect WebSocket...');
             connectWebSocket();
           }, 10000);
         }
@@ -114,26 +128,10 @@ const NotificationBell = () => {
     } catch (e) {
       console.error('WebSocket creation failed:', e);
       startPolling();
+      return undefined;
     }
-  }, []);
-
-  // Polling fallback
-  const startPolling = useCallback(() => {
-    if (pollIntervalRef.current) return;
-    
-    // console.log('Starting notification polling');
-    pollIntervalRef.current = setInterval(() => {
-      fetchUnreadCount();
-    }, 15000);
-  }, []);
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      // console.log('Stopping notification polling');
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  }, []);
+    */
+  }, [startPolling, stopPolling]);
 
   useEffect(() => {
     fetchNotifications();
@@ -178,13 +176,10 @@ const NotificationBell = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/notifications?limit=30`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      const data = await response.json();
-      setNotifications(data.notifications || data || []);
+      const res = await apiGet('/api/notifications?limit=30');
+      if (res.ok) {
+        setNotifications(res.data.notifications || res.data || []);
+      }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -194,13 +189,10 @@ const NotificationBell = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/notifications/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      const data = await response.json();
-      setUnreadCount(data.unread_count || data.count || 0);
+      const res = await apiGet('/api/notifications/unread-count');
+      if (res.ok) {
+        setUnreadCount(res.data.unread_count || res.data.count || 0);
+      }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
     }
@@ -210,21 +202,18 @@ const NotificationBell = () => {
     // Mark as read
     if (!notification.is_read) {
       try {
-        await fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-          }
-        });
-        setNotifications(prev => 
-          prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        const res = await apiPut(`/api/notifications/${notification.id}/read`);
+        if (res.ok) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+          );
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
       } catch (err) {
         console.error('Failed to mark notification as read:', err);
       }
     }
-    
+
     // Navigate to cta_route if available, otherwise fallback to claim_id
     if (notification.cta_route) {
       navigate(notification.cta_route);
@@ -237,14 +226,11 @@ const NotificationBell = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await fetch(`${API_URL}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('eden_token')}`
-        }
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+      const res = await apiPut('/api/notifications/read-all');
+      if (res.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+      }
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }

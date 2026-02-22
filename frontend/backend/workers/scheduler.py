@@ -33,15 +33,18 @@ def init_scheduler(db):
     from workers.harvest_coach import init_harvest_coach
     from workers.claims_ops_bot import init_claims_ops_bot
     from workers.comms_bot import init_comms_bot
+    from workers.evidence_sync import init_evidence_sync
     
     init_harvest_coach(db)
     init_claims_ops_bot(db)
     init_comms_bot(db)
+    init_evidence_sync(db)
     
     # Add jobs
     _add_harvest_coach_jobs()
     _add_claims_ops_jobs()
     _add_comms_bot_jobs()
+    _add_evidence_sync_jobs()
     
     logger.info("Background scheduler initialized with all bots")
 
@@ -121,6 +124,22 @@ def _add_comms_bot_jobs():
     )
     
     logger.info("Comms Bot jobs added: periodic check every 2 hours")
+
+
+def _add_evidence_sync_jobs():
+    """Add claim evidence nightly sync job."""
+    from workers.evidence_sync import run_nightly_sync
+
+    scheduler.add_job(
+        _run_async_job,
+        CronTrigger(hour=3, minute=15),
+        args=[run_nightly_sync],
+        id="evidence_nightly_sync",
+        name="Evidence - Nightly Claim Sync",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    logger.info("Evidence sync job added: nightly at 03:15 UTC")
 
 
 async def _run_async_job(coro_func):

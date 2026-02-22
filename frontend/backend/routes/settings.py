@@ -26,6 +26,18 @@ class CompanySettingsUpdate(BaseModel):
     tagline: Optional[str] = None
 
 
+class SmsAuditThresholds(BaseModel):
+    min_events: int = Field(10, ge=0, le=10000)
+    high_risk_rate_pct: int = Field(20, ge=0, le=100)
+    ack_missing_rate_pct: int = Field(15, ge=0, le=100)
+
+
+class SmsAuditThresholdsUpdate(BaseModel):
+    min_events: Optional[int] = Field(None, ge=0, le=10000)
+    high_risk_rate_pct: Optional[int] = Field(None, ge=0, le=100)
+    ack_missing_rate_pct: Optional[int] = Field(None, ge=0, le=100)
+
+
 @router.get("/company")
 async def get_company_settings(current_user: dict = Depends(get_current_active_user)):
     """Get company settings for the current user's organization"""
@@ -116,3 +128,71 @@ async def initialize_company_settings(
     # Return without _id
     result = await db.company_settings.find_one({}, {"_id": 0})
     return result
+
+
+@router.get("/ai-comms-risk-thresholds")
+async def get_ai_comms_risk_thresholds(
+    current_user: dict = Depends(require_role(["admin", "manager"]))
+):
+    """Get org-level AI comms risk audit thresholds."""
+    record = await db.company_settings.find_one(
+        {"key": "ai_comms_risk_thresholds"},
+        {"_id": 0, "min_events": 1, "high_risk_rate_pct": 1, "ack_missing_rate_pct": 1, "updated_at": 1, "updated_by": 1},
+    )
+    if not record:
+        return {
+            "min_events": 10,
+            "high_risk_rate_pct": 20,
+            "ack_missing_rate_pct": 15,
+            "updated_at": None,
+            "updated_by": None,
+        }
+    return {
+        "min_events": int(record.get("min_events", 10)),
+        "high_risk_rate_pct": int(record.get("high_risk_rate_pct", 20)),
+        "ack_missing_rate_pct": int(record.get("ack_missing_rate_pct", 15)),
+        "updated_at": record.get("updated_at"),
+        "updated_by": record.get("updated_by"),
+    }
+
+
+@router.put("/ai-comms-risk-thresholds")
+async def update_ai_comms_risk_thresholds(
+    updates: SmsAuditThresholdsUpdate,
+    current_user: dict = Depends(require_role(["admin", "manager"]))
+):
+    """Update org-level AI comms risk audit thresholds."""
+    existing = await db.company_settings.find_one({"key": "ai_comms_risk_thresholds"}, {"_id": 0})
+    baseline = {
+        "min_events": int(existing.get("min_events", 10)) if existing else 10,
+        "high_risk_rate_pct": int(existing.get("high_risk_rate_pct", 20)) if existing else 20,
+        "ack_missing_rate_pct": int(existing.get("ack_missing_rate_pct", 15)) if existing else 15,
+    }
+    if updates.min_events is not None:
+        baseline["min_events"] = int(updates.min_events)
+    if updates.high_risk_rate_pct is not None:
+        baseline["high_risk_rate_pct"] = int(updates.high_risk_rate_pct)
+    if updates.ack_missing_rate_pct is not None:
+        baseline["ack_missing_rate_pct"] = int(updates.ack_missing_rate_pct)
+
+    payload = SmsAuditThresholds(**baseline).model_dump()
+    payload["key"] = "ai_comms_risk_thresholds"
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    payload["updated_by"] = current_user.get("email", "unknown")
+    if not existing:
+        payload["created_at"] = datetime.now(timezone.utc).isoformat()
+        payload["created_by"] = current_user.get("email", "unknown")
+
+    await db.company_settings.update_one(
+        {"key": "ai_comms_risk_thresholds"},
+        {"$set": payload},
+        upsert=True,
+    )
+
+    return {
+        "min_events": payload["min_events"],
+        "high_risk_rate_pct": payload["high_risk_rate_pct"],
+        "ack_missing_rate_pct": payload["ack_missing_rate_pct"],
+        "updated_at": payload["updated_at"],
+        "updated_by": payload["updated_by"],
+    }

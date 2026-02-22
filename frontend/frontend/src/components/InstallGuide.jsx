@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from './ui/button';
+import { Button } from '../shared/ui/button';
 import { Smartphone, Share, Plus, CheckCircle, Download, ExternalLink, Shield, Target, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { APP_LOGO } from '../assets/badges';

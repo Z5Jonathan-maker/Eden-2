@@ -90,7 +90,7 @@ EDEN_ROUTES = [
     {"path": "/vision", "name": "Vision Board", "auth_required": True, "module": "vision"},
     {"path": "/settings", "name": "Settings", "auth_required": True, "module": "settings"},
     {"path": "/adam", "name": "Adam QA", "auth_required": True, "module": "cqil"},
-    {"path": "/notion", "name": "Notion Integration", "auth_required": True, "module": "integrations"},
+    {"path": "/gamma", "name": "Gamma Integration", "auth_required": True, "module": "integrations"},
 ]
 
 # Define critical API endpoints to check

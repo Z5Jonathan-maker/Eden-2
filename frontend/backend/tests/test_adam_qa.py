@@ -43,7 +43,7 @@ class TestAdamQABackendSuites:
         assert "integrations" in data
         assert isinstance(data["integrations"], list)
         # Verify expected integrations are listed
-        expected_integrations = ["gmail", "google_drive", "notion", "gamma", "signnow"]
+        expected_integrations = ["gmail", "google_drive", "gamma", "signnow"]
         for integration in expected_integrations:
             assert integration in data["integrations"], f"Missing integration: {integration}"
         print(f"✓ Integrations Endpoint PASSED: {data['integrations']}")

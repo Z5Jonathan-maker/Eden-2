@@ -5,8 +5,10 @@
  * Refactored to use modular components from ./university/
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import UniversityHeader from './university/UniversityHeader';
 import StatsBanner from './university/StatsBanner';
 import TabNavigation from './university/TabNavigation';
@@ -16,9 +18,11 @@ import VideosTab from './university/VideosTab';
 import CertificatesTab from './university/CertificatesTab';
 import FirmContentTab from './university/FirmContentTab';
 import CreateContentModal from './university/CreateContentModal';
+import LibraryTab from './university/LibraryTab';
+import AddBookModal from './university/AddBookModal';
 import WorkbooksTab from './university/WorkbooksTab';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 function University() {
   const { user } = useAuth();
@@ -36,6 +40,9 @@ function University() {
   const [certificates, setCertificates] = useState([]);
   const [videoSources, setVideoSources] = useState({ sources: [], playlists: [] });
   const [customContent, setCustomContent] = useState({ courses: [], articles: [], documents: [] });
+  const [libraryBooks, setLibraryBooks] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [workbooks, setWorkbooks] = useState([]);
   
   // University Name State
@@ -60,119 +67,112 @@ function University() {
     is_published: false
   });
 
-  const getToken = () => localStorage.getItem('eden_token');
   const canEdit = user && (user.role === 'admin' || user.role === 'manager');
+
+  // API Functions
+  const fetchCompanySettings = useCallback(async () => {
+    try {
+      const res = await apiGet('/api/settings/company');
+      if (res.ok) {
+        const name = res.data.company_name || 'Your Firm';
+        const uniName = res.data.university_name || `${name} University`;
+        setCompanyName(name);
+        setUniversityName(uniName);
+        setEditedName(uniName);
+      } else {
+        setCompanyName('Your Firm');
+        setUniversityName('Your Firm University');
+        setEditedName('Your Firm University');
+      }
+    } catch {
+      setCompanyName('Your Firm');
+      setUniversityName('Your Firm University');
+      setEditedName('Your Firm University');
+    }
+  }, []);
+
+  const saveUniversityName = async () => {
+    try {
+      const res = await apiPut('/api/settings/company', { university_name: editedName });
+      if (res.ok) {
+        setUniversityName(editedName);
+        setIsEditingName(false);
+      } else {
+        toast.error('Failed to save university name');
+      }
+    } catch {
+      alert('Failed to save university name');
+    }
+  };
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const [coursesRes, articlesRes, statsRes, certsRes] = await Promise.all([
+        apiGet('/api/university/courses'),
+        apiGet('/api/university/articles'),
+        apiGet('/api/university/stats'),
+        apiGet('/api/university/certificates')
+      ]);
+
+      setCourses(coursesRes.ok ? (coursesRes.data || []) : []);
+      setArticles(articlesRes.ok ? (articlesRes.data || []) : []);
+      setStats(statsRes.ok ? statsRes.data : null);
+      setCertificates(certsRes.ok ? (certsRes.data || []) : []);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchVideoSources = async () => {
+    try {
+      const res = await apiGet('/api/university/video-sources');
+      if (res.ok) setVideoSources(res.data);
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const fetchCustomContent = useCallback(async () => {
+    try {
+      const res = await apiGet('/api/university/custom/all');
+      if (res.ok) setCustomContent(res.data);
+    } catch (err) {
+      console.error('Failed to fetch custom content:', err);
+    }
+  }, []);
+
+  const fetchLibraryBooks = useCallback(async () => {
+    setLibraryLoading(true);
+    try {
+      const res = await apiGet('/api/university/library/books');
+      if (res.ok) setLibraryBooks(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch library books:', err);
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
+  const fetchWorkbooks = useCallback(async () => {
+    try {
+      const res = await apiGet('/api/university/workbooks');
+      if (res.ok) setWorkbooks(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch workbooks:', err);
+    }
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
     fetchCompanySettings();
     fetchData();
     fetchCustomContent();
-  }, []);
-
-  // API Functions
-  const fetchCompanySettings = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/settings/company`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      const name = data.company_name || 'Your Firm';
-      const uniName = data.university_name || `${name} University`;
-      setCompanyName(name);
-      setUniversityName(uniName);
-      setEditedName(uniName);
-    } catch {
-      setCompanyName('Your Firm');
-      setUniversityName('Your Firm University');
-      setEditedName('Your Firm University');
-    }
-  };
-
-  const saveUniversityName = async () => {
-    try {
-      await fetch(`${API_URL}/api/settings/company`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ university_name: editedName })
-      });
-      setUniversityName(editedName);
-      setIsEditingName(false);
-    } catch {
-      alert('Failed to save university name');
-    }
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    const headers = { 'Authorization': `Bearer ${getToken()}` };
-    
-    try {
-      const [coursesRes, articlesRes, statsRes, certsRes] = await Promise.all([
-        fetch(`${API_URL}/api/university/courses`, { headers }),
-        fetch(`${API_URL}/api/university/articles`, { headers }),
-        fetch(`${API_URL}/api/university/stats`, { headers }),
-        fetch(`${API_URL}/api/university/certificates`, { headers })
-      ]);
-
-      const [coursesData, articlesData, statsData, certsData] = await Promise.all([
-        coursesRes.json(),
-        articlesRes.json(),
-        statsRes.json(),
-        certsRes.json()
-      ]);
-
-      setCourses(coursesData || []);
-      setArticles(articlesData || []);
-      setStats(statsData);
-      setCertificates(certsData || []);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchVideoSources = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/university/video-sources`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      setVideoSources(data);
-    } catch {
-      // Silently fail
-    }
-  };
-
-  const fetchCustomContent = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/university/custom/all`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      setCustomContent(data);
-    } catch (err) {
-      console.error('Failed to fetch custom content:', err);
-    }
-  };
-
-  const fetchWorkbooks = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/university/workbooks`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWorkbooks(data || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch workbooks:', err);
-    }
-  };
+    fetchWorkbooks();
+  }, [fetchCompanySettings, fetchData, fetchCustomContent, fetchWorkbooks]);
 
   // Content Management Functions
   const handleCreateContent = async () => {
@@ -212,35 +212,23 @@ function University() {
     }
 
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+      const res = await apiPost(endpoint, body);
 
       if (!res.ok) throw new Error('Failed to create');
-      const data = await res.json();
 
       // Attach files to the created content
       await Promise.all(attachedFiles.map(file => {
         const formData = new FormData();
-        formData.append('content_id', data.id);
+        formData.append('content_id', res.data.id);
         formData.append('content_type', createType);
-        return fetch(`${API_URL}/api/uploads/file/${file.id}/attach`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${getToken()}` },
-          body: formData
-        });
+        return apiPut(`/api/uploads/file/${file.id}/attach`, formData);
       }));
 
       resetCreateModal();
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error creating content: ' + err.message);
+      toast.error('Error creating content: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -256,15 +244,12 @@ function University() {
     };
 
     try {
-      const res = await fetch(`${API_URL}${endpoints[type]}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
+      const res = await apiDelete(endpoints[type]);
       if (!res.ok) throw new Error('Failed to delete');
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error deleting: ' + err.message);
+      toast.error('Error deleting: ' + err.message);
     }
   };
 
@@ -276,19 +261,12 @@ function University() {
     };
 
     try {
-      const res = await fetch(`${API_URL}${endpoints[type]}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ...item, is_published: !item.is_published })
-      });
+      const res = await apiPut(endpoints[type], { ...item, is_published: !item.is_published });
       if (!res.ok) throw new Error('Failed to update');
       fetchCustomContent();
       fetchData();
     } catch (err) {
-      alert('Error updating: ' + err.message);
+      toast.error('Error updating: ' + err.message);
     }
   };
 
@@ -298,7 +276,7 @@ function University() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('File too large. Maximum size is 50MB.');
+      toast.error('File too large. Maximum size is 50MB.');
       return;
     }
 
@@ -307,23 +285,18 @@ function University() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`${API_URL}/api/uploads/file`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-        body: formData
-      });
+      const res = await apiPost('/api/uploads/file', formData);
 
       if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
 
       setAttachedFiles(prev => [...prev, {
-        id: data.id,
-        filename: data.original_name,
-        size: data.size,
-        url: API_URL + data.url
+        id: res.data.id,
+        filename: res.data.original_name,
+        size: res.data.size,
+        url: API_URL + res.data.url
       }]);
     } catch (err) {
-      alert('Error uploading file: ' + err.message);
+      toast.error('Error uploading file: ' + err.message);
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -333,11 +306,8 @@ function University() {
   const removeAttachedFile = async (index) => {
     const file = attachedFiles[index];
     try {
-      await fetch(`${API_URL}/api/uploads/file/${file.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+      const res = await apiDelete(`/api/uploads/file/${file.id}`);
+      if (res.ok) setAttachedFiles(prev => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error('Error removing file:', err);
     }
@@ -361,6 +331,7 @@ function University() {
   const handleTabChange = (tabId) => {
     if (tabId === 'videos') fetchVideoSources();
     if (tabId === 'firm') fetchCustomContent();
+    if (tabId === 'library') fetchLibraryBooks();
     if (tabId === 'workbooks') fetchWorkbooks();
   };
 
@@ -434,9 +405,25 @@ function University() {
         />
       )}
 
+      {activeTab === 'library' && (
+        <LibraryTab
+          books={libraryBooks}
+          loading={libraryLoading}
+          onAddClick={() => setShowAddBookModal(true)}
+          canEdit={canEdit}
+        />
+      )}
+
       {activeTab === 'workbooks' && (
         <WorkbooksTab workbooks={workbooks} />
       )}
+
+      {/* Add Book Modal */}
+      <AddBookModal
+        show={showAddBookModal}
+        onClose={() => setShowAddBookModal(false)}
+        onBookAdded={fetchLibraryBooks}
+      />
 
       {/* Create Content Modal */}
       <CreateContentModal

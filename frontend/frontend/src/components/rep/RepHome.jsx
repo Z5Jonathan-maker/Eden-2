@@ -9,16 +9,17 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Progress } from '../ui/progress';
-import { Badge } from '../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Button } from '../../shared/ui/button';
+import { Progress } from '../../shared/ui/progress';
+import { Badge } from '../../shared/ui/badge';
 import {
   Play, Trophy, Target, Flame, Star, ChevronRight,
   MapPin, Calendar, TrendingUp, Award, Zap
 } from 'lucide-react';
+import { apiGet } from '@/lib/api';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
 
 const RepHome = () => {
   const navigate = useNavigate();
@@ -28,37 +29,25 @@ const RepHome = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('eden_token');
-    if (!token) return;
-
     const fetchData = async () => {
       try {
         // Fetch today's stats
         const [statsRes, compRes, terrRes] = await Promise.all([
-          fetch(`${API_URL}/api/harvest/v2/today`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          fetch(`${API_URL}/api/incentives/competitions?status=active`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          fetch(`${API_URL}/api/harvest/territories/my`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          apiGet('/api/harvest/v2/today'),
+          apiGet('/api/incentives/competitions?status=active'),
+          apiGet('/api/harvest/territories/my')
         ]);
 
         if (statsRes.ok) {
-          const data = await statsRes.json();
-          setTodayStats(data);
+          setTodayStats(statsRes.data);
         }
 
         if (compRes.ok) {
-          const data = await compRes.json();
-          setCompetitions(data.competitions?.slice(0, 3) || []);
+          setCompetitions(compRes.data.competitions?.slice(0, 3) || []);
         }
 
         if (terrRes.ok) {
-          const data = await terrRes.json();
-          setTerritories(data.territories?.slice(0, 3) || []);
+          setTerritories(terrRes.data.territories?.slice(0, 3) || []);
         }
       } catch (err) {
         console.error('Failed to fetch data:', err);

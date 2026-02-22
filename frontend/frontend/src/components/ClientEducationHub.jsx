@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { 
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '../shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { Badge } from '../shared/ui/badge';
+import {
   Calendar,
   FileText,
   Folder,
@@ -13,11 +13,10 @@ import {
   ChevronRight,
   Search,
   Send,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { apiGet, apiPost } from '@/lib/api';
 
 const ClientEducationHub = () => {
   const [loading, setLoading] = useState(true);
@@ -32,59 +31,45 @@ const ClientEducationHub = () => {
   const [questionForm, setQuestionForm] = useState({ question: '', category: 'general' });
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
 
-  const token = localStorage.getItem('eden_token');
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      // Get categories
-      const catRes = await fetch(`${API_URL}/api/client-education/categories`);
-      const catData = await catRes.json();
-      setCategories(catData.categories || []);
+      // Get categories, articles, and glossary (public endpoints)
+      const [catRes, artRes, glossRes] = await Promise.all([
+        apiGet('/api/client-education/categories'),
+        apiGet('/api/client-education/articles'),
+        apiGet('/api/client-education/glossary'),
+      ]);
 
-      // Get all articles
-      const artRes = await fetch(`${API_URL}/api/client-education/articles`);
-      const artData = await artRes.json();
-      setArticles(artData.articles || []);
+      if (catRes.ok) setCategories(catRes.data.categories || []);
+      if (artRes.ok) setArticles(artRes.data.articles || []);
+      if (glossRes.ok) setGlossary(glossRes.data.terms || []);
 
-      // Get glossary
-      const glossRes = await fetch(`${API_URL}/api/client-education/glossary`);
-      const glossData = await glossRes.json();
-      setGlossary(glossData.terms || []);
-
-      // Get my questions if logged in
-      if (token) {
-        const qRes = await fetch(`${API_URL}/api/client-education/questions/my`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (qRes.ok) {
-          const qData = await qRes.json();
-          setMyQuestions(qData.questions || []);
-        }
+      // Get my questions if logged in (auth endpoint)
+      const qRes = await apiGet('/api/client-education/questions/my');
+      if (qRes.ok) {
+        setMyQuestions(qRes.data.questions || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSubmitQuestion = async () => {
     if (!questionForm.question.trim()) return;
-    
+
     setSubmittingQuestion(true);
     try {
       const params = new URLSearchParams();
       params.append('question', questionForm.question);
       params.append('category', questionForm.category);
 
-      const res = await fetch(`${API_URL}/api/client-education/questions?${params.toString()}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiPost(`/api/client-education/questions?${params.toString()}`, {});
 
       if (res.ok) {
         setShowAskQuestion(false);
@@ -106,14 +91,15 @@ const ClientEducationHub = () => {
       'help-circle': <HelpCircle className="w-6 h-6" />,
       shield: <Shield className="w-6 h-6" />,
       book: <Book className="w-6 h-6" />,
-      'message-circle': <MessageCircle className="w-6 h-6" />
+      'message-circle': <MessageCircle className="w-6 h-6" />,
     };
     return icons[iconName] || <FileText className="w-6 h-6" />;
   };
 
-  const filteredGlossary = glossary.filter(term =>
-    term.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    term.definition.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredGlossary = glossary.filter(
+    (term) =>
+      term.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      term.definition.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -129,19 +115,17 @@ const ClientEducationHub = () => {
     return (
       <div className="min-h-screen bg-gray-50" data-testid="client-education-article">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedArticle(null)}
-            className="mb-6"
-          >
+          <Button variant="ghost" onClick={() => setSelectedArticle(null)} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
 
           <Card>
             <CardContent className="p-6 sm:p-8">
               <h1 className="text-2xl font-bold text-gray-900 mb-4">{selectedArticle.title}</h1>
-              <Badge variant="outline" className="mb-6">{selectedArticle.category}</Badge>
-              
+              <Badge variant="outline" className="mb-6">
+                {selectedArticle.category}
+              </Badge>
+
               <div className="prose prose-orange max-w-none">
                 <ReactMarkdown>{selectedArticle.content}</ReactMarkdown>
               </div>
@@ -155,7 +139,10 @@ const ClientEducationHub = () => {
               <p className="text-orange-700 text-sm mb-4">
                 We are here to help. Send us your question and we will respond within 24 hours.
               </p>
-              <Button onClick={() => setShowAskQuestion(true)} className="bg-orange-600 hover:bg-orange-700">
+              <Button
+                onClick={() => setShowAskQuestion(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
                 <MessageCircle className="w-4 h-4 mr-2" /> Ask a Question
               </Button>
             </CardContent>
@@ -167,19 +154,15 @@ const ClientEducationHub = () => {
 
   // Category Detail View
   if (selectedCategory) {
-    const categoryArticles = articles.filter(a => a.category === selectedCategory.id);
-    const category = categories.find(c => c.id === selectedCategory.id);
+    const categoryArticles = articles.filter((a) => a.category === selectedCategory.id);
+    const category = categories.find((c) => c.id === selectedCategory.id);
 
     // Glossary view
     if (selectedCategory.id === 'glossary') {
       return (
         <div className="min-h-screen bg-gray-50" data-testid="client-education-glossary">
           <div className="max-w-3xl mx-auto px-4 py-8">
-            <Button
-              variant="ghost"
-              onClick={() => setSelectedCategory(null)}
-              className="mb-6"
-            >
+            <Button variant="ghost" onClick={() => setSelectedCategory(null)} className="mb-6">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
 
@@ -207,7 +190,9 @@ const ClientEducationHub = () => {
                     <h3 className="font-semibold text-gray-900 mb-1">{term.term}</h3>
                     <p className="text-gray-600 text-sm">{term.definition}</p>
                     {term.category && (
-                      <Badge variant="outline" className="mt-2 text-xs">{term.category}</Badge>
+                      <Badge variant="outline" className="mt-2 text-xs">
+                        {term.category}
+                      </Badge>
                     )}
                   </CardContent>
                 </Card>
@@ -221,11 +206,7 @@ const ClientEducationHub = () => {
     return (
       <div className="min-h-screen bg-gray-50" data-testid="client-education-category">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedCategory(null)}
-            className="mb-6"
-          >
+          <Button variant="ghost" onClick={() => setSelectedCategory(null)} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
 
@@ -275,9 +256,7 @@ const ClientEducationHub = () => {
       <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">
           <h1 className="text-3xl font-bold mb-3">Client Resource Center</h1>
-          <p className="text-orange-100 text-lg">
-            Everything you need to understand your claim
-          </p>
+          <p className="text-orange-100 text-lg">Everything you need to understand your claim</p>
         </div>
       </div>
 
@@ -332,7 +311,11 @@ const ClientEducationHub = () => {
           <div className="mb-12">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">My Questions</h2>
-              <Button onClick={() => setShowAskQuestion(true)} size="sm" className="bg-orange-600 hover:bg-orange-700">
+              <Button
+                onClick={() => setShowAskQuestion(true)}
+                size="sm"
+                className="bg-orange-600 hover:bg-orange-700"
+              >
                 <MessageCircle className="w-4 h-4 mr-2" /> Ask Question
               </Button>
             </div>
@@ -352,7 +335,8 @@ const ClientEducationHub = () => {
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                           <p className="text-sm text-green-800">{q.answer}</p>
                           <p className="text-xs text-green-600 mt-2">
-                            Answered by {q.answered_by} • {new Date(q.answered_at).toLocaleDateString()}
+                            Answered by {q.answered_by} •{' '}
+                            {new Date(q.answered_at).toLocaleDateString()}
                           </p>
                         </div>
                       )}
@@ -378,7 +362,7 @@ const ClientEducationHub = () => {
             <p className="text-orange-100 mb-4">
               Our team is here to answer any questions about your claim.
             </p>
-            <Button 
+            <Button
               onClick={() => setShowAskQuestion(true)}
               variant="secondary"
               className="bg-white text-orange-600 hover:bg-orange-50"
@@ -394,13 +378,13 @@ const ClientEducationHub = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">Ask a Question</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Category</label>
                 <select
                   value={questionForm.category}
-                  onChange={(e) => setQuestionForm({...questionForm, category: e.target.value})}
+                  onChange={(e) => setQuestionForm({ ...questionForm, category: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="general">General Question</option>
@@ -410,12 +394,12 @@ const ClientEducationHub = () => {
                   <option value="payment">Payment/Settlement</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Your Question</label>
                 <textarea
                   value={questionForm.question}
-                  onChange={(e) => setQuestionForm({...questionForm, question: e.target.value})}
+                  onChange={(e) => setQuestionForm({ ...questionForm, question: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                   rows={4}
                   placeholder="What would you like to know?"
@@ -424,11 +408,15 @@ const ClientEducationHub = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowAskQuestion(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setShowAskQuestion(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSubmitQuestion} 
+              <Button
+                onClick={handleSubmitQuestion}
                 className="flex-1 bg-orange-600 hover:bg-orange-700"
                 disabled={submittingQuestion || !questionForm.question.trim()}
               >

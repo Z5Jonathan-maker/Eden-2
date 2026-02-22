@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { ArrowLeft, BookOpen, Clock, ChevronUp } from 'lucide-react';
 import WorkbookRenderer from './workbook/WorkbookRenderer';
 import { apiGet } from '@/lib/api';

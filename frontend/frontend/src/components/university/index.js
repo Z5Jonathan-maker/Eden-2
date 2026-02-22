@@ -15,3 +15,5 @@ export { default as ArticlesTab } from './ArticlesTab';
 export { default as VideosTab } from './VideosTab';
 export { default as CertificatesTab } from './CertificatesTab';
 export { default as FirmContentTab } from './FirmContentTab';
+export { default as WorkbooksTab } from './WorkbooksTab';
+export { default as WorkbookViewer } from './WorkbookViewer';

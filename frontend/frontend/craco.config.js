@@ -2,9 +2,9 @@
 const path = require("path");
 require("dotenv").config();
 
-// Check if we're in development/preview mode (not production build)
-// Craco sets NODE_ENV=development for start, NODE_ENV=production for build
-const isDevServer = process.env.NODE_ENV !== "production";
+// Only enable dev-server plugins when actually running local dev server.
+// `craco test` runs with NODE_ENV=test and should not load dev-only plugins.
+const isDevServer = process.env.NODE_ENV === "development";
 
 // Environment variable overrides
 const config = {
@@ -17,8 +17,17 @@ let setupDevServer;
 let babelMetadataPlugin;
 
 if (config.enableVisualEdits) {
-  setupDevServer = require("./plugins/visual-edits/dev-server-setup");
-  babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
+  try {
+    setupDevServer = require("./plugins/visual-edits/dev-server-setup");
+    babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
+  } catch (err) {
+    // Optional dev-only plugin; do not block local startup if missing.
+    console.warn(
+      "[craco] Visual edits plugin not found. Continuing without visual edits support.",
+      err?.message || err
+    );
+    config.enableVisualEdits = false;
+  }
 }
 
 // Conditionally load health check modules only if enabled

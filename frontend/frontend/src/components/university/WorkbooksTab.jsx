@@ -5,8 +5,8 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { BookOpen, Clock, Layers, ChevronRight } from 'lucide-react';
 
 const WorkbookCard = ({ workbook, onClick }) => {

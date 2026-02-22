@@ -51,6 +51,16 @@ async def get_current_user_info(current_user: dict = Depends(get_current_active_
         "created_at": current_user.get("created_at")
     }
 
+@router.get("/team")
+async def get_team_roster(current_user: dict = Depends(get_current_active_user)):
+    """Get team members for assignment picker (non-client users with name + role)"""
+    team = await db.users.find(
+        {"role": {"$in": ["admin", "manager", "adjuster"]}, "is_active": True},
+        {"_id": 0, "id": 1, "full_name": 1, "role": 1, "email": 1},
+    ).to_list(200)
+    return team
+
+
 @router.get("/{user_id}")
 async def get_user(user_id: str, current_user: dict = Depends(require_permission("users.read"))):
     """Get a specific user"""

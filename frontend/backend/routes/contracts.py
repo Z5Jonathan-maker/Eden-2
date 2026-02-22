@@ -2,21 +2,130 @@
 Contracts Management API - Templates, E-Signatures, Document Management
 Integrates with SignNow for electronic signatures
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
 import io
 import os
 import logging
+import re
 
 from dependencies import db, get_current_active_user as get_current_user
 from services.signnow_service import SignNowService
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 logger = logging.getLogger(__name__)
+MUTATING_ROLES = {"admin", "manager", "adjuster"}
+
+
+def _combine_query_filters(*filters: Dict[str, Any]) -> Dict[str, Any]:
+    valid = [flt for flt in filters if flt]
+    if not valid:
+        return {}
+    if len(valid) == 1:
+        return valid[0]
+    return {"$and": valid}
+
+
+def _can_access_claim(current_user: dict, claim: dict) -> bool:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return True
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        claim_email = (claim.get("client_email") or "").strip().lower()
+        return bool(user_email) and user_email == claim_email
+    assigned_to = claim.get("assigned_to")
+    assigned_to_id = claim.get("assigned_to_id")
+    full_name = current_user.get("full_name")
+    return (
+        claim.get("created_by") == user_id
+        or assigned_to_id == user_id
+        or (full_name and assigned_to == full_name)
+    )
+
+
+async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if not _can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return claim
+
+
+async def _build_contract_visibility_filter(current_user: dict) -> Dict[str, Any]:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return {}
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip()
+        if not user_email:
+            return {"client_email": "__no_match__"}
+        return {"client_email": {"$regex": f"^{re.escape(user_email)}$", "$options": "i"}}
+
+    full_name = current_user.get("full_name")
+    claim_query_or = [{"created_by": user_id}, {"assigned_to_id": user_id}]
+    if full_name:
+        claim_query_or.append({"assigned_to": full_name})
+
+    visible_claims = await db.claims.find(
+        {"$or": claim_query_or},
+        {"_id": 0, "id": 1},
+    ).limit(5000).to_list(5000)
+    claim_ids = [item.get("id") for item in visible_claims if item.get("id")]
+
+    visibility_or = [{"created_by": user_id}]
+    if claim_ids:
+        visibility_or.append({"claim_id": {"$in": claim_ids}})
+    return {"$or": visibility_or}
+
+
+def _require_mutating_role(current_user: dict):
+    if current_user.get("role", "client") not in MUTATING_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient role for contract modification")
+
+
+async def _get_contract_for_user_or_403(contract_id: str, current_user: dict) -> dict:
+    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return contract
+
+    claim_id = contract.get("claim_id")
+    if claim_id:
+        claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+        if claim and _can_access_claim(current_user, claim):
+            return contract
+
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        contract_email = (contract.get("client_email") or "").strip().lower()
+        if user_email and contract_email and user_email == contract_email:
+            return contract
+    elif contract.get("created_by") == user_id:
+        return contract
+
+    raise HTTPException(status_code=403, detail="Access denied")
+
+
+async def _get_signnow_token():
+    """Get SignNow token via client credentials if configured"""
+    try:
+        from integrations.signnow_client import get_signnow_access_token
+        return await get_signnow_access_token()
+    except Exception:
+        return None
+
 
 # Import game event bus helper
 async def _emit_contract_event(user_id: str, event_type: str, contract_id: str):
@@ -124,7 +233,7 @@ CARE_CLAIMS_TEMPLATE = {
         "EXPENSES/COSTS: POLICYHOLDER is responsible for all costs and expenses incurred for claim preparation.",
         "NO LEGAL SERVICES: This Agreement is not for legal services. An attorney must provide any legal services.",
         "FLORIDA LAW: Pursuant to s 817.234, Florida Statutes, any person who prepares false or misleading claim information commits a felony.",
-        "RESCISSION PERIOD: Contract may be cancelled within 10 days (or 30 days for state of emergency declarations)."
+        "RESCISSION PERIOD: Contract may be cancelled within 10 days after execution; for certain emergency claims, cancellation is allowed within 30 days after date of loss or 10 days after execution, whichever is longer."
     ],
     "signature_blocks": [
         {"id": "insured_1", "role": "Primary Insured", "required": True},
@@ -144,6 +253,43 @@ CARE_CLAIMS_TEMPLATE = {
 }
 
 
+DFS_DISCLOSURE_TEMPLATE = {
+    "id": "dfs-h1-1982-disclosure",
+    "name": "DFS Claim Process Disclosure",
+    "description": "Florida DFS-H1-1982 Claim Process Disclosure Form — required by Rule 69B-220.051, F.A.C.",
+    "template_type": "dfs_disclosure",
+    "version": "1.0",
+    "fields": [
+        {"id": "insured_name", "label": "Insured Name(s)", "type": "text", "required": True, "section": "insured"},
+        {"id": "date_signed", "label": "Date Signed", "type": "date", "required": True, "section": "insured"},
+    ],
+    "sections": [
+        {"id": "insured", "title": "Insured Information"},
+    ],
+    "terms": [
+        "A Company Adjuster is as defined in s. 626.856, F.S. A company adjuster is employed by the insurance company to address insurance claims on its behalf.",
+        "An Independent Adjuster is as defined in s. 626.855, F.S. An independent adjuster is contracted by the insurance company to address insurance claims on its behalf.",
+        "A Public Adjuster is as defined in s. 626.854, F.S. A public adjuster contracts with and is compensated by you, the insured, to assist you in the insurance claim process. A public adjuster is not an employee or representative of the insurance company.",
+    ],
+    "signature_blocks": [
+        {"id": "insured_1", "role": "Primary Insured", "required": True},
+    ],
+    "initial_blocks": [],
+    "pdf_url": None,  # Generated from scratch — standard government form
+    "created_at": "2026-02-18T00:00:00Z",
+}
+
+
+BUILTIN_TEMPLATES = {
+    CARE_CLAIMS_TEMPLATE["id"]: CARE_CLAIMS_TEMPLATE,
+    DFS_DISCLOSURE_TEMPLATE["id"]: DFS_DISCLOSURE_TEMPLATE,
+}
+
+
+def _get_builtin_template(template_id: str):
+    return BUILTIN_TEMPLATES.get(template_id)
+
+
 # ============================================
 # Template Endpoints
 # ============================================
@@ -155,19 +301,19 @@ async def get_contract_templates(
     """Get all available contract templates"""
     # Get custom templates from DB
     custom_templates = await db.contract_templates.find({}, {"_id": 0}).to_list(100)
-    
-    # Add the built-in Care Claims template
-    templates = [
-        {
-            "id": CARE_CLAIMS_TEMPLATE["id"],
-            "name": CARE_CLAIMS_TEMPLATE["name"],
-            "description": CARE_CLAIMS_TEMPLATE["description"],
-            "template_type": CARE_CLAIMS_TEMPLATE["template_type"],
-            "fields_count": len(CARE_CLAIMS_TEMPLATE["fields"]),
-            "is_builtin": True
-        }
-    ]
-    
+
+    # Add all built-in templates
+    templates = []
+    for tmpl in BUILTIN_TEMPLATES.values():
+        templates.append({
+            "id": tmpl["id"],
+            "name": tmpl["name"],
+            "description": tmpl["description"],
+            "template_type": tmpl["template_type"],
+            "fields_count": len(tmpl["fields"]),
+            "is_builtin": True,
+        })
+
     for t in custom_templates:
         templates.append({
             "id": t["id"],
@@ -187,9 +333,10 @@ async def get_contract_template(
     current_user: dict = Depends(get_current_user)
 ):
     """Get full template details with fields"""
-    if template_id == CARE_CLAIMS_TEMPLATE["id"]:
-        return CARE_CLAIMS_TEMPLATE
-    
+    builtin = _get_builtin_template(template_id)
+    if builtin:
+        return builtin
+
     template = await db.contract_templates.find_one({"id": template_id}, {"_id": 0})
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -237,15 +384,13 @@ async def create_contract(
     - claim_id is REQUIRED (contracts must be linked to claims)
     - created_by automatically set from current user
     """
-    # Validate claim exists
-    claim = await db.claims.find_one({"id": contract.claim_id})
-    if not claim:
-        raise HTTPException(status_code=400, detail="Invalid claim_id - claim not found")
+    _require_mutating_role(current_user)
+    # Validate claim exists and user can access it
+    await _get_claim_for_user_or_403(contract.claim_id, current_user)
     
     # Get template
-    if contract.template_id == CARE_CLAIMS_TEMPLATE["id"]:
-        template = CARE_CLAIMS_TEMPLATE
-    else:
+    template = _get_builtin_template(contract.template_id)
+    if not template:
         template = await db.contract_templates.find_one({"id": contract.template_id}, {"_id": 0})
         if not template:
             raise HTTPException(status_code=404, detail="Template not found")
@@ -284,15 +429,19 @@ async def get_contracts(
     if status:
         query["status"] = status
     if claim_id:
+        await _get_claim_for_user_or_403(claim_id, current_user)
         query["claim_id"] = claim_id
-    
-    contracts = await db.contracts.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
-    
-    # Get stats
-    total = await db.contracts.count_documents({})
-    signed = await db.contracts.count_documents({"status": "signed"})
-    pending = await db.contracts.count_documents({"status": "pending"})
-    draft = await db.contracts.count_documents({"status": "draft"})
+
+    visibility_filter = await _build_contract_visibility_filter(current_user)
+    effective_query = _combine_query_filters(query, visibility_filter)
+
+    contracts = await db.contracts.find(effective_query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+
+    stats_scope = _combine_query_filters({"claim_id": claim_id} if claim_id else {}, visibility_filter)
+    total = await db.contracts.count_documents(stats_scope)
+    signed = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "signed"}))
+    pending = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "pending"}))
+    draft = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "draft"}))
     
     return {
         "contracts": contracts,
@@ -311,11 +460,7 @@ async def get_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Get a specific contract"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    return contract
+    return await _get_contract_for_user_or_403(contract_id, current_user)
 
 
 @router.patch("/{contract_id}")
@@ -325,6 +470,11 @@ async def update_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Update contract field values"""
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    if contract.get("status") == "signed":
+        raise HTTPException(status_code=400, detail="Cannot edit signed contracts")
+
     result = await db.contracts.update_one(
         {"id": contract_id},
         {"$set": {
@@ -345,12 +495,11 @@ async def delete_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Delete a draft contract"""
-    contract = await db.contracts.find_one({"id": contract_id})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    if contract.get("status") == "signed":
-        raise HTTPException(status_code=400, detail="Cannot delete signed contracts")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+
+    if contract.get("status") != "draft":
+        raise HTTPException(status_code=400, detail="Only draft contracts can be deleted")
     
     await db.contracts.delete_one({"id": contract_id})
     return {"message": "Contract deleted"}
@@ -367,14 +516,14 @@ async def send_contract_for_signature(
     current_user: dict = Depends(get_current_user)
 ):
     """Send a contract for e-signature via SignNow"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Check if SignNow is configured
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     if not signnow_token:
         # Return info about manual process if SignNow not configured
+        template = _get_builtin_template(contract.get("template_id", "")) or CARE_CLAIMS_TEMPLATE
         return {
             "status": "signnow_not_configured",
             "message": "SignNow not configured. Configure your SignNow access token in Settings to enable e-signatures.",
@@ -383,7 +532,7 @@ async def send_contract_for_signature(
                 "2. Have the client sign manually",
                 "3. Upload the signed document"
             ],
-            "template_pdf_url": CARE_CLAIMS_TEMPLATE.get("pdf_url")
+            "template_pdf_url": template.get("pdf_url")
         }
     
     try:
@@ -440,15 +589,13 @@ async def get_contract_signature_status(
     current_user: dict = Depends(get_current_user)
 ):
     """Check signing status from SignNow"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     doc_id = contract.get("signnow_document_id")
     if not doc_id:
         return {"status": contract.get("status", "draft")}
     
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     if not signnow_token:
         return {"status": contract.get("status", "draft")}
     
@@ -478,12 +625,10 @@ async def download_contract(
     current_user: dict = Depends(get_current_user)
 ):
     """Download contract PDF (signed if available)"""
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     doc_id = contract.get("signnow_document_id")
-    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN')
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
     
     if doc_id and signnow_token:
         try:
@@ -502,10 +647,126 @@ async def download_contract(
             pass
     
     # Return template PDF URL if no signed version
+    template = _get_builtin_template(contract.get("template_id", "")) or CARE_CLAIMS_TEMPLATE
     return {
-        "pdf_url": CARE_CLAIMS_TEMPLATE.get("pdf_url"),
+        "pdf_url": template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url"),
         "message": "Returning blank template - no signed version available"
     }
+
+
+def _generate_dfs_disclosure_pdf(contract: dict, field_values: dict):
+    """Generate the Florida DFS-H1-1982 Claim Process Disclosure Form."""
+    import fitz
+
+    W, H = 612, 792  # US Letter
+    doc = fitz.open()
+    page = doc.new_page(width=W, height=H)
+
+    BLACK = (0, 0, 0)
+    DARK = (0.15, 0.15, 0.15)
+    GRAY = (0.4, 0.4, 0.4)
+    BLUE = (0.0, 0.35, 0.65)
+
+    margin_l = 60
+    margin_r = W - 60
+    y = 50
+
+    # ── Title ──
+    page.insert_text(fitz.Point(170, y), "Claim Process Disclosure Form", fontsize=16, fontname="helvetica-bold", color=BLACK)
+    y += 30
+
+    # ── Paragraphs ──
+    paragraphs = [
+        ('A **Company Adjuster** is as defined in s. 626.856, F.S. A company adjuster is '
+         'employed by the insurance company to address insurance claims on its behalf.'),
+        ('An **Independent Adjuster** is as defined in s. 626.855, F.S. An independent adjuster '
+         'is contracted by the insurance company to address insurance claims on its behalf.'),
+        ('A **Public Adjuster** is as defined in s. 626.854, F.S. A public adjuster contracts with '
+         'and is compensated by you, the insured, to assist you in the insurance claim '
+         'process. A public adjuster is not an employee or representative of the insurance company.'),
+        ('**You**, as the Insured, are not required to hire a public adjuster to assist you with '
+         'the insurance claim process but you have a right to do so.'),
+        ('**You**, as the Insured, have a right to initiate direct communications with your '
+         'attorney, the insurer, the company adjuster, the insurer\'s attorney, or any person '
+         'regarding the settlement of your claim.'),
+        ('**You**, as the Insured, should you enter a contract with a public adjuster:'),
+    ]
+
+    for para in paragraphs:
+        clean = para.replace('**', '')
+        lines = _wrap_text(clean, 85)
+        for line in lines:
+            page.insert_text(fitz.Point(margin_l, y), line, fontsize=10, fontname="helv", color=DARK)
+            y += 15
+        y += 8
+
+    # ── Bullet points ──
+    bullets = [
+        "Are responsible for paying the public adjuster's salary, fee, commission, or other consideration.",
+        "Are entitled to an unaltered copy of the executed public adjusting contract at the time the contract is executed.",
+        "Are entitled to an unaltered copy of this form after it has been executed.",
+        ("May cancel a public adjusting contract without cost or obligation within "
+         "30 days of the loss, or ten (10) days after the date the contract was "
+         "executed, whichever is longer, if the public adjusting contract was "
+         "entered into based on events that are the subject of a declaration of a "
+         "state of emergency by the Governor."),
+    ]
+
+    for bullet in bullets:
+        lines = _wrap_text(bullet, 78)
+        for i, line in enumerate(lines):
+            prefix = "\u2022   " if i == 0 else "    "
+            page.insert_text(fitz.Point(margin_l + 10, y), f"{prefix}{line}", fontsize=10, fontname="helv", color=DARK)
+            y += 15
+        y += 6
+
+    y += 15
+
+    # ── Insured Name ──
+    insured_name = field_values.get("insured_name", field_values.get("policyholder_name", contract.get("client_name", "")))
+    page.insert_text(fitz.Point(margin_l, y), "INSURED NAME(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 130, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    if insured_name:
+        page.insert_text(fitz.Point(margin_l + 135, y), insured_name, fontsize=10, fontname="helv", color=DARK)
+    y += 30
+
+    # ── Insured Signature ──
+    page.insert_text(fitz.Point(margin_l, y), "INSURED SIGNATURE(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 160, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    y += 30
+
+    # ── Date Signed ──
+    date_signed = field_values.get("date_signed", "")
+    page.insert_text(fitz.Point(margin_l, y), "DATE SIGNED:", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 100, y + 2), fitz.Point(margin_l + 250, y + 2), color=BLACK, width=0.5)
+    if date_signed:
+        page.insert_text(fitz.Point(margin_l + 105, y), date_signed, fontsize=10, fontname="helv", color=DARK)
+
+    y += 40
+
+    # ── Footer ──
+    page.insert_text(fitz.Point(margin_l, y), "Form DFS-H1-1982 (Eff. 08/23)", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(margin_l, y + 12), "Rule 69B-220.051, F.A.C.", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(330, y), "FLORIDA DEPARTMENT OF FINANCIAL SERVICES", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(370, y + 12), "1-877-MY-FL-CFO (1-877-693-5236)", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(355, y + 24), "www.myfloridacfo.com/Division/Consumers", fontsize=8, fontname="helv", color=BLUE)
+
+    return doc
+
+
+def _wrap_text(text: str, max_chars: int = 80) -> list:
+    """Simple word-wrap."""
+    words = text.split()
+    lines, current = [], ""
+    for word in words:
+        if len(current) + len(word) + 1 > max_chars:
+            lines.append(current)
+            current = word
+        else:
+            current = f"{current} {word}" if current else word
+    if current:
+        lines.append(current)
+    return lines
 
 
 @router.get("/{contract_id}/pdf")
@@ -515,109 +776,80 @@ async def generate_filled_pdf(
 ):
     """
     Generate a filled PDF with the contract data overlaid on the template.
-    This creates a proper PDF with all field values populated.
+    PA Agreements: downloads blank template and overlays fields.
+    DFS Disclosure: generates the standard government form from scratch.
     If signed, includes the captured signature.
     """
     import httpx
     import fitz  # PyMuPDF
     import base64
-    
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
+
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     field_values = contract.get("field_values", {})
     signature_data = contract.get("signature_data")
-    
+    template_id = contract.get("template_id", "")
+    template = _get_builtin_template(template_id) or CARE_CLAIMS_TEMPLATE
+
     try:
-        # Download the blank template PDF
-        pdf_url = CARE_CLAIMS_TEMPLATE.get("pdf_url")
-        async with httpx.AsyncClient() as client:
-            pdf_response = await client.get(pdf_url, timeout=30.0)
-            if pdf_response.status_code != 200:
-                raise HTTPException(status_code=500, detail="Failed to download template PDF")
-            pdf_bytes = pdf_response.content
-        
-        # Open the PDF with PyMuPDF
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        
-        # Define field positions on the PDF (coordinates in points, 72 points = 1 inch)
-        # These are approximate - you may need to adjust based on actual template
-        field_positions = {
-            # Page 1 - Policyholder section (estimated positions)
-            "policyholder_name": {"page": 0, "x": 160, "y": 148, "fontsize": 10},
-            "policyholder_email": {"page": 0, "x": 160, "y": 163, "fontsize": 10},
-            "policyholder_address": {"page": 0, "x": 160, "y": 178, "fontsize": 10},
-            "policyholder_city": {"page": 0, "x": 160, "y": 193, "fontsize": 10},
-            "policyholder_state": {"page": 0, "x": 320, "y": 193, "fontsize": 10},
-            "policyholder_zip": {"page": 0, "x": 380, "y": 193, "fontsize": 10},
-            "policyholder_phone": {"page": 0, "x": 160, "y": 208, "fontsize": 10},
-            "policyholder_mobile": {"page": 0, "x": 320, "y": 208, "fontsize": 10},
-            
-            # Insurance Company section
-            "insurance_company": {"page": 0, "x": 160, "y": 258, "fontsize": 10},
-            "policy_number": {"page": 0, "x": 400, "y": 258, "fontsize": 10},
-            "claim_number": {"page": 0, "x": 160, "y": 273, "fontsize": 10},
-            "insurance_address": {"page": 0, "x": 160, "y": 288, "fontsize": 10},
-            "field_adjuster": {"page": 0, "x": 160, "y": 303, "fontsize": 10},
-            "field_adjuster_phone": {"page": 0, "x": 400, "y": 303, "fontsize": 10},
-            "desk_adjuster": {"page": 0, "x": 160, "y": 318, "fontsize": 10},
-            "desk_adjuster_phone": {"page": 0, "x": 400, "y": 318, "fontsize": 10},
-            
-            # Loss Location section
-            "loss_address": {"page": 0, "x": 160, "y": 368, "fontsize": 10},
-            "loss_city": {"page": 0, "x": 160, "y": 383, "fontsize": 10},
-            "loss_state_zip": {"page": 0, "x": 320, "y": 383, "fontsize": 10},
-            "date_of_loss": {"page": 0, "x": 160, "y": 398, "fontsize": 10},
-            "description_of_loss": {"page": 0, "x": 160, "y": 413, "fontsize": 9, "width": 400},
-            "claim_type": {"page": 0, "x": 160, "y": 443, "fontsize": 10},
-            
-            # Fee section
-            "fee_percentage": {"page": 0, "x": 400, "y": 478, "fontsize": 10},
-        }
-        
-        # Add text to each field position
-        for field_id, pos in field_positions.items():
-            value = field_values.get(field_id, "")
-            if value:
-                page = doc[pos["page"]]
-                fontsize = pos.get("fontsize", 10)
-                
-                # Handle multiline text for description
-                if field_id == "description_of_loss" and len(str(value)) > 50:
-                    # Truncate long descriptions
-                    value = str(value)[:200] + "..." if len(str(value)) > 200 else value
-                
-                # Insert text
-                text_point = fitz.Point(pos["x"], pos["y"])
-                page.insert_text(
-                    text_point,
-                    str(value),
-                    fontsize=fontsize,
-                    fontname="helv",
-                    color=(0, 0, 0)
-                )
-        
-        # Add signature if available (for signed contracts)
+        # ── DFS Disclosure: generate from scratch ──
+        if template_id == DFS_DISCLOSURE_TEMPLATE["id"]:
+            doc = _generate_dfs_disclosure_pdf(contract, field_values)
+        else:
+            # ── PA Agreement: overlay on existing template ──
+            pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
+            async with httpx.AsyncClient() as client:
+                pdf_response = await client.get(pdf_url, timeout=30.0)
+                if pdf_response.status_code != 200:
+                    raise HTTPException(status_code=500, detail="Failed to download template PDF")
+                pdf_bytes = pdf_response.content
+
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+            field_positions = {
+                "policyholder_name": {"page": 0, "x": 160, "y": 148, "fontsize": 10},
+                "policyholder_email": {"page": 0, "x": 160, "y": 163, "fontsize": 10},
+                "policyholder_address": {"page": 0, "x": 160, "y": 178, "fontsize": 10},
+                "policyholder_city": {"page": 0, "x": 160, "y": 193, "fontsize": 10},
+                "policyholder_state": {"page": 0, "x": 320, "y": 193, "fontsize": 10},
+                "policyholder_zip": {"page": 0, "x": 380, "y": 193, "fontsize": 10},
+                "policyholder_phone": {"page": 0, "x": 160, "y": 208, "fontsize": 10},
+                "policyholder_mobile": {"page": 0, "x": 320, "y": 208, "fontsize": 10},
+                "insurance_company": {"page": 0, "x": 160, "y": 258, "fontsize": 10},
+                "policy_number": {"page": 0, "x": 400, "y": 258, "fontsize": 10},
+                "claim_number": {"page": 0, "x": 160, "y": 273, "fontsize": 10},
+                "insurance_address": {"page": 0, "x": 160, "y": 288, "fontsize": 10},
+                "field_adjuster": {"page": 0, "x": 160, "y": 303, "fontsize": 10},
+                "field_adjuster_phone": {"page": 0, "x": 400, "y": 303, "fontsize": 10},
+                "desk_adjuster": {"page": 0, "x": 160, "y": 318, "fontsize": 10},
+                "desk_adjuster_phone": {"page": 0, "x": 400, "y": 318, "fontsize": 10},
+                "loss_address": {"page": 0, "x": 160, "y": 368, "fontsize": 10},
+                "loss_city": {"page": 0, "x": 160, "y": 383, "fontsize": 10},
+                "loss_state_zip": {"page": 0, "x": 320, "y": 383, "fontsize": 10},
+                "date_of_loss": {"page": 0, "x": 160, "y": 398, "fontsize": 10},
+                "description_of_loss": {"page": 0, "x": 160, "y": 413, "fontsize": 9, "width": 400},
+                "claim_type": {"page": 0, "x": 160, "y": 443, "fontsize": 10},
+                "fee_percentage": {"page": 0, "x": 400, "y": 478, "fontsize": 10},
+            }
+
+            for field_id, pos in field_positions.items():
+                value = field_values.get(field_id, "")
+                if value:
+                    page = doc[pos["page"]]
+                    fontsize = pos.get("fontsize", 10)
+                    if field_id == "description_of_loss" and len(str(value)) > 50:
+                        value = str(value)[:200] + "..." if len(str(value)) > 200 else value
+                    page.insert_text(fitz.Point(pos["x"], pos["y"]), str(value), fontsize=fontsize, fontname="helv", color=(0, 0, 0))
+
+        # ── Common: signature overlay ───────────────────────────
         if signature_data and signature_data.startswith('data:image'):
             try:
-                # Extract base64 data from data URL
                 header, encoded = signature_data.split(',', 1)
                 signature_bytes = base64.b64decode(encoded)
-                
-                # Get the last page for signature (or use page 0 for now)
-                # Adjust the page index based on your template
-                sig_page_idx = min(1, len(doc) - 1)  # Second page if exists, else first
+                sig_page_idx = len(doc) - 1
                 sig_page = doc[sig_page_idx]
-                
-                # Insert signature image at the signature line position
-                # Adjust these coordinates based on your template's signature line
-                sig_rect = fitz.Rect(100, 650, 300, 720)  # x0, y0, x1, y1
-                
-                # Insert the signature image
+                sig_rect = fitz.Rect(100, 650, 300, 720)
                 sig_page.insert_image(sig_rect, stream=signature_bytes)
-                
-                # Add signed date below signature
+
                 signed_at = contract.get("signed_at", "")
                 if signed_at:
                     try:
@@ -625,73 +857,47 @@ async def generate_filled_pdf(
                         date_str = signed_date.strftime("%m/%d/%Y")
                     except Exception:
                         date_str = signed_at[:10]
-                    
-                    sig_page.insert_text(
-                        fitz.Point(320, 700),
-                        f"Date: {date_str}",
-                        fontsize=10,
-                        fontname="helv",
-                        color=(0, 0, 0)
-                    )
-                
-                # Add signer name
+                    sig_page.insert_text(fitz.Point(320, 700), f"Date: {date_str}", fontsize=10, fontname="helv", color=(0, 0, 0))
+
                 signer_name = contract.get("signer_name") or contract.get("client_name", "")
                 if signer_name:
-                    sig_page.insert_text(
-                        fitz.Point(100, 735),
-                        f"Signed by: {signer_name}",
-                        fontsize=9,
-                        fontname="helv",
-                        color=(0.3, 0.3, 0.3)
-                    )
-                    
+                    sig_page.insert_text(fitz.Point(100, 735), f"Signed by: {signer_name}", fontsize=9, fontname="helv", color=(0.3, 0.3, 0.3))
             except Exception as e:
                 logger.warning(f"Failed to add signature to PDF: {e}")
-        
-        # Adjuster information is pre-filled in the template PDF
-        
-        # Save to bytes
+
+        # ── Save ────────────────────────────────────────────────
         pdf_output = io.BytesIO()
         doc.save(pdf_output)
         doc.close()
         pdf_output.seek(0)
-        
+
         # Add "SIGNED" watermark if contract is signed
         if contract.get("status") == "signed":
-            # Re-open to add watermark
             doc = fitz.open(stream=pdf_output.getvalue(), filetype="pdf")
             for page in doc:
-                # Add a subtle "SIGNED" text in the corner
-                page.insert_text(
-                    fitz.Point(450, 30),
-                    "✓ SIGNED",
-                    fontsize=12,
-                    fontname="helv",
-                    color=(0, 0.5, 0)  # Green color
-                )
-            
+                page.insert_text(fitz.Point(450, 30), "SIGNED", fontsize=12, fontname="helv", color=(0, 0.5, 0))
             pdf_output = io.BytesIO()
             doc.save(pdf_output)
             doc.close()
             pdf_output.seek(0)
-        
-        filename = f"contract_{contract.get('client_name', 'unknown').replace(' ', '_')}_{contract_id[:8]}.pdf"
-        
+
+        client_name = contract.get("client_name", "unknown").replace(" ", "_")
+        is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
+        filename = f"{'DFS_Disclosure' if is_dfs else 'PA_Agreement'}_{client_name}_{contract_id[:8]}.pdf"
+
         return StreamingResponse(
             pdf_output,
             media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
-        
+
     except Exception as e:
         logger.error(f"PDF generation error: {e}")
-        # Fallback to template URL
+        fallback_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
         return {
-            "pdf_url": CARE_CLAIMS_TEMPLATE.get("pdf_url"),
+            "pdf_url": fallback_url,
             "message": f"PDF generation failed: {str(e)}. Download blank template instead.",
-            "field_values": field_values
+            "field_values": field_values,
         }
 # Pre-fill from Claim
 # ============================================
@@ -702,9 +908,7 @@ async def prefill_contract_from_claim(
     current_user: dict = Depends(get_current_user)
 ):
     """Get pre-filled contract values from a claim"""
-    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
-    if not claim:
-        raise HTTPException(status_code=404, detail="Claim not found")
+    claim = await _get_claim_for_user_or_403(claim_id, current_user)
     
     # Parse address if needed
     address_parts = claim.get("property_address", "").split(",")
@@ -737,7 +941,7 @@ async def prefill_contract_from_claim(
     return {
         "claim_id": claim_id,
         "prefilled_values": prefilled,
-        "template_id": CARE_CLAIMS_TEMPLATE["id"]
+        "template_id": CARE_CLAIMS_TEMPLATE["id"],
     }
 
 
@@ -775,10 +979,8 @@ async def sign_contract_in_person(
     )
     import httpx
     
-    # Get contract
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Get signer info from contract
     signer_email = contract.get("client_email", "")
@@ -916,9 +1118,8 @@ async def complete_contract_signing(
     Mark a contract as signed after in-person signing completes.
     Accepts signature data (base64 PNG) and saves it with the contract.
     """
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
     
     # Prepare update data
     update_data = {

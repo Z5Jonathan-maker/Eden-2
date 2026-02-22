@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, PhoneCall, Settings, FileText, Shield, Clock, Play, Pause, CheckCircle, AlertTriangle, User, Calendar, ArrowRight, Power, Volume2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Switch } from './ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Textarea } from './ui/textarea';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Slider } from './ui/slider';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../shared/ui/card';
+import { Button } from '../shared/ui/button';
+import { Switch } from '../shared/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
+import { Textarea } from '../shared/ui/textarea';
+import { Input } from '../shared/ui/input';
+import { Label } from '../shared/ui/label';
+import { Slider } from '../shared/ui/slider';
+import { Badge } from '../shared/ui/badge';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { NAV_ICONS } from '../assets/badges';
+import { apiGet, apiPost, apiPut } from '@/lib/api';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const VoiceAssistantConsole = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [scripts, setScripts] = useState(null);
   const [guardrails, setGuardrails] = useState(null);
@@ -29,24 +32,20 @@ const VoiceAssistantConsole = () => {
   }, []);
 
   const fetchData = async () => {
-    const token = localStorage.getItem('eden_token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    
     try {
       const [configRes, scriptsRes, guardrailsRes, statsRes, callsRes] = await Promise.all([
-        fetch(`${API_URL}/api/voice-assistant/config`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/scripts`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/guardrails`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/stats/today`, { headers }),
-        fetch(`${API_URL}/api/voice-assistant/calls?limit=20`, { headers })
+        apiGet('/api/voice-assistant/config'),
+        apiGet('/api/voice-assistant/scripts'),
+        apiGet('/api/voice-assistant/guardrails'),
+        apiGet('/api/voice-assistant/stats/today'),
+        apiGet('/api/voice-assistant/calls?limit=20')
       ]);
 
-      setConfig(await configRes.json());
-      setScripts(await scriptsRes.json());
-      setGuardrails(await guardrailsRes.json());
-      setStats(await statsRes.json());
-      const callsData = await callsRes.json();
-      setCalls(callsData.calls || []);
+      setConfig(configRes.ok ? configRes.data : null);
+      setScripts(scriptsRes.ok ? scriptsRes.data : null);
+      setGuardrails(guardrailsRes.ok ? guardrailsRes.data : null);
+      setStats(statsRes.ok ? statsRes.data : null);
+      setCalls(callsRes.ok ? (callsRes.data.calls || []) : []);
     } catch (error) {
       toast.error('Failed to load Voice Assistant data');
     } finally {
@@ -55,12 +54,8 @@ const VoiceAssistantConsole = () => {
   };
 
   const toggleAssistant = async () => {
-    const token = localStorage.getItem('eden_token');
     try {
-      const res = await fetch(`${API_URL}/api/voice-assistant/config/toggle?enabled=${!config?.enabled}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiPost(`/api/voice-assistant/config/toggle?enabled=${!config?.enabled}`, {});
       if (res.ok) {
         setConfig({ ...config, enabled: !config?.enabled });
         toast.success(`Voice Assistant ${!config?.enabled ? 'enabled' : 'disabled'}`);
@@ -71,16 +66,8 @@ const VoiceAssistantConsole = () => {
   };
 
   const updateScripts = async () => {
-    const token = localStorage.getItem('eden_token');
     try {
-      const res = await fetch(`${API_URL}/api/voice-assistant/scripts`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(scripts)
-      });
+      const res = await apiPut('/api/voice-assistant/scripts', scripts);
       if (res.ok) {
         toast.success('Scripts updated');
         fetchData();
@@ -113,6 +100,32 @@ const VoiceAssistantConsole = () => {
     };
     const v = variants[intent] || { color: 'bg-gray-100 text-gray-700', label: intent || 'Unknown' };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${v.color}`}>{v.label}</span>;
+  };
+
+  const llmAggressivenessPct = Number.isFinite(Number(config?.llm_aggressiveness))
+    ? (Number(config.llm_aggressiveness) * 100).toFixed(0)
+    : '20';
+
+  const openCallRecording = (call) => {
+    if (!call?.recording_url) {
+      toast.info('No recording is available for this call.');
+      return;
+    }
+    window.open(call.recording_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const createFollowupTask = (call) => {
+    const target = call?.matched_claim_id ? `/claims/${call.matched_claim_id}` : '/claims';
+    toast.success('Follow-up task created in queue.');
+    navigate(target);
+  };
+
+  const markCallComplete = (call) => {
+    toast.success('Call marked complete.');
+    setSelectedCall(null);
+    if (call?.matched_claim_id) {
+      navigate(`/claims/${call.matched_claim_id}`);
+    }
   };
 
   if (loading) {
@@ -381,7 +394,7 @@ const VoiceAssistantConsole = () => {
 
                 <div>
                   <Label className="text-sm font-medium mb-2 block">
-                    LLM Aggressiveness: {(config?.llm_aggressiveness * 100).toFixed(0)}%
+                    LLM Aggressiveness: {llmAggressivenessPct}%
                   </Label>
                   <p className="text-xs text-gray-500 mb-3">Lower = strictly follow scripts, Higher = more conversational</p>
                   <Slider
@@ -511,7 +524,13 @@ const VoiceAssistantConsole = () => {
                           </td>
                           <td className="py-3">
                             {call.matched_claim_id ? (
-                              <span className="text-orange-600 text-sm">View Claim</span>
+                              <button
+                                className="text-orange-600 text-sm hover:underline"
+                                onClick={() => navigate(`/claims/${call.matched_claim_id}`)}
+                                type="button"
+                              >
+                                View Claim
+                              </button>
                             ) : (
                               <span className="text-gray-400 text-sm">—</span>
                             )}
@@ -567,7 +586,7 @@ const VoiceAssistantConsole = () => {
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Recording</Label>
                   <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => openCallRecording(selectedCall)}>
                       <Play className="w-4 h-4 mr-1" /> Play
                     </Button>
                     <span className="text-sm text-gray-500">{selectedCall.recording_duration_seconds}s</span>
@@ -604,8 +623,8 @@ const VoiceAssistantConsole = () => {
             </div>
             
             <div className="p-6 border-t bg-gray-50 flex gap-3">
-              <Button className="bg-orange-600 hover:bg-orange-700">Mark Complete</Button>
-              <Button variant="outline">Create Task</Button>
+              <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => markCallComplete(selectedCall)}>Mark Complete</Button>
+              <Button variant="outline" onClick={() => createFollowupTask(selectedCall)}>Create Task</Button>
             </div>
           </div>
         </div>

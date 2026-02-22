@@ -5,35 +5,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  ChevronRight, Play, X, Check, Loader2, 
+import {
+  ChevronRight, Play, X, Check, Loader2,
   Shield, Target, Zap, Users, ArrowRight
 } from 'lucide-react';
-import ApiService from '../services/ApiService';
+import { apiPost } from '@/lib/api';
 import { APP_LOGO, FEATURE_ICONS, TIER_BADGES } from '../assets/badges';
 
 // Custom hook for intersection observer animations
 const useInView = (options = {}) => {
   const ref = useRef(null);
   const [isInView, setIsInView] = useState(false);
+  const threshold = options.threshold ?? 0.1;
+  const root = options.root ?? null;
+  const rootMargin = options.rootMargin ?? '0px';
 
   useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setIsInView(true);
       }
-    }, { threshold: 0.1, ...options });
+    }, { threshold, root, rootMargin });
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    observer.observe(node);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      observer.unobserve(node);
+      observer.disconnect();
     };
-  }, []);
+  }, [threshold, root, rootMargin]);
 
   return [ref, isInView];
 };
@@ -69,9 +72,18 @@ const LandingPage = () => {
     }
     setLoadingPlan(packageId);
     try {
-      const response = await ApiService.createCheckoutSession(packageId);
-      if (response.url) {
-        window.location.href = response.url;
+      const originUrl = window.location.origin;
+      const res = await apiPost('/api/payments/checkout', {
+        package_id: packageId,
+        origin_url: originUrl,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.error || 'Failed to start checkout');
+      }
+
+      if (res.data.url) {
+        window.location.href = res.data.url;
       }
     } catch (error) {
       setPaymentMessage({ type: 'error', text: error.message || 'Failed to start checkout.' });

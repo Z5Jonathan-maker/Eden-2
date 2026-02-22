@@ -9,7 +9,7 @@ Each user can have their own customizable digital business card with:
 - Reviews/Ratings
 - Analytics (views, shares, open rates)
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
@@ -17,10 +17,23 @@ import uuid
 import qrcode
 import io
 import base64
+import os
+import json
+from urllib.request import urlopen
+from urllib.parse import quote
+from pathlib import Path
+import hashlib
+import time
+import requests
+from fastapi.responses import FileResponse
 
 from dependencies import db, get_current_active_user as get_current_user
 
 router = APIRouter(prefix="/api/mycard", tags=["MyCard - Digital Business Card"])
+
+BACKEND_DIR = Path(__file__).parent.parent
+MYCARD_UPLOAD_DIR = Path(os.environ.get("MYCARD_UPLOAD_DIR", str(BACKEND_DIR / "uploads" / "mycard_headshots")))
+MYCARD_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================
@@ -84,8 +97,12 @@ class CreateCardRequest(BaseModel):
     email: Optional[str] = None
     bio: Optional[str] = None
     tagline: Optional[str] = None
+    license_number: Optional[str] = None
+    template_id: Optional[str] = None
+    share_url: Optional[str] = None
     card_style: Optional[str] = "tactical"
     accent_color: Optional[str] = "#f97316"
+    profile_photo_url: Optional[str] = None
 
 
 class UpdateCardRequest(BaseModel):
@@ -99,6 +116,9 @@ class UpdateCardRequest(BaseModel):
     email: Optional[str] = None
     bio: Optional[str] = None
     tagline: Optional[str] = None
+    license_number: Optional[str] = None
+    template_id: Optional[str] = None
+    share_url: Optional[str] = None
     social_links: Optional[List[dict]] = None
     gallery_images: Optional[List[str]] = None
     is_public: Optional[bool] = None
@@ -135,6 +155,48 @@ def generate_unique_slug(full_name: str) -> str:
     # Remove special characters
     base_slug = ''.join(c for c in base_slug if c.isalnum() or c == '-')
     return f"{base_slug}-{str(uuid.uuid4())[:8]}"
+
+
+def _sort_google_reviews(reviews: List[dict], sort: str) -> List[dict]:
+    if sort == "highest":
+        return sorted(reviews, key=lambda r: (r.get("rating", 0), r.get("time", 0)), reverse=True)
+    if sort == "lowest":
+        # Lowest rating first; for ties, keep the oldest review first.
+        return sorted(reviews, key=lambda r: (r.get("rating", 0), r.get("time", 0)))
+    # default: recent
+    return sorted(reviews, key=lambda r: r.get("time", 0), reverse=True)
+
+
+def _cloudinary_upload(content: bytes, filename: str, mime_type: str) -> Optional[str]:
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+    api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+    folder = os.getenv("CLOUDINARY_MYCARD_FOLDER", "eden/mycard_headshots").strip()
+
+    if not (cloud_name and api_key and api_secret):
+        return None
+
+    timestamp = int(time.time())
+    to_sign = f"folder={folder}&timestamp={timestamp}{api_secret}"
+    signature = hashlib.sha1(to_sign.encode("utf-8")).hexdigest()
+    endpoint = f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload"
+
+    response = requests.post(
+        endpoint,
+        data={
+            "api_key": api_key,
+            "timestamp": timestamp,
+            "folder": folder,
+            "signature": signature,
+        },
+        files={"file": (filename, content, mime_type)},
+        timeout=30,
+    )
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"Cloudinary upload failed: {response.text}")
+
+    payload = response.json()
+    return payload.get("secure_url")
 
 
 # ============================================
@@ -214,8 +276,12 @@ async def create_card(
         "email": request.email or current_user.get("email"),
         "bio": request.bio,
         "tagline": request.tagline,
+        "license_number": request.license_number,
+        "template_id": request.template_id or request.card_style or "tactical",
         "card_style": request.card_style or "tactical",
         "accent_color": request.accent_color or "#f97316",
+        "profile_photo_url": request.profile_photo_url,
+        "share_url": request.share_url,
         "slug": slug,
         "social_links": [],
         "gallery_images": [],
@@ -283,6 +349,12 @@ async def update_card(
         update_data["bio"] = request.bio
     if request.tagline is not None:
         update_data["tagline"] = request.tagline
+    if request.license_number is not None:
+        update_data["license_number"] = request.license_number
+    if request.template_id is not None:
+        update_data["template_id"] = request.template_id
+    if request.share_url is not None:
+        update_data["share_url"] = request.share_url
     if request.social_links is not None:
         update_data["social_links"] = request.social_links
     if request.gallery_images is not None:
@@ -310,6 +382,143 @@ async def update_card(
         "message": "Business card updated successfully",
         "card": updated_card
     }
+
+
+@router.get("/google-reviews")
+async def get_google_reviews(
+    sort: str = Query(default="recent", pattern="^(recent|highest|lowest)$")
+):
+    """
+    Fetch Google Business Profile reviews through Google Places Details API.
+    Returns an empty-but-successful payload when API credentials are not configured.
+    """
+    place_id = os.getenv("GOOGLE_PLACE_ID", "").strip()
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip() or os.getenv("GOOGLE_PLACES_API_KEY", "").strip()
+
+    if not place_id or not api_key:
+        return {
+            "configured": False,
+            "source": "google_places",
+            "reviews": [],
+            "message": "Google reviews not configured. Set GOOGLE_PLACE_ID and GOOGLE_MAPS_API_KEY."
+        }
+
+    fields = "name,rating,user_ratings_total,reviews"
+    url = (
+        "https://maps.googleapis.com/maps/api/place/details/json"
+        f"?place_id={quote(place_id)}&fields={quote(fields)}&reviews_sort=newest&key={quote(api_key)}"
+    )
+
+    try:
+        with urlopen(url, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Google reviews fetch failed: {str(exc)}")
+
+    status = payload.get("status")
+    if status != "OK":
+        raise HTTPException(
+            status_code=502,
+            detail=f"Google Places API returned {status}: {payload.get('error_message', 'Unknown error')}"
+        )
+
+    result = payload.get("result", {}) or {}
+    raw_reviews = result.get("reviews", []) or []
+    reviews = [{
+        "reviewer_name": r.get("author_name", "Anonymous"),
+        "rating": r.get("rating", 0),
+        "review_text": r.get("text", ""),
+        "review_date": r.get("relative_time_description", ""),
+        "time": r.get("time", 0),
+        "profile_photo_url": r.get("profile_photo_url"),
+    } for r in raw_reviews]
+
+    sorted_reviews = _sort_google_reviews(reviews, sort)
+
+    return {
+        "configured": True,
+        "source": "google_places",
+        "sort": sort,
+        "business_name": result.get("name"),
+        "average_rating": result.get("rating"),
+        "total_ratings": result.get("user_ratings_total", 0),
+        "reviews": sorted_reviews,
+    }
+
+
+@router.post("/upload-headshot")
+async def upload_headshot(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload MyCard headshot with cloud-first storage and local fallback."""
+    user_id = current_user.get("id") or current_user.get("email")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    extension = Path(file.filename).suffix.lower()
+    allowed = {".jpg", ".jpeg", ".png", ".webp"}
+    if extension not in allowed:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Use .jpg, .jpeg, .png, or .webp")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if len(content) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Headshot must be <= 8MB")
+
+    mime_type = file.content_type or "application/octet-stream"
+    file_id = str(uuid.uuid4())
+    saved_filename = f"{file_id}{extension}"
+
+    # Try cloud storage first when configured.
+    profile_photo_url = _cloudinary_upload(content, file.filename, mime_type)
+    storage = "cloudinary" if profile_photo_url else "local"
+
+    if not profile_photo_url:
+        local_path = MYCARD_UPLOAD_DIR / saved_filename
+        with open(local_path, "wb") as f:
+            f.write(content)
+        profile_photo_url = f"/api/mycard/headshot/{file_id}"
+
+    await db.mycard_uploads.insert_one({
+        "id": file_id,
+        "user_id": user_id,
+        "filename": saved_filename,
+        "original_name": file.filename,
+        "mime_type": mime_type,
+        "size": len(content),
+        "storage": storage,
+        "url": profile_photo_url,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {
+        "success": True,
+        "id": file_id,
+        "storage": storage,
+        "profile_photo_url": profile_photo_url,
+    }
+
+
+@router.get("/headshot/{file_id}")
+async def get_headshot(file_id: str):
+    """Serve locally stored headshots."""
+    upload = await db.mycard_uploads.find_one({"id": file_id}, {"_id": 0})
+    if not upload:
+        raise HTTPException(status_code=404, detail="Headshot not found")
+    if upload.get("storage") != "local":
+        raise HTTPException(status_code=400, detail="Headshot is not stored locally")
+
+    file_path = MYCARD_UPLOAD_DIR / upload["filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Headshot file missing")
+
+    return FileResponse(
+        str(file_path),
+        media_type=upload.get("mime_type", "application/octet-stream"),
+        filename=upload.get("original_name", upload["filename"]),
+    )
 
 
 @router.get("/public/{slug}")
@@ -490,7 +699,11 @@ async def generate_share_link(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="No card found. Create one first.")
     
     slug = card.get("slug", user_id)
-    base_url = "https://mycard-military.preview.emergentagent.com"
+    base_url = (
+        os.getenv("MYCARD_PUBLIC_BASE_URL", "").strip()
+        or os.getenv("FRONTEND_PUBLIC_URL", "").strip()
+        or "https://eden2-five.vercel.app"
+    )
     share_url = f"{base_url}/card/{slug}"
     
     # Track share
