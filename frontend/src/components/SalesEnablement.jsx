@@ -3,7 +3,7 @@ import { Button } from '../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { Badge } from '../shared/ui/badge';
 import { Progress } from '../shared/ui/progress';
-import { 
+import {
   DoorOpen, ChevronRight, ChevronLeft, Check, MessageSquare, AlertCircle,
   FileText, Calendar, ClipboardCheck, Users, Shield, Target, Sparkles,
   Wind, Droplets, Flame, Clock, X, Home, Phone, Presentation, Play,
@@ -11,6 +11,7 @@ import {
   Zap, CloudRain, Snowflake, Eye, CheckCircle2
 } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
+import { useAuth } from '../context/AuthContext';
 
 // ============================================
 // STORM/EVENT DATA
@@ -90,7 +91,7 @@ const LOSS_FLOWS = {
         id: 'opening',
         title: 'Opening',
         subtitle: 'Establish context',
-        script: "Hi, I'm [NAME] with [COMPANY]. We're in the area documenting storm damage from the recent wind event on [DATE]. Many homes in this neighborhood have damage that's not visible from the ground.",
+        script: "Hey, I'm [NAME] — I'm with [COMPANY], we're licensed public adjusters. We're in the neighborhood because the 1-year deadline to file for the wind event on [DATE] is coming up, and many people don't even realize they still have eligible damage.",
         tips: ['Make eye contact', 'Smile warmly', 'Stand 3-4 feet back from door'],
         objective: 'Create curiosity without being pushy'
       },
@@ -153,7 +154,7 @@ const LOSS_FLOWS = {
         id: 'opening',
         title: 'Opening',
         subtitle: 'Establish context',
-        script: "Hi, I'm [NAME] with [COMPANY]. We're documenting hail damage in the area from the storm on [DATE]. We've already found significant damage on several homes nearby.",
+        script: "Hey, I'm [NAME] — I'm with [COMPANY], we're licensed public adjusters. We're in the neighborhood because the deadline to file for the hail storm on [DATE] is coming up, and many homeowners don't realize they still have eligible damage.",
         tips: ['Reference specific storm date', 'Mention nearby homes', 'Create urgency without pressure'],
         objective: 'Create relevance'
       },
@@ -216,7 +217,7 @@ const LOSS_FLOWS = {
         id: 'opening',
         title: 'Opening',
         subtitle: 'Establish context',
-        script: "Hi, I'm [NAME] with [COMPANY]. We're following up on the recent flooding/storm in the area. Water damage claims are time-sensitive, and we want to make sure homeowners know their options.",
+        script: "Hey, I'm [NAME] — I'm with [COMPANY], we're licensed public adjusters. We're in the neighborhood following up on the recent flooding. Water damage claims are time-sensitive, and many homeowners don't know what they're entitled to.",
         tips: ['Reference recent event', 'Emphasize time sensitivity', 'Position as helpful'],
         objective: 'Create urgency'
       },
@@ -279,7 +280,7 @@ const LOSS_FLOWS = {
         id: 'opening',
         title: 'Opening',
         subtitle: 'Approach with sensitivity',
-        script: "Hi, I'm [NAME] with [COMPANY]. I know this is an incredibly difficult time. We specialize in helping homeowners navigate fire damage claims. Is there anything I can help you with right now?",
+        script: "Hey, I'm [NAME] — I'm with [COMPANY], we're licensed public adjusters. I know this is an incredibly difficult time. We specialize in helping homeowners navigate fire damage claims and making sure you get every dollar you're owed.",
         tips: ['Be gentle', 'Offer help first', 'Dont pitch immediately'],
         objective: 'Build rapport'
       },
@@ -339,12 +340,16 @@ const LOSS_FLOWS = {
 // MAIN COMPONENT
 // ============================================
 const SalesEnablement = () => {
+  const { user } = useAuth();
   const [mode, setMode] = useState('home');
   const [selectedLossType, setSelectedLossType] = useState('wind');
   const [currentStep, setCurrentStep] = useState(0);
   const [expandedObjection, setExpandedObjection] = useState(null);
-  const [repName, setRepName] = useState(localStorage.getItem('eden_rep_name') || 'Rep');
-  const [companyName, setCompanyName] = useState(localStorage.getItem('eden_company_name') || 'Eden Claims');
+  const [selectedStorm, setSelectedStorm] = useState(ACTIVE_STORMS[0]);
+
+  // Personalization: auth user name takes priority over localStorage override
+  const repName = user?.full_name || localStorage.getItem('eden_rep_name') || 'Your Name';
+  const companyName = localStorage.getItem('eden_company_name') || 'Care Claims';
 
   const currentFlow = LOSS_FLOWS[selectedLossType];
   const steps = currentFlow?.steps || [];
@@ -434,39 +439,80 @@ const SalesEnablement = () => {
           </button>
         </div>
 
-        {/* Quick Door Knock Script */}
+        {/* Quick Door Knock Script — 5-Beat Structure */}
         <div className="card-tactical mb-6 shadow-tactical">
-          <div className="p-4 border-b border-zinc-800/50">
+          <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
             <h3 className="font-tactical font-bold text-white uppercase text-sm tracking-wide flex items-center gap-2">
               <DoorOpen className="w-5 h-5 text-orange-400" />
-              Quick Door Knock Script
+              Door Knock Script
             </h3>
+            {/* Storm selector */}
+            <div className="flex gap-2">
+              {ACTIVE_STORMS.map(storm => (
+                <button
+                  key={storm.id}
+                  onClick={() => setSelectedStorm(storm)}
+                  className={`text-xs px-2 py-1 rounded font-mono transition-colors ${
+                    selectedStorm.id === storm.id
+                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
+                      : 'text-zinc-500 border border-zinc-700 hover:text-zinc-300'
+                  }`}
+                >
+                  {storm.name.replace('Hurricane ', 'H. ')}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="p-4">
-            <div className="bg-gray-800 rounded-lg p-4 mb-4">
-              <p className="text-gray-200 leading-relaxed">
-                "Hi, I'm <span className="text-orange-400 font-medium">{repName}</span> with <span className="text-orange-400 font-medium">{companyName}</span>. 
-                We're in the area documenting storm damage from the recent {selectedLossType} event. 
-                We've already found damage on several homes nearby that wasn't visible from the ground. 
-                Do you have 2 minutes for me to explain what we're seeing?"
+          <div className="p-4 space-y-3">
+            {/* Beat 1 — Who you are */}
+            <div className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <p className="text-zinc-200 leading-relaxed text-sm">
+                Hey, I'm <span className="text-orange-400 font-semibold">{repName}</span>.
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="border-gray-300 text-gray-300"
-                onClick={() => setMode('presentation')}
-              >
-                Full Guided Flow
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-gray-300 text-gray-300"
-                onClick={() => setMode('objections')}
-              >
-                Handle Objections
-              </Button>
+            {/* Beat 2 — Who you're with */}
+            <div className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <p className="text-zinc-200 leading-relaxed text-sm">
+                I'm with <span className="text-orange-400 font-semibold">{companyName}</span> — we're licensed public adjusters.
+              </p>
             </div>
+            {/* Beat 3 — Why you're there (storm-specific) */}
+            <div className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <p className="text-zinc-200 leading-relaxed text-sm">{selectedStorm.pitchLine}</p>
+            </div>
+            {/* Beat 4 — The deal */}
+            <div className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
+              <p className="text-zinc-200 leading-relaxed text-sm">
+                We're offering a <span className="text-green-400 font-semibold">free inspection</span> to see if there's anything worth filing for. If there is, we handle the entire claim process and <span className="text-green-400 font-semibold">only get paid if we recover money for you</span>.
+              </p>
+            </div>
+            {/* Beat 5 — The ask */}
+            <div className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
+              <p className="text-zinc-200 leading-relaxed text-sm">
+                It takes about <span className="text-orange-400 font-semibold">10 minutes</span> — I'll grab my ladder, take a look, and show you what I find.
+              </p>
+            </div>
+          </div>
+          <div className="px-4 pb-4 flex gap-2">
+            <Button
+              variant="outline"
+              className="border-zinc-600 text-zinc-300 hover:text-white"
+              onClick={() => setMode('presentation')}
+            >
+              Full Guided Flow
+            </Button>
+            <Button
+              variant="outline"
+              className="border-zinc-600 text-zinc-300 hover:text-white"
+              onClick={() => setMode('objections')}
+            >
+              Handle Objections
+            </Button>
           </div>
         </div>
 
@@ -511,55 +557,51 @@ const SalesEnablement = () => {
   // ============================================
   if (mode === 'objections') {
     return (
-      <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
+      <div className="min-h-screen p-4 sm:p-6 page-enter">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
             onClick={() => setMode('home')}
-            className="text-gray-500"
+            className="text-zinc-400 hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Objection Handling</h1>
-            <p className="text-gray-500 text-sm">Responses for common objections</p>
+            <h1 className="text-xl font-tactical font-bold text-white">Objection Handling</h1>
+            <p className="text-zinc-500 text-sm font-mono uppercase tracking-wide">Field-tested responses</p>
           </div>
         </div>
 
         {/* All Objections */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {Object.entries(OBJECTIONS).map(([key, obj]) => (
-            <Card key={key} className="bg-white border-gray-200">
+            <div key={key} className="card-tactical overflow-hidden">
               <button
                 onClick={() => setExpandedObjection(expandedObjection === key ? null : key)}
-                className="w-full"
+                className="w-full flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors"
               >
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-base flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-400" />
-                      {obj.title}
-                    </span>
-                    <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${
-                      expandedObjection === key ? 'rotate-90' : ''
-                    }`} />
-                  </CardTitle>
-                </CardHeader>
+                <span className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400" />
+                  <span className="text-white font-medium text-sm">{obj.title}</span>
+                </span>
+                <ChevronRight className={`w-4 h-4 text-zinc-500 transition-transform ${
+                  expandedObjection === key ? 'rotate-90' : ''
+                }`} />
               </button>
               {expandedObjection === key && (
-                <CardContent className="pt-2">
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-3">
-                    <p className="text-green-300 font-medium text-sm mb-1">Quick Response:</p>
-                    <p className="text-gray-200">{obj.shortResponse}</p>
+                <div className="px-4 pb-4 border-t border-zinc-700/50 pt-3 space-y-3">
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                    <p className="text-green-400 font-medium text-xs mb-1 uppercase tracking-wide">Quick Response:</p>
+                    <p className="text-zinc-200 text-sm">{obj.shortResponse}</p>
                   </div>
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <p className="text-gray-600 font-medium text-sm mb-1">Full Response:</p>
-                    <p className="text-gray-300 text-sm">{obj.fullResponse}</p>
+                  <div className="bg-zinc-800 rounded-lg p-3">
+                    <p className="text-zinc-500 font-medium text-xs mb-1 uppercase tracking-wide">Full Response:</p>
+                    <p className="text-zinc-300 text-sm leading-relaxed">{obj.fullResponse}</p>
                   </div>
-                </CardContent>
+                </div>
               )}
-            </Card>
+            </div>
           ))}
         </div>
       </div>
@@ -570,106 +612,94 @@ const SalesEnablement = () => {
   // PRESENTATION MODE - Step by Step
   // ============================================
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-zinc-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={resetFlow}
-              className="text-gray-500"
+              className="text-zinc-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-lg font-bold flex items-center gap-2">
+              <h1 className="text-lg font-tactical font-bold text-white flex items-center gap-2">
                 {React.createElement(currentFlow.icon, { className: `w-5 h-5 text-${currentFlow.color}-400` })}
                 {currentFlow.name} Flow
               </h1>
-              <p className="text-gray-500 text-xs">Step {currentStep + 1} of {steps.length}</p>
+              <p className="text-zinc-500 text-xs font-mono">Step {currentStep + 1} of {steps.length}</p>
             </div>
           </div>
-          <Badge className={`bg-${currentFlow.color}-500/20 text-${currentFlow.color}-400`}>
+          <Badge className={`bg-${currentFlow.color}-500/20 text-${currentFlow.color}-400 border-${currentFlow.color}-500/30`}>
             {currentStepData?.title}
           </Badge>
         </div>
-        
-        {/* Progress Bar */}
         <div className="mt-3">
           <Progress value={(currentStep / (steps.length - 1)) * 100} className="h-1" />
         </div>
       </div>
 
       {/* Step Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        {/* Step Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">{currentStepData?.title}</h2>
-          <p className="text-gray-600">{currentStepData?.subtitle}</p>
+      <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+        <div>
+          <h2 className="text-2xl font-tactical font-bold text-white mb-1">{currentStepData?.title}</h2>
+          <p className="text-zinc-400">{currentStepData?.subtitle}</p>
         </div>
 
         {/* Objective */}
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6">
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-1">
             <Target className="w-4 h-4 text-orange-400" />
-            <span className="text-orange-400 font-medium text-sm">OBJECTIVE</span>
+            <span className="text-orange-400 font-medium text-xs uppercase tracking-wide">Objective</span>
           </div>
-          <p className="text-gray-200">{currentStepData?.objective}</p>
+          <p className="text-zinc-200 text-sm">{currentStepData?.objective}</p>
         </div>
 
         {/* Script */}
-        <Card className="bg-white border-gray-200 mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-blue-400" />
-              What to Say
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-800 rounded-lg p-4">
-              <p className="text-gray-100 text-lg leading-relaxed">
-                "{personalizeScript(currentStepData?.script || '')}"
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="card-tactical">
+          <div className="p-3 border-b border-zinc-800/50 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-blue-400" />
+            <span className="text-white font-medium text-sm">What to Say</span>
+          </div>
+          <div className="p-4 bg-zinc-800/60 rounded-b-lg">
+            <p className="text-zinc-100 text-lg leading-relaxed font-medium">
+              "{personalizeScript(currentStepData?.script || '')}"
+            </p>
+          </div>
+        </div>
 
         {/* Tips */}
-        <Card className="bg-white border-gray-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              Tips
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {currentStepData?.tips?.map((tip, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-300">{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <div className="card-tactical">
+          <div className="p-3 border-b border-zinc-800/50 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-400" />
+            <span className="text-white font-medium text-sm">Tips</span>
+          </div>
+          <ul className="p-4 space-y-2">
+            {currentStepData?.tips?.map((tip, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                <span className="text-zinc-300 text-sm">{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/* Navigation Footer */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-zinc-900 border-t border-zinc-800 p-4">
         <div className="flex gap-3">
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex-1 h-12 border-gray-300 text-gray-300 disabled:opacity-50"
+            className="flex-1 h-12 border-zinc-700 text-zinc-300 disabled:opacity-40"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </Button>
-          
           {currentStep === steps.length - 1 ? (
             <Button
               onClick={resetFlow}
@@ -688,12 +718,10 @@ const SalesEnablement = () => {
             </Button>
           )}
         </div>
-        
-        {/* Quick Objection Access */}
         <Button
           variant="ghost"
           onClick={() => setMode('objections')}
-          className="w-full mt-2 text-gray-500 hover:text-gray-300"
+          className="w-full mt-2 text-zinc-500 hover:text-zinc-300"
         >
           <AlertCircle className="w-4 h-4 mr-2" />
           Handle an Objection
