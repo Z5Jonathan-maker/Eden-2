@@ -4,7 +4,7 @@ import {
   ContractMergeFields,
   ContractStatus,
   CreateContractPayload,
-} from './types';
+} from '../types/types';
 import { apiGet, apiPost } from '@/lib/api';
 
 const PA_TEMPLATE_ID = import.meta.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
