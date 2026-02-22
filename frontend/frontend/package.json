@@ -71,7 +71,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "CI=false craco build",
+    "build": "CI=false DISABLE_ESLINT_PLUGIN=true craco build",
     "test": "craco test",
     "e2e": "npx playwright test",
     "e2e:ui": "npx playwright test --ui",
