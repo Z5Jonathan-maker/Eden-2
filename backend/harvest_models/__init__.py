@@ -1,3 +1,0 @@
-"""
-Eden Backend Models Package
-"""
