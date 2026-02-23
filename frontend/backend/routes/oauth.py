@@ -51,6 +51,8 @@ class OAuthStatus(BaseModel):
     user_email: Optional[str] = None
     connected_at: Optional[str] = None
     scopes: list = []
+    token_stale: bool = False
+    needs_reconnect: bool = False
 
 class OAuthToken(BaseModel):
     provider: str
@@ -77,18 +79,25 @@ async def get_all_oauth_status(current_user: dict = Depends(get_current_active_u
         )
         
         if token:
+            is_stale = token.get("token_stale", False)
+            expires_at = token.get("expires_at", 0)
+            is_expired = datetime.now(timezone.utc).timestamp() > expires_at - 300
             statuses[provider] = {
                 "connected": True,
                 "user_email": token.get("user_info", {}).get("email"),
                 "connected_at": token.get("connected_at"),
-                "scopes": token.get("scopes", [])
+                "scopes": token.get("scopes", []),
+                "token_stale": is_stale,
+                "needs_reconnect": is_stale or (is_expired and not token.get("refresh_token")),
             }
         else:
             statuses[provider] = {
                 "connected": False,
                 "user_email": None,
                 "connected_at": None,
-                "scopes": []
+                "scopes": [],
+                "token_stale": False,
+                "needs_reconnect": False,
             }
     
     # Check if OAuth is configured
@@ -111,14 +120,21 @@ async def get_oauth_status(provider: str, current_user: dict = Depends(get_curre
     )
     
     if token:
+        is_stale = token.get("token_stale", False)
+        # Check if token is expired AND we can't refresh
+        expires_at = token.get("expires_at", 0)
+        is_expired = datetime.now(timezone.utc).timestamp() > expires_at - 300
+        needs_reconnect = is_stale or (is_expired and not token.get("refresh_token"))
         return OAuthStatus(
             provider=provider,
             connected=True,
             user_email=token.get("user_info", {}).get("email"),
             connected_at=token.get("connected_at"),
-            scopes=token.get("scopes", [])
+            scopes=token.get("scopes", []),
+            token_stale=is_stale,
+            needs_reconnect=needs_reconnect,
         )
-    
+
     return OAuthStatus(provider=provider, connected=False)
 
 
@@ -429,44 +445,71 @@ async def refresh_google_token(user_id: str):
     """Refresh Google OAuth token"""
     token_doc = await db.oauth_tokens.find_one({"user_id": user_id, "provider": "google"})
     if not token_doc or not token_doc.get("refresh_token"):
+        logger.warning("Google refresh failed: no refresh_token in DB for user=%s", user_id)
         return None
-    
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "refresh_token": token_doc["refresh_token"],
-                "grant_type": "refresh_token"
-            }
-        )
-        
-        if response.status_code != 200:
-            return None
-        
-        tokens = response.json()
-        
-        await db.oauth_tokens.update_one(
-            {"user_id": user_id, "provider": "google"},
-            {"$set": {
-                "access_token": tokens.get("access_token"),
-                "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600)
-            }}
-        )
-        
-        return tokens.get("access_token")
+
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        logger.error("Google refresh failed: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not configured")
+        return None
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "refresh_token": token_doc["refresh_token"],
+                    "grant_type": "refresh_token"
+                }
+            )
+
+            if response.status_code != 200:
+                logger.error(
+                    "Google token refresh HTTP %d for user=%s: %s",
+                    response.status_code, user_id, response.text[:300]
+                )
+                # Mark token as stale so status endpoint can report accurately
+                await db.oauth_tokens.update_one(
+                    {"user_id": user_id, "provider": "google"},
+                    {"$set": {"token_stale": True, "last_refresh_error": response.text[:200]}}
+                )
+                return None
+
+            tokens = response.json()
+
+            await db.oauth_tokens.update_one(
+                {"user_id": user_id, "provider": "google"},
+                {"$set": {
+                    "access_token": tokens.get("access_token"),
+                    "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
+                    "token_stale": False,
+                    "last_refresh_error": None,
+                }}
+            )
+
+            logger.info("Google token refreshed for user=%s", user_id)
+            return tokens.get("access_token")
+    except Exception as exc:
+        logger.exception("Google token refresh exception for user=%s: %s", user_id, exc)
+        return None
+
 
 async def get_valid_token(user_id: str, provider: str):
     """Get a valid access token, refreshing if necessary"""
     token_doc = await db.oauth_tokens.find_one({"user_id": user_id, "provider": provider})
     if not token_doc:
+        logger.debug("No oauth token found for user=%s provider=%s", user_id, provider)
         return None
-    
+
     # Check if token is expired
     expires_at = token_doc.get("expires_at", 0)
-    if datetime.now(timezone.utc).timestamp() > expires_at - 300:  # 5 min buffer
+    now = datetime.now(timezone.utc).timestamp()
+    if now > expires_at - 300:  # 5 min buffer
+        logger.info("Token expired for user=%s provider=%s (expired %.0fs ago), refreshing...", user_id, provider, now - expires_at)
         if provider == "google":
             return await refresh_google_token(user_id)
-    
+        # Non-google providers: token is expired and no refresh logic
+        return None
+
     return token_doc.get("access_token")

@@ -289,6 +289,9 @@ const GmailTab = () => {
   const [focusIndex, setFocusIndex] = useState(-1);
   const listRef = useRef(null);
 
+  // Auth error state — signals parent to show reconnect
+  const [authError, setAuthError] = useState(false);
+
   /* ─── Data fetching ─── */
   const fetchMessages = useCallback(async (folder, query) => {
     setLoading(true);
@@ -300,9 +303,24 @@ const GmailTab = () => {
       if (folder) params.set('label_ids', folder);
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await apiGet(`/api/integrations/google/gmail/messages${qs}`, { cache: false });
-      if (res.ok) setMessages(res.data.messages || []);
-      else { setMessages([]); toast.error('Failed to load emails'); }
-    } catch { setMessages([]); toast.error('Failed to load emails'); }
+      if (res.ok) {
+        setMessages(res.data.messages || []);
+        setAuthError(false);
+      } else if (res.status === 401) {
+        setMessages([]);
+        setAuthError(true);
+        toast.error('Google session expired. Please reconnect your Google account.');
+      } else {
+        setMessages([]);
+        const detail = res.error || 'Failed to load emails';
+        toast.error(detail);
+      }
+    } catch (err) {
+      setMessages([]);
+      toast.error(err?.message === 'Failed to fetch'
+        ? 'Cannot reach server — it may be starting up. Try again in 30s.'
+        : 'Failed to load emails');
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -684,6 +702,22 @@ const GmailTab = () => {
               {loading ? (
                 <div className="space-y-0">
                   {Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)}
+                </div>
+              ) : authError ? (
+                <div className="flex flex-col items-center justify-center h-full text-zinc-500 px-6">
+                  <div className="w-16 h-16 rounded-full bg-red-950/50 border border-red-800/30 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-red-400" />
+                  </div>
+                  <p className="text-sm font-medium text-red-300 mb-1">Google session expired</p>
+                  <p className="text-xs text-zinc-500 text-center mb-4">
+                    Your Google access token has expired. Reconnect to continue using Gmail.
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/settings?reconnect=google'}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-full transition-colors"
+                  >
+                    Reconnect Google
+                  </button>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-zinc-500 px-6">

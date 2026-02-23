@@ -21,13 +21,25 @@ const WorkspacePage = () => {
     return saved && TABS.find(t => t.id === saved) ? saved : 'mail';
   });
   const [connected, setConnected] = useState(null);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [connError, setConnError] = useState(null);
 
   const checkConnection = useCallback(async () => {
     try {
-      const res = await apiGet('/api/oauth/status/google');
-      setConnected(res.ok ? res.data.connected : false);
-    } catch { setConnected(false); }
+      const res = await apiGet('/api/oauth/status/google', { cache: false });
+      if (res.ok) {
+        setConnected(res.data.connected);
+        setNeedsReconnect(res.data.needs_reconnect || res.data.token_stale || false);
+        setConnError(null);
+      } else {
+        setConnected(false);
+        setConnError(res.status === 401 ? 'auth' : res.error || 'Failed to check connection');
+      }
+    } catch {
+      setConnected(false);
+      setConnError('Cannot reach server — it may be starting up. Try again in 30s.');
+    }
   }, []);
 
   useEffect(() => { checkConnection(); }, [checkConnection]);
@@ -69,6 +81,31 @@ const WorkspacePage = () => {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
           <span className="text-xs text-zinc-600 font-medium">Connecting to Google...</span>
+          {connError && (
+            <span className="text-xs text-amber-500 mt-2 max-w-xs text-center">{connError}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Needs reconnect (token stale) ─── */
+  if (connected && needsReconnect) {
+    return (
+      <div className="h-full flex items-center justify-center bg-zinc-950">
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 rounded-full bg-amber-950/50 border border-amber-800/30 flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-8 h-8 text-amber-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">Google Session Expired</h1>
+          <p className="text-zinc-400 mb-6 leading-relaxed text-sm">
+            Your Google access has expired. Reconnect to continue using Gmail, Calendar, and Drive.
+          </p>
+          <button onClick={handleConnect} disabled={connecting}
+            className="inline-flex items-center gap-3 px-6 py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-medium rounded-full transition-all shadow-lg group">
+            {connecting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+            Reconnect Google
+          </button>
         </div>
       </div>
     );

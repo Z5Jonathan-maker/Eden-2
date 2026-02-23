@@ -77,28 +77,40 @@ async def _google_request(user_id: str, method: str, url: str, **kwargs):
     """Make an authenticated Google API request with auto-refresh."""
     token = await get_valid_token(user_id, "google")
     if not token:
+        logger.warning("Google API call failed: no valid token for user=%s url=%s", user_id, url)
         raise HTTPException(status_code=401, detail="Google not connected. Connect via Settings.")
 
     extra_headers = kwargs.pop("headers", {})
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.request(
-            method, url,
-            headers={"Authorization": f"Bearer {token}", **extra_headers},
-            **kwargs
-        )
-
-        if resp.status_code == 401:
-            token = await refresh_google_token(user_id)
-            if not token:
-                raise HTTPException(status_code=401, detail="Google token expired. Please reconnect.")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.request(
                 method, url,
                 headers={"Authorization": f"Bearer {token}", **extra_headers},
                 **kwargs
             )
 
-        return resp
+            if resp.status_code == 401:
+                logger.info("Google API returned 401 for user=%s, attempting refresh...", user_id)
+                token = await refresh_google_token(user_id)
+                if not token:
+                    logger.error("Google token refresh failed for user=%s — needs reconnect", user_id)
+                    raise HTTPException(status_code=401, detail="Google token expired. Please reconnect.")
+                resp = await client.request(
+                    method, url,
+                    headers={"Authorization": f"Bearer {token}", **extra_headers},
+                    **kwargs
+                )
+
+            return resp
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        logger.error("Google API timeout: method=%s url=%s user=%s", method, url, user_id)
+        raise HTTPException(status_code=504, detail="Google API request timed out. Try again.")
+    except Exception as exc:
+        logger.exception("Google API request error: method=%s url=%s user=%s error=%s", method, url, user_id, exc)
+        raise HTTPException(status_code=502, detail="Failed to reach Google API.")
 
 
 def _google_error_detail(resp: httpx.Response, fallback: str) -> str:
@@ -184,7 +196,9 @@ async def list_gmail_messages(
 
     resp = await _google_request(user_id, "GET", f"{GMAIL_API}/messages", params=params)
     if resp.status_code != 200:
-        raise HTTPException(status_code=resp.status_code, detail="Failed to list Gmail messages")
+        detail = _google_error_detail(resp, "Failed to list Gmail messages")
+        logger.error("Gmail list failed HTTP %d for user=%s: %s", resp.status_code, user_id, detail)
+        raise HTTPException(status_code=resp.status_code, detail=detail)
 
     data = resp.json()
     message_ids = [m["id"] for m in data.get("messages", [])]
