@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Response
 from fastapi.responses import JSONResponse
-from models import UserCreate, UserLogin, User, Token
+from models import UserCreate, UserLogin, User, Token, ROLES
 from auth import get_password_hash, verify_password, create_access_token
 from dependencies import db, get_current_active_user, require_role
 from datetime import datetime, timezone
@@ -79,16 +79,18 @@ async def login(credentials: UserLogin, response: Response):
         )
 
         user_obj = User(**{k: v for k, v in user.items() if k != "password"})
+        user_dict = user_obj.model_dump()
+        role = user_dict.get("role", "client")
+        role_info = ROLES.get(role, ROLES.get("client", {"permissions": [], "level": 0}))
+        user_dict["permissions"] = role_info["permissions"]
+        user_dict["level"] = role_info["level"]
 
         logger.info(f"User logged in: {user_obj.email}")
 
-        # Return user data without token in body (for security)
-        # Note: keeping access_token in response for backwards compatibility during transition
-        # Remove access_token from response once frontend is updated
         return {
-            "access_token": access_token,  # TEMPORARY: for backwards compatibility
+            "access_token": access_token,
             "token_type": "bearer",
-            "user": user_obj.model_dump()
+            "user": user_dict
         }
 
     except HTTPException:
@@ -97,10 +99,15 @@ async def login(credentials: UserLogin, response: Response):
         logger.error(f"Login error: {e}")
         raise HTTPException(status_code=500, detail="Login failed")
 
-@router.get("/me", response_model=User)
+@router.get("/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_active_user)):
-    """Get current logged-in user info"""
-    return User(**{k: v for k, v in current_user.items() if k != "password"})
+    """Get current logged-in user info with role-based permissions"""
+    user_data = {k: v for k, v in current_user.items() if k not in ("password", "_id")}
+    role = user_data.get("role", "client")
+    role_info = ROLES.get(role, ROLES.get("client", {"permissions": [], "level": 0}))
+    user_data["permissions"] = role_info["permissions"]
+    user_data["level"] = role_info["level"]
+    return user_data
 
 @router.post("/logout")
 async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
