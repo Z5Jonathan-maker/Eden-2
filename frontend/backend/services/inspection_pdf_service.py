@@ -326,7 +326,7 @@ def build_pdf_story(
     photo_dir: str,
     claim_id: str,
     include_ai: bool = True,
-    include_gps: bool = False,
+    include_gps: bool = True,
     part_info: Optional[str] = None,
 ) -> list:
     """

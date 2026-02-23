@@ -2114,7 +2114,7 @@ async def export_photo_report_pdf(
     token: str = Query(..., description="Auth token for img src / direct download access"),
     mode: str = Query("email_safe", description="email_safe or full_fidelity"),
     include_ai: bool = Query(True, description="Include AI captions and damage assessments"),
-    include_gps: bool = Query(False, description="Include GPS coordinates (off by default for carrier reports)"),
+    include_gps: bool = Query(True, description="Include GPS coordinates and timestamps"),
     rooms: Optional[str] = Query(None, description="Comma-separated room filter"),
 ):
     """
