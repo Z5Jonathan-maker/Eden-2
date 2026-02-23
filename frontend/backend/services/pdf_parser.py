@@ -1,12 +1,14 @@
 """
-Xactimate PDF Parser Service
-Extracts line items from Xactimate estimate PDFs
+PDF Parser Service
+Extracts line items from insurance estimate PDFs.
+Supports Xactimate (primary), Symbility, and Simsol formats.
 """
 import fitz  # PyMuPDF
 import re
 import io
-from typing import List, Dict, Optional
-from dataclasses import dataclass, asdict
+from abc import ABC, abstractmethod
+from typing import List, Dict, Optional, Tuple
+from dataclasses import dataclass, field, asdict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LineItem:
-    """Represents a single line item from an Xactimate estimate"""
+    """Represents a single line item from an estimate"""
     line_number: int
     category: str
     code: str
@@ -28,14 +30,16 @@ class LineItem:
     acv: Optional[float] = None  # Actual Cash Value
     room: Optional[str] = None
     raw_text: Optional[str] = None
-    
+    original_code: Optional[str] = None  # Vendor-specific code preserved
+    normalized_category: Optional[str] = None  # Mapped to canonical category
+
     def to_dict(self):
         return asdict(self)
 
 
 @dataclass
 class EstimateData:
-    """Represents parsed Xactimate estimate data"""
+    """Represents parsed estimate data (any vendor)"""
     file_name: str
     estimate_type: str  # 'carrier', 'contractor', 'pa' (public adjuster)
     claim_number: Optional[str] = None
@@ -48,13 +52,16 @@ class EstimateData:
     total_acv: float = 0.0
     categories: Dict[str, float] = None
     raw_text: str = ""
-    
+    vendor_format: str = "xactimate"  # xactimate, symbility, simsol, unknown
+    page_range: Optional[Tuple[int, int]] = None  # (start, end) 0-indexed
+    detection_confidence: float = 0.0
+
     def __post_init__(self):
         if self.line_items is None:
             self.line_items = []
         if self.categories is None:
             self.categories = {}
-    
+
     def to_dict(self):
         return {
             'file_name': self.file_name,
@@ -68,13 +75,31 @@ class EstimateData:
             'total_depreciation': self.total_depreciation,
             'total_acv': self.total_acv,
             'categories': self.categories,
-            'line_item_count': len(self.line_items)
+            'line_item_count': len(self.line_items),
+            'vendor_format': self.vendor_format,
+            'page_range': list(self.page_range) if self.page_range else None,
+            'detection_confidence': self.detection_confidence,
         }
 
 
-class XactimateParser:
+class BaseParser(ABC):
+    """Abstract base for all vendor-specific estimate parsers."""
+
+    @abstractmethod
+    def parse_pdf(
+        self,
+        pdf_bytes: bytes,
+        file_name: str,
+        estimate_type: str = "carrier",
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+    ) -> EstimateData:
+        ...
+
+
+class XactimateParser(BaseParser):
     """Parser for Xactimate PDF estimates"""
-    
+
     # Common Xactimate category codes
     CATEGORY_CODES = {
         'ACM': 'Acoustical Ceiling',
@@ -122,57 +147,89 @@ class XactimateParser:
         self.current_room = "General"
         self.current_category = "General"
     
-    def parse_pdf(self, pdf_bytes: bytes, file_name: str, estimate_type: str = 'carrier') -> EstimateData:
-        """Parse a PDF file and extract estimate data"""
+    def parse_pdf(
+        self,
+        pdf_bytes: bytes,
+        file_name: str,
+        estimate_type: str = 'carrier',
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+    ) -> EstimateData:
+        """Parse a PDF file and extract estimate data.
+
+        If *start_page* / *end_page* are provided they override auto-detection
+        and only those pages (0-indexed, inclusive) are used for line-item
+        extraction.  Header info is still searched across all pages.
+        """
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            
-            # First pass: identify which pages contain the estimate
-            estimate_pages = []
+
             all_page_texts = []
-            
-            for page_num, page in enumerate(doc):
-                page_text = page.get_text()
-                all_page_texts.append(page_text)
-                
-                # Check if this page looks like an Xactimate estimate page
-                if self._is_estimate_page(page_text):
-                    estimate_pages.append(page_num)
-            
+            for page in doc:
+                all_page_texts.append(page.get_text())
             doc.close()
-            
-            # If we found estimate-specific pages, use only those
-            # Otherwise, fall back to using all pages
-            if estimate_pages:
-                full_text = "\n".join([all_page_texts[i] for i in estimate_pages])
-                logger.info(f"Found estimate content on pages {estimate_pages} of {len(all_page_texts)} total pages")
+
+            total_pages = len(all_page_texts)
+
+            # Determine which pages to use for line-item extraction
+            if start_page is not None and end_page is not None:
+                # Manual override from user
+                s = max(0, start_page)
+                e = min(total_pages - 1, end_page)
+                estimate_page_indices = list(range(s, e + 1))
+                page_range = (s, e)
+                confidence = 1.0  # user-specified
+                logger.info("Using user-specified page range %d-%d of %d pages", s, e, total_pages)
             else:
-                full_text = "\n".join(all_page_texts)
-                logger.info(f"No specific estimate pages identified, using all {len(all_page_texts)} pages")
-            
+                # Use DocumentSegmenter for robust detection
+                try:
+                    from services.document_segmenter import segment_document
+                    seg = segment_document(pdf_bytes)
+                    estimate_page_indices = list(range(seg.estimate_start_page, seg.estimate_end_page + 1))
+                    page_range = (seg.estimate_start_page, seg.estimate_end_page)
+                    confidence = seg.confidence
+                except Exception:
+                    # Fallback to legacy heuristic
+                    estimate_page_indices = [
+                        i for i, t in enumerate(all_page_texts) if self._is_estimate_page(t)
+                    ]
+                    if not estimate_page_indices:
+                        estimate_page_indices = list(range(total_pages))
+                    page_range = (estimate_page_indices[0], estimate_page_indices[-1])
+                    confidence = 0.5
+
+            full_text = "\n".join(all_page_texts[i] for i in estimate_page_indices)
+            logger.info(
+                "Parsing estimate pages %d-%d of %d total pages",
+                page_range[0], page_range[1], total_pages,
+            )
+
             # Parse the extracted text
             estimate = EstimateData(
                 file_name=file_name,
                 estimate_type=estimate_type,
-                raw_text=full_text
+                raw_text=full_text,
+                vendor_format="xactimate",
+                page_range=page_range,
+                detection_confidence=confidence,
             )
-            
+
             # Extract header information (search all pages for header info)
             self._extract_header_info("\n".join(all_page_texts), estimate)
-            
+
             # Extract line items
             estimate.line_items = self._extract_line_items(full_text)
-            
+
             # If no items found with primary method, try alternative parsing methods
             if len(estimate.line_items) == 0:
                 logger.info("Primary parsing found no items, trying alternative methods...")
                 estimate.line_items = self._extract_line_items_alternative(full_text)
-            
+
             # Calculate totals and categories
             self._calculate_totals(estimate)
-            
+
             return estimate
-            
+
         except Exception as e:
             logger.error(f"Error parsing PDF {file_name}: {str(e)}")
             raise ValueError(f"Failed to parse PDF: {str(e)}")
@@ -817,6 +874,12 @@ class XactimateParser:
 parser = XactimateParser()
 
 
-def parse_xactimate_pdf(pdf_bytes: bytes, file_name: str, estimate_type: str = 'carrier') -> EstimateData:
+def parse_xactimate_pdf(
+    pdf_bytes: bytes,
+    file_name: str,
+    estimate_type: str = 'carrier',
+    start_page: Optional[int] = None,
+    end_page: Optional[int] = None,
+) -> EstimateData:
     """Convenience function to parse a PDF"""
-    return parser.parse_pdf(pdf_bytes, file_name, estimate_type)
+    return parser.parse_pdf(pdf_bytes, file_name, estimate_type, start_page, end_page)

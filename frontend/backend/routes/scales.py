@@ -1,5 +1,6 @@
 """
-Scales Routes - Xactimate Estimate Comparison Engine
+Scales Routes - Estimate Comparison Engine
+Supports Xactimate, Symbility, and Simsol formats.
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from pydantic import BaseModel, Field
@@ -10,7 +11,9 @@ import os
 import uuid
 import logging
 
-from services.pdf_parser import parse_xactimate_pdf, EstimateData
+from services.pdf_parser import EstimateData
+from services.parser_factory import parse_estimate
+from services.document_segmenter import segment_document
 from services.estimate_matcher import compare_estimates, ComparisonResult
 from services.ai_analyzer import analyze_comparison, generate_dispute_letter
 from dependencies import get_current_user
@@ -68,38 +71,79 @@ class DisputeLetterRequest(BaseModel):
     item_ids: List[int] = Field(default_factory=list, description="Indices of items to dispute")
 
 
+@router.post("/detect-pages")
+async def detect_pages(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Auto-detect estimate page range and vendor format in a PDF.
+
+    Returns segmentation metadata so the frontend can show the detected
+    range and let the user override before uploading.
+    """
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    try:
+        content = await file.read()
+        seg = segment_document(content)
+        return seg.to_dict()
+    except Exception as e:
+        logger.error("Error detecting pages for %s: %s", file.filename, e)
+        raise HTTPException(status_code=500, detail="Failed to detect pages")
+
+
 @router.post("/upload", response_model=EstimateUploadResponse)
 async def upload_estimate(
     file: UploadFile = File(...),
     estimate_type: str = Form(...),  # carrier, contractor, pa
     claim_id: Optional[str] = Form(None),
-    current_user: dict = Depends(get_current_user)
+    start_page: Optional[int] = Form(None),
+    end_page: Optional[int] = Form(None),
+    vendor: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user),
 ):
-    """Upload and parse an Xactimate estimate PDF"""
-    
+    """Upload and parse an estimate PDF.
+
+    Supports Xactimate, Symbility, and Simsol formats.
+    Optionally accepts *start_page* / *end_page* (0-indexed) to override
+    automatic page detection, and *vendor* to force a specific parser.
+    """
+
     # Validate file type
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
-    
+
     if estimate_type not in ['carrier', 'contractor', 'pa']:
         raise HTTPException(status_code=400, detail="estimate_type must be 'carrier', 'contractor', or 'pa'")
-    
+
     try:
         # Read file content
         content = await file.read()
-        
-        # Parse the PDF
-        estimate_data = parse_xactimate_pdf(content, file.filename, estimate_type)
-        
-        # Warn if no line items found - this might not be an Xactimate estimate
+
+        # Parse the PDF using the factory (auto-detects vendor + pages)
+        estimate_data = parse_estimate(
+            content,
+            file.filename,
+            estimate_type,
+            start_page=start_page,
+            end_page=end_page,
+            vendor=vendor,
+        )
+
+        # Warn if no line items found
         parsing_warning = None
         if len(estimate_data.line_items) == 0:
-            parsing_warning = "No line items were extracted from this PDF. This may not be a valid Xactimate estimate format. Please ensure you're uploading an Xactimate estimate PDF, not a payment letter or other document."
-            logger.warning(f"PDF {file.filename} parsed with 0 line items - may not be Xactimate format")
-        
+            parsing_warning = (
+                "No line items were extracted from this PDF. It may not be a "
+                "recognised estimate format, or the estimate pages were not "
+                "detected correctly. Try overriding the page range."
+            )
+            logger.warning("PDF %s parsed with 0 line items", file.filename)
+
         # Generate ID
         estimate_id = str(uuid.uuid4())
-        
+
         # Store in database
         doc = {
             'id': estimate_id,
@@ -112,17 +156,20 @@ async def upload_estimate(
             'date_of_loss': estimate_data.date_of_loss,
             'estimate_date': estimate_data.estimate_date,
             'line_items': [item.to_dict() for item in estimate_data.line_items],
-            'line_item_count': len(estimate_data.line_items),  # Store count for quick access
+            'line_item_count': len(estimate_data.line_items),
             'total_rcv': estimate_data.total_rcv,
             'total_depreciation': estimate_data.total_depreciation,
             'total_acv': estimate_data.total_acv,
             'categories': estimate_data.categories,
+            'vendor_format': estimate_data.vendor_format,
+            'page_range': list(estimate_data.page_range) if estimate_data.page_range else None,
+            'detection_confidence': estimate_data.detection_confidence,
             'uploaded_at': datetime.now(timezone.utc).isoformat(),
-            'parsing_warning': parsing_warning
+            'parsing_warning': parsing_warning,
         }
-        
+
         await db.scales_estimates.insert_one(doc)
-        
+
         response_data = {
             "id": estimate_id,
             "file_name": file.filename,
@@ -132,15 +179,17 @@ async def upload_estimate(
             "line_item_count": len(estimate_data.line_items),
             "total_rcv": estimate_data.total_rcv,
             "categories": estimate_data.categories,
-            "uploaded_at": doc['uploaded_at']
+            "vendor_format": estimate_data.vendor_format,
+            "page_range": list(estimate_data.page_range) if estimate_data.page_range else None,
+            "detection_confidence": estimate_data.detection_confidence,
+            "uploaded_at": doc['uploaded_at'],
         }
-        
-        # Include warning in response if present
+
         if parsing_warning:
             response_data["warning"] = parsing_warning
-        
+
         return response_data
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

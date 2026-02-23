@@ -3,118 +3,66 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../sh
 import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
 import {
-  CheckCircle, XCircle, Loader2, Database, RefreshCw,
-  ExternalLink, AlertCircle, FolderPlus, FileText
+  CheckCircle, XCircle, Loader2, RefreshCw,
+  ExternalLink, AlertCircle, Presentation,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { NAV_ICONS } from '../assets/badges';
 import { apiGet, apiPost } from '@/lib/api';
 
 const GammaIntegration = () => {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
-  const [databases, setDatabases] = useState([]);
-  const [pages, setPages] = useState([]);
-  const [selectedParent, setSelectedParent] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [selectedDatabase, setSelectedDatabase] = useState('');
-
-  const fetchDatabases = useCallback(async () => {
-    try {
-      const res = await apiGet('/api/gamma/databases');
-      if (res.ok) {
-        setDatabases(res.data.databases || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch databases:', err);
-    }
-  }, []);
-
-  const fetchPages = useCallback(async () => {
-    try {
-      const res = await apiGet('/api/gamma/pages');
-      if (res.ok) {
-        setPages(res.data.pages || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch pages:', err);
-    }
-  }, []);
+  const [syncs, setSyncs] = useState([]);
+  const [syncingAll, setSyncingAll] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiGet('/api/gamma/status');
-
       if (res.ok) {
         setStatus(res.data);
-
-        if (res.data.connected) {
-          await Promise.all([fetchDatabases(), fetchPages()]);
-        }
       }
     } catch (err) {
       console.error('Failed to fetch Gamma status:', err);
-      toast.error('Failed to connect to Gamma');
+      toast.error('Failed to check Gamma connection');
     } finally {
       setLoading(false);
     }
-  }, [fetchDatabases, fetchPages]);
+  }, []);
+
+  const fetchSyncs = useCallback(async () => {
+    try {
+      const res = await apiGet('/api/gamma/databases');
+      if (res.ok) {
+        setSyncs(res.data.presentations || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch syncs:', err);
+    }
+  }, []);
 
   useEffect(() => {
     fetchStatus();
-  }, [fetchStatus]);
-
-  const createDatabase = async () => {
-    if (!selectedParent) {
-      toast.error('Please select a parent page');
-      return;
-    }
-
-    setCreating(true);
-    try {
-      const res = await apiPost('/api/gamma/databases/create', {
-        parent_page_id: selectedParent,
-        title: 'Eden Claims'
-      });
-
-      if (res.ok) {
-        toast.success('Claims database created in Gamma!');
-        await fetchDatabases();
-        setSelectedDatabase(res.data.database_id);
-      } else {
-        toast.error(res.error || 'Failed to create database');
-      }
-    } catch (err) {
-      toast.error('Failed to create database');
-    } finally {
-      setCreating(false);
-    }
-  };
+    fetchSyncs();
+  }, [fetchStatus, fetchSyncs]);
 
   const syncAllClaims = async () => {
-    if (!selectedDatabase) {
-      toast.error('Please select a database first');
-      return;
-    }
-
-    setSyncing(true);
+    setSyncingAll(true);
     try {
-      const res = await apiPost(`/api/gamma/sync/all?database_id=${selectedDatabase}`, {});
-
+      const res = await apiPost('/api/gamma/sync/all', {});
       if (res.ok) {
-        toast.success(`Synced ${res.data.synced} claims to Gamma!`);
+        toast.success(`Created ${res.data.synced} presentations!`);
         if (res.data.failed > 0) {
-          toast.warning(`${res.data.failed} claims failed to sync`);
+          toast.warning(`${res.data.failed} claims failed`);
         }
+        await fetchSyncs();
       } else {
         toast.error(res.error || 'Failed to sync claims');
       }
     } catch (err) {
       toast.error('Failed to sync claims');
     } finally {
-      setSyncing(false);
+      setSyncingAll(false);
     }
   };
 
@@ -140,7 +88,7 @@ const GammaIntegration = () => {
           </svg>
           <div>
             <h1 className="text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">GAMMA INTEGRATION</h1>
-            <p className="text-gray-600">Sync your claims data to Gamma presentations</p>
+            <p className="text-gray-600">AI-powered presentation generation for claims</p>
           </div>
         </div>
       </div>
@@ -164,8 +112,10 @@ const GammaIntegration = () => {
                 <span className="font-medium text-green-800">Connected to Gamma</span>
               </div>
               <div className="text-sm text-green-700 space-y-1">
-                <p><strong>Bot Name:</strong> {status.bot_name}</p>
-                <p><strong>Workspace:</strong> {status.workspace_name}</p>
+                <p><strong>API:</strong> Gamma v1.0 (public-api.gamma.app)</p>
+                {status.theme_count > 0 && (
+                  <p><strong>Themes Available:</strong> {status.theme_count}</p>
+                )}
               </div>
             </div>
           ) : (
@@ -174,211 +124,171 @@ const GammaIntegration = () => {
                 <XCircle className="w-5 h-5 text-red-600" />
                 <span className="font-medium text-red-800">Not Connected</span>
               </div>
-              <p className="text-sm text-red-700">
-                {status?.message || 'Gamma integration token not configured'}
+              <p className="text-sm text-red-700 mb-3">
+                {status?.message || 'Gamma API key not configured'}
               </p>
+              {!status?.configured && (
+                <div className="mt-2 p-3 bg-red-100 rounded text-sm text-red-800">
+                  <strong>Setup:</strong> Get your API key from{' '}
+                  <a
+                    href="https://gamma.app/settings/api"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    gamma.app/settings/api
+                  </a>{' '}
+                  (requires Pro plan), then set <code className="bg-red-200 px-1 rounded">GAMMA_API_KEY</code> in your .env file.
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* How It Works */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-900 flex items-center gap-2">
+            <Presentation className="w-5 h-5 text-orange-600" />
+            How Gamma Works in Eden
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 text-sm text-gray-700">
+            <p>
+              Gamma generates professional presentation decks from your claim data.
+              You can create decks from any claim&apos;s detail page using the
+              <strong> Generate Deck</strong> button.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-1">Client Decks</h4>
+                <ul className="text-blue-700 text-xs space-y-1">
+                  <li>Client Update — Status overview for homeowner</li>
+                  <li>Settlement Review — For client approval</li>
+                  <li>Final Settlement — Celebratory closing deck</li>
+                </ul>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-semibold text-purple-800 mb-1">Internal Decks</h4>
+                <ul className="text-purple-700 text-xs space-y-1">
+                  <li>Rep Performance — Sales/adjuster review</li>
+                  <li>Ministry Report — Kingdom impact report</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {status?.connected && (
         <>
-          {/* Important Note */}
-          {pages.length === 0 && databases.length === 0 && (
-            <Card className="mb-6 border-yellow-200 bg-yellow-50">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-yellow-800 mb-2">
-                      Share a Page with Eden Claims
-                    </h4>
-                    <p className="text-sm text-yellow-700 mb-3">
-                      The integration doesn't have access to any pages yet. To use this integration:
-                    </p>
-                    <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
-                      <li>Open any page in Gamma where you want to store claims</li>
-                      <li>Click the <strong>"..."</strong> menu in the top right</li>
-                      <li>Click <strong>"Connections"</strong> → <strong>"Connect to"</strong></li>
-                      <li>Search for <strong>"Eden Claims"</strong> and select it</li>
-                      <li>Click the <strong>Refresh</strong> button above</li>
-                    </ol>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Existing Databases */}
+          {/* Bulk Sync */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="dark:text-gray-900 flex items-center gap-2">
-                <Database className="w-5 h-5 text-orange-600" />
-                Available Databases
+                <RefreshCw className="w-5 h-5 text-orange-600" />
+                Bulk Generate
               </CardTitle>
               <CardDescription className="dark:text-gray-600">
-                Select a database to sync claims or create a new one
+                Generate Client Update decks for all claims at once
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {databases.length > 0 ? (
-                <div className="space-y-2">
-                  {databases.map((db) => (
-                    <div 
-                      key={db.id}
-                      onClick={() => setSelectedDatabase(db.id)}
-                      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                        selectedDatabase === db.id 
-                          ? 'border-orange-500 bg-orange-50' 
-                          : 'border-gray-200 hover:border-orange-300:border-orange-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{db.title}</h4>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Last edited: {new Date(db.last_edited_time).toLocaleDateString()}
-                          </p>
-                        </div>
-                        {selectedDatabase === db.id && (
-                          <Badge className="bg-orange-600">Selected</Badge>
-                        )}
-                      </div>
-                      {db.url && (
-                        <a 
-                          href={db.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-orange-600 hover:underline mt-2 inline-flex items-center gap-1"
-                        >
-                          Open in Gamma <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No databases found. Create one below or share an existing database with the Eden Claims integration.
-                </p>
-              )}
-
-              {selectedDatabase && (
-                <div className="pt-4 border-t">
-                  <Button 
-                    onClick={syncAllClaims}
-                    disabled={syncing}
-                    className="w-full bg-orange-600 hover:bg-orange-700"
-                  >
-                    {syncing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Syncing Claims...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Sync All Claims to Gamma
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
+            <CardContent>
+              <Button
+                onClick={syncAllClaims}
+                disabled={syncingAll}
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                {syncingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating Decks...
+                  </>
+                ) : (
+                  <>
+                    <Presentation className="w-4 h-4 mr-2" />
+                    Generate Decks for All Claims
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Create New Database */}
-          {pages.length > 0 && (
-            <Card className="dark:bg-white">
+          {/* Recent Presentations */}
+          {syncs.length > 0 && (
+            <Card>
               <CardHeader>
                 <CardTitle className="dark:text-gray-900 flex items-center gap-2">
-                  <FolderPlus className="w-5 h-5 text-orange-600" />
-                  Create Claims Database
+                  <Presentation className="w-5 h-5 text-orange-600" />
+                  Recent Presentations
                 </CardTitle>
                 <CardDescription className="dark:text-gray-600">
-                  Create a new database in Gamma with all the right fields for claims
+                  Presentations generated from claims
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Parent Page
-                  </label>
-                  <select
-                    value={selectedParent}
-                    onChange={(e) => setSelectedParent(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900"
-                  >
-                    <option value="">Select a page...</option>
-                    {pages.map((page) => (
-                      <option key={page.id} value={page.id}>
-                        {page.title || 'Untitled'}
-                      </option>
-                    ))}
-                  </select>
+              <CardContent>
+                <div className="space-y-2">
+                  {syncs.map((sync, i) => (
+                    <div
+                      key={sync.claim_id || i}
+                      className="p-3 rounded-lg border border-gray-200 hover:border-orange-300 transition-colors flex items-center justify-between"
+                    >
+                      <div>
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {sync.claim_id}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          Synced: {sync.last_synced ? new Date(sync.last_synced).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                          Generated
+                        </Badge>
+                        {(sync.gamma_url || sync.edit_url) && (
+                          <a
+                            href={sync.edit_url || sync.gamma_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-600 hover:text-orange-700"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    Database will include these fields:
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Claim Number
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Client Name
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Status
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Carrier
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Policy Number
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Loss Type
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Date of Loss
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Claim Amount
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Address
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> Contact Info
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={createDatabase}
-                  disabled={!selectedParent || creating}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                >
-                  {creating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating Database...
-                    </>
-                  ) : (
-                    <>
-                      <FolderPlus className="w-4 h-4 mr-2" />
-                      Create Eden Claims Database
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
           )}
         </>
+      )}
+
+      {/* Setup Info */}
+      {!status?.connected && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-yellow-800 mb-2">
+                  Setup Instructions
+                </h4>
+                <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1.5">
+                  <li>Go to <strong>gamma.app</strong> and sign in (Pro plan required)</li>
+                  <li>Navigate to <strong>Settings &gt; API</strong></li>
+                  <li>Generate an API key</li>
+                  <li>Add <code className="bg-yellow-200 px-1 rounded">GAMMA_API_KEY=your_key_here</code> to your backend .env file</li>
+                  <li>Restart the backend server</li>
+                  <li>Click <strong>Refresh</strong> above to verify the connection</li>
+                </ol>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

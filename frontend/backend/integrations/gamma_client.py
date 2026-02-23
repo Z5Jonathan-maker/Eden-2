@@ -1,23 +1,26 @@
 """
-Gamma Client - Handles Gamma API for presentation generation
+Gamma Client — Handles Gamma API v1.0 for presentation generation
 
-Primary job: Generate presentations from:
-- Inspection reports → Carrier decks
-- Claims → Client update decks  
-- Rep stats → Performance decks
+Primary job: Generate presentations from claim/inspection data.
 
 Uses API key from GAMMA_API_KEY environment variable.
+API docs: https://developers.gamma.app
+Base URL: https://public-api.gamma.app/v1.0
+Auth: X-API-KEY header
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional
 import os
+import logging
+import asyncio
 import httpx
-from datetime import datetime, timezone
 
-from dependencies import db
+logger = logging.getLogger(__name__)
 
-# Gamma API endpoint
-GAMMA_API_URL = "https://api.gamma.app/v1"
+# Gamma API v1.0
+GAMMA_API_URL = "https://public-api.gamma.app/v1.0"
+GAMMA_POLL_INTERVAL = 10   # seconds
+GAMMA_POLL_MAX_WAIT = 180  # seconds
 
 
 class GammaClient:
@@ -25,216 +28,217 @@ class GammaClient:
     Gamma integration client for presentation generation.
     All Gamma API calls go through this class.
     """
-    
+
     def __init__(self):
-        self.api_key = os.environ.get("GAMMA_API_KEY")
+        self.api_key = os.environ.get("GAMMA_API_KEY") or os.environ.get("GAMMA_API_TOKEN")
         self._headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        } if self.api_key else {}
-    
+            "X-API-KEY": self.api_key or "",
+            "Content-Type": "application/json",
+        }
+
     @property
     def is_configured(self) -> bool:
-        """Check if Gamma API key is configured"""
         return bool(self.api_key)
-    
+
+    async def _poll_generation(self, generation_id: str) -> dict:
+        """Poll until generation completes or times out."""
+        elapsed = 0
+        async with httpx.AsyncClient(timeout=30) as client:
+            while elapsed < GAMMA_POLL_MAX_WAIT:
+                await asyncio.sleep(GAMMA_POLL_INTERVAL)
+                elapsed += GAMMA_POLL_INTERVAL
+                try:
+                    resp = await client.get(
+                        f"{GAMMA_API_URL}/generations/{generation_id}",
+                        headers=self._headers,
+                    )
+                    if resp.status_code != 200:
+                        continue
+                    data = resp.json()
+                    if data.get("status") == "completed":
+                        return data
+                    elif data.get("status") in ("failed", "error"):
+                        return {"error": True, "message": data.get("message", "Generation failed")}
+                except httpx.RequestError:
+                    continue
+
+        return {"error": True, "message": f"Generation timed out after {GAMMA_POLL_MAX_WAIT}s"}
+
     async def create_presentation(
         self,
         title: str,
-        slides: list,
+        content: str,
         template: str = "professional",
-        audience: str = "carrier"
+        audience: str = "carrier",
+        num_cards: int = 8,
     ) -> dict:
         """
-        Create a presentation via Gamma API.
-        
-        Args:
-            title: Presentation title
-            slides: List of slide objects with title, content, notes
-            template: Template style (professional, modern, clean)
-            audience: Target audience (carrier, client, internal)
-        
-        Returns:
-            Gamma presentation response with URL and ID
+        Create a presentation via Gamma API v1.0.
+
+        1. POST /generations with inputText
+        2. Poll GET /generations/{id} until completed
+        3. Return gammaUrl
         """
         if not self.is_configured:
             return {
                 "error": True,
                 "message": "Gamma API key not configured. Set GAMMA_API_KEY in environment.",
-                "mock": True
             }
-        
+
+        input_text = f"Title: {title}\n\n{content}"
+
         payload = {
-            "title": title,
-            "slides": slides,
-            "template": template,
-            "settings": {
+            "inputText": input_text,
+            "textMode": "generate",
+            "format": "presentation",
+            "numCards": num_cards,
+            "textOptions": {
+                "tone": "professional",
                 "audience": audience,
-                "style": "professional"
-            }
+            },
+            "imageOptions": {
+                "source": "stock",
+            },
         }
-        
+
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60) as client:
                 response = await client.post(
-                    f"{GAMMA_API_URL}/presentations",
+                    f"{GAMMA_API_URL}/generations",
                     headers=self._headers,
                     json=payload,
-                    timeout=60.0
                 )
-                
-                if response.status_code == 200:
-                    return response.json()
-                else:
+
+                if response.status_code != 200:
                     return {
                         "error": True,
                         "status_code": response.status_code,
-                        "message": response.text
+                        "message": response.text[:500],
                     }
-        except Exception as e:
+
+                data = response.json()
+
+            generation_id = data.get("generationId")
+            if not generation_id:
+                return {"error": True, "message": "No generationId in response"}
+
+            # Poll for completion
+            completed = await self._poll_generation(generation_id)
+            if completed.get("error"):
+                return completed
+
+            gamma_url = completed.get("gammaUrl", "")
             return {
-                "error": True,
-                "message": str(e)
+                "gamma_id": generation_id,
+                "url": gamma_url,
+                "edit_url": gamma_url,
+                "share_url": gamma_url,
+                "status": "completed",
+                "credits": completed.get("credits"),
             }
-    
+        except Exception as e:
+            logger.error(f"Gamma API error: {e}")
+            return {"error": True, "message": str(e)}
+
     async def create_inspection_deck(
         self,
         report_json: dict,
         claim_info: dict,
-        session_info: dict
+        session_info: dict,
     ) -> dict:
-        """
-        Create an inspection presentation from report data.
-        
-        Args:
-            report_json: The structured inspection report JSON
-            claim_info: Claim details
-            session_info: Inspection session details
-        
-        Returns:
-            Gamma presentation response
-        """
+        """Create an inspection presentation from report data."""
         header = report_json.get("header", {})
         overview = report_json.get("overview", {})
-        
-        slides = [
-            # Title slide
-            {
-                "title": f"Inspection Report: {header.get('claim_number', 'N/A')}",
-                "content": f"""
-Property: {header.get('property_address', 'N/A')}
-Insured: {header.get('insured_name', 'N/A')}
-Date: {header.get('report_date', 'N/A')}
-                """,
-                "type": "title"
-            },
-            # Overview slide
-            {
-                "title": "Overview",
-                "content": overview.get("summary", "") if isinstance(overview, dict) else str(overview),
-                "type": "content"
-            },
-            # Exterior/Roof slide
-            {
-                "title": "Exterior & Roof",
-                "content": self._format_exterior_roof(report_json.get("exterior_roof", {})),
-                "type": "content"
-            }
+
+        content_parts = [
+            f"Inspection Report for Claim {header.get('claim_number', 'N/A')}",
+            f"Property: {header.get('property_address', 'N/A')}",
+            f"Insured: {header.get('insured_name', 'N/A')}",
+            f"Date: {header.get('report_date', 'N/A')}",
+            "",
+            "Overview:",
+            overview.get("summary", "") if isinstance(overview, dict) else str(overview),
+            "",
         ]
-        
-        # Interior slides (one per room)
+
+        # Exterior/Roof
+        ext = report_json.get("exterior_roof", {})
+        if isinstance(ext, dict):
+            content_parts.append("Exterior & Roof:")
+            content_parts.append(ext.get("summary", ""))
+            for cond in ext.get("notable_conditions", []):
+                content_parts.append(f"- {cond}")
+        elif ext:
+            content_parts.append(f"Exterior & Roof: {ext}")
+        content_parts.append("")
+
+        # Interior rooms
         for room in report_json.get("interior", []):
             if isinstance(room, dict):
-                slides.append({
-                    "title": room.get("room", "Interior"),
-                    "content": f"""
-{room.get('summary', '')}
+                content_parts.append(f"Room: {room.get('room', 'Interior')}")
+                content_parts.append(room.get("summary", ""))
+                content_parts.append(f"Damage: {room.get('damage_description', 'N/A')}")
+                content_parts.append(f"Cause: {room.get('possible_cause', 'N/A')}")
+                content_parts.append("")
 
-**Damage:** {room.get('damage_description', 'N/A')}
-**Cause:** {room.get('possible_cause', 'N/A')}
-                    """,
-                    "type": "content"
-                })
-        
-        # Key findings slide
+        # Key findings
         findings = report_json.get("key_findings", [])
         if findings:
-            slides.append({
-                "title": "Key Findings",
-                "content": "\n".join([f"• {f}" for f in findings]),
-                "type": "bullets"
-            })
-        
-        # Next steps slide
+            content_parts.append("Key Findings:")
+            for f in findings:
+                content_parts.append(f"- {f}")
+            content_parts.append("")
+
+        # Next steps
         steps = report_json.get("recommended_next_steps", [])
         if steps:
-            slides.append({
-                "title": "Recommended Next Steps",
-                "content": "\n".join([f"{i+1}. {s}" for i, s in enumerate(steps)]),
-                "type": "numbered"
-            })
-        
+            content_parts.append("Recommended Next Steps:")
+            for i, s in enumerate(steps, 1):
+                content_parts.append(f"{i}. {s}")
+
+        content = "\n".join(content_parts)
+        title = f"Inspection Report - {header.get('claim_number', 'Claim')}"
+
         return await self.create_presentation(
-            title=f"Inspection Report - {header.get('claim_number', 'Claim')}",
-            slides=slides,
-            template="professional",
-            audience="carrier"
+            title=title,
+            content=content,
+            audience="carrier",
         )
-    
+
     async def create_client_update_deck(
         self,
         claim_info: dict,
         updates: list,
-        next_actions: list
+        next_actions: list,
     ) -> dict:
-        """Create a client update presentation"""
-        slides = [
-            {
-                "title": f"Claim Update: {claim_info.get('claim_number', '')}",
-                "content": f"""
-Property: {claim_info.get('property_address', '')}
-Status: {claim_info.get('status', '')}
-                """,
-                "type": "title"
-            },
-            {
-                "title": "Recent Progress",
-                "content": "\n".join([f"• {u}" for u in updates]) if updates else "No recent updates",
-                "type": "bullets"
-            },
-            {
-                "title": "Next Steps",
-                "content": "\n".join([f"• {a}" for a in next_actions]) if next_actions else "Awaiting carrier response",
-                "type": "bullets"
-            }
+        """Create a client update presentation."""
+        content_parts = [
+            f"Claim Update for {claim_info.get('claim_number', '')}",
+            f"Property: {claim_info.get('property_address', '')}",
+            f"Status: {claim_info.get('status', '')}",
+            "",
+            "Recent Progress:",
         ]
-        
+        for u in (updates or ["No recent updates"]):
+            content_parts.append(f"- {u}")
+        content_parts.append("")
+        content_parts.append("Next Steps:")
+        for a in (next_actions or ["Awaiting carrier response"]):
+            content_parts.append(f"- {a}")
+
+        content = "\n".join(content_parts)
+        title = f"Client Update - {claim_info.get('claim_number', 'Claim')}"
+
         return await self.create_presentation(
-            title=f"Client Update - {claim_info.get('claim_number', 'Claim')}",
-            slides=slides,
-            template="clean",
-            audience="client"
+            title=title,
+            content=content,
+            audience="client",
         )
-    
-    def _format_exterior_roof(self, data: dict) -> str:
-        """Format exterior/roof data for slide"""
-        if isinstance(data, str):
-            return data
-        
-        content = data.get("summary", "")
-        if data.get("details"):
-            content += f"\n\n{data.get('details')}"
-        
-        conditions = data.get("notable_conditions", [])
-        if conditions:
-            content += "\n\n**Notable Conditions:**\n"
-            content += "\n".join([f"• {c}" for c in conditions])
-        
-        return content
 
 
 # Singleton instance
 _gamma_client = None
+
 
 def get_gamma_client() -> GammaClient:
     """Get the Gamma client singleton"""

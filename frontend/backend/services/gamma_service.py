@@ -1,8 +1,7 @@
 """
-GammaService - Wrapper around integrations.gamma_client.GammaClient
+GammaService — Wrapper around integrations.gamma_client.GammaClient
 
-Provides presentation generation and legacy claim-page methods
-used by routes/integrations.py endpoints.
+Provides presentation generation methods used by routes/integrations.py endpoints.
 """
 
 from typing import Optional, List, Dict
@@ -26,27 +25,24 @@ class GammaService:
         theme_id: Optional[str] = None,
     ) -> dict:
         """Generate a Gamma presentation from title + content."""
-        slides = [
-            {"title": title, "content": content, "type": "content"}
-        ]
         return await self.client.create_presentation(
             title=title,
-            slides=slides,
-            template=theme_id or "professional",
+            content=content,
             audience="carrier",
         )
 
     async def list_themes(self) -> List[dict]:
-        """Return available presentation themes."""
+        """Return available presentation themes.
+        TODO: Call Gamma GET /themes API when needed."""
         return [
             {"id": "professional", "name": "Professional"},
             {"id": "modern", "name": "Modern"},
             {"id": "clean", "name": "Clean"},
         ]
 
-    # ── Legacy claim-page methods (Notion-style) ────────────────
+    # ── Legacy claim-page methods ────────────────
     # Kept for backwards compatibility with routes/integrations.py.
-    # Primary claim sync is handled by routes/gamma.py.
+    # Primary claim workflows are handled by routes/gamma.py.
 
     async def create_claim_page(
         self, database_id: str, claim_data: Dict

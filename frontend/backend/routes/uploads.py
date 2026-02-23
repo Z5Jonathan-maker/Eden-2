@@ -141,6 +141,18 @@ async def upload_file(
     # Store metadata in database
     await db.uploaded_files.insert_one(metadata)
 
+    # Fire-and-forget: mirror to Google Drive (non-blocking)
+    if content_id:
+        import asyncio
+        asyncio.ensure_future(_mirror_to_drive(
+            user_id=current_user.get("id", ""),
+            claim_id=content_id,
+            file_name=file.filename,
+            file_bytes=content,
+            mime_type=mime_type,
+            category=content_type or "general",
+        ))
+
     return {
         "id": file_id,
         "filename": safe_filename,
@@ -149,6 +161,31 @@ async def upload_file(
         "size": len(content),
         "url": f"/api/uploads/file/{file_id}"
     }
+
+
+async def _mirror_to_drive(
+    user_id: str,
+    claim_id: str,
+    file_name: str,
+    file_bytes: bytes,
+    mime_type: str,
+    category: str,
+):
+    """Non-blocking Drive mirror. Errors are logged, never raised."""
+    try:
+        from services.drive_mirror import get_drive_mirror
+        mirror = get_drive_mirror()
+        await mirror.mirror_claim_file(
+            user_id=user_id,
+            claim_id=claim_id,
+            file_name=file_name,
+            file_bytes=file_bytes,
+            mime_type=mime_type,
+            category=category,
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug(f"Drive mirror skipped: {e}")
 
 
 @router.get("/file/{file_id}")
@@ -281,3 +318,42 @@ async def get_my_files(current_user: dict = Depends(get_current_active_user)):
         f["url"] = f"/api/uploads/file/{f['id']}"
 
     return {"files": files}
+
+
+# ============ DRIVE MIRROR ADMIN ============
+
+@router.get("/drive-mirror/status")
+async def drive_mirror_status(current_user: dict = Depends(get_current_active_user)):
+    """Get Drive mirror status: enabled, mapping count, dead letters, last run."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from services.drive_mirror import MIRROR_ENABLED
+
+    mirrored_count = await db.drive_mirror_map.count_documents({})
+    dead_letters = await db.drive_mirror_dead_letter.count_documents({"retried": False})
+    last_run = await db.drive_mirror_runs.find_one(
+        {}, sort=[("completed_at", -1)], projection={"_id": 0}
+    )
+
+    return {
+        "enabled": MIRROR_ENABLED,
+        "mirrored_files": mirrored_count,
+        "pending_dead_letters": dead_letters,
+        "last_run": last_run,
+    }
+
+
+@router.post("/drive-mirror/reconcile")
+async def drive_mirror_reconcile(current_user: dict = Depends(get_current_active_user)):
+    """Manually trigger Drive mirror reconciliation (admin only)."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from services.drive_mirror import get_drive_mirror, MIRROR_ENABLED
+    if not MIRROR_ENABLED:
+        raise HTTPException(status_code=400, detail="Drive mirror is not enabled. Set DRIVE_MIRROR_ENABLED=true in .env")
+
+    mirror = get_drive_mirror()
+    stats = await mirror.reconcile()
+    return {"message": "Reconciliation complete", "stats": stats}

@@ -22,7 +22,7 @@ from .utils import ensure_datetime, timeline_sort_key, truncate, utc_now
 
 logger = logging.getLogger(__name__)
 
-GAMMA_PRESENTATION_API_URL = "https://api.gamma.app/v1/create"
+GAMMA_API_URL = "https://public-api.gamma.app/v1.0"
 
 
 class EvidenceReportService:
@@ -400,31 +400,48 @@ class EvidenceReportService:
         )
 
     async def _call_gamma(self, *, title: str, prompt: str) -> Dict[str, Any]:
+        import asyncio
         if not self.gamma_api_key:
             raise RuntimeError("Gamma API key not configured")
         payload = {
-            "title": title,
-            "mode": "generate",
-            "prompt": prompt,
-            "options": {"images": True, "language": "en"},
+            "inputText": f"Title: {title}\n\n{prompt}",
+            "textMode": "generate",
+            "format": "presentation",
+            "numCards": 8,
+            "textOptions": {"tone": "professional"},
+            "imageOptions": {"source": "stock"},
         }
         headers = {
-            "Authorization": f"Bearer {self.gamma_api_key}",
+            "X-API-KEY": self.gamma_api_key,
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(GAMMA_PRESENTATION_API_URL, headers=headers, json=payload)
+            response = await client.post(f"{GAMMA_API_URL}/generations", headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
-        gamma_id = data.get("id")
-        if not gamma_id:
-            raise RuntimeError("Gamma response missing presentation id")
-        return {
-            "gamma_id": gamma_id,
-            "edit_url": f"https://gamma.app/edit/{gamma_id}",
-            "share_url": f"https://gamma.app/{gamma_id}",
-            "pdf_url": f"https://gamma.app/export/{gamma_id}/pdf",
-        }
+            generation_id = data.get("generationId")
+            if not generation_id:
+                raise RuntimeError("Gamma response missing generationId")
+            # Poll for completion
+            for _ in range(18):  # max 3 minutes
+                await asyncio.sleep(10)
+                poll = await client.get(
+                    f"{GAMMA_API_URL}/generations/{generation_id}",
+                    headers=headers,
+                )
+                if poll.status_code == 200:
+                    poll_data = poll.json()
+                    if poll_data.get("status") == "completed":
+                        gamma_url = poll_data.get("gammaUrl", "")
+                        return {
+                            "gamma_id": generation_id,
+                            "edit_url": gamma_url,
+                            "share_url": gamma_url,
+                            "url": gamma_url,
+                        }
+                    elif poll_data.get("status") in ("failed", "error"):
+                        raise RuntimeError(f"Gamma generation failed: {poll_data.get('message', '')}")
+        raise RuntimeError("Gamma generation timed out")
 
     async def _store_gamma_pdf(self, claim_id: str, job_id: str, pdf_url: str) -> Optional[str]:
         try:

@@ -1,13 +1,38 @@
 """
 Estimate Matcher Service
-Compares two Xactimate estimates and identifies differences
+Compares two estimates (any vendor) and identifies differences.
+Uses a two-pass matching strategy: exact/high-confidence first, then fuzzy.
 """
+import re
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, asdict
 from services.pdf_parser import EstimateData, LineItem
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Common abbreviations used across vendor formats
+ABBREVIATION_MAP = {
+    "r&r": "remove and replace",
+    "comp.": "composition",
+    "comp": "composition",
+    "lam": "laminated",
+    "shgl": "shingle",
+    "shgls": "shingles",
+    "undrlmnt": "underlayment",
+    "flshng": "flashing",
+    "dbl": "double",
+    "sgl": "single",
+    "w/": "with",
+    "w/o": "without",
+    "incl": "including",
+    "inst": "install",
+    "instl": "install",
+    "rpl": "replace",
+    "rmv": "remove",
+    "rem": "remove",
+    "disp": "dispose",
+}
 
 
 @dataclass
@@ -75,8 +100,13 @@ class ComparisonResult:
 
 
 class EstimateMatcher:
-    """Compares two Xactimate estimates and identifies variances"""
-    
+    """Compares two estimates and identifies variances.
+
+    Uses a two-pass matching strategy:
+      Pass 1 — high-confidence (>= 0.85): exact code + category + description
+      Pass 2 — fuzzy (>= 0.55): remaining unmatched items
+    """
+
     # Category name mapping
     CATEGORY_NAMES = {
         'ACM': 'Acoustical Ceiling',
@@ -117,68 +147,53 @@ class EstimateMatcher:
         'WDP': 'Wood Panel'
     }
     
+    HIGH_CONFIDENCE_THRESHOLD = 0.85
+    FUZZY_THRESHOLD = 0.55
+
     def __init__(self):
-        self.match_threshold = 0.7  # Minimum similarity for matching
-    
+        self.match_threshold = self.FUZZY_THRESHOLD
+
     def compare_estimates(
-        self, 
-        carrier_estimate: EstimateData, 
-        contractor_estimate: EstimateData
+        self,
+        carrier_estimate: EstimateData,
+        contractor_estimate: EstimateData,
     ) -> ComparisonResult:
-        """Compare two estimates and return detailed variances"""
-        
+        """Compare two estimates and return detailed variances.
+
+        Two-pass matching:
+          Pass 1 — high-confidence (>= 0.85): locks in obvious matches first.
+          Pass 2 — fuzzy (>= 0.55): matches remaining items with looser criteria.
+        """
         matched = []
         missing = []
         extra = []
         modified = []
-        
-        # Track which items have been matched
-        carrier_matched = set()
-        contractor_matched = set()
-        
-        # First pass: Find exact and similar matches
-        for c_idx, carrier_item in enumerate(carrier_estimate.line_items):
-            best_match = None
-            best_score = 0.0
-            best_idx = -1
-            
-            for t_idx, contractor_item in enumerate(contractor_estimate.line_items):
-                if t_idx in contractor_matched:
-                    continue
-                
-                score = self._calculate_similarity(carrier_item, contractor_item)
-                if score > best_score:
-                    best_score = score
-                    best_match = contractor_item
-                    best_idx = t_idx
-            
-            if best_match and best_score >= self.match_threshold:
-                carrier_matched.add(c_idx)
-                contractor_matched.add(best_idx)
-                
-                # Calculate differences
-                qty_diff = best_match.quantity - carrier_item.quantity
-                price_diff = best_match.unit_price - carrier_item.unit_price
-                total_diff = best_match.total - carrier_item.total
-                
-                match_item = LineItemMatch(
-                    status='matched' if total_diff == 0 else 'modified',
-                    carrier_item=carrier_item.to_dict(),
-                    contractor_item=best_match.to_dict(),
-                    quantity_diff=qty_diff,
-                    price_diff=price_diff,
-                    total_diff=total_diff,
-                    match_confidence=best_score,
-                    variance_type=self._determine_variance_type(qty_diff, price_diff, total_diff),
-                    impact=self._determine_impact(total_diff),
-                    notes=self._generate_variance_notes(carrier_item, best_match, qty_diff, price_diff)
-                )
-                
-                if total_diff != 0:
-                    modified.append(match_item)
-                else:
-                    matched.append(match_item)
-        
+
+        carrier_matched: set = set()
+        contractor_matched: set = set()
+
+        # ---------- Pass 1: high-confidence matches ----------
+        self._match_pass(
+            carrier_estimate.line_items,
+            contractor_estimate.line_items,
+            self.HIGH_CONFIDENCE_THRESHOLD,
+            carrier_matched,
+            contractor_matched,
+            matched,
+            modified,
+        )
+
+        # ---------- Pass 2: fuzzy matches on remaining ----------
+        self._match_pass(
+            carrier_estimate.line_items,
+            contractor_estimate.line_items,
+            self.FUZZY_THRESHOLD,
+            carrier_matched,
+            contractor_matched,
+            matched,
+            modified,
+        )
+
         # Find missing items (in contractor but not carrier)
         for t_idx, contractor_item in enumerate(contractor_estimate.line_items):
             if t_idx not in contractor_matched:
@@ -191,7 +206,7 @@ class EstimateMatcher:
                     impact=self._determine_impact(contractor_item.total),
                     notes=f"Missing from carrier estimate: {contractor_item.description}"
                 ))
-        
+
         # Find extra items (in carrier but not contractor)
         for c_idx, carrier_item in enumerate(carrier_estimate.line_items):
             if c_idx not in carrier_matched:
@@ -204,24 +219,24 @@ class EstimateMatcher:
                     impact=self._determine_impact(carrier_item.total),
                     notes=f"Extra item in carrier estimate: {carrier_item.description}"
                 ))
-        
+
         # Calculate category variances
         category_variances = self._calculate_category_variances(
             carrier_estimate, contractor_estimate
         )
-        
+
         # Calculate total variance
         carrier_total = carrier_estimate.total_rcv
         contractor_total = contractor_estimate.total_rcv
         total_variance = contractor_total - carrier_total
         total_variance_pct = (total_variance / carrier_total * 100) if carrier_total > 0 else 0
-        
+
         # Build summary
         summary = self._build_summary(
             matched, missing, extra, modified,
             carrier_total, contractor_total, total_variance
         )
-        
+
         return ComparisonResult(
             carrier_estimate=carrier_estimate.to_dict(),
             contractor_estimate=contractor_estimate.to_dict(),
@@ -233,8 +248,67 @@ class EstimateMatcher:
             total_variance=total_variance,
             total_variance_pct=total_variance_pct,
             rcv_variance=total_variance,
-            summary=summary
+            summary=summary,
         )
+
+    # ------------------------------------------------------------------
+    # Internal matching pass
+    # ------------------------------------------------------------------
+
+    def _match_pass(
+        self,
+        carrier_items: List[LineItem],
+        contractor_items: List[LineItem],
+        threshold: float,
+        carrier_matched: set,
+        contractor_matched: set,
+        matched: List[LineItemMatch],
+        modified: List[LineItemMatch],
+    ):
+        """Run one matching pass with the given *threshold*."""
+        for c_idx, carrier_item in enumerate(carrier_items):
+            if c_idx in carrier_matched:
+                continue
+
+            best_match = None
+            best_score = 0.0
+            best_idx = -1
+
+            for t_idx, contractor_item in enumerate(contractor_items):
+                if t_idx in contractor_matched:
+                    continue
+
+                score = self._calculate_similarity(carrier_item, contractor_item)
+                if score > best_score:
+                    best_score = score
+                    best_match = contractor_item
+                    best_idx = t_idx
+
+            if best_match and best_score >= threshold:
+                carrier_matched.add(c_idx)
+                contractor_matched.add(best_idx)
+
+                qty_diff = best_match.quantity - carrier_item.quantity
+                price_diff = best_match.unit_price - carrier_item.unit_price
+                total_diff = best_match.total - carrier_item.total
+
+                match_item = LineItemMatch(
+                    status='matched' if total_diff == 0 else 'modified',
+                    carrier_item=carrier_item.to_dict(),
+                    contractor_item=best_match.to_dict(),
+                    quantity_diff=qty_diff,
+                    price_diff=price_diff,
+                    total_diff=total_diff,
+                    match_confidence=best_score,
+                    variance_type=self._determine_variance_type(qty_diff, price_diff, total_diff),
+                    impact=self._determine_impact(total_diff),
+                    notes=self._generate_variance_notes(carrier_item, best_match, qty_diff, price_diff),
+                )
+
+                if total_diff != 0:
+                    modified.append(match_item)
+                else:
+                    matched.append(match_item)
     
     def _calculate_similarity(self, item1: LineItem, item2: LineItem) -> float:
         """Calculate similarity score between two line items"""
@@ -266,25 +340,32 @@ class EstimateMatcher:
         return score
     
     def _text_similarity(self, text1: str, text2: str) -> float:
-        """Calculate text similarity using word overlap"""
+        """Calculate text similarity using word overlap with abbreviation expansion."""
         if not text1 or not text2:
             return 0.0
-        
-        words1 = set(text1.lower().split())
-        words2 = set(text2.lower().split())
-        
+
+        words1 = self._expand_abbreviations(text1.lower()).split()
+        words2 = self._expand_abbreviations(text2.lower()).split()
+
         # Remove common stop words
         stop_words = {'the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'for', 'with', '-', '&'}
-        words1 = words1 - stop_words
-        words2 = words2 - stop_words
-        
-        if not words1 or not words2:
+        set1 = set(words1) - stop_words
+        set2 = set(words2) - stop_words
+
+        if not set1 or not set2:
             return 0.0
-        
-        intersection = len(words1 & words2)
-        union = len(words1 | words2)
-        
+
+        intersection = len(set1 & set2)
+        union = len(set1 | set2)
+
         return intersection / union if union > 0 else 0.0
+
+    @staticmethod
+    def _expand_abbreviations(text: str) -> str:
+        """Expand common construction/insurance abbreviations in *text*."""
+        for abbr, full in ABBREVIATION_MAP.items():
+            text = re.sub(r"\b" + re.escape(abbr) + r"\b", full, text)
+        return text
     
     def _determine_variance_type(self, qty_diff: float, price_diff: float, total_diff: float) -> str:
         """Determine the type of variance"""

@@ -126,9 +126,9 @@ async def check_integrations() -> HealthCheckResult:
     if not llm_key:
         issues.append("EMERGENT_LLM_KEY not configured")
     
-    # Check Notion
-    gamma_token = os.environ.get('GAMMA_API_TOKEN')
-    if not gamma_token:
+    # Check Gamma
+    gamma_key = os.environ.get('GAMMA_API_KEY') or os.environ.get('GAMMA_API_TOKEN')
+    if not gamma_key:
         issues.append("Gamma integration not configured")
     
     # Check SignNow

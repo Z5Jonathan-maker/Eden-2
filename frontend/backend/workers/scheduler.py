@@ -34,18 +34,21 @@ def init_scheduler(db):
     from workers.claims_ops_bot import init_claims_ops_bot
     from workers.comms_bot import init_comms_bot
     from workers.evidence_sync import init_evidence_sync
-    
+    from workers.drive_mirror_worker import init_drive_mirror
+
     init_harvest_coach(db)
     init_claims_ops_bot(db)
     init_comms_bot(db)
     init_evidence_sync(db)
-    
+    init_drive_mirror(db)
+
     # Add jobs
     _add_harvest_coach_jobs()
     _add_claims_ops_jobs()
     _add_comms_bot_jobs()
     _add_evidence_sync_jobs()
-    
+    _add_drive_mirror_jobs()
+
     logger.info("Background scheduler initialized with all bots")
 
 
@@ -140,6 +143,22 @@ def _add_evidence_sync_jobs():
         misfire_grace_time=3600,
     )
     logger.info("Evidence sync job added: nightly at 03:15 UTC")
+
+
+def _add_drive_mirror_jobs():
+    """Add Google Drive mirror reconciliation job."""
+    from workers.drive_mirror_worker import run_nightly_reconciliation
+
+    scheduler.add_job(
+        _run_async_job,
+        CronTrigger(hour=3, minute=0),
+        args=[run_nightly_reconciliation],
+        id="drive_mirror_nightly",
+        name="Drive Mirror - Nightly Reconciliation",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    logger.info("Drive mirror job added: nightly at 03:00 UTC")
 
 
 async def _run_async_job(coro_func):

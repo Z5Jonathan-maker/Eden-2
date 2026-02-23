@@ -7,11 +7,11 @@ import { Badge } from '../shared/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
 import { Progress } from '../shared/ui/progress';
 import { ScrollArea } from '../shared/ui/scroll-area';
-import { 
-  Scale, Upload, FileText, AlertTriangle, CheckCircle, 
+import {
+  Scale, Upload, FileText, AlertTriangle, CheckCircle,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Sparkles,
   Download, Eye, Trash2, BarChart3, TrendingUp, FileWarning,
-  ChevronRight, Filter, Search, X, PenTool
+  ChevronRight, Filter, Search, X, PenTool, Settings2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
@@ -79,6 +79,13 @@ export default function Scales() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   
+  // Page detection state
+  const [carrierDetection, setCarrierDetection] = useState(null);
+  const [contractorDetection, setContractorDetection] = useState(null);
+  const [carrierOverride, setCarrierOverride] = useState({ enabled: false, start: 0, end: 0 });
+  const [contractorOverride, setContractorOverride] = useState({ enabled: false, start: 0, end: 0 });
+  const [detecting, setDetecting] = useState({ carrier: false, contractor: false });
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [filterImpact, setFilterImpact] = useState('all');
@@ -117,11 +124,39 @@ export default function Scales() {
     fetchStats();
   }, [fetchEstimates, fetchComparisons, fetchStats]);
 
-  // Upload estimate
-  const uploadEstimate = async (file, estimateType) => {
+  // Detect pages in a PDF before upload
+  const detectPages = async (file, side) => {
+    setDetecting(prev => ({ ...prev, [side]: true }));
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await apiPost('/api/scales/detect-pages', fd);
+      if (res.ok) {
+        const d = res.data;
+        if (side === 'carrier') {
+          setCarrierDetection(d);
+          setCarrierOverride({ enabled: false, start: d.estimate_start_page, end: d.estimate_end_page });
+        } else {
+          setContractorDetection(d);
+          setContractorOverride({ enabled: false, start: d.estimate_start_page, end: d.estimate_end_page });
+        }
+      }
+    } catch (err) {
+      console.error('Page detection failed:', err);
+    } finally {
+      setDetecting(prev => ({ ...prev, [side]: false }));
+    }
+  };
+
+  // Upload estimate with optional page override
+  const uploadEstimate = async (file, estimateType, override) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('estimate_type', estimateType);
+    if (override?.enabled) {
+      formData.append('start_page', override.start);
+      formData.append('end_page', override.end);
+    }
 
     const res = await apiPost('/api/scales/upload', formData);
 
@@ -129,12 +164,23 @@ export default function Scales() {
       throw new Error(res.error || 'Upload failed');
     }
 
-    // Show warning if no line items were parsed
     if (res.data.warning) {
       toast.warning(res.data.warning, { duration: 8000 });
     }
 
     return res.data;
+  };
+
+  // Handle file selection — trigger auto-detection
+  const handleFileSelect = (file, side) => {
+    if (side === 'carrier') {
+      setCarrierFile(file);
+      setCarrierDetection(null);
+    } else {
+      setContractorFile(file);
+      setContractorDetection(null);
+    }
+    if (file) detectPages(file, side);
   };
 
   // Handle upload both estimates
@@ -149,43 +195,41 @@ export default function Scales() {
 
     try {
       setUploadProgress(25);
-      const carrier = await uploadEstimate(carrierFile, 'carrier');
-      
+      const carrier = await uploadEstimate(carrierFile, 'carrier', carrierOverride);
+
       setUploadProgress(50);
-      const contractor = await uploadEstimate(contractorFile, 'contractor');
-      
+      const contractor = await uploadEstimate(contractorFile, 'contractor', contractorOverride);
+
       setUploadProgress(75);
-      
-      // Check for parsing issues
+
       let hasIssues = false;
       if (carrier.line_item_count === 0) {
-        toast.error(`Carrier estimate "${carrier.file_name}" has no line items. This may not be a valid Xactimate estimate.`, { duration: 6000 });
+        toast.error(`Carrier estimate "${carrier.file_name}" has no line items. Try overriding the page range.`, { duration: 6000 });
         hasIssues = true;
       }
       if (contractor.line_item_count === 0) {
-        toast.error(`Contractor estimate "${contractor.file_name}" has no line items. This may not be a valid Xactimate estimate.`, { duration: 6000 });
+        toast.error(`Contractor estimate "${contractor.file_name}" has no line items. Try overriding the page range.`, { duration: 6000 });
         hasIssues = true;
       }
-      
-      // Refresh estimates list
+
       await fetchEstimates();
       await fetchStats();
-      
+
       setUploadProgress(100);
-      
-      // Auto-select for comparison
       setSelectedCarrier(carrier.id);
       setSelectedContractor(contractor.id);
-      
+
       if (hasIssues) {
-        toast.warning('Some files may not be valid Xactimate estimates. Comparison results may be incomplete.');
+        toast.warning('Some files may not have been parsed correctly. You can override the page range and re-upload.');
       } else {
         toast.success('Estimates uploaded successfully!');
       }
       setCarrierFile(null);
       setContractorFile(null);
+      setCarrierDetection(null);
+      setContractorDetection(null);
       setActiveTab('compare');
-      
+
     } catch (error) {
       toast.error(error.message || 'Failed to upload estimates');
     } finally {
@@ -339,7 +383,7 @@ export default function Scales() {
           <img src="/icons/scales.png" alt="Scales" className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
           <div>
             <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SCALES</h1>
-            <p className="text-sm sm:text-base text-zinc-500 font-mono uppercase tracking-wider">Xactimate Estimate Comparison</p>
+            <p className="text-sm sm:text-base text-zinc-500 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>
           </div>
         </div>
         
@@ -390,11 +434,11 @@ export default function Scales() {
                   <FileWarning className="w-5 h-5" />
                   Carrier Estimate
                 </CardTitle>
-                <CardDescription>Upload the insurance carrier&apos;s Xactimate estimate</CardDescription>
+                <CardDescription>Upload the insurance carrier&apos;s estimate PDF</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <label 
+                  <label
                     className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-zinc-700/50 rounded-lg cursor-pointer hover:bg-zinc-800/30 transition-colors"
                     data-testid="carrier-upload-zone"
                   >
@@ -403,11 +447,11 @@ export default function Scales() {
                         <FileText className="w-10 h-10 text-indigo-500 mx-auto mb-2" />
                         <p className="font-medium text-white">{carrierFile.name}</p>
                         <p className="text-sm text-zinc-500">{(carrierFile.size / 1024).toFixed(1)} KB</p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="mt-2"
-                          onClick={(e) => { e.preventDefault(); setCarrierFile(null); }}
+                          onClick={(e) => { e.preventDefault(); setCarrierFile(null); setCarrierDetection(null); }}
                         >
                           <X className="w-4 h-4 mr-1" /> Remove
                         </Button>
@@ -416,17 +460,67 @@ export default function Scales() {
                       <div className="text-center">
                         <Upload className="w-10 h-10 text-zinc-400 mx-auto mb-2" />
                         <p className="text-zinc-400">Click to upload carrier PDF</p>
-                        <p className="text-sm text-zinc-400">or drag and drop</p>
+                        <p className="text-sm text-zinc-400">Xactimate, Symbility, or Simsol</p>
                       </div>
                     )}
                     <Input
                       type="file"
                       accept=".pdf"
                       className="hidden"
-                      onChange={(e) => setCarrierFile(e.target.files?.[0] || null)}
+                      onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'carrier')}
                       data-testid="carrier-file-input"
                     />
                   </label>
+
+                  {/* Page detection results */}
+                  {detecting.carrier && (
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Detecting pages...
+                    </div>
+                  )}
+                  {carrierDetection && (
+                    <div className="space-y-2 p-3 bg-zinc-800/40 rounded-lg border border-zinc-700/50 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-400">
+                          Estimate on pages {carrierDetection.estimate_start_page + 1}-{carrierDetection.estimate_end_page + 1} of {carrierDetection.total_pages}
+                        </span>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {carrierDetection.vendor_format}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                          onClick={(e) => { e.preventDefault(); setCarrierOverride(prev => ({ ...prev, enabled: !prev.enabled })); }}
+                        >
+                          <Settings2 className="w-3 h-3" /> {carrierOverride.enabled ? 'Hide override' : 'Override pages'}
+                        </button>
+                      </div>
+                      {carrierOverride.enabled && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <label className="text-xs text-zinc-500">Start:</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={carrierDetection.total_pages}
+                            value={carrierOverride.start + 1}
+                            onChange={(e) => setCarrierOverride(prev => ({ ...prev, start: Math.max(0, parseInt(e.target.value || 1) - 1) }))}
+                            className="w-16 h-7 text-xs"
+                          />
+                          <label className="text-xs text-zinc-500">End:</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={carrierDetection.total_pages}
+                            value={carrierOverride.end + 1}
+                            onChange={(e) => setCarrierOverride(prev => ({ ...prev, end: Math.max(0, parseInt(e.target.value || 1) - 1) }))}
+                            className="w-16 h-7 text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -438,11 +532,11 @@ export default function Scales() {
                   <FileText className="w-5 h-5" />
                   Contractor Estimate
                 </CardTitle>
-                <CardDescription>Upload the contractor or PA&apos;s Xactimate estimate</CardDescription>
+                <CardDescription>Upload the contractor or PA&apos;s estimate PDF</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <label 
+                  <label
                     className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-zinc-700/50 rounded-lg cursor-pointer hover:bg-zinc-800/30 transition-colors"
                     data-testid="contractor-upload-zone"
                   >
@@ -451,11 +545,11 @@ export default function Scales() {
                         <FileText className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
                         <p className="font-medium text-white">{contractorFile.name}</p>
                         <p className="text-sm text-zinc-500">{(contractorFile.size / 1024).toFixed(1)} KB</p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="mt-2"
-                          onClick={(e) => { e.preventDefault(); setContractorFile(null); }}
+                          onClick={(e) => { e.preventDefault(); setContractorFile(null); setContractorDetection(null); }}
                         >
                           <X className="w-4 h-4 mr-1" /> Remove
                         </Button>
@@ -464,17 +558,67 @@ export default function Scales() {
                       <div className="text-center">
                         <Upload className="w-10 h-10 text-zinc-400 mx-auto mb-2" />
                         <p className="text-zinc-400">Click to upload contractor PDF</p>
-                        <p className="text-sm text-zinc-400">or drag and drop</p>
+                        <p className="text-sm text-zinc-400">Xactimate, Symbility, or Simsol</p>
                       </div>
                     )}
                     <Input
                       type="file"
                       accept=".pdf"
                       className="hidden"
-                      onChange={(e) => setContractorFile(e.target.files?.[0] || null)}
+                      onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'contractor')}
                       data-testid="contractor-file-input"
                     />
                   </label>
+
+                  {/* Page detection results */}
+                  {detecting.contractor && (
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Detecting pages...
+                    </div>
+                  )}
+                  {contractorDetection && (
+                    <div className="space-y-2 p-3 bg-zinc-800/40 rounded-lg border border-zinc-700/50 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-400">
+                          Estimate on pages {contractorDetection.estimate_start_page + 1}-{contractorDetection.estimate_end_page + 1} of {contractorDetection.total_pages}
+                        </span>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {contractorDetection.vendor_format}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                          onClick={(e) => { e.preventDefault(); setContractorOverride(prev => ({ ...prev, enabled: !prev.enabled })); }}
+                        >
+                          <Settings2 className="w-3 h-3" /> {contractorOverride.enabled ? 'Hide override' : 'Override pages'}
+                        </button>
+                      </div>
+                      {contractorOverride.enabled && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <label className="text-xs text-zinc-500">Start:</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={contractorDetection.total_pages}
+                            value={contractorOverride.start + 1}
+                            onChange={(e) => setContractorOverride(prev => ({ ...prev, start: Math.max(0, parseInt(e.target.value || 1) - 1) }))}
+                            className="w-16 h-7 text-xs"
+                          />
+                          <label className="text-xs text-zinc-500">End:</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={contractorDetection.total_pages}
+                            value={contractorOverride.end + 1}
+                            onChange={(e) => setContractorOverride(prev => ({ ...prev, end: Math.max(0, parseInt(e.target.value || 1) - 1) }))}
+                            className="w-16 h-7 text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
