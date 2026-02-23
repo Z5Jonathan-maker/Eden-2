@@ -36,11 +36,11 @@ from .models import (
     CreateInspectionSession, InspectionSession, InspectionReport
 )
 
-router = APIRouter()
+router = APIRouter(prefix="/api/inspections", tags=["inspections"])
 security = HTTPBearer(auto_error=False)  # Don't auto-fail, we'll handle it
 
 # Configuration - repo-relative photo directory
-BACKEND_DIR = Path(__file__).parent.parent
+BACKEND_DIR = Path(__file__).parent.parent.parent
 PHOTO_DIR = os.environ.get("PHOTO_DIR", str(BACKEND_DIR / "uploads" / "inspections"))
 try:
     os.makedirs(PHOTO_DIR, exist_ok=True)
