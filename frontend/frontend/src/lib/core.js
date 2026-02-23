@@ -501,6 +501,18 @@ export function isUserError(error) {
 // ============================================
 
 /**
+ * Compute SHA-256 hash of a Blob using the Web Crypto API.
+ * @param {Blob} blob - Blob to hash
+ * @returns {Promise<string>} Hex string of the SHA-256 hash
+ */
+export async function computeSha256(blob) {
+  const buffer = await blob.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Generate a unique ID
  * @param {string} prefix - Optional prefix
  * @returns {string} Unique ID
@@ -634,6 +646,7 @@ export default {
   
   // Utilities
   generateId,
+  computeSha256,
   deepClone,
   debounce,
   copyToClipboard,

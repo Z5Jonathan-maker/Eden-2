@@ -44,6 +44,7 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
   const {
     photos, isLoading, galleryData, fetchPhotos,
     getPhotosByRoom, getRooms, bulkAction, getExportPdfUrl,
+    updateAnnotation,
   } = useInspectionPhotos({ claimId, sessionId, autoFetch: true });
 
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -94,7 +95,7 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxIndex, goToPrev, goToNext, closeLightbox]);
 
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('room');
 
   const byRoom = useMemo(() => getPhotosByRoom(), [getPhotosByRoom]);
   const rooms = useMemo(() => getRooms(), [getRooms]);
@@ -172,9 +173,14 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
     else toast.error('Re-categorize failed');
   };
 
-  const handleExportPdf = () => {
-    const url = getExportPdfUrl();
-    if (url) { window.open(url, '_blank'); toast.success('PDF export started'); }
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
+  const handleExportPdf = (mode = 'email_safe') => {
+    const url = getExportPdfUrl(null, mode);
+    if (url) {
+      window.open(url, '_blank');
+      toast.success(mode === 'email_safe' ? 'Email-safe PDF export started' : 'Full fidelity PDF export started');
+    }
+    setPdfMenuOpen(false);
   };
 
   if (isLoading) {
@@ -223,12 +229,30 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
           >
             {selectMode ? 'Cancel' : 'Select'}
           </button>
-          <button
-            onClick={handleExportPdf}
-            className="px-3 py-1.5 rounded text-xs font-mono uppercase border border-zinc-700/50 text-zinc-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-colors flex items-center gap-1"
-          >
-            <Download className="w-3.5 h-3.5" /> PDF
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setPdfMenuOpen(!pdfMenuOpen)}
+              className="px-3 py-1.5 rounded text-xs font-mono uppercase border border-zinc-700/50 text-zinc-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-colors flex items-center gap-1"
+            >
+              <Download className="w-3.5 h-3.5" /> PDF <ChevronDown className="w-3 h-3" />
+            </button>
+            {pdfMenuOpen && (
+              <div className="absolute right-0 mt-1 w-52 bg-zinc-900 border border-zinc-700 rounded shadow-lg z-50">
+                <button
+                  onClick={() => handleExportPdf('email_safe')}
+                  className="block w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800"
+                >
+                  Email Safe (compressed)
+                </button>
+                <button
+                  onClick={() => handleExportPdf('full_fidelity')}
+                  className="block w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800"
+                >
+                  Full Fidelity (archive quality)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -478,8 +502,11 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
           imageUrl={lightboxPhoto.url}
           photoId={lightboxPhoto.id}
           initialAnnotations={lightboxPhoto.annotations || []}
-          onSave={() => {
-            toast.success('Annotations saved');
+          onSave={async (annotations) => {
+            const success = await updateAnnotation(lightboxPhoto.id, annotations);
+            toast[success ? 'success' : 'error'](
+              success ? 'Annotations saved' : 'Failed to save annotations'
+            );
             setShowAnnotator(false);
           }}
           onClose={() => setShowAnnotator(false)}

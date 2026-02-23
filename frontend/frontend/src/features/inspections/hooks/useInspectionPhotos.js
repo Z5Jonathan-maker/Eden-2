@@ -9,8 +9,9 @@
  * - Optimistic updates
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { api, apiPost, apiUpload, apiDelete, API_URL, getAuthToken, clearCache } from '../../../lib/api';
+import { computeSha256 } from '../../../lib/core';
 
 /**
  * useInspectionPhotos Hook
@@ -31,7 +32,11 @@ export function useInspectionPhotos(options = {}) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
   const [galleryData, setGalleryData] = useState(null);
-  
+
+  // Double-submit prevention
+  const uploadInFlightRef = useRef(false);
+  const bulkInFlightRef = useRef(false);
+
   /**
    * Format photo URL with API_URL prefix and add token for img tag auth
    */
@@ -113,21 +118,34 @@ export function useInspectionPhotos(options = {}) {
       console.error('[useInspectionPhotos] No photo blob provided');
       return null;
     }
-    
+    if (uploadInFlightRef.current) return null;
+
     const targetClaimId = metadata.claim_id || claimId;
     const targetSessionId = metadata.session_id || sessionId;
-    
+
     if (!targetClaimId) {
       setError('No claim ID provided');
       return null;
     }
-    
+
+    uploadInFlightRef.current = true;
     setIsUploading(true);
-    
+
     try {
+      // Compute SHA-256 hash for dedup
+      let sha256Hash = null;
+      try {
+        sha256Hash = await computeSha256(photo.blob);
+      } catch (err) {
+        console.warn('[useInspectionPhotos] SHA-256 computation failed:', err);
+      }
+
       const formData = new FormData();
       formData.append('file', photo.blob, `inspection_${Date.now()}.jpg`);
       formData.append('claim_id', targetClaimId);
+      if (sha256Hash) {
+        formData.append('sha256_hash', sha256Hash);
+      }
       
       if (targetSessionId) {
         formData.append('session_id', targetSessionId);
@@ -163,6 +181,9 @@ export function useInspectionPhotos(options = {}) {
       );
       
       if (ok && data) {
+        if (data.duplicate) {
+          console.log('[useInspectionPhotos] Duplicate photo detected, using existing:', data.id);
+        }
         // Add to local state with formatted URL (optimistic update already shows local)
         const uploadedPhoto = formatPhotoUrl({
           ...data,
@@ -201,6 +222,7 @@ export function useInspectionPhotos(options = {}) {
       onUploadError?.(errorMsg, photo);
       return null;
     } finally {
+      uploadInFlightRef.current = false;
       setIsUploading(false);
     }
   }, [claimId, sessionId, formatPhotoUrl, onUploadComplete, onUploadError]);
@@ -280,12 +302,30 @@ export function useInspectionPhotos(options = {}) {
   }, [fetchPhotos]);
   
   /**
-   * Update photo annotation
+   * Update photo annotation (persists to backend)
    */
-  const updateAnnotation = useCallback((photoId, annotation) => {
-    setPhotos(prev => prev.map(p => 
-      p.id === photoId ? { ...p, annotation } : p
+  const updateAnnotation = useCallback(async (photoId, annotations) => {
+    // Optimistic local update
+    setPhotos(prev => prev.map(p =>
+      p.id === photoId ? { ...p, annotations } : p
     ));
+
+    try {
+      const { ok, error: apiError } = await apiPost(
+        `/api/inspections/photos/${photoId}/annotations`,
+        annotations,
+        { method: 'PUT' }
+      );
+      if (!ok) {
+        setError(apiError || 'Failed to save annotations');
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[useInspectionPhotos] Annotation save error:', err);
+      setError(err.message);
+      return false;
+    }
   }, []);
   
   /**
@@ -316,6 +356,10 @@ export function useInspectionPhotos(options = {}) {
    */
   const bulkAction = useCallback(async (action, photoIds, opts = {}) => {
     if (!photoIds?.length) return null;
+    if (bulkInFlightRef.current) return null;
+    bulkInFlightRef.current = true;
+    setIsLoading(true);
+    setError(null);
     try {
       const { ok, data, error: apiError } = await apiPost('/api/inspections/photos/bulk', {
         action,
@@ -335,17 +379,23 @@ export function useInspectionPhotos(options = {}) {
       console.error('[useInspectionPhotos] Bulk action error:', err);
       setError(err.message);
       return null;
+    } finally {
+      bulkInFlightRef.current = false;
+      setIsLoading(false);
     }
   }, [fetchPhotos]);
 
   /**
    * Get PDF export URL for a claim
    */
-  const getExportPdfUrl = useCallback((claimIdOverride = null) => {
+  const getExportPdfUrl = useCallback((claimIdOverride = null, mode = 'email_safe') => {
     const cid = claimIdOverride || claimId;
     if (!cid) return null;
     const token = getAuthToken();
-    return `${API_URL}/api/inspections/claim/${cid}/export-pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    const params = new URLSearchParams();
+    if (token) params.set('token', token);
+    params.set('mode', mode);
+    return `${API_URL}/api/inspections/claim/${cid}/photo-report-pdf?${params.toString()}`;
   }, [claimId]);
 
   // Auto-fetch on mount if claimId is provided

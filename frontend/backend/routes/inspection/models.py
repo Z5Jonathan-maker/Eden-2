@@ -7,6 +7,7 @@ Request/response models for inspection sessions, photos, annotations, and report
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
+from enum import Enum
 import uuid
 
 
@@ -50,6 +51,9 @@ class PhotoMetadata(BaseModel):
     file_size: int = 0
     mime_type: str = "image/jpeg"
 
+    # Dedup
+    sha256_hash: Optional[str] = None
+
     # Comparison
     is_before: bool = False
     is_after: bool = False
@@ -59,12 +63,18 @@ class PhotoMetadata(BaseModel):
 class PhotoAnnotation(BaseModel):
     """Annotation data for a photo"""
     type: str  # "arrow", "circle", "rectangle", "text", "freehand"
-    x: float
-    y: float
+    # Position fields (text and some shapes use x/y; arrow/circle/rect use startX/endX)
+    x: Optional[float] = None
+    y: Optional[float] = None
+    startX: Optional[float] = None
+    startY: Optional[float] = None
+    endX: Optional[float] = None
+    endY: Optional[float] = None
     width: Optional[float] = None
     height: Optional[float] = None
-    points: Optional[List[dict]] = None  # For freehand drawing
+    points: Optional[List[dict]] = None  # For freehand drawing [{x, y}, ...]
     color: str = "#FF0000"
+    strokeWidth: Optional[int] = 3
     text: Optional[str] = None
     fontSize: Optional[int] = 16
 
@@ -114,3 +124,16 @@ class InspectionReport(BaseModel):
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     generated_by: str = ""
     version: int = 1
+
+
+class PdfExportMode(str, Enum):
+    EMAIL_SAFE = "email_safe"
+    FULL_FIDELITY = "full_fidelity"
+
+
+class BulkPhotoAction(BaseModel):
+    """Bulk operations on photos"""
+    action: str  # "delete" | "recategorize" | "move_room"
+    photo_ids: List[str]
+    room: Optional[str] = None
+    category: Optional[str] = None

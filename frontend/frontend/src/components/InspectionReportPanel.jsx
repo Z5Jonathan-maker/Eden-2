@@ -59,7 +59,12 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
       toast.success('Report generated successfully!');
       fetchReportHistory(sessionId);
     } else {
-      toast.error(error || 'Failed to generate report');
+      const errMsg = error || 'Failed to generate report';
+      if (errMsg.includes('API key') || errMsg.includes('OPENAI_API_KEY') || errMsg.includes('EMERGENT_LLM')) {
+        toast.warning('AI features unavailable — API key not configured');
+      } else {
+        toast.error(errMsg);
+      }
     }
   };
 
@@ -165,6 +170,17 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
 
           {/* Error State */}
           {error && !generating && (
+            (error.includes('API key') || error.includes('OPENAI_API_KEY') || error.includes('EMERGENT_LLM')) ? (
+              <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-300 font-medium">AI Features Unavailable</p>
+                    <p className="text-amber-400 text-sm">Report generation requires an AI API key to be configured by the administrator.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
@@ -178,6 +194,7 @@ const InspectionReportPanel = ({ sessionId, sessionStatus, onClose }) => {
                 </div>
               </div>
             </div>
+            )
           )}
 
           {/* Report Display */}

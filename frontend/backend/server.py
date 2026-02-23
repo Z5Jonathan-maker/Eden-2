@@ -477,6 +477,15 @@ async def startup_event():
     await ensure_workbooks_exist()
     await initialize_harvest_gamification()
     await initialize_background_scheduler()
+    # Ensure inspection photo dedup index
+    try:
+        from dependencies import db as startup_db
+        await startup_db.inspection_photos.create_index(
+            [("claim_id", 1), ("sha256_hash", 1)],
+            background=True, sparse=True
+        )
+    except Exception as e:
+        logging.warning(f"Could not create inspection photo dedup index: {e}")
 
 
 async def ensure_workbooks_exist():

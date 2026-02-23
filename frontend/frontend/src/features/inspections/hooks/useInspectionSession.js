@@ -7,7 +7,7 @@
  * - Claim binding validation
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { api, apiPost, apiPut, clearCache } from '../../../lib/api';
 import { INSPECTION_STATUS } from '../../../lib/core';
 
@@ -25,11 +25,13 @@ export function useInspectionSession(options = {}) {
   const [session, setSession] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+  const creatingRef = useRef(false);
+
   /**
    * Create a new inspection session
    */
   const createSession = useCallback(async (claimId, sessionName = null) => {
+    if (creatingRef.current) return null;
     if (!claimId) {
       const errorMsg = 'Claim ID is required to create an inspection session';
       setError(errorMsg);
@@ -37,9 +39,10 @@ export function useInspectionSession(options = {}) {
       return null;
     }
     
+    creatingRef.current = true;
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const name = sessionName || `Inspection ${new Date().toLocaleString()}`;
       
@@ -75,6 +78,7 @@ export function useInspectionSession(options = {}) {
       onError?.(errorMsg);
       return null;
     } finally {
+      creatingRef.current = false;
       setIsLoading(false);
     }
   }, [onSessionCreated, onError]);

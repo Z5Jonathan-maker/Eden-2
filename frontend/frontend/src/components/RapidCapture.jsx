@@ -642,10 +642,13 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
   };
   
   // ========== UPLOAD PHOTOS ==========
+  const isProcessingRef = useRef(false);
   const handleUploadPhotos = async () => {
     if (photos.length === 0) return toast.error('No photos');
     if (!inspectionSession.sessionId) return toast.error('No session');
-    
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
     setStep('processing');
     
     let uploadedCount = 0;
@@ -671,6 +674,8 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         if (photo.latitude) formData.append('latitude', photo.latitude.toString());
         if (photo.longitude) formData.append('longitude', photo.longitude.toString());
         if (photo.annotation) formData.append('notes', photo.annotation);
+        formData.append('room', photo.room || 'Uncategorized');
+        formData.append('category', photo.category || 'documentation');
 
         const res = await apiUpload('/api/inspections/photos', formData);
 
@@ -726,8 +731,10 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
       }
     });
     
+    isProcessingRef.current = false;
+
     if (failedCount > 0) {
-      toast.warning(`${uploadedCount} uploaded, ${failedCount} failed`);
+      toast.warning(`${uploadedCount} uploaded, ${failedCount} failed — failed photos remain in offline storage for retry`);
     } else {
       toast.success(`${uploadedCount} photos uploaded to claim!`);
     }
