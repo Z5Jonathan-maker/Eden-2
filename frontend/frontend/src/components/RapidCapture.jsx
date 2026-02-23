@@ -34,7 +34,7 @@ import {
   useInspectionPhotos,
   CAMERA_ERRORS 
 } from '../features/inspections/hooks';
-import { api, apiPost, API_URL } from '../lib/api';
+import { api, apiPost, apiUpload, API_URL } from '../lib/api';
 import { formatDuration, isMobile } from '../lib/core';
 import { OfflineService } from '../lib/offline';
 
@@ -672,7 +672,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         if (photo.longitude) formData.append('longitude', photo.longitude.toString());
         if (photo.annotation) formData.append('notes', photo.annotation);
 
-        const res = await apiPost('/api/inspections/photos', formData);
+        const res = await apiUpload('/api/inspections/photos', formData);
 
         if (res.ok) {
           results.push(res.data);
@@ -700,7 +700,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         form.append('file', audioBlob, `session-${inspectionSession.sessionId}.${audioExt}`);
         form.append('session_id', inspectionSession.sessionId);
 
-        const voiceRes = await apiPost('/api/inspections/sessions/voice', form);
+        const voiceRes = await apiUpload('/api/inspections/sessions/voice', form);
 
         if (voiceRes.ok) {
           if (voiceRes.data.transcript) {
