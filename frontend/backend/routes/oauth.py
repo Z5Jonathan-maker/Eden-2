@@ -219,40 +219,60 @@ async def google_oauth_callback(
     # Verify state
     state_doc = await db.oauth_states.find_one({"state": state, "provider": "google"})
     if not state_doc:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    
+        logger.error("Google callback: invalid state=%s", state[:20])
+        return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=error&reason=invalid_state")
+
     user_id = state_doc.get("user_id")
     await db.oauth_states.delete_one({"state": state})
-    
+
     # Exchange code for tokens using exact redirect URI used at connect-time.
     redirect_uri = state_doc.get("redirect_uri") or f"{_resolve_base_url(request)}/api/oauth/google/callback"
-    
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": redirect_uri
-            }
-        )
-        
-        if token_response.status_code != 200:
-            logger.error(f"Google token exchange failed: {token_response.text}")
-            raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
-        
-        tokens = token_response.json()
-        
-        # Get user info
-        user_info_response = await client.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {tokens['access_token']}"}
-        )
-        
-        user_info = user_info_response.json() if user_info_response.status_code == 200 else {}
-    
+
+    logger.info("Google callback: exchanging code, redirect_uri=%s client_id_prefix=%s", redirect_uri, (GOOGLE_CLIENT_ID or "")[:12])
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": redirect_uri
+                }
+            )
+
+            if token_response.status_code != 200:
+                error_body = token_response.text
+                logger.error(
+                    "Google token exchange failed: status=%d redirect_uri=%s body=%s",
+                    token_response.status_code, redirect_uri, error_body[:500]
+                )
+                # Parse Google's error for a user-friendly message
+                try:
+                    err_json = token_response.json()
+                    err_desc = err_json.get("error_description", err_json.get("error", "Unknown"))
+                except Exception:
+                    err_desc = error_body[:200]
+                from urllib.parse import quote
+                return RedirectResponse(
+                    url=f"{FRONTEND_URL}/settings?oauth=google&status=error&reason={quote(err_desc)}"
+                )
+
+            tokens = token_response.json()
+
+            # Get user info
+            user_info_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {tokens['access_token']}"}
+            )
+
+            user_info = user_info_response.json() if user_info_response.status_code == 200 else {}
+    except Exception as exc:
+        logger.exception("Google callback token exchange exception: %s", exc)
+        return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=error&reason=token_exchange_failed")
+
     # Store tokens
     await db.oauth_tokens.update_one(
         {"user_id": user_id, "provider": "google"},
@@ -264,11 +284,14 @@ async def google_oauth_callback(
             "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
             "scopes": tokens.get("scope", "").split(" "),
             "user_info": user_info,
-            "connected_at": datetime.now(timezone.utc).isoformat()
+            "connected_at": datetime.now(timezone.utc).isoformat(),
+            "token_stale": False,
+            "last_refresh_error": None,
         }},
         upsert=True
     )
-    
+
+    logger.info("Google OAuth connected for user=%s email=%s", user_id, user_info.get("email"))
     # Redirect back to frontend settings page
     return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=success")
 
