@@ -2114,7 +2114,7 @@ async def export_photo_report_pdf(
     token: str = Query(..., description="Auth token for img src / direct download access"),
     mode: str = Query("email_safe", description="email_safe or full_fidelity"),
     include_ai: bool = Query(True, description="Include AI captions and damage assessments"),
-    include_gps: bool = Query(True, description="Include GPS coordinates"),
+    include_gps: bool = Query(False, description="Include GPS coordinates (off by default for carrier reports)"),
     rooms: Optional[str] = Query(None, description="Comma-separated room filter"),
 ):
     """
@@ -2151,3 +2151,132 @@ async def export_photo_report_pdf(
             "Content-Disposition": f'attachment; filename="{filename}"'
         },
     )
+
+
+# ========== ADMIN: DELETE / CLEANUP ==========
+
+@router.delete("/reports/{report_id}")
+async def delete_report(
+    report_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Delete a specific inspection report."""
+    report = await db.inspection_reports.find_one({"id": report_id})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    await db.inspection_reports.delete_one({"id": report_id})
+    return {"message": "Report deleted", "id": report_id}
+
+
+@router.delete("/sessions/{session_id}/reports")
+async def delete_session_reports(
+    session_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Delete ALL reports for a session (clear report history)."""
+    result = await db.inspection_reports.delete_many({"session_id": session_id})
+    return {
+        "message": "Session reports deleted",
+        "session_id": session_id,
+        "deleted_count": result.deleted_count
+    }
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: str,
+    delete_photos: bool = Query(False, description="Also delete all photos from this session"),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """
+    Delete an inspection session.
+    Optionally delete all associated photos and reports.
+    """
+    session = await db.inspection_sessions.find_one({"id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    deleted_photos = 0
+    deleted_reports = 0
+
+    # Delete associated reports
+    report_result = await db.inspection_reports.delete_many({"session_id": session_id})
+    deleted_reports = report_result.deleted_count
+
+    # Optionally delete photos
+    if delete_photos:
+        photos = await db.inspection_photos.find(
+            {"session_id": session_id}, {"_id": 0, "id": 1, "filename": 1, "claim_id": 1}
+        ).to_list(None)
+
+        for photo in photos:
+            # Delete file from disk
+            claim_id = photo.get("claim_id", "")
+            filename = photo.get("filename", "")
+            if claim_id and filename:
+                file_path = os.path.join(PHOTO_DIR, claim_id, filename)
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except OSError:
+                        pass
+
+        photo_result = await db.inspection_photos.delete_many({"session_id": session_id})
+        deleted_photos = photo_result.deleted_count
+
+    # Delete the session itself
+    await db.inspection_sessions.delete_one({"id": session_id})
+
+    return {
+        "message": "Session deleted",
+        "session_id": session_id,
+        "deleted_photos": deleted_photos,
+        "deleted_reports": deleted_reports,
+    }
+
+
+@router.delete("/claim/{claim_id}/all")
+async def delete_claim_inspections(
+    claim_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """
+    Admin: Delete ALL inspection data for a claim — sessions, photos, reports, files.
+    This is a full cleanup operation.
+    """
+    # Delete all photo files from disk
+    photos = await db.inspection_photos.find(
+        {"claim_id": claim_id}, {"_id": 0, "id": 1, "filename": 1}
+    ).to_list(None)
+
+    for photo in photos:
+        filename = photo.get("filename", "")
+        if filename:
+            file_path = os.path.join(PHOTO_DIR, claim_id, filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+
+    # Try to remove the claim photo directory
+    claim_dir = os.path.join(PHOTO_DIR, claim_id)
+    if os.path.exists(claim_dir):
+        try:
+            os.rmdir(claim_dir)  # Only removes if empty
+        except OSError:
+            pass
+
+    # Delete all DB records
+    photos_result = await db.inspection_photos.delete_many({"claim_id": claim_id})
+    sessions_result = await db.inspection_sessions.delete_many({"claim_id": claim_id})
+    reports_result = await db.inspection_reports.delete_many({"claim_id": claim_id})
+
+    return {
+        "message": f"All inspection data deleted for claim {claim_id}",
+        "claim_id": claim_id,
+        "deleted_photos": photos_result.deleted_count,
+        "deleted_sessions": sessions_result.deleted_count,
+        "deleted_reports": reports_result.deleted_count,
+    }

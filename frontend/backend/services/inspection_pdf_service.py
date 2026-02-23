@@ -39,6 +39,8 @@ from services.observability import get_logger, MetricsCollector
 logger = get_logger("inspection_pdf_service")
 
 # ── constants ────────────────────────────────────────────────────────────────
+UNCATEGORIZED_LABEL = "General Documentation"  # Carrier-friendly label
+
 EMAIL_SAFE_JPEG_QUALITY = 65
 EMAIL_SAFE_MAX_DIMENSION = 1200  # px
 EMAIL_SAFE_TARGET_SIZE = 15 * 1024 * 1024  # 15 MB
@@ -54,6 +56,37 @@ def _get_lock(claim_id: str, mode: str) -> asyncio.Lock:
     if key not in _generation_locks:
         _generation_locks[key] = asyncio.Lock()
     return _generation_locks[key]
+
+
+# ── photo path resolution ────────────────────────────────────────────────────
+
+def _resolve_photo_path(photo_dir: str, claim_id: str, filename: str) -> Optional[str]:
+    """
+    Try multiple path patterns to find the photo file on disk.
+    Returns the first path that exists, or None if not found.
+
+    Fallback order:
+      1. {photo_dir}/{claim_id}/{filename}       (standard)
+      2. {photo_dir}/{filename}                   (flat layout)
+      3. {photo_dir}/{claim_id}/{original_name}   (legacy name)
+    """
+    if not filename:
+        return None
+
+    candidates = [
+        os.path.join(photo_dir, claim_id, filename),
+        os.path.join(photo_dir, filename),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+
+    logger.warning(
+        "Photo file not found on disk",
+        claim_id=claim_id, filename=filename,
+        tried_paths=[p for p in candidates],
+    )
+    return None
 
 
 # ── image preparation ────────────────────────────────────────────────────────
@@ -135,8 +168,8 @@ def preflight_check(
             warnings.append(f"Photo {photo.get('id', '?')} has no filename")
             missing += 1
             continue
-        file_path = os.path.join(photo_dir, claim_id, filename)
-        if not os.path.exists(file_path):
+        resolved = _resolve_photo_path(photo_dir, claim_id, filename)
+        if not resolved:
             missing += 1
 
     if missing > 0:
@@ -293,7 +326,7 @@ def build_pdf_story(
     photo_dir: str,
     claim_id: str,
     include_ai: bool = True,
-    include_gps: bool = True,
+    include_gps: bool = False,
     part_info: Optional[str] = None,
 ) -> list:
     """
@@ -329,7 +362,8 @@ def build_pdf_story(
     claim_number = claim.get("claim_number") or claim.get("id", "N/A")
     insured_name = claim.get("client_name") or claim.get("insured_name") or "N/A"
     property_address = claim.get("property_address") or claim.get("loss_location") or "N/A"
-    inspector_name = user.get("name") or user.get("email") or "N/A"
+    # Show name only on carrier-facing reports — never expose email
+    inspector_name = user.get("name") or "Authorized Inspector"
     report_date = datetime.now().strftime("%B %d, %Y")
 
     meta_data = [
@@ -429,8 +463,12 @@ def build_pdf_story(
                 rendered_ids.add(pid)
                 rendered_ids.add(paired_photo.get("id", ""))
 
-                before_path = os.path.join(photo_dir, claim_id, photo.get("filename", ""))
-                after_path = os.path.join(photo_dir, claim_id, paired_photo.get("filename", ""))
+                before_path = _resolve_photo_path(photo_dir, claim_id, photo.get("filename", ""))
+                after_path = _resolve_photo_path(photo_dir, claim_id, paired_photo.get("filename", ""))
+
+                # Skip pair entirely if neither file exists
+                if not before_path and not after_path:
+                    continue
 
                 pair_cells = []
                 for label, p_path, p_data in [("BEFORE", before_path, photo), ("AFTER", after_path, paired_photo)]:
@@ -441,7 +479,7 @@ def build_pdf_story(
                         styles["PhotoCaption"],
                     ))
                     cell_items.append(Spacer(1, 4))
-                    if os.path.exists(p_path):
+                    if p_path:
                         try:
                             img_buf = prepare_image(p_path, mode)
                             img = RLImage(img_buf, width=pair_img_width, height=pair_img_height, kind="proportional")
@@ -449,7 +487,7 @@ def build_pdf_story(
                         except Exception:
                             cell_items.append(Paragraph("<i>[image unavailable]</i>", styles["PhotoCaption"]))
                     else:
-                        cell_items.append(Paragraph("<i>[file not found]</i>", styles["PhotoCaption"]))
+                        cell_items.append(Paragraph("<i>[image unavailable]</i>", styles["PhotoCaption"]))
                     cell_items.append(Spacer(1, 4))
                     ts = p_data.get("captured_at", "")[:19].replace("T", " ") if p_data.get("captured_at") else ""
                     if ts:
@@ -473,16 +511,18 @@ def build_pdf_story(
                 # ── standalone photo ─────────────────────────────────
                 rendered_ids.add(pid)
 
-                file_path = os.path.join(photo_dir, claim_id, photo.get("filename", ""))
-                if os.path.exists(file_path):
+                resolved_path = _resolve_photo_path(photo_dir, claim_id, photo.get("filename", ""))
+                if resolved_path:
                     try:
-                        img_buf = prepare_image(file_path, mode)
+                        img_buf = prepare_image(resolved_path, mode)
                         img = RLImage(img_buf, width=max_img_width, height=max_img_height, kind="proportional")
                         story.append(img)
                     except Exception:
-                        story.append(Paragraph("<i>[image could not be rendered]</i>", styles["PhotoCaption"]))
+                        # Skip unrenderable images — don't litter report
+                        continue
                 else:
-                    story.append(Paragraph("<i>[photo file not found on disk]</i>", styles["PhotoCaption"]))
+                    # Skip photos without files — don't show "not found" to carriers
+                    continue
 
                 story.append(Spacer(1, 4))
 
@@ -569,7 +609,7 @@ def build_pdf_story(
         assessment = photo.get("ai_damage_assessment")
         if not assessment or not isinstance(assessment, dict):
             continue
-        r_name = photo.get("room") or "Uncategorized"
+        r_name = photo.get("room") or UNCATEGORIZED_LABEL
         severity = assessment.get("severity", "N/A")
         damage_type = assessment.get("damage_type") or assessment.get("type", "N/A")
         description = assessment.get("description", "")[:80]
@@ -627,9 +667,11 @@ def build_pdf_story(
     stats_data = [
         ["Total Photos", str(len(all_photos))],
         ["Rooms Documented", str(len(photos_by_room))],
-        ["Average Severity Score", f"{avg_severity}{avg_label}"],
         ["Report Generated", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")],
     ]
+    # Only show severity score when AI assessments exist — suppress N/A
+    if isinstance(avg_severity, (int, float)):
+        stats_data.insert(2, ["Average Severity Score", f"{avg_severity}{avg_label}"])
     stats_table = Table(stats_data, colWidths=[2.5 * inch, 3.5 * inch])
     stats_table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
@@ -812,7 +854,7 @@ async def generate_photo_report(
     # ── organise by room ─────────────────────────────────────────────────
     by_room: dict[str, list] = {}
     for photo in all_photos:
-        room_name = photo.get("room") or "Uncategorized"
+        room_name = photo.get("room") or UNCATEGORIZED_LABEL
         by_room.setdefault(room_name, []).append(photo)
 
     # ── acquire lock & build ─────────────────────────────────────────────
