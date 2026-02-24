@@ -828,6 +828,31 @@ async def _send_via_ai_gateway(*, user_id: str, session_key: str, system_message
     await _enforce_daily_budget(user_id, estimated_cost)
     await _enforce_task_daily_budget(user_id, task_type, estimated_cost)
 
+    def _provider_has_key(p: str) -> bool:
+        """Check if a provider has its own API key configured."""
+        from emergentintegrations.llm.chat import PROVIDER_CONFIGS
+        return bool(PROVIDER_CONFIGS.get(p, {}).get("api_key"))
+
+    # Validate primary provider has a key before calling
+    if not _provider_has_key(provider):
+        logger.warning("AI provider '%s' has no API key configured — skipping to fallback", provider)
+        # Try fallback providers that actually have keys
+        if fallback_enabled:
+            for fp in provider_order[1:]:
+                if _provider_has_key(fp):
+                    provider = fp
+                    model = _default_model_for_provider(fp)
+                    logger.info("Falling back to provider '%s' (has key)", fp)
+                    break
+            else:
+                raise Exception(
+                    "No AI provider is configured. Set OLLAMA_API_KEY (free — get one at https://ollama.com/settings/keys) in your Render environment variables."
+                )
+        else:
+            raise Exception(
+                "AI provider 'ollama' is not configured. Set OLLAMA_API_KEY (free — get one at https://ollama.com/settings/keys) in your Render environment variables."
+            )
+
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -858,7 +883,15 @@ async def _send_via_ai_gateway(*, user_id: str, session_key: str, system_message
             )
             raise
 
-        fallback_provider = provider_order[1]
+        # Only fallback to providers that have their own key
+        for fp in provider_order[1:]:
+            if _provider_has_key(fp):
+                fallback_provider = fp
+                break
+        else:
+            # No fallback has a key either — re-raise original error
+            raise
+
         fallback_model = _default_model_for_provider(fallback_provider)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -1381,11 +1414,18 @@ async def chat_with_eve(
         )
         
     except Exception as e:
-        logger.error(f"Eve AI error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"AI service error: {str(e)}"
-        )
+        err_str = str(e)
+        logger.error(f"Eve AI error: {err_str}")
+        # Give user-friendly message for common config issues
+        if "OLLAMA_API_KEY" in err_str or "No AI provider" in err_str:
+            detail = "AI is not configured yet. An admin needs to set the OLLAMA_API_KEY in the server environment. Get a free key at https://ollama.com/settings/keys"
+        elif "invalid x-api-key" in err_str or "authentication_error" in err_str:
+            detail = "AI provider authentication failed. The API key may be invalid or expired. Please contact your administrator."
+        elif "timed out" in err_str.lower() or "timeout" in err_str.lower():
+            detail = "AI service timed out. Please try again in a moment."
+        else:
+            detail = f"AI service error: {err_str}"
+        raise HTTPException(status_code=500, detail=detail)
 
 
 @router.post("/claims/{claim_id}/copilot-next-actions", response_model=ClaimCopilotResponse)
