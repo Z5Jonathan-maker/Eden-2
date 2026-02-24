@@ -132,7 +132,7 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
 
   <h1>Defense Pack \u2014 ${candidate.candidate_date}</h1>
   <div class="muted" style="font-size:13px">${loc.matched_address || `${address}, ${city}, ${state} ${zip}`}</div>
-  <div class="muted">Analysis: ${results.analysis_window?.start_date || '\u2014'} \u2192 ${results.analysis_window?.end_date || '\u2014'} \u00B7 ${perilMode.toUpperCase()} mode</div>
+  <div class="muted">Peril: ${perilMode.toUpperCase()} \u00B7 Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
 
   ${mapUrl ? `<div style="margin-top:14px"><img class="map" src="${mapUrl}" alt="Map" /></div>` : ''}
 
@@ -148,14 +148,9 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
       </div>
 
       ${sc ? `
-      <h2 style="margin-top:14px">Recommendation Score</h2>
+      <h2 style="margin-top:14px">Evidence Strength</h2>
       <div class="score-bar"><div class="score-fill" style="width:${scoreBarPct}%"></div></div>
       <div style="font-size:14px; font-weight:700; margin-top:4px; color:#ea580c">${scoreBarPct}%</div>
-      <div class="score-row">
-        <span>Wind Credibility: ${Math.round((sc.wind_credibility||0)*100)}%</span>
-        <span>Verification: ${Math.round((sc.verification_strength||0)*100)}%</span>
-        <span>Recency: ${Math.round((sc.recency||0)*100)}%</span>
-      </div>
       ` : ''}
 
       <div style="font-size:13px; line-height:1.5; margin-top:12px">${candidate.event_summary || ''}</div>

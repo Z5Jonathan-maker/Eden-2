@@ -832,13 +832,13 @@ def _generate_why_bullets(candidate):
     obs_count = int(candidate.get("observation_count") or 0)
 
     if peak >= 75:
-        bullets.append(f"Hurricane-force winds recorded: {round(peak)} mph peak gust")
+        bullets.append(f"Hurricane-force winds documented: {round(peak)} mph peak gust")
     elif peak >= 58:
-        bullets.append(f"Severe wind event: {round(peak)} mph peak gust (exceeds NWS 58 mph severe threshold)")
+        bullets.append(f"Severe wind event documented: {round(peak)} mph peak gust (exceeds NWS 58 mph severe threshold)")
     elif peak >= 40:
-        bullets.append(f"Significant wind event: {round(peak)} mph peak gust")
+        bullets.append(f"Significant wind event documented: {round(peak)} mph peak gust")
     elif peak >= 30:
-        bullets.append(f"Moderate wind activity: {round(peak)} mph peak gust")
+        bullets.append(f"Wind event documented: {round(peak)} mph peak gust")
 
     if count >= 3:
         bullets.append(f"Corroborated by {count} independent weather stations \u2014 strong multi-source verification")
@@ -856,12 +856,10 @@ def _generate_why_bullets(candidate):
             bullets.append(f"Nearest station {min_dist} miles from property")
 
     if obs_count >= 10:
-        bullets.append(f"{obs_count} total observations analyzed across the event window")
+        bullets.append(f"{obs_count} total observations documented across the event window")
 
-    sc = candidate.get("score_components")
-    if sc:
-        pct = round(sc.get("composite_score", 0) * 100)
-        bullets.append(f"Composite recommendation score: {pct}%")
+    # Internal composite score is intentionally excluded from carrier-facing
+    # bullets — it exposes internal ranking methodology.
 
     return bullets
 
@@ -891,16 +889,13 @@ def _generate_carrier_response(candidate, location, analysis_window):
     )
 
     return (
-        f"Based on analysis of certified weather station data from the National Weather Service "
-        f"observation network, {severity} wind activity was recorded near {address} "
+        f"Based on certified weather station data from the National Weather Service "
+        f"observation network, {severity} wind activity was recorded at {address} "
         f"on {date}. Peak wind gusts of {round(peak)} mph were documented by "
         f"{count} FAA-certified ASOS/METAR {station_word}{dist_text}. "
         f"This data is sourced from the FAA-certified Automated Surface Observing System (ASOS) "
         f"and Automated Weather Observing System (AWOS) network, which provides the authoritative "
-        f"ground-truth weather record accepted by the National Weather Service. "
-        f"The analysis window covered {analysis_window.get('start_date', 'N/A')} through "
-        f"{analysis_window.get('end_date', 'N/A')}. "
-        f"Confidence level: {conf.upper()}."
+        f"ground-truth weather record accepted by the National Weather Service."
     )
 
 

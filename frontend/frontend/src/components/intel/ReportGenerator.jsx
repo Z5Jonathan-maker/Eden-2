@@ -160,12 +160,13 @@ function buildContent(context, reportKey, data, address) {
         lines.push(`Carrier Response: ${topCandidate.carrier_response}`);
       }
     }
-    if (candidates.length > 1) {
-      lines.push(`\nAlternate candidates: ${candidates.slice(1).map(c => c.candidate_date || c.date).join(', ')}`);
-    }
     if (carrier) {
-      lines.push('\nPresentation should emphasize data sources, weather station distances, and carrier-defensible evidence.');
+      // Carrier-facing: never include alternate dates — present the selected date as the definitive finding.
+      lines.push('\nPresentation should emphasize data sources, weather station distances, and carrier-defensible evidence. Present the date of loss as a definitive finding supported by certified data. Do NOT mention alternative dates, candidate rankings, or confidence scores.');
     } else {
+      if (candidates.length > 1) {
+        lines.push(`\nOther weather events analyzed: ${candidates.slice(1).map(c => c.candidate_date || c.date).join(', ')}`);
+      }
       lines.push('\nPresentation should be homeowner-friendly with clear timeline of weather events affecting the property.');
     }
     return lines.join('\n');
@@ -293,7 +294,8 @@ function buildDolBody(data, addr, carrier) {
       <div class="field"><span class="label">Confidence</span><span class="value"><span class="badge badge-green">${(top.confidence || 'N/A').toUpperCase()}</span></span></div>`;
     if (top.peak_wind_mph) html += `<div class="field"><span class="label">Peak Wind</span><span class="value">${Math.round(top.peak_wind_mph)} mph</span></div>`;
     if (top.station_count) html += `<div class="field"><span class="label">Stations</span><span class="value">${top.station_count}</span></div>`;
-    if (sc) html += `<div class="field"><span class="label">Composite Score</span><span class="value">${Math.round((sc.composite_score || 0) * 100)}%</span></div>`;
+    // Internal scoring — only show on non-carrier reports
+    if (!carrier && sc) html += `<div class="field"><span class="label">Composite Score</span><span class="value">${Math.round((sc.composite_score || 0) * 100)}%</span></div>`;
     html += `<div class="field"><span class="label">Summary</span><span class="value">${topSummary}</span></div>`;
     if (top.carrier_response) {
       html += `<div class="field"><span class="label">Carrier Response</span><span class="value">${top.carrier_response}</span></div>`;
@@ -305,8 +307,10 @@ function buildDolBody(data, addr, carrier) {
       html += `</ul></div>`;
     }
   }
-  if (candidates.length > 1) {
-    html += `<div class="section"><h2>Alternate Candidates</h2><table><thead><tr><th>Date</th><th>Confidence</th><th>Peak Wind</th><th>Summary</th></tr></thead><tbody>`;
+  // Carrier-facing reports: never include alternate dates — they give carriers leverage.
+  // Client reports: show alternates for transparency.
+  if (!carrier && candidates.length > 1) {
+    html += `<div class="section"><h2>Other Weather Events Analyzed</h2><table><thead><tr><th>Date</th><th>Confidence</th><th>Peak Wind</th><th>Summary</th></tr></thead><tbody>`;
     candidates.slice(1).forEach(c => {
       const d = c.candidate_date || c.date || 'N/A';
       const wind = c.peak_wind_mph ? `${Math.round(c.peak_wind_mph)} mph` : '—';
