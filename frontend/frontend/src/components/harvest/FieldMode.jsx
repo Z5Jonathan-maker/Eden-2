@@ -35,7 +35,7 @@ import {
   Locate,
 } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 
 // SVG icon generators — works without Cloud Map ID
 const makePinSvg = (color) => {
@@ -397,7 +397,7 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
           <MapPin className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-white text-lg font-bold mb-2">Google Maps API Key Required</h3>
           <p className="text-zinc-400 text-sm">
-            Set <code className="text-orange-400">VITE_GOOGLE_MAPS_API_KEY</code> in your .env file.
+            Set <code className="text-orange-400">REACT_APP_GOOGLE_MAPS_API_KEY</code> in your .env file.
           </p>
           <button
             onClick={() => onEndSession?.(null)}

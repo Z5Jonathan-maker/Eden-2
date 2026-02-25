@@ -24,7 +24,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 const DEFAULT_CENTER = { lat: 27.9506, lng: -82.4572 };
 const DEFAULT_ZOOM = 17;
 
@@ -384,7 +384,7 @@ export const HarvestMap = ({
           <MapPin className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-white text-lg font-bold mb-2">Google Maps API Key Required</h3>
           <p className="text-zinc-400 text-sm max-w-sm">
-            Set <code className="text-orange-400">VITE_GOOGLE_MAPS_API_KEY</code> in your .env file
+            Set <code className="text-orange-400">REACT_APP_GOOGLE_MAPS_API_KEY</code> in your .env file
             to enable the map.
           </p>
         </div>
