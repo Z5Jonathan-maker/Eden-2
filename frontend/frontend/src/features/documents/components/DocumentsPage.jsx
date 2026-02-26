@@ -20,6 +20,7 @@ const Documents = () => {
   const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
@@ -126,6 +127,7 @@ const Documents = () => {
       }
 
       setLoading(true);
+      setFetchError('');
       try {
         const endpoints = [
           `/api/claims/${claimId}/files`,
@@ -145,6 +147,7 @@ const Documents = () => {
         recalcStats(docs);
       } catch (err) {
         console.error('Failed to fetch claim documents:', err);
+        setFetchError(err.message || 'Failed to load documents');
         toast.error('Failed to load claim documents');
         setDocuments([]);
         recalcStats([]);
@@ -571,6 +574,16 @@ const Documents = () => {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="spinner-tactical w-10 h-10" />
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-900/20 flex items-center justify-center border border-red-800/30">
+              <FileText className="w-8 h-8 text-red-400" />
+            </div>
+            <p className="text-red-400 text-sm mb-3">{fetchError}</p>
+            <button onClick={() => fetchClaimDocuments(selectedClaimId)} className="btn-tactical px-4 py-2 text-xs">
+              Retry
+            </button>
           </div>
         ) : !selectedClaimId ? (
           <div className="text-center py-12">

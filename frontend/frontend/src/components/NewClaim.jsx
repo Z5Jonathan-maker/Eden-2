@@ -4,11 +4,13 @@ import { Button } from '../shared/ui/button';
 import { apiPost } from '@/lib/api';
 import { ArrowLeft, Save, Loader2, AlertCircle, Target } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
+import { CLAIM_TYPES } from '../lib/core';
 
 const NewClaim = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     claim_number: `CLM-${Date.now().toString().slice(-6)}`,
     client_name: '',
@@ -21,22 +23,39 @@ const NewClaim = () => {
     description: ''
   });
 
-  const claimTypes = [
-    'Water Damage', 'Fire Damage', 'Hurricane Damage', 'Hail Damage',
-    'Wind Damage', 'Flood Damage', 'Theft', 'Vandalism', 'Other'
-  ];
+  const claimTypes = CLAIM_TYPES;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+    }
     setFormData(prev => ({
       ...prev,
       [name]: name === 'estimated_value' ? (value ? parseFloat(value) : '') : value
     }));
   };
 
+  const validate = () => {
+    const errors = {};
+    if (!formData.claim_number.trim()) errors.claim_number = 'Claim number is required';
+    if (!formData.client_name.trim()) errors.client_name = 'Client name is required';
+    if (!formData.property_address.trim()) errors.property_address = 'Property address is required';
+    if (formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
+      errors.client_email = 'Enter a valid email address';
+    }
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
 
     try {
@@ -58,8 +77,14 @@ const NewClaim = () => {
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700/50 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 font-mono text-sm";
+  const inputClass = (name) => {
+    const base = "w-full px-3 py-2.5 bg-zinc-800 border rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 font-mono text-sm";
+    return fieldErrors[name]
+      ? `${base} border-red-500/70 focus:ring-red-500/50 focus:border-red-500/50`
+      : `${base} border-zinc-700/50 focus:ring-orange-500/50 focus:border-orange-500/50`;
+  };
   const labelClass = "block text-xs font-mono text-zinc-400 uppercase tracking-wider mb-1.5";
+  const errorClass = "text-xs text-red-400 font-mono mt-1";
 
   return (
     <div className="p-3 sm:p-6 lg:p-8 min-h-screen">
@@ -80,7 +105,7 @@ const NewClaim = () => {
       </div>
 
       <div className="card-tactical p-4 sm:p-6 max-w-3xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -91,31 +116,35 @@ const NewClaim = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Claim Number *</label>
-              <input name="claim_number" value={formData.claim_number} onChange={handleChange} required className={inputClass} data-testid="new-claim-number" />
+              <input name="claim_number" value={formData.claim_number} onChange={handleChange} className={inputClass('claim_number')} data-testid="new-claim-number" />
+              {fieldErrors.claim_number && <p className={errorClass}>{fieldErrors.claim_number}</p>}
             </div>
             <div>
               <label className={labelClass}>Policy Number</label>
-              <input name="policy_number" placeholder="POL-XXXXXX" value={formData.policy_number} onChange={handleChange} className={inputClass} data-testid="new-claim-policy" />
+              <input name="policy_number" placeholder="POL-XXXXXX" value={formData.policy_number} onChange={handleChange} className={inputClass('policy_number')} data-testid="new-claim-policy" />
             </div>
             <div>
               <label className={labelClass}>Client Name *</label>
-              <input name="client_name" placeholder="John Doe" value={formData.client_name} onChange={handleChange} required className={inputClass} data-testid="new-claim-client-name" />
+              <input name="client_name" placeholder="John Doe" value={formData.client_name} onChange={handleChange} className={inputClass('client_name')} data-testid="new-claim-client-name" />
+              {fieldErrors.client_name && <p className={errorClass}>{fieldErrors.client_name}</p>}
             </div>
             <div>
               <label className={labelClass}>Client Email</label>
-              <input name="client_email" type="email" placeholder="client@example.com" value={formData.client_email} onChange={handleChange} className={inputClass} data-testid="new-claim-client-email" />
+              <input name="client_email" type="email" placeholder="client@example.com" value={formData.client_email} onChange={handleChange} className={inputClass('client_email')} data-testid="new-claim-client-email" />
+              {fieldErrors.client_email && <p className={errorClass}>{fieldErrors.client_email}</p>}
             </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>Property Address *</label>
-              <input name="property_address" placeholder="123 Main St, City, State ZIP" value={formData.property_address} onChange={handleChange} required className={inputClass} data-testid="new-claim-address" />
+              <input name="property_address" placeholder="123 Main St, City, State ZIP" value={formData.property_address} onChange={handleChange} className={inputClass('property_address')} data-testid="new-claim-address" />
+              {fieldErrors.property_address && <p className={errorClass}>{fieldErrors.property_address}</p>}
             </div>
             <div>
               <label className={labelClass}>Date of Loss</label>
-              <input name="date_of_loss" type="date" value={formData.date_of_loss} onChange={handleChange} className={`${inputClass} [color-scheme:dark]`} data-testid="new-claim-date" />
+              <input name="date_of_loss" type="date" value={formData.date_of_loss} onChange={handleChange} className={`${inputClass('date_of_loss')} [color-scheme:dark]`} data-testid="new-claim-date" />
             </div>
             <div>
               <label className={labelClass}>Claim Type</label>
-              <select name="claim_type" value={formData.claim_type} onChange={handleChange} className={inputClass} data-testid="new-claim-type">
+              <select name="claim_type" value={formData.claim_type} onChange={handleChange} className={inputClass('claim_type')} data-testid="new-claim-type">
                 {claimTypes.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
@@ -123,11 +152,11 @@ const NewClaim = () => {
             </div>
             <div>
               <label className={labelClass}>Estimated Value ($)</label>
-              <input name="estimated_value" type="number" min="0" step="0.01" placeholder="25000" value={formData.estimated_value} onChange={handleChange} className={inputClass} data-testid="new-claim-value" />
+              <input name="estimated_value" type="number" min="0" step="0.01" placeholder="0.00" value={formData.estimated_value} onChange={handleChange} className={inputClass('estimated_value')} data-testid="new-claim-value" />
             </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>Description</label>
-              <textarea name="description" rows={3} placeholder="Describe the claim details..." value={formData.description} onChange={handleChange} className={`${inputClass} resize-none`} data-testid="new-claim-description" />
+              <textarea name="description" rows={3} placeholder="Describe the claim details..." value={formData.description} onChange={handleChange} className={`${inputClass('description')} resize-none`} data-testid="new-claim-description" />
             </div>
           </div>
 

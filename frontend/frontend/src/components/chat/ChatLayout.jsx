@@ -123,6 +123,21 @@ const ChatLayout = () => {
     );
   }
 
+  if (chat.error) {
+    return (
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-zinc-950">
+        <div className="text-center max-w-sm px-4">
+          <MessageCircle className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+          <h3 className="text-sm font-tactical font-bold text-white mb-1 uppercase">Comms Offline</h3>
+          <p className="text-xs text-zinc-500 mb-4">{chat.error}</p>
+          <button onClick={() => chat.retry?.()} className="btn-tactical px-4 py-2 text-xs">
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-64px)] flex bg-zinc-950 overflow-hidden">
       {/* Mobile sidebar overlay */}

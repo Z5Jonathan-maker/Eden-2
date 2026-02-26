@@ -15,6 +15,7 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
+  const [pollingActive, setPollingActive] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const dropdownRef = useRef(null);
   const wsRef = useRef(null);
@@ -192,9 +193,13 @@ const NotificationBell = () => {
       const res = await apiGet('/api/notifications/unread-count');
       if (res.ok) {
         setUnreadCount(res.data.unread_count || res.data.count || 0);
+        setPollingActive(true);
+      } else {
+        setPollingActive(false);
       }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
+      setPollingActive(false);
     }
   };
 
@@ -357,7 +362,7 @@ const NotificationBell = () => {
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-bold text-gray-900">Notifications</h2>
-              {wsConnected ? (
+              {(wsConnected || pollingActive) ? (
                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                   <Wifi className="w-3 h-3" />
                   Live
@@ -365,7 +370,7 @@ const NotificationBell = () => {
               ) : (
                 <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                   <WifiOff className="w-3 h-3" />
-                  Offline
+                  Connecting...
                 </span>
               )}
             </div>
@@ -417,9 +422,9 @@ const NotificationBell = () => {
   return (
     <div className="relative flex items-center gap-2" ref={dropdownRef}>
       {/* Connection status indicator */}
-      <div 
-        className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-gray-300'}`} 
-        title={wsConnected ? 'Real-time connected' : 'Reconnecting...'} 
+      <div
+        className={`w-2 h-2 rounded-full ${(wsConnected || pollingActive) ? 'bg-green-500' : 'bg-gray-300'}`}
+        title={(wsConnected || pollingActive) ? 'Connected' : 'Connecting...'}
       />
       
       <button
@@ -444,7 +449,7 @@ const NotificationBell = () => {
           <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-gray-900">Notifications</h3>
-              {wsConnected ? (
+              {(wsConnected || pollingActive) ? (
                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                   <Wifi className="w-3 h-3" />
                   Live
@@ -452,7 +457,7 @@ const NotificationBell = () => {
               ) : (
                 <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                   <WifiOff className="w-3 h-3" />
-                  Offline
+                  Connecting...
                 </span>
               )}
             </div>

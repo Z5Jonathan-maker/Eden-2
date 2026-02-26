@@ -75,15 +75,32 @@ const WorkspacePage = () => {
   };
 
   /* ─── Loading ─── */
-  if (connected === null) {
+  if (connected === null && !connError) {
     return (
       <div className="h-full flex items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
           <span className="text-xs text-zinc-600 font-medium">Connecting to Google...</span>
-          {connError && (
-            <span className="text-xs text-amber-500 mt-2 max-w-xs text-center">{connError}</span>
-          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Connection error (server unreachable) ─── */
+  if (connected === null && connError) {
+    return (
+      <div className="h-full flex items-center justify-center bg-zinc-950">
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 rounded-full bg-red-950/50 border border-red-800/30 flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-8 h-8 text-red-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">Connection Failed</h1>
+          <p className="text-zinc-400 mb-6 leading-relaxed text-sm">{connError}</p>
+          <button onClick={checkConnection}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-medium rounded-full transition-all shadow-lg">
+            <ArrowRight className="w-4 h-4" />
+            Retry
+          </button>
         </div>
       </div>
     );

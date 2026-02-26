@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { FEATURE_ICONS } from '../assets/badges';
 import { apiGet } from '@/lib/api';
+import { toast } from 'sonner';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -275,6 +276,8 @@ const HarvestPage = () => {
       const res = await apiGet(`/api/canvassing-map/leaderboard?period=${leaderboardPeriod}`);
       if (res.ok) {
         setLeaderboard(res.data.leaderboard || res.data || []);
+      } else if (res.status !== 401) {
+        toast.error('Failed to load leaderboard');
       }
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);

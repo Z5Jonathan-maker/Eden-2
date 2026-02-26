@@ -23,6 +23,7 @@ export default function useChat(initialChannelId = null) {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Thread
   const [threadParentId, setThreadParentId] = useState(null);
@@ -85,14 +86,21 @@ export default function useChat(initialChannelId = null) {
   }, []);
 
   // ── Initial boot ───────────────────────────────────────────────
-  useEffect(() => {
-    const boot = async () => {
-      setLoading(true);
+  const boot = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
       await Promise.all([loadInboxAndChannels(), loadUsers()]);
+    } catch (err) {
+      setError(err.message || 'Failed to connect to Comms service');
+    } finally {
       setLoading(false);
-    };
-    boot();
+    }
   }, [loadInboxAndChannels, loadUsers]);
+
+  useEffect(() => {
+    boot();
+  }, [boot]);
 
   // ── Channel selection ──────────────────────────────────────────
   useEffect(() => {
@@ -398,9 +406,11 @@ export default function useChat(initialChannelId = null) {
     allUsers,
     loading,
     messagesLoading,
+    error,
     canManage,
     canPost,
     totalUnread,
+    retry: boot,
 
     // Thread
     threadParentId,

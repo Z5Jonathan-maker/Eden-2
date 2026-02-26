@@ -354,13 +354,21 @@ function DataManagement() {
     return { preset: best, score: bestScore };
   }
 
+  const [statsError, setStatsError] = React.useState('');
+
   const fetchStats = React.useCallback(async function fetchStats() {
     setLoading(true);
+    setStatsError('');
     try {
       const res = await apiGet('/api/data/stats');
-      if (res.ok) setStats(res.data);
+      if (res.ok) {
+        setStats(res.data);
+      } else {
+        setStatsError(res.error || 'Failed to load database stats');
+      }
     } catch (err) {
       console.error('Failed to fetch stats:', err);
+      setStatsError(err.message || 'Failed to connect to data service');
     } finally {
       setLoading(false);
     }
@@ -866,7 +874,18 @@ function DataManagement() {
               </p>
             </div>
           </div>
-        ) : null}
+        ) : statsError ? (
+          <div className="text-center py-8">
+            <p className="text-xs text-red-400 mb-3">{statsError}</p>
+            <button onClick={fetchStats} className="btn-tactical px-4 py-2 text-xs">
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-xs text-zinc-500">No stats available</p>
+          </div>
+        )}
       </div>
 
       {/* Export */}

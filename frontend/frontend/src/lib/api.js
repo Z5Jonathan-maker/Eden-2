@@ -136,6 +136,13 @@ export async function api(endpoint, options = {}) {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+
+      // Global 401 interception — notify auth layer that session expired.
+      // Skip for auth endpoints (login/register) so login errors aren't misread.
+      if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+        window.dispatchEvent(new CustomEvent('eden:auth-expired'));
+      }
+
       return { ok: false, error: errorData.detail || `Error ${res.status}`, status: res.status };
     }
 

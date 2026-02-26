@@ -2,24 +2,17 @@ import React from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
-  exit: { opacity: 0, y: -4, transition: { duration: 0.15, ease: 'easeIn' } },
-};
-
 const AnimatedOutlet = () => {
   const location = useLocation();
   const outlet = useOutlet();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       <motion.div
         key={location.pathname}
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: 0.15, ease: 'easeOut' } }}
+        exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
         style={{ minHeight: '100%' }}
       >
         {outlet}

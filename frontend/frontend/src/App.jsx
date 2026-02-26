@@ -15,6 +15,8 @@ import Login from './components/Login';
 import Register from './components/Register';
 import InstallPrompt from './components/InstallPrompt';
 import InstallGuide from './components/InstallGuide';
+import NotFoundPage from './components/NotFoundPage';
+import RouteErrorBoundary from './components/RouteErrorBoundary';
 
 // Lazy-loaded heavy components
 const ClaimsList = lazy(() => import('./features/claims/components/ClaimsList'));
@@ -67,6 +69,11 @@ const PageLoader = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
     <div className="spinner-tactical w-10 h-10" />
   </div>
+);
+
+// Wrap lazy components with error boundary for per-module crash recovery
+const Safe = ({ label, children }) => (
+  <RouteErrorBoundary label={label}>{children}</RouteErrorBoundary>
 );
 
 // Protected Route wrapper for staff (admin/adjuster)
@@ -220,55 +227,55 @@ function AppRoutes() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="claims" element={<ClaimsList />} />
-          <Route path="claims/new" element={<NewClaim />} />
-          <Route path="claims/:claimId" element={<ClaimDetails />} />
-          <Route path="claims/:claimId/supplements" element={<SupplementTracker />} />
-          <Route path="inspections" element={<InspectionsNew />} />
-          <Route path="inspections/classic" element={<InspectionsEnhanced />} />
-          <Route path="documents" element={<Documents />} />
-          <Route path="eve" element={<EveAI />} />
-          <Route path="email-intelligence" element={<EmailIntelligence />} />
-          <Route path="contracts" element={<Contracts />} />
-          <Route path="storage" element={<Documents />} />
-          <Route path="data" element={<DataManagement />} />
-          <Route path="university" element={<University />} />
-          <Route path="university/course/:courseId" element={<CourseDetail />} />
-          <Route path="university/article/:articleId" element={<ArticleDetail />} />
-          <Route path="university/library/:bookId" element={<BookReader />} />
-          <Route path="university/workbook/:workbookId" element={<WorkbookViewer />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="scales" element={<Scales />} />
-          <Route path="canvassing" element={<HarvestPage />} />
-          <Route path="canvassing/leaderboard" element={<HarvestPage />} />
-          <Route path="sales" element={<SalesEnablement />} />
-          <Route path="property" element={<PropertyHub />} />
-          <Route path="weather" element={<PropertyHub />} />
-          <Route path="property-intel" element={<PropertyHub />} />
-          <Route path="vision" element={<InteractiveVisionBoard />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="settings/integrations" element={<IntegrationsPage />} />
-          <Route path="settings/integrations/callback" element={<IntegrationsPage />} />
-          <Route path="integrations" element={<IntegrationsPage />} />
-          <Route path="gamma" element={<GammaIntegration />} />
-          <Route path="voice-assistant" element={<VoiceAssistantConsole />} />
-          <Route path="harvest-admin" element={<HarvestAdminConsole />} />
-          <Route path="incentives-admin" element={<IncentivesAdminConsole />} />
-          <Route path="performance" element={<PerformanceConsole />} />
-          <Route path="qa" element={<Adam />} />
-          <Route path="adam" element={<Adam />} />
-          <Route path="experts" element={<IndustryExperts />} />
-          <Route path="florida-laws" element={<FloridaLaws />} />
-          <Route path="battle-pass" element={<BattlePass />} />
-          <Route path="mycard" element={<MyCard />} />
-          <Route path="workspace" element={<WorkspacePage />} />
-          <Route path="comms/chat" element={<ChatLayout />} />
-          <Route path="comms/chat/:channelId" element={<ChatLayout />} />
-          <Route path="comms/claim/:claimId" element={<CommCenterThread />} />
+          <Route path="claims" element={<Safe label="Garden"><ClaimsList /></Safe>} />
+          <Route path="claims/new" element={<Safe label="New Claim"><NewClaim /></Safe>} />
+          <Route path="claims/:claimId" element={<Safe label="Claim Detail"><ClaimDetails /></Safe>} />
+          <Route path="claims/:claimId/supplements" element={<Safe label="Supplements"><SupplementTracker /></Safe>} />
+          <Route path="inspections" element={<Safe label="Recon"><InspectionsNew /></Safe>} />
+          <Route path="inspections/classic" element={<Safe label="Inspections"><InspectionsEnhanced /></Safe>} />
+          <Route path="documents" element={<Safe label="Documents"><Documents /></Safe>} />
+          <Route path="eve" element={<Safe label="Eve AI"><EveAI /></Safe>} />
+          <Route path="email-intelligence" element={<Safe label="Email Intel"><EmailIntelligence /></Safe>} />
+          <Route path="contracts" element={<Safe label="Contracts"><Contracts /></Safe>} />
+          <Route path="storage" element={<Safe label="Storage"><Documents /></Safe>} />
+          <Route path="data" element={<Safe label="Data Ops"><DataManagement /></Safe>} />
+          <Route path="university" element={<Safe label="Doctrine"><University /></Safe>} />
+          <Route path="university/course/:courseId" element={<Safe label="Course"><CourseDetail /></Safe>} />
+          <Route path="university/article/:articleId" element={<Safe label="Article"><ArticleDetail /></Safe>} />
+          <Route path="university/library/:bookId" element={<Safe label="Library"><BookReader /></Safe>} />
+          <Route path="university/workbook/:workbookId" element={<Safe label="Workbook"><WorkbookViewer /></Safe>} />
+          <Route path="users" element={<Safe label="Squad"><UserManagement /></Safe>} />
+          <Route path="scales" element={<Safe label="Scales"><Scales /></Safe>} />
+          <Route path="canvassing" element={<Safe label="Harvest"><HarvestPage /></Safe>} />
+          <Route path="canvassing/leaderboard" element={<Safe label="Harvest"><HarvestPage /></Safe>} />
+          <Route path="sales" element={<Safe label="Sales Ops"><SalesEnablement /></Safe>} />
+          <Route path="property" element={<Safe label="Intel Hub"><PropertyHub /></Safe>} />
+          <Route path="weather" element={<Safe label="Weather"><PropertyHub /></Safe>} />
+          <Route path="property-intel" element={<Safe label="Property Intel"><PropertyHub /></Safe>} />
+          <Route path="vision" element={<Safe label="Vision"><InteractiveVisionBoard /></Safe>} />
+          <Route path="settings" element={<Safe label="Settings"><Settings /></Safe>} />
+          <Route path="settings/integrations" element={<Safe label="Integrations"><IntegrationsPage /></Safe>} />
+          <Route path="settings/integrations/callback" element={<Safe label="Integrations"><IntegrationsPage /></Safe>} />
+          <Route path="integrations" element={<Safe label="Integrations"><IntegrationsPage /></Safe>} />
+          <Route path="gamma" element={<Safe label="Gamma"><GammaIntegration /></Safe>} />
+          <Route path="voice-assistant" element={<Safe label="Voice"><VoiceAssistantConsole /></Safe>} />
+          <Route path="harvest-admin" element={<Safe label="Harvest Admin"><HarvestAdminConsole /></Safe>} />
+          <Route path="incentives-admin" element={<Safe label="Incentives"><IncentivesAdminConsole /></Safe>} />
+          <Route path="performance" element={<Safe label="Performance"><PerformanceConsole /></Safe>} />
+          <Route path="qa" element={<Safe label="QA"><Adam /></Safe>} />
+          <Route path="adam" element={<Safe label="Adam"><Adam /></Safe>} />
+          <Route path="experts" element={<Safe label="Experts"><IndustryExperts /></Safe>} />
+          <Route path="florida-laws" element={<Safe label="Laws"><FloridaLaws /></Safe>} />
+          <Route path="battle-pass" element={<Safe label="Battle Pass"><BattlePass /></Safe>} />
+          <Route path="mycard" element={<Safe label="My Card"><MyCard /></Safe>} />
+          <Route path="workspace" element={<Safe label="Workspace"><WorkspacePage /></Safe>} />
+          <Route path="comms/chat" element={<Safe label="Comms"><ChatLayout /></Safe>} />
+          <Route path="comms/chat/:channelId" element={<Safe label="Comms"><ChatLayout /></Safe>} />
+          <Route path="comms/claim/:claimId" element={<Safe label="Comms"><CommCenterThread /></Safe>} />
         </Route>
         {/* Public Routes (no auth required) */}
         <Route path="/card/:slug" element={<PublicCard />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );

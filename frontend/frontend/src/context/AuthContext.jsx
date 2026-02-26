@@ -21,6 +21,17 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Global listener: any 401 from api.js triggers logout
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      clearAuthToken();
+      clearSentryUser();
+      setUser(null);
+    };
+    window.addEventListener('eden:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('eden:auth-expired', handleAuthExpired);
+  }, []);
+
   useEffect(() => {
     // Check if user is already logged in by calling /api/auth/me
     // The httpOnly cookie will be sent automatically

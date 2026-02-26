@@ -43,6 +43,22 @@ export const CLAIM_STATUS_COLORS = {
   [CLAIM_STATUS.ARCHIVED]: 'bg-gray-200 text-gray-600'
 };
 
+// Unified claim type options — used by NewClaim, ClaimEditModal, and any filter UI
+export const CLAIM_TYPES = [
+  'Water Damage',
+  'Wind Damage',
+  'Hurricane Damage',
+  'Hail Damage',
+  'Fire Damage',
+  'Flood Damage',
+  'Roof Damage',
+  'Mold',
+  'Plumbing',
+  'Theft',
+  'Vandalism',
+  'Other',
+];
+
 export const INSPECTION_STATUS = {
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',

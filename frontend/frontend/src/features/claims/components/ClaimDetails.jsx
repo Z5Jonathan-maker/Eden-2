@@ -668,9 +668,14 @@ const ClaimDetails = () => {
             <X className="w-8 h-8 text-zinc-600" />
           </div>
           <p className="text-zinc-400 mb-4 font-mono">{error || 'Mission not found'}</p>
-          <button onClick={() => navigate('/claims')} className="btn-tactical px-6 py-2.5 text-sm">
-            Return to Garden
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={() => navigate('/claims')} className="btn-tactical px-6 py-2.5 text-sm">
+              Return to Garden
+            </button>
+            <button onClick={fetchClaimData} className="px-6 py-2.5 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors">
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );

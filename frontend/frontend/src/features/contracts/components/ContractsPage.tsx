@@ -39,6 +39,7 @@ const ContractsPage: React.FC = () => {
 
   useEffect(() => {
     let alive = true;
+    let pollFailures = 0;
     const start = async () => {
       try {
         await load();
@@ -49,8 +50,17 @@ const ContractsPage: React.FC = () => {
       }
     };
     start();
-    const timer = window.setInterval(() => {
-      load().catch(() => null);
+    const timer = window.setInterval(async () => {
+      try {
+        await load();
+        pollFailures = 0;
+      } catch {
+        pollFailures += 1;
+        if (pollFailures >= 3 && alive) {
+          toast.error('Lost connection to contracts service. Refresh the page to retry.');
+          window.clearInterval(timer);
+        }
+      }
     }, 15000);
     return () => {
       alive = false;
@@ -119,8 +129,9 @@ const ContractsPage: React.FC = () => {
     try {
       const url = await getEmbeddedSigningUrl(detailContract);
       setSignUrl(url);
-    } catch {
+    } catch (err: any) {
       setSignUrl('');
+      toast.error(err?.message || 'Failed to load signing page');
     } finally {
       setSignLoading(false);
     }

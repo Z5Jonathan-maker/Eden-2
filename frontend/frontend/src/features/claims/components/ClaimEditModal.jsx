@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Users } from 'lucide-react';
 import { apiGet } from '@/lib/api';
+import { CLAIM_TYPES } from '@/lib/core';
 
 const SECTIONS = ['Core', 'Carrier', 'Financials'];
 
@@ -87,7 +88,7 @@ const ClaimEditModal = ({ isOpen, editForm, setEditForm, onSave, onCancel, isSav
               </Field>
               <Field label="Claim Type">
                 <select className="input-tactical w-full px-3 py-2 text-sm" value={editForm.claim_type || 'Water Damage'} onChange={set('claim_type')}>
-                  {['Water Damage', 'Wind/Hurricane', 'Fire', 'Hail', 'Flood', 'Mold', 'Theft', 'Vandalism', 'Roof Damage', 'Plumbing', 'Other'].map(t => (
+                  {CLAIM_TYPES.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
