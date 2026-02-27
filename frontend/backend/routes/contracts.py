@@ -1032,65 +1032,54 @@ async def sign_contract_in_person(
     Returns a signing_url that opens the SignNow embedded signing UI.
     """
     from integrations.signnow_client import (
-        get_signnow_access_token, 
-        create_mock_signing_response,
+        get_signnow_access_token,
+        upload_contract_to_signnow,
         SIGNNOW_API_BASE
     )
     import httpx
-    
+
     _require_mutating_role(current_user)
     contract = await _get_contract_for_user_or_403(contract_id, current_user)
-    
+
     # Get signer info from contract
     signer_email = contract.get("client_email", "")
     signer_name = contract.get("client_name", "Unknown")
     host_email = (body.host_email if body else None) or current_user.get("email", "")
     user_email = current_user.get("email", "")
-    
-    # Get SignNow access token
+
+    # Get SignNow access token — FAIL if not configured
     access_token = await get_signnow_access_token(user_email)
-    
+
     if not access_token:
-        # SignNow not configured - return mock response for demo
-        mock_result = create_mock_signing_response(contract_id, signer_name)
-        
-        # Update contract to show in-person signing was started
-        await db.contracts.update_one(
-            {"id": contract_id},
-            {"$set": {
-                "status": "in_person_pending",
-                "in_person_started_at": datetime.now(timezone.utc).isoformat(),
-                "in_person_host": host_email
-            }}
+        raise HTTPException(
+            status_code=503,
+            detail="SignNow is not configured. Set SIGNNOW_ACCESS_TOKEN or connect SignNow in Settings."
         )
-        
-        return mock_result
-    
-    # SignNow is configured - create real in-person invite
+
+    # Ensure document is uploaded to SignNow
     signnow_doc_id = contract.get("signnow_document_id")
-    
+
     if not signnow_doc_id:
-        # Document not yet in SignNow - return mock for now
-        # In production, you'd upload the contract PDF first
-        mock_result = create_mock_signing_response(contract_id, signer_name)
-        mock_result["message"] = "Contract needs to be synced to SignNow first. Using demo mode."
-        
+        # Auto-upload: generate PDF and push to SignNow
+        signnow_doc_id = await upload_contract_to_signnow(
+            access_token, contract, signer_email
+        )
+        if not signnow_doc_id:
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to upload contract to SignNow. Ensure the contract PDF exists."
+            )
         await db.contracts.update_one(
             {"id": contract_id},
-            {"$set": {
-                "status": "in_person_pending",
-                "in_person_started_at": datetime.now(timezone.utc).isoformat()
-            }}
+            {"$set": {"signnow_document_id": signnow_doc_id}}
         )
-        
-        return mock_result
-    
+
     try:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-        
+
         # Create embedded in-person invite
         invite_payload = {
             "invites": [
@@ -1108,22 +1097,20 @@ async def sign_contract_in_person(
                 }
             ]
         }
-        
+
         async with httpx.AsyncClient() as client:
-            # Create the in-person invite
             invite_resp = await client.post(
                 f"{SIGNNOW_API_BASE}/v2/documents/{signnow_doc_id}/embedded-invite",
                 headers=headers,
                 json=invite_payload,
                 timeout=30.0
             )
-            
+
             if invite_resp.status_code in [200, 201]:
                 invite_data = invite_resp.json()
                 signing_url = invite_data.get("url") or invite_data.get("link")
-                
+
                 if signing_url:
-                    # Update contract status
                     await db.contracts.update_one(
                         {"id": contract_id},
                         {"$set": {
@@ -1133,32 +1120,28 @@ async def sign_contract_in_person(
                             "in_person_host": host_email
                         }}
                     )
-                    
+
                     return {
                         "signing_url": signing_url,
                         "contract_id": contract_id,
                         "signer_name": signer_name,
                         "mock": False
                     }
-            
-            # Fallback to mock if SignNow API fails
-            print(f"[SignNow] In-person invite failed: {invite_resp.status_code} - {invite_resp.text}")
-            
+
+            logger.error(f"[SignNow] In-person invite failed: {invite_resp.status_code} - {invite_resp.text}")
+            raise HTTPException(
+                status_code=502,
+                detail=f"SignNow in-person invite failed (HTTP {invite_resp.status_code}). Try again or use email/SMS invite."
+            )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"[SignNow] In-person sign error: {e}")
-    
-    # Return mock response as fallback
-    mock_result = create_mock_signing_response(contract_id, signer_name)
-    
-    await db.contracts.update_one(
-        {"id": contract_id},
-        {"$set": {
-            "status": "in_person_pending",
-            "in_person_started_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    
-    return mock_result
+        logger.error(f"[SignNow] In-person sign error: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"SignNow signing error: {str(e)}"
+        )
 
 
 class CompleteSigningRequest(BaseModel):

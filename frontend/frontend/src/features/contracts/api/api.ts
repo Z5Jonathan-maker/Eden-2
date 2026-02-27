@@ -161,28 +161,28 @@ export async function sendInvite(
 }
 
 export async function getEmbeddedSigningUrl(contract: ContractItem): Promise<string> {
-  const docId = contract.documentId || contract.id;
-  const paths = [
-    `/api/contracts/${contract.id}/embedded-signing`,
-    `/api/contracts/${docId}/embedded-signing`,
-  ];
-  for (const path of paths) {
-    const res = await apiGet(path);
-    if (res.ok) {
-      if (res.data?.url) return res.data.url;
-      if (res.data?.embedded_url) return res.data.embedded_url;
+  // Primary: use the sign-in-person endpoint which creates a real SignNow embedded link
+  const signRes = await apiPost(`/api/contracts/${contract.id}/sign-in-person`, {});
+  if (signRes.ok) {
+    const url = signRes.data?.signing_url || signRes.data?.signing_link || signRes.data?.url;
+    if (signRes.data?.mock) {
+      // Backend returned a mock — SignNow is not configured. Reject clearly.
+      throw new Error('SignNow is not configured. Connect SignNow in Settings to enable on-device signing.');
     }
+    if (url) return url;
   }
-  return '';
+
+  // Surface the backend error message to the user
+  const detail = signRes.data?.detail || signRes.error || 'Failed to create signing session';
+  throw new Error(typeof detail === 'string' ? detail : 'Failed to create signing session');
 }
 
 export async function markSigned(contract: ContractItem): Promise<void> {
   const res = await apiPost(`/api/contracts/${contract.id}/complete-signing`, {
     signer_name: contract.clientName || 'Signer',
     signed_in_person: true,
-    signature_data: 'embedded-signing-complete',
   });
-  if (!res.ok) throw new Error('Failed to update contract status');
+  if (!res.ok) throw new Error(res.data?.detail || 'Failed to update contract status');
 }
 
 // Track blob URLs so we can revoke previous ones to prevent memory leaks

@@ -24,9 +24,12 @@ import os
 import httpx
 import uuid
 import base64
+import logging
 
 from routes.auth import get_current_active_user
 from dependencies import db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/integrations/signnow", tags=["SignNow Integration"])
 
@@ -235,33 +238,38 @@ async def create_in_person_invite(
     # Get access token
     access_token = await get_signnow_access_token(user_email)
     if not access_token:
-        # Return mock response if SignNow not configured
-        return create_mock_signing_response(request.contract_id, request.signer_name)
-    
+        raise HTTPException(
+            status_code=503,
+            detail="SignNow is not configured. Set SIGNNOW_ACCESS_TOKEN or configure OAuth in Settings."
+        )
+
     try:
         # If no SignNow document exists, create one first
         if not signnow_doc_id:
             signnow_doc_id = await upload_contract_to_signnow(
-                access_token, 
+                access_token,
                 contract,
                 request.signer_email
             )
-            
+
             if not signnow_doc_id:
-                return create_mock_signing_response(request.contract_id, request.signer_name)
-            
+                raise HTTPException(
+                    status_code=502,
+                    detail="Failed to upload contract to SignNow. Check that the contract PDF exists."
+                )
+
             # Update contract with SignNow document ID
             await db.contracts.update_one(
                 {"id": request.contract_id},
                 {"$set": {"signnow_document_id": signnow_doc_id}}
             )
-        
+
         # Create embedded invite
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-        
+
         # Create invite payload
         invite_payload = {
             "invites": [
@@ -279,7 +287,7 @@ async def create_in_person_invite(
                 }
             ]
         }
-        
+
         async with httpx.AsyncClient() as client:
             # Create the invite
             invite_resp = await client.post(
@@ -288,29 +296,32 @@ async def create_in_person_invite(
                 json=invite_payload,
                 timeout=30.0
             )
-            
+
             if invite_resp.status_code not in [200, 201]:
-                print(f"[SignNow] Invite creation failed: {invite_resp.text}")
-                return create_mock_signing_response(request.contract_id, request.signer_name)
-            
+                logger.error(f"[SignNow] Invite creation failed: {invite_resp.text}")
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"SignNow invite creation failed (HTTP {invite_resp.status_code})"
+                )
+
             # Get embedded signing link
             link_payload = {
                 "document_id": signnow_doc_id,
                 "access_token": access_token,
                 "link_expiration": 45  # minutes
             }
-            
+
             link_resp = await client.post(
                 f"{SIGNNOW_API_BASE}/link",
                 headers=headers,
                 json=link_payload,
                 timeout=30.0
             )
-            
+
             if link_resp.status_code == 200:
                 link_data = link_resp.json()
                 signing_link = link_data.get("url")
-                
+
                 # Update contract status
                 await db.contracts.update_one(
                     {"id": request.contract_id},
@@ -321,7 +332,7 @@ async def create_in_person_invite(
                         "signer_name": request.signer_name
                     }}
                 )
-                
+
                 return {
                     "signing_link": signing_link,
                     "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=45)).isoformat(),
@@ -330,12 +341,17 @@ async def create_in_person_invite(
                     "mock": False
                 }
             else:
-                print(f"[SignNow] Link creation failed: {link_resp.text}")
-                return create_mock_signing_response(request.contract_id, request.signer_name)
-                
+                logger.error(f"[SignNow] Link creation failed: {link_resp.text}")
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"SignNow signing link creation failed (HTTP {link_resp.status_code})"
+                )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"[SignNow] In-person invite error: {e}")
-        return create_mock_signing_response(request.contract_id, request.signer_name)
+        logger.error(f"[SignNow] In-person invite error: {e}")
+        raise HTTPException(status_code=502, detail=f"SignNow signing error: {str(e)}")
 
 
 async def upload_contract_to_signnow(access_token: str, contract: dict, signer_email: str) -> Optional[str]:
@@ -481,13 +497,12 @@ class SignNowClient:
     ) -> dict:
         """Create an in-person signing link for a contract"""
         access_token = await get_signnow_access_token(self.user_email)
-        
+
         if not access_token:
-            return create_mock_signing_response(contract_id, signer_name)
-        
-        # Implementation would call SignNow API
-        # For now, return mock
-        return create_mock_signing_response(contract_id, signer_name)
+            raise Exception("SignNow not configured — cannot create signing link")
+
+        # Delegate to the router-level endpoint logic
+        raise Exception("Use the /sign-in-person endpoint directly instead of this method")
     
     async def check_document_status(self, document_id: str) -> dict:
         """Check the status of a SignNow document"""
