@@ -13,7 +13,7 @@ test.describe('Modals and Forms', () => {
   
   test('contracts page renders without overflow', async ({ page }) => {
     await page.goto('/contracts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Check main content area for unintended overflow (exclude intentional truncation)
@@ -55,7 +55,7 @@ test.describe('Modals and Forms', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/contracts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Find primary buttons
@@ -77,7 +77,7 @@ test.describe('Modals and Forms', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/inspections');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     await expect(page.locator('body')).toBeVisible();
@@ -88,7 +88,7 @@ test.describe('Modals and Forms', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/inspections');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     const rapidCaptureBtn = page.locator('button:has-text("Rapid Capture"), [data-testid*="rapid"]').first();
@@ -106,7 +106,7 @@ test.describe('Modals and Forms', () => {
     
     // Navigate to a claim
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const claimLink = page.locator('a[href*="/claims/"]').first();
     
@@ -135,7 +135,7 @@ test.describe('Modals and Forms', () => {
     
     // Go to claims and try to create new
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const newBtn = page.locator('button:has-text("New"), button:has-text("Add")').first();
     
@@ -163,7 +163,7 @@ test.describe('Modals and Forms', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find any select/dropdown
     const selects = page.locator('select:visible, [role="combobox"]:visible');

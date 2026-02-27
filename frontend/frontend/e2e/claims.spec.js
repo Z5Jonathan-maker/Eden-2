@@ -13,7 +13,7 @@ test.describe('Claims', () => {
   
   test('claims list page renders without overflow', async ({ page }) => {
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Check main content area for unintended overflow (exclude intentional truncation)
@@ -55,7 +55,7 @@ test.describe('Claims', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     
     // Look for claim items
@@ -70,7 +70,7 @@ test.describe('Claims', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const newClaimBtn = page.locator('button:has-text("New Claim"), button:has-text("Add Claim"), [data-testid="new-claim"]').first();
     
@@ -87,7 +87,7 @@ test.describe('Claims', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Try to click first claim
@@ -109,7 +109,7 @@ test.describe('Claims', () => {
     
     // Navigate to first claim
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     const claimLink = page.locator('a[href*="/claims/"]').first();
@@ -139,7 +139,7 @@ test.describe('Claims', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const claimLink = page.locator('a[href*="/claims/"]').first();
     

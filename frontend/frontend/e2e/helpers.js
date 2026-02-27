@@ -35,20 +35,25 @@ async function login(page) {
   }
 
   // Deterministic fallback for UI smoke tests when backend auth seed data is unavailable.
+  // Intercept /api/auth/me so AuthContext sees a valid user without a real backend session.
+  const mockUser = {
+    id: 'e2e-user',
+    email: 'test@eden.com',
+    full_name: 'E2E Test User',
+    role: 'admin',
+    permissions: ['territories.write', 'harvest.territories.manage'],
+  };
+
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockUser) })
+  );
+
   await page.context().addInitScript(() => {
     localStorage.setItem('eden_token', 'e2e-fallback-token');
-    localStorage.setItem('eden_user', JSON.stringify({
-      id: 'e2e-user',
-      email: 'test@eden.com',
-      full_name: 'E2E Test User',
-      role: 'admin',
-      permissions: ['territories.write', 'harvest.territories.manage']
-    }));
   });
 
   await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForSelector('[data-testid="main-layout"], nav, [data-testid="dashboard-page"]', { timeout: 10000 }).catch(() => {});
+  await page.waitForSelector('nav', { timeout: 10000 }).catch(() => {});
 }
 
 /**

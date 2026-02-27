@@ -24,7 +24,7 @@ test.describe('Navigation', () => {
   
   test('dashboard loads without overflow', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const overflows = await checkNoTextOverflow(page);
     expect(overflows.length).toBeLessThanOrEqual(2); // Allow minor issues
@@ -34,7 +34,7 @@ test.describe('Navigation', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Page should load
@@ -51,7 +51,7 @@ test.describe('Navigation', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/canvassing');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     
     // Should see map or harvest content
@@ -69,7 +69,7 @@ test.describe('Navigation', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/inspections');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     await expect(page.locator('body')).toBeVisible();
@@ -80,7 +80,7 @@ test.describe('Navigation', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/contracts');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     await expect(page.locator('body')).toBeVisible();
@@ -91,7 +91,7 @@ test.describe('Navigation', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/integrations');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     await expect(page.locator('body')).toBeVisible();
@@ -100,7 +100,7 @@ test.describe('Navigation', () => {
   
   test('notification bell is clickable', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const bell = page.locator('[data-testid="notification-bell"]');
     

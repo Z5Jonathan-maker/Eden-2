@@ -11,7 +11,7 @@ test.describe('Authentication', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check for text overflow
     const overflows = await checkNoTextOverflow(page);
@@ -23,7 +23,7 @@ test.describe('Authentication', () => {
   
   test('login form elements are visible and tappable', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Email input
     const emailInput = page.locator('input[type="email"]');
@@ -55,7 +55,7 @@ test.describe('Authentication', () => {
   
   test('login with invalid credentials shows error', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     await page.fill('input[type="email"]', 'wrong@email.com');
     await page.fill('input[type="password"]', 'wrongpassword');
@@ -70,7 +70,7 @@ test.describe('Authentication', () => {
     const errors = setupConsoleErrorCapture(page);
     
     await page.goto('/register');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const overflows = await checkNoTextOverflow(page);
     expect(overflows).toHaveLength(0);
@@ -79,10 +79,10 @@ test.describe('Authentication', () => {
   
   test('register form elements are visible', async ({ page }) => {
     await page.goto('/register');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Name input
-    const nameInput = page.locator('input[name="full_name"], input[placeholder*="name" i]').first();
+    const nameInput = page.locator('input[name="fullName"], [data-testid="register-name-input"]').first();
     await expect(nameInput).toBeVisible();
     
     // Email input

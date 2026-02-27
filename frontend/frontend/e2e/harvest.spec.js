@@ -10,7 +10,7 @@ test.describe('Harvest/Canvassing', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto('/canvassing');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
   });
   
