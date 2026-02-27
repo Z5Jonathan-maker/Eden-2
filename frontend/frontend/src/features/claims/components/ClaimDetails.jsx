@@ -90,6 +90,7 @@ const ClaimDetails = () => {
   const [floridaReadiness, setFloridaReadiness] = useState(null);
   const [demandManifest, setDemandManifest] = useState(null);
   const [loadingDemandManifest, setLoadingDemandManifest] = useState(false);
+  const [submittingDemand, setSubmittingDemand] = useState(false);
 
   // Gamma hook for presentation generation
   const { createDeckForAudience, loading: gammaLoading } = useGamma();
@@ -332,8 +333,30 @@ const ClaimDetails = () => {
   const handleGenerateReport = async () => {
     setGeneratingReport(true);
     setActiveTab('reports');
-    toast.success('Open Reports tab to generate a PDF report');
-    setGeneratingReport(false);
+    try {
+      // Fetch templates and auto-start with first available template
+      const tplRes = await apiGet(`/api/claims/${claimId}/reports/templates?report_type=client_report`);
+      if (tplRes.ok && tplRes.data?.templates?.length) {
+        const tpl = tplRes.data.templates[0];
+        const genRes = await apiPost(`/api/claims/${claimId}/reports/generate`, {
+          report_type: 'client_report',
+          template_id: tpl.id,
+          template_version: tpl.version,
+          options: {},
+        });
+        if (genRes.ok) {
+          toast.success('Report generation started — see Reports tab for progress');
+        } else {
+          toast.error(genRes.error?.detail || genRes.error || 'Failed to start report');
+        }
+      } else {
+        toast.info('Select a template in the Reports tab to generate a report');
+      }
+    } catch {
+      toast.error('Report generation failed');
+    } finally {
+      setGeneratingReport(false);
+    }
   };
 
   const handleGenerateAIBrief = async () => {
@@ -563,6 +586,29 @@ const ClaimDetails = () => {
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
     toast.success('Demand package checklist exported');
+  };
+
+  const handleSubmitDemandPackage = async () => {
+    if (!demandManifest) return;
+    if (!demandManifest.ready_for_submission) {
+      toast.error('Demand package not ready — address blockers first');
+      return;
+    }
+    try {
+      setSubmittingDemand(true);
+      const res = await apiPost(`/api/claims/${claimId}/demand-package/submit`, {
+        export_payload: demandManifest.export_payload || demandManifest,
+      });
+      if (!res.ok) {
+        throw new Error(res.error?.detail || res.error || 'Submission failed');
+      }
+      setDemandManifest(prev => ({ ...prev, submitted: true, submitted_at: new Date().toISOString() }));
+      toast.success('Demand package submitted successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit demand package');
+    } finally {
+      setSubmittingDemand(false);
+    }
   };
 
   // Handle Gamma deck generation - uses claim ID, backend fetches all data
@@ -872,6 +918,8 @@ const ClaimDetails = () => {
           getDeadlineStatusColor={getDeadlineStatusColor}
           demandManifest={demandManifest}
           handleExportManifestChecklist={handleExportManifestChecklist}
+          handleSubmitDemandPackage={handleSubmitDemandPackage}
+          submittingDemand={submittingDemand}
           showDeckMenu={showDeckMenu}
           setShowDeckMenu={setShowDeckMenu}
           generatingDeck={generatingDeck}

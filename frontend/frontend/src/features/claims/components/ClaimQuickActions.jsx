@@ -45,6 +45,8 @@ const ClaimQuickActions = ({
   getDeadlineStatusColor,
   demandManifest,
   handleExportManifestChecklist,
+  handleSubmitDemandPackage,
+  submittingDemand,
   showDeckMenu,
   setShowDeckMenu,
   generatingDeck,
@@ -616,13 +618,33 @@ const ClaimQuickActions = ({
                 </div>
               )}
 
-            <button
-              className="w-full px-3 py-2 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 font-mono text-[11px] uppercase transition-all"
-              onClick={handleExportManifestChecklist}
-              data-testid="export-demand-manifest-btn"
-            >
-              Export Checklist JSON
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 px-3 py-2 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 font-mono text-[11px] uppercase transition-all"
+                onClick={handleExportManifestChecklist}
+                data-testid="export-demand-manifest-btn"
+              >
+                Export JSON
+              </button>
+              <button
+                className={`flex-1 px-3 py-2 rounded font-mono text-[11px] uppercase transition-all flex items-center justify-center gap-1.5 ${
+                  demandManifest.ready_for_submission && !demandManifest.submitted
+                    ? 'border border-emerald-500/50 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30'
+                    : 'border border-zinc-700/50 text-zinc-500 cursor-not-allowed'
+                }`}
+                onClick={handleSubmitDemandPackage}
+                disabled={!demandManifest.ready_for_submission || submittingDemand || demandManifest.submitted}
+                data-testid="submit-demand-btn"
+              >
+                {submittingDemand ? (
+                  <><Loader2 className="w-3 h-3 animate-spin" /> Submitting...</>
+                ) : demandManifest.submitted ? (
+                  'Submitted'
+                ) : (
+                  'Submit Demand'
+                )}
+              </button>
+            </div>
 
             <div className="flex items-start gap-1.5 text-[10px] text-zinc-500">
               <AlertTriangle className="w-3 h-3 mt-0.5 text-zinc-500" />
