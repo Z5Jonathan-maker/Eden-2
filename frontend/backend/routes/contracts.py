@@ -387,7 +387,21 @@ async def create_contract(
     _require_mutating_role(current_user)
     # Validate claim exists and user can access it
     await _get_claim_for_user_or_403(contract.claim_id, current_user)
-    
+
+    # FL §626.854: Validate fee percentage is within legal limits
+    fee_pct = contract.field_values.get("fee_percentage")
+    if fee_pct is not None:
+        try:
+            fee_val = float(str(fee_pct).replace('%', '').strip())
+            if fee_val < 0 or fee_val > 20:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Fee percentage {fee_val}% is outside FL statutory limits (0–20%). "
+                           f"Standard max is 10%, catastrophe declarations allow up to 20%."
+                )
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail=f"Invalid fee percentage value: {fee_pct}")
+
     # Get template
     template = _get_builtin_template(contract.template_id)
     if not template:
@@ -693,10 +707,29 @@ def _generate_dfs_disclosure_pdf(contract: dict, field_values: dict):
     ]
 
     for para in paragraphs:
+        # Wrap on clean text for line-length calculation, but render with bold markers
         clean = para.replace('**', '')
-        lines = _wrap_text(clean, 85)
-        for line in lines:
-            page.insert_text(fitz.Point(margin_l, y), line, fontsize=10, fontname="helv", color=DARK)
+        wrapped_clean = _wrap_text(clean, 85)
+
+        # Rebuild each wrapped line with its original bold markers
+        remaining = para
+        for line_text in wrapped_clean:
+            # Find the portion of `remaining` (with ** markers) that corresponds to this clean line
+            clean_chars_needed = len(line_text)
+            rich_line = ""
+            chars_consumed = 0
+            ri = 0
+            while chars_consumed < clean_chars_needed and ri < len(remaining):
+                if remaining[ri] == '*' and ri + 1 < len(remaining) and remaining[ri + 1] == '*':
+                    rich_line += "**"
+                    ri += 2
+                else:
+                    rich_line += remaining[ri]
+                    chars_consumed += 1
+                    ri += 1
+            remaining = remaining[ri:]
+
+            _insert_rich_line(page, margin_l, y, rich_line, fontsize=10, color=DARK)
             y += 15
         y += 8
 
@@ -769,6 +802,27 @@ def _wrap_text(text: str, max_chars: int = 80) -> list:
     return lines
 
 
+def _insert_rich_line(page, x: float, y: float, text: str, fontsize: int = 10, color=None):
+    """Render a single line with **bold** markers using inline bold spans.
+
+    Splits on ``**`` delimiters and alternates between regular and bold Helvetica.
+    Returns the total width consumed so callers can track x offsets.
+    """
+    import fitz
+    if color is None:
+        color = (0.15, 0.15, 0.15)
+    segments = text.split("**")
+    cx = x
+    for i, seg in enumerate(segments):
+        if not seg:
+            continue
+        is_bold = (i % 2 == 1)
+        fname = "helvetica-bold" if is_bold else "helv"
+        page.insert_text(fitz.Point(cx, y), seg, fontsize=fontsize, fontname=fname, color=color)
+        cx += fitz.get_text_length(seg, fontname=fname, fontsize=fontsize)
+    return cx - x
+
+
 @router.get("/{contract_id}/pdf")
 async def generate_filled_pdf(
     contract_id: str,
@@ -805,40 +859,45 @@ async def generate_filled_pdf(
 
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
+            # All fill-in fields: 12pt Regular (Helvetica)
+            # Fee disclosure percentage: 18pt Bold (Helvetica-Bold) — FL DFS non-negotiable
             field_positions = {
-                "policyholder_name": {"page": 0, "x": 160, "y": 148, "fontsize": 10},
-                "policyholder_email": {"page": 0, "x": 160, "y": 163, "fontsize": 10},
-                "policyholder_address": {"page": 0, "x": 160, "y": 178, "fontsize": 10},
-                "policyholder_city": {"page": 0, "x": 160, "y": 193, "fontsize": 10},
-                "policyholder_state": {"page": 0, "x": 320, "y": 193, "fontsize": 10},
-                "policyholder_zip": {"page": 0, "x": 380, "y": 193, "fontsize": 10},
-                "policyholder_phone": {"page": 0, "x": 160, "y": 208, "fontsize": 10},
-                "policyholder_mobile": {"page": 0, "x": 320, "y": 208, "fontsize": 10},
-                "insurance_company": {"page": 0, "x": 160, "y": 258, "fontsize": 10},
-                "policy_number": {"page": 0, "x": 400, "y": 258, "fontsize": 10},
-                "claim_number": {"page": 0, "x": 160, "y": 273, "fontsize": 10},
-                "insurance_address": {"page": 0, "x": 160, "y": 288, "fontsize": 10},
-                "field_adjuster": {"page": 0, "x": 160, "y": 303, "fontsize": 10},
-                "field_adjuster_phone": {"page": 0, "x": 400, "y": 303, "fontsize": 10},
-                "desk_adjuster": {"page": 0, "x": 160, "y": 318, "fontsize": 10},
-                "desk_adjuster_phone": {"page": 0, "x": 400, "y": 318, "fontsize": 10},
-                "loss_address": {"page": 0, "x": 160, "y": 368, "fontsize": 10},
-                "loss_city": {"page": 0, "x": 160, "y": 383, "fontsize": 10},
-                "loss_state_zip": {"page": 0, "x": 320, "y": 383, "fontsize": 10},
-                "date_of_loss": {"page": 0, "x": 160, "y": 398, "fontsize": 10},
-                "description_of_loss": {"page": 0, "x": 160, "y": 413, "fontsize": 9, "width": 400},
-                "claim_type": {"page": 0, "x": 160, "y": 443, "fontsize": 10},
-                "fee_percentage": {"page": 0, "x": 400, "y": 478, "fontsize": 10},
+                "policyholder_name": {"page": 0, "x": 160, "y": 148, "fontsize": 12},
+                "policyholder_email": {"page": 0, "x": 160, "y": 163, "fontsize": 12},
+                "policyholder_address": {"page": 0, "x": 160, "y": 178, "fontsize": 12},
+                "policyholder_city": {"page": 0, "x": 160, "y": 193, "fontsize": 12},
+                "policyholder_state": {"page": 0, "x": 320, "y": 193, "fontsize": 12},
+                "policyholder_zip": {"page": 0, "x": 380, "y": 193, "fontsize": 12},
+                "policyholder_phone": {"page": 0, "x": 160, "y": 208, "fontsize": 12},
+                "policyholder_mobile": {"page": 0, "x": 320, "y": 208, "fontsize": 12},
+                "insurance_company": {"page": 0, "x": 160, "y": 258, "fontsize": 12},
+                "policy_number": {"page": 0, "x": 400, "y": 258, "fontsize": 12},
+                "claim_number": {"page": 0, "x": 160, "y": 273, "fontsize": 12},
+                "insurance_address": {"page": 0, "x": 160, "y": 288, "fontsize": 12},
+                "field_adjuster": {"page": 0, "x": 160, "y": 303, "fontsize": 12},
+                "field_adjuster_phone": {"page": 0, "x": 400, "y": 303, "fontsize": 12},
+                "desk_adjuster": {"page": 0, "x": 160, "y": 318, "fontsize": 12},
+                "desk_adjuster_phone": {"page": 0, "x": 400, "y": 318, "fontsize": 12},
+                "loss_address": {"page": 0, "x": 160, "y": 368, "fontsize": 12},
+                "loss_city": {"page": 0, "x": 160, "y": 383, "fontsize": 12},
+                "loss_state_zip": {"page": 0, "x": 320, "y": 383, "fontsize": 12},
+                "date_of_loss": {"page": 0, "x": 160, "y": 398, "fontsize": 12},
+                "description_of_loss": {"page": 0, "x": 160, "y": 413, "fontsize": 12, "width": 400},
+                "claim_type": {"page": 0, "x": 160, "y": 443, "fontsize": 12},
+                "fee_percentage": {"page": 0, "x": 400, "y": 478, "fontsize": 18, "bold": True},
             }
 
             for field_id, pos in field_positions.items():
                 value = field_values.get(field_id, "")
                 if value:
                     page = doc[pos["page"]]
-                    fontsize = pos.get("fontsize", 10)
+                    fontsize = pos.get("fontsize", 12)
+                    fontname = "helvetica-bold" if pos.get("bold") else "helv"
                     if field_id == "description_of_loss" and len(str(value)) > 50:
                         value = str(value)[:200] + "..." if len(str(value)) > 200 else value
-                    page.insert_text(fitz.Point(pos["x"], pos["y"]), str(value), fontsize=fontsize, fontname="helv", color=(0, 0, 0))
+                    # Append % suffix for fee_percentage display
+                    display_value = f"{value}%" if field_id == "fee_percentage" else str(value)
+                    page.insert_text(fitz.Point(pos["x"], pos["y"]), display_value, fontsize=fontsize, fontname=fontname, color=(0, 0, 0))
 
         # ── Common: signature overlay ───────────────────────────
         if signature_data and signature_data.startswith('data:image'):
@@ -1108,6 +1167,45 @@ class CompleteSigningRequest(BaseModel):
     signed_in_person: bool = True
 
 
+async def _send_signed_copy_email(contract: dict, contract_id: str):
+    """Send signed PDF copy to client email — FL §626.854 requires policyholder gets a copy."""
+    try:
+        client_email = contract.get("client_email")
+        client_name = contract.get("client_name", "Policyholder")
+        if not client_email:
+            logger.warning(f"[Contract {contract_id}] No client email — cannot send signed copy")
+            return
+
+        # Try to send via backend email service
+        try:
+            from services.email_service import send_email
+            template_id = contract.get("template_id", "")
+            is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
+            doc_type = "DFS Disclosure" if is_dfs else "PA Agreement"
+            pdf_download_url = f"/api/contracts/{contract_id}/pdf"
+
+            await send_email(
+                to_email=client_email,
+                subject=f"Your Signed {doc_type} — Care Claims",
+                body=(
+                    f"Dear {client_name},\n\n"
+                    f"Your {doc_type} has been signed successfully. "
+                    f"A copy of your signed document is available for download at the link below.\n\n"
+                    f"If you have any questions, please contact your public adjuster.\n\n"
+                    f"— Care Claims / Operation Eden"
+                ),
+                metadata={"contract_id": contract_id, "type": "signed_copy"},
+            )
+            logger.info(f"[Contract {contract_id}] Signed copy email sent to {client_email}")
+        except ImportError:
+            # Email service not available — log but don't block signing
+            logger.warning(f"[Contract {contract_id}] Email service not available. "
+                           f"Signed copy NOT sent to {client_email}. "
+                           f"FL §626.854 requires policyholder receive a copy.")
+    except Exception as e:
+        logger.error(f"[Contract {contract_id}] Failed to send signed copy email: {e}")
+
+
 @router.post("/{contract_id}/complete-signing")
 async def complete_contract_signing(
     contract_id: str,
@@ -1117,29 +1215,49 @@ async def complete_contract_signing(
     """
     Mark a contract as signed after in-person signing completes.
     Accepts signature data (base64 PNG) and saves it with the contract.
+    Validates the contract is in a signable state.
+    Sends signed copy to client email per FL §626.854.
     """
     _require_mutating_role(current_user)
     contract = await _get_contract_for_user_or_403(contract_id, current_user)
-    
+
+    # Validate contract is in a signable state
+    current_status = contract.get("status", "draft")
+    if current_status == "signed":
+        return {
+            "contract_id": contract_id,
+            "status": "signed",
+            "message": "Contract is already signed",
+            "has_signature": bool(contract.get("signature_data"))
+        }
+
+    signable_states = {"draft", "sent", "viewed", "pending", "in_person_pending", "pending_signature"}
+    if current_status not in signable_states:
+        raise HTTPException(status_code=400, detail=f"Contract in state '{current_status}' cannot be signed")
+
     # Prepare update data
+    now = datetime.now(timezone.utc).isoformat()
     update_data = {
         "status": "signed",
-        "signed_at": datetime.now(timezone.utc).isoformat(),
+        "signed_at": now,
         "signed_in_person": True,
         "signed_by": current_user.get("id")
     }
-    
+
     # Add signature data if provided
-    if request and request.signature_data:
+    if request and request.signature_data and request.signature_data != 'embedded-signing-complete':
         update_data["signature_data"] = request.signature_data
-        update_data["signer_name"] = request.signer_name or contract.get("client_name")
-    
+    update_data["signer_name"] = (
+        (request.signer_name if request else None)
+        or contract.get("client_name")
+    )
+
     # Update contract status to signed
     await db.contracts.update_one(
         {"id": contract_id},
         {"$set": update_data}
     )
-    
+
     # If contract is linked to a claim, add event to claim
     if contract.get("claim_id"):
         await db.claims.update_one(
@@ -1148,24 +1266,27 @@ async def complete_contract_signing(
                 "events": {
                     "type": "contract_signed",
                     "contract_id": contract_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": now,
                     "details": "Contract signed in person with digital signature",
                     "user_id": current_user.get("id")
                 }
             }}
         )
-    
+
     # Emit game event for incentives engine
     await _emit_contract_event(
         user_id=current_user.get("id"),
         event_type="contract.signed",
         contract_id=contract_id
     )
-    
+
+    # FL §626.854: Send signed copy to policyholder
+    await _send_signed_copy_email(contract, contract_id)
+
     return {
         "contract_id": contract_id,
         "status": "signed",
-        "signed_at": datetime.now(timezone.utc).isoformat(),
+        "signed_at": now,
         "message": "Contract signed successfully",
-        "has_signature": bool(request and request.signature_data)
+        "has_signature": bool(request and request.signature_data and request.signature_data != 'embedded-signing-complete')
     }

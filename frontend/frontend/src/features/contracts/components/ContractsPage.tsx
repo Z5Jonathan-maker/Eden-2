@@ -164,8 +164,10 @@ const ContractsPage: React.FC = () => {
       toast.error('Missing linked claim for regenerate');
       return;
     }
+    // Pre-fill the create modal with the existing contract's linked claim
+    // The CreateContractModal will auto-prefill fields when claim is selected
     setCreateOpen(true);
-    toast.info('Regenerate flow started. Re-submit with updated fields.');
+    toast.info(`Regenerating contract for ${contract.clientName || 'client'}. Review fields and re-submit.`);
   };
 
   if (loading) {

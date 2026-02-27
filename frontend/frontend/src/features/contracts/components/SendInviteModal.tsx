@@ -23,7 +23,22 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
 
   if (!open || !contract) return null;
 
+  // Validation
+  const emailValid = mode !== 'email' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+  const phoneValid = mode !== 'sms' || /^[\d+\-() ]{7,}$/.test(recipient.trim());
+  const recipientValid = mode === 'email' ? emailValid : phoneValid;
+  const formValid = !!recipient && recipientValid && !!signerName.trim();
+
+  const validationMsg = !signerName.trim()
+    ? 'Signer name is required'
+    : !recipient
+      ? `${mode === 'email' ? 'Email' : 'Phone'} is required`
+      : !recipientValid
+        ? mode === 'email' ? 'Enter a valid email address' : 'Enter a valid phone number'
+        : '';
+
   const submit = async () => {
+    if (!formValid) return;
     setSending(true);
     try {
       await onSend(mode, recipient, signerName);
@@ -42,21 +57,27 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
         <p className="mt-1 text-xs text-zinc-500">{contract.name}</p>
         <div className="mt-4 space-y-3">
           <label className="block text-xs text-zinc-400">
-            Signer Name
+            Signer Name <span className="text-red-400">*</span>
             <input
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
               className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-cyan-500"
+              placeholder="Full legal name"
             />
           </label>
           <label className="block text-xs text-zinc-400">
-            {mode === 'email' ? 'Email' : 'Phone'}
+            {mode === 'email' ? 'Email' : 'Phone'} <span className="text-red-400">*</span>
             <input
+              type={mode === 'email' ? 'email' : 'tel'}
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-cyan-500"
+              placeholder={mode === 'email' ? 'client@example.com' : '(555) 123-4567'}
             />
           </label>
+          {validationMsg && (
+            <p className="text-[10px] text-red-400">{validationMsg}</p>
+          )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -69,7 +90,7 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
           <button
             type="button"
             onClick={submit}
-            disabled={sending || !recipient}
+            disabled={sending || !formValid}
             className="btn-tactical px-4 py-2 text-xs uppercase disabled:opacity-50"
           >
             {sending ? 'Sending...' : 'Send'}

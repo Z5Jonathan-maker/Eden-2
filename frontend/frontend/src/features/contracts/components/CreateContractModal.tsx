@@ -46,14 +46,29 @@ interface Props {
 interface FieldProps {
   label: string;
   value: string;
+  onChange?: (value: string) => void;
+  required?: boolean;
+  suffix?: string;
+  type?: string;
 }
 
-const Field: React.FC<FieldProps> = ({ label, value }) => (
+const Field: React.FC<FieldProps> = ({ label, value, onChange, required, suffix, type }) => (
   <div className="flex flex-col">
-    <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
-    <span className="mt-1 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200">
-      {value || '-'}
+    <span className="text-[10px] uppercase tracking-wide text-slate-500">
+      {label}{required && <span className="text-red-400 ml-0.5">*</span>}
     </span>
+    <div className="relative mt-1">
+      <input
+        type={type || 'text'}
+        value={value || ''}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-50"
+        readOnly={!onChange}
+      />
+      {suffix && (
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500">{suffix}</span>
+      )}
+    </div>
   </div>
 );
 
@@ -85,13 +100,31 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
   const handleClaimSelect = async (claim: ClaimItem) => {
     setSelectedClaim(claim);
     setClaimPickerOpen(false);
-    const prefill = await fetchClaimPrefill(claim.id);
-    setFields(toMergeFields(claim, prefill));
+    try {
+      const prefill = await fetchClaimPrefill(claim.id);
+      setFields(toMergeFields(claim, prefill));
+    } catch (err) {
+      console.error('Prefill failed, using claim data only:', err);
+      setFields(toMergeFields(claim, {}));
+    }
   };
+
+  const updateField = (key: keyof ContractMergeFields, value: string) => {
+    setFields((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Fee percentage validation: FL §626.854 caps at 10% standard, 20% catastrophe
+  const feeNum = parseFloat(fields.fee_percentage);
+  const feeError = isNaN(feeNum) || feeNum < 0 || feeNum > 20
+    ? 'Fee must be 0–20% (FL §626.854)'
+    : '';
 
   const missingRequired = isDfs
     ? !fields.client_name || !selectedClaim
-    : !fields.client_name || !fields.email || !fields.adjuster_license || !selectedClaim;
+    : !fields.client_name || !fields.email || !fields.adjuster_license
+      || !fields.property_address || !fields.carrier || !fields.policy_number
+      || !fields.claim_number || !fields.fee_percentage
+      || !!feeError || !selectedClaim;
 
   const submit = async () => {
     if (missingRequired || !selectedClaim) return;
@@ -213,7 +246,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                 <div className="col-span-2 text-xs uppercase tracking-wide text-amber-300">
                   Insured Information
                 </div>
-                <Field label="Insured Name(s)" value={fields.client_name} />
+                <Field label="Insured Name(s)" value={fields.client_name} onChange={(v) => updateField('client_name', v)} required />
                 <Field label="Date Signed" value={new Date().toLocaleDateString()} />
                 <div className="col-span-2 mt-3 rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-slate-400 leading-relaxed">
                   <p className="mb-2 font-semibold text-amber-300">Form DFS-H1-1982</p>
@@ -226,30 +259,33 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                 <div className="col-span-2 text-xs uppercase tracking-wide text-cyan-300">
                   Client Information
                 </div>
-                <Field label="Client Name" value={fields.client_name} />
-                <Field label="Client Address" value={fields.client_address} />
+                <Field label="Client Name" value={fields.client_name} onChange={(v) => updateField('client_name', v)} required />
+                <Field label="Client Address" value={fields.client_address} onChange={(v) => updateField('client_address', v)} />
 
                 <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-amber-300">
                   Property Information
                 </div>
-                <Field label="Property Address" value={fields.property_address} />
-                <Field label="Carrier" value={fields.carrier} />
+                <Field label="Property Address" value={fields.property_address} onChange={(v) => updateField('property_address', v)} required />
+                <Field label="Carrier" value={fields.carrier} onChange={(v) => updateField('carrier', v)} required />
 
                 <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-cyan-300">
                   Claim Information
                 </div>
-                <Field label="Policy Number" value={fields.policy_number} />
-                <Field label="Loss Date" value={fields.loss_date} />
-                <Field label="Claim Number" value={fields.claim_number} />
-                <Field label="Fee Percentage" value={fields.fee_percentage} />
+                <Field label="Policy Number" value={fields.policy_number} onChange={(v) => updateField('policy_number', v)} required />
+                <Field label="Loss Date" value={fields.loss_date} onChange={(v) => updateField('loss_date', v)} />
+                <Field label="Claim Number" value={fields.claim_number} onChange={(v) => updateField('claim_number', v)} required />
+                <div className="flex flex-col">
+                  <Field label="Fee Percentage" value={fields.fee_percentage} onChange={(v) => updateField('fee_percentage', v)} required suffix="%" type="number" />
+                  {feeError && <span className="mt-1 text-[10px] text-red-400">{feeError}</span>}
+                </div>
 
                 <div className="col-span-2 mt-4 text-xs uppercase tracking-wide text-amber-300">
                   Adjuster Information
                 </div>
-                <Field label="Adjuster Name" value={fields.adjuster_name} />
-                <Field label="Adjuster License" value={fields.adjuster_license} />
-                <Field label="Phone" value={fields.phone} />
-                <Field label="Email" value={fields.email} />
+                <Field label="Adjuster Name" value={fields.adjuster_name} onChange={(v) => updateField('adjuster_name', v)} />
+                <Field label="Adjuster License" value={fields.adjuster_license} onChange={(v) => updateField('adjuster_license', v)} required />
+                <Field label="Phone" value={fields.phone} onChange={(v) => updateField('phone', v)} />
+                <Field label="Email" value={fields.email} onChange={(v) => updateField('email', v)} required type="email" />
               </div>
             )}
           </div>

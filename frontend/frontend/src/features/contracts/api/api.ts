@@ -30,7 +30,7 @@ export function toMergeFields(claim: ClaimItem, prefill: Record<string, any>): C
     policy_number: prefill.policy_number || claim.policy_number || '',
     loss_date: prefill.date_of_loss || claim.date_of_loss || '',
     claim_number: prefill.claim_number || claim.claim_number || '',
-    fee_percentage: String(prefill.fee_percentage || 10),
+    fee_percentage: String(prefill.fee_percentage ?? 10),
     adjuster_name: prefill.adjuster_name || '',
     adjuster_license: prefill.adjuster_license || '',
     phone: prefill.policyholder_phone || claim.phone || claim.insured_phone || '',
@@ -185,14 +185,26 @@ export async function markSigned(contract: ContractItem): Promise<void> {
   if (!res.ok) throw new Error('Failed to update contract status');
 }
 
+// Track blob URLs so we can revoke previous ones to prevent memory leaks
+let _lastPdfBlobUrl: string | null = null;
+
 export async function getContractPdfUrl(contract: ContractItem): Promise<string> {
+  // Revoke previous blob URL to prevent memory leak
+  if (_lastPdfBlobUrl) {
+    URL.revokeObjectURL(_lastPdfBlobUrl);
+    _lastPdfBlobUrl = null;
+  }
+
   // For PDF blob downloads, use raw fetch with credentials
-  const res = await fetch(`/api/contracts/${contract.id}/pdf`, { credentials: 'include' });
+  const base = (import.meta as any).env?.REACT_APP_BACKEND_URL || '';
+  const res = await fetch(`${base}/api/contracts/${contract.id}/pdf`, { credentials: 'include' });
   if (!res.ok) return contract.documentUrl || '';
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/pdf')) {
     const blob = await res.blob();
-    return URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
+    _lastPdfBlobUrl = blobUrl;
+    return blobUrl;
   }
   const data = await res.json();
   return data?.pdf_url || contract.documentUrl || '';
