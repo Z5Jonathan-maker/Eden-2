@@ -78,7 +78,6 @@ const Register = () => {
               <label className={labelClass}>Clearance Level</label>
               <select name="role" value={formData.role} onChange={handleChange} className={inputClass} data-testid="register-role-select">
                 <option value="adjuster">Field Operator</option>
-                <option value="admin">Commander</option>
                 <option value="client">Observer</option>
               </select>
             </div>

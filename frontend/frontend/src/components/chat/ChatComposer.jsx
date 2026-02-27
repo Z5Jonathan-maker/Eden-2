@@ -145,13 +145,31 @@ const ChatComposer = ({
     }
   };
 
+  const ALLOWED_FILE_TYPES = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel', 'text/plain', 'text/csv',
+    'video/mp4', 'video/quicktime', 'audio/mpeg', 'audio/wav',
+  ]);
+
+  const validateFile = (file) => {
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error(`${file.name} exceeds 15MB limit`);
+      return false;
+    }
+    if (file.type && !ALLOWED_FILE_TYPES.has(file.type)) {
+      toast.error(`${file.name}: file type not allowed`);
+      return false;
+    }
+    return true;
+  };
+
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files || []);
     for (const file of files) {
-      if (file.size > 15 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 15MB limit`);
-        continue;
-      }
+      if (!validateFile(file)) continue;
       const res = await onUpload(file);
       if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
     }
@@ -163,10 +181,7 @@ const ChatComposer = ({
     setDragOver(false);
     const files = Array.from(e.dataTransfer?.files || []);
     for (const file of files) {
-      if (file.size > 15 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 15MB limit`);
-        continue;
-      }
+      if (!validateFile(file)) continue;
       const res = await onUpload(file);
       if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
     }

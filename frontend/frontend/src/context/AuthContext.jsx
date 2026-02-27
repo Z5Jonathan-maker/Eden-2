@@ -22,14 +22,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Global listener: any 401 from api.js triggers logout
+  // Global listener: any 401 from api.js triggers logout (debounced to prevent race conditions)
   useEffect(() => {
+    let handled = false;
     const handleAuthExpired = () => {
+      if (handled) return;
+      handled = true;
       clearAuthToken();
       clearCache();
       clearAllEdenStorage();
       clearSentryUser();
       setUser(null);
+      // Reset flag after short delay so future expirations (re-login then expire) still work
+      setTimeout(() => { handled = false; }, 2000);
     };
     window.addEventListener('eden:auth-expired', handleAuthExpired);
     return () => window.removeEventListener('eden:auth-expired', handleAuthExpired);

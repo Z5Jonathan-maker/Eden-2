@@ -181,6 +181,10 @@ const Documents = () => {
     setUploading(true);
     try {
       for (const file of files) {
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 50MB limit`);
+          continue;
+        }
         const formData = new FormData();
         formData.append('file', file);
         formData.append('category', 'Document');

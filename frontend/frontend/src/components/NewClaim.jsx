@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../shared/ui/button';
 import { apiPost } from '@/lib/api';
@@ -6,22 +6,40 @@ import { ArrowLeft, Save, Loader2, AlertCircle, Target } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { CLAIM_TYPES } from '../lib/core';
 
+const DRAFT_KEY = 'eden_new_claim_draft';
+
 const NewClaim = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const [formData, setFormData] = useState({
-    claim_number: `CLM-${Date.now().toString().slice(-6)}`,
-    client_name: '',
-    client_email: '',
-    property_address: '',
-    date_of_loss: '',
-    claim_type: 'Water Damage',
-    policy_number: '',
-    estimated_value: '',
-    description: ''
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return {
+      claim_number: `CLM-${Date.now().toString().slice(-6)}`,
+      client_name: '',
+      client_email: '',
+      property_address: '',
+      date_of_loss: '',
+      claim_type: 'Water Damage',
+      policy_number: '',
+      estimated_value: '',
+      description: ''
+    };
   });
+
+  // Auto-save draft every 2 seconds
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(formData)); } catch { /* ignore */ }
+    }, 2000);
+    return () => clearTimeout(saveTimer.current);
+  }, [formData]);
 
   const claimTypes = CLAIM_TYPES;
 
@@ -69,6 +87,7 @@ const NewClaim = () => {
         throw new Error(res.error || 'Failed to create claim');
       }
 
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       navigate(`/claims/${res.data.id}`);
     } catch (err) {
       setError(err.message);

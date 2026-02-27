@@ -44,7 +44,7 @@ const CATEGORY_OPTIONS = [
 const InspectionPhotoGallery = ({ claimId, sessionId }) => {
   const {
     photos, isLoading, galleryData, fetchPhotos,
-    getPhotosByRoom, getRooms, bulkAction, getExportPdfUrl,
+    getPhotosByRoom, getRooms, bulkAction, downloadExportPdf,
     updateAnnotation,
   } = useInspectionPhotos({ claimId, sessionId, autoFetch: true });
 
@@ -175,13 +175,11 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
   };
 
   const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
-  const handleExportPdf = (mode = 'email_safe') => {
-    const url = getExportPdfUrl(null, mode);
-    if (url) {
-      window.open(url, '_blank');
-      toast.success(mode === 'email_safe' ? 'Email-safe PDF export started' : 'Full fidelity PDF export started');
-    }
+  const handleExportPdf = async (mode = 'email_safe') => {
     setPdfMenuOpen(false);
+    toast.success(mode === 'email_safe' ? 'Downloading email-safe PDF...' : 'Downloading full fidelity PDF...');
+    const result = await downloadExportPdf(null, mode);
+    if (!result) toast.error('PDF export failed');
   };
 
   if (isLoading) {

@@ -124,6 +124,8 @@ export function useInspectionPhotos(options = {}) {
 
     if (!targetClaimId) {
       setError('No claim ID provided');
+      // Revert any optimistic entry for this photo
+      if (photo.id) setPhotos(prev => prev.filter(p => p.id !== photo.id));
       return null;
     }
 
@@ -409,14 +411,34 @@ export function useInspectionPhotos(options = {}) {
   /**
    * Get PDF export URL for a claim
    */
-  const getExportPdfUrl = useCallback((claimIdOverride = null, mode = 'email_safe') => {
+  /**
+   * Download PDF export for a claim via authenticated fetch (no token in URL).
+   */
+  const downloadExportPdf = useCallback(async (claimIdOverride = null, mode = 'email_safe') => {
     const cid = claimIdOverride || claimId;
     if (!cid) return null;
     const token = getAuthToken();
-    const params = new URLSearchParams();
-    if (token) params.set('token', token);
-    params.set('mode', mode);
-    return `${API_URL}/api/inspections/claim/${cid}/photo-report-pdf?${params.toString()}`;
+    const url = `${API_URL}/api/inspections/claim/${cid}/photo-report-pdf?mode=${encodeURIComponent(mode)}`;
+    try {
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`PDF export failed (${res.status})`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `photo-report-${cid}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      return true;
+    } catch (err) {
+      console.error('[useInspectionPhotos] PDF export error:', err);
+      return null;
+    }
   }, [claimId]);
 
   // Auto-fetch on mount if claimId is provided
@@ -448,7 +470,7 @@ export function useInspectionPhotos(options = {}) {
     getRooms,
     formatPhotoUrl,
     bulkAction,
-    getExportPdfUrl,
+    downloadExportPdf,
 
     // Computed
     photoCount: photos.length,

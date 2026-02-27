@@ -126,12 +126,13 @@ export default function useChat(initialChannelId = null) {
     const apiUrl = assertApiUrl();
     const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
     const wsHost = apiUrl.replace(/^https?:\/\//, '');
-    // Phase A: keep query param for backward compat, but also send auth as first message.
-    // Phase B (after backend update): remove ?token= from URL entirely.
-    const wsUrl = `${wsProtocol}://${wsHost}/ws/notifications?token=${token}`;
+    // Auth sent as first message on ws.onopen — no token in URL.
+    const wsUrl = `${wsProtocol}://${wsHost}/ws/notifications`;
 
     let ws;
     let reconnectTimer;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 15;
 
     const connect = () => {
       try {
@@ -139,7 +140,8 @@ export default function useChat(initialChannelId = null) {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          // Send auth token as first message (preferred over URL query param)
+          reconnectAttempts = 0; // Reset on successful connection
+          // Send auth token as first message
           try { ws.send(JSON.stringify({ type: 'auth', token })); } catch { /* ignore */ }
         };
 
@@ -182,14 +184,22 @@ export default function useChat(initialChannelId = null) {
 
         ws.onclose = () => {
           wsRef.current = null;
-          reconnectTimer = setTimeout(connect, 5000);
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(connect, delay);
+          }
         };
 
         ws.onerror = () => {
           ws.close();
         };
       } catch {
-        reconnectTimer = setTimeout(connect, 5000);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          reconnectAttempts++;
+          reconnectTimer = setTimeout(connect, delay);
+        }
       }
     };
 

@@ -104,7 +104,7 @@ const Layout = () => {
 
   const systemItems = [
     { icon: NAV_ICONS.settings, label: 'Config', path: '/settings' },
-    { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', permission: 'users.read' },
+    { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', adminOnly: true },
     { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data' },
     { icon: NAV_ICONS.storage, label: 'Storage', path: '/storage' },
   ];
@@ -114,7 +114,11 @@ const Layout = () => {
     : [];
 
   const applyPermissions = (items) =>
-    items.filter(item => !item.permission || hasPermission(item.permission));
+    items.filter(item => {
+      if (item.adminOnly && user?.role !== 'admin') return false;
+      if (item.permission && !hasPermission(item.permission)) return false;
+      return true;
+    });
 
   const sectionedItems = [
     { title: 'Core Ops', items: coreOpsItems },

@@ -100,6 +100,29 @@ const StaffRoute = ({ children }) => {
   return children;
 };
 
+// Protected Route wrapper for admin-only routes
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="spinner-tactical w-12 h-12"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
 // Protected Route wrapper for clients
 const ClientRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -244,7 +267,7 @@ function AppRoutes() {
           <Route path="university/article/:articleId" element={<Safe label="Article"><ArticleDetail /></Safe>} />
           <Route path="university/library/:bookId" element={<Safe label="Library"><BookReader /></Safe>} />
           <Route path="university/workbook/:workbookId" element={<Safe label="Workbook"><WorkbookViewer /></Safe>} />
-          <Route path="users" element={<Safe label="Squad"><UserManagement /></Safe>} />
+          <Route path="users" element={<AdminRoute><Safe label="Squad"><UserManagement /></Safe></AdminRoute>} />
           <Route path="scales" element={<Safe label="Scales"><Scales /></Safe>} />
           <Route path="canvassing" element={<Safe label="Harvest"><HarvestPage /></Safe>} />
           <Route path="canvassing/leaderboard" element={<Safe label="Harvest"><HarvestPage /></Safe>} />
@@ -259,11 +282,11 @@ function AppRoutes() {
           <Route path="integrations" element={<Safe label="Integrations"><IntegrationsPage /></Safe>} />
           <Route path="gamma" element={<Safe label="Gamma"><GammaIntegration /></Safe>} />
           <Route path="voice-assistant" element={<Safe label="Voice"><VoiceAssistantConsole /></Safe>} />
-          <Route path="harvest-admin" element={<Safe label="Harvest Admin"><HarvestAdminConsole /></Safe>} />
-          <Route path="incentives-admin" element={<Safe label="Incentives"><IncentivesAdminConsole /></Safe>} />
+          <Route path="harvest-admin" element={<AdminRoute><Safe label="Harvest Admin"><HarvestAdminConsole /></Safe></AdminRoute>} />
+          <Route path="incentives-admin" element={<AdminRoute><Safe label="Incentives"><IncentivesAdminConsole /></Safe></AdminRoute>} />
           <Route path="performance" element={<Safe label="Performance"><PerformanceConsole /></Safe>} />
           <Route path="qa" element={<Safe label="QA"><Adam /></Safe>} />
-          <Route path="adam" element={<Safe label="Adam"><Adam /></Safe>} />
+          <Route path="adam" element={<AdminRoute><Safe label="Adam"><Adam /></Safe></AdminRoute>} />
           <Route path="experts" element={<Safe label="Experts"><IndustryExperts /></Safe>} />
           <Route path="florida-laws" element={<Safe label="Laws"><FloridaLaws /></Safe>} />
           <Route path="battle-pass" element={<Safe label="Battle Pass"><BattlePass /></Safe>} />
