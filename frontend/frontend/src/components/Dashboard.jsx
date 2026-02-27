@@ -161,12 +161,43 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-8 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner-tactical w-12 h-12 mx-auto mb-4" />
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-            Initializing Command Center...
-          </p>
+      <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
+        {/* Header skeleton */}
+        <div className="mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-zinc-800 animate-pulse" />
+          <div>
+            <div className="h-6 sm:h-8 w-48 bg-zinc-800 rounded animate-pulse mb-2" />
+            <div className="h-3 w-64 bg-zinc-800/60 rounded animate-pulse" />
+          </div>
+        </div>
+        {/* Stats grid skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card-tactical p-3 sm:p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-9 h-9 rounded-lg bg-zinc-800 animate-pulse" />
+                <div className="h-3 w-10 bg-zinc-800/60 rounded animate-pulse" />
+              </div>
+              <div className="h-8 sm:h-10 w-16 bg-zinc-800 rounded animate-pulse mb-2" />
+              <div className="h-3 w-24 bg-zinc-800/60 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        {/* Recent claims skeleton */}
+        <div className="card-tactical p-5">
+          <div className="h-5 w-40 bg-zinc-800 rounded animate-pulse mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/30">
+                <div className="w-10 h-10 rounded-lg bg-zinc-800 animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-32 bg-zinc-800 rounded animate-pulse mb-1.5" />
+                  <div className="h-3 w-48 bg-zinc-800/60 rounded animate-pulse" />
+                </div>
+                <div className="h-5 w-16 bg-zinc-800 rounded-full animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

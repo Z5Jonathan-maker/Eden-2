@@ -183,8 +183,13 @@ const InspectionsNew = () => {
               {/* Claims List - Tactical Style */}
               <div className="space-y-2 max-h-[400px] lg:max-h-[500px] overflow-y-auto scrollbar-hide">
                 {loadingClaims ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="spinner-tactical w-6 h-6" />
+                  <div className="space-y-2 py-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="p-3 rounded-lg border border-zinc-700/30 bg-zinc-800/30">
+                        <div className="h-4 w-28 bg-zinc-700/50 rounded animate-pulse mb-2" />
+                        <div className="h-3 w-full bg-zinc-800/50 rounded animate-pulse" />
+                      </div>
+                    ))}
                   </div>
                 ) : filteredClaims.length === 0 ? (
                   <div className="text-center py-8">
@@ -343,8 +348,16 @@ const InspectionsNew = () => {
                   </div>
                   
                   {loadingSessions ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="spinner-tactical w-6 h-6" />
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="p-3 rounded-lg border border-zinc-700/30 bg-zinc-800/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-4 w-24 bg-zinc-700/50 rounded animate-pulse" />
+                            <div className="h-4 w-16 bg-zinc-700/50 rounded-full animate-pulse" />
+                          </div>
+                          <div className="h-3 w-32 bg-zinc-800/50 rounded animate-pulse" />
+                        </div>
+                      ))}
                     </div>
                   ) : sessions.length === 0 ? (
                     <div className="text-center py-8">

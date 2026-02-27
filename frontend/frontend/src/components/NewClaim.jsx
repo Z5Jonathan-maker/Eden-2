@@ -126,7 +126,7 @@ const NewClaim = () => {
       <div className="card-tactical p-4 sm:p-6 max-w-3xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400">
+            <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm font-mono">{error}</span>
             </div>
@@ -134,48 +134,48 @@ const NewClaim = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Claim Number *</label>
-              <input name="claim_number" value={formData.claim_number} onChange={handleChange} className={inputClass('claim_number')} data-testid="new-claim-number" />
-              {fieldErrors.claim_number && <p className={errorClass}>{fieldErrors.claim_number}</p>}
+              <label htmlFor="claim_number" className={labelClass}>Claim Number *</label>
+              <input id="claim_number" name="claim_number" value={formData.claim_number} onChange={handleChange} className={inputClass('claim_number')} aria-describedby={fieldErrors.claim_number ? 'claim_number-error' : undefined} data-testid="new-claim-number" />
+              {fieldErrors.claim_number && <p id="claim_number-error" className={errorClass}>{fieldErrors.claim_number}</p>}
             </div>
             <div>
-              <label className={labelClass}>Policy Number</label>
-              <input name="policy_number" placeholder="POL-XXXXXX" value={formData.policy_number} onChange={handleChange} className={inputClass('policy_number')} data-testid="new-claim-policy" />
+              <label htmlFor="policy_number" className={labelClass}>Policy Number</label>
+              <input id="policy_number" name="policy_number" placeholder="POL-XXXXXX" value={formData.policy_number} onChange={handleChange} className={inputClass('policy_number')} data-testid="new-claim-policy" />
             </div>
             <div>
-              <label className={labelClass}>Client Name *</label>
-              <input name="client_name" placeholder="John Doe" value={formData.client_name} onChange={handleChange} className={inputClass('client_name')} data-testid="new-claim-client-name" />
-              {fieldErrors.client_name && <p className={errorClass}>{fieldErrors.client_name}</p>}
+              <label htmlFor="client_name" className={labelClass}>Client Name *</label>
+              <input id="client_name" name="client_name" placeholder="John Doe" value={formData.client_name} onChange={handleChange} className={inputClass('client_name')} aria-describedby={fieldErrors.client_name ? 'client_name-error' : undefined} data-testid="new-claim-client-name" />
+              {fieldErrors.client_name && <p id="client_name-error" className={errorClass}>{fieldErrors.client_name}</p>}
             </div>
             <div>
-              <label className={labelClass}>Client Email</label>
-              <input name="client_email" type="email" placeholder="client@example.com" value={formData.client_email} onChange={handleChange} className={inputClass('client_email')} data-testid="new-claim-client-email" />
-              {fieldErrors.client_email && <p className={errorClass}>{fieldErrors.client_email}</p>}
+              <label htmlFor="client_email" className={labelClass}>Client Email</label>
+              <input id="client_email" name="client_email" type="email" placeholder="client@example.com" value={formData.client_email} onChange={handleChange} className={inputClass('client_email')} aria-describedby={fieldErrors.client_email ? 'client_email-error' : undefined} data-testid="new-claim-client-email" />
+              {fieldErrors.client_email && <p id="client_email-error" className={errorClass}>{fieldErrors.client_email}</p>}
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass}>Property Address *</label>
-              <input name="property_address" placeholder="123 Main St, City, State ZIP" value={formData.property_address} onChange={handleChange} className={inputClass('property_address')} data-testid="new-claim-address" />
-              {fieldErrors.property_address && <p className={errorClass}>{fieldErrors.property_address}</p>}
+              <label htmlFor="property_address" className={labelClass}>Property Address *</label>
+              <input id="property_address" name="property_address" placeholder="123 Main St, City, State ZIP" value={formData.property_address} onChange={handleChange} className={inputClass('property_address')} aria-describedby={fieldErrors.property_address ? 'property_address-error' : undefined} data-testid="new-claim-address" />
+              {fieldErrors.property_address && <p id="property_address-error" className={errorClass}>{fieldErrors.property_address}</p>}
             </div>
             <div>
-              <label className={labelClass}>Date of Loss</label>
-              <input name="date_of_loss" type="date" value={formData.date_of_loss} onChange={handleChange} className={`${inputClass('date_of_loss')} [color-scheme:dark]`} data-testid="new-claim-date" />
+              <label htmlFor="date_of_loss" className={labelClass}>Date of Loss</label>
+              <input id="date_of_loss" name="date_of_loss" type="date" value={formData.date_of_loss} onChange={handleChange} className={`${inputClass('date_of_loss')} [color-scheme:dark]`} data-testid="new-claim-date" />
             </div>
             <div>
-              <label className={labelClass}>Claim Type</label>
-              <select name="claim_type" value={formData.claim_type} onChange={handleChange} className={inputClass('claim_type')} data-testid="new-claim-type">
+              <label htmlFor="claim_type" className={labelClass}>Claim Type</label>
+              <select id="claim_type" name="claim_type" value={formData.claim_type} onChange={handleChange} className={inputClass('claim_type')} data-testid="new-claim-type">
                 {claimTypes.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className={labelClass}>Estimated Value ($)</label>
-              <input name="estimated_value" type="number" min="0" step="0.01" placeholder="0.00" value={formData.estimated_value} onChange={handleChange} className={inputClass('estimated_value')} data-testid="new-claim-value" />
+              <label htmlFor="estimated_value" className={labelClass}>Estimated Value ($)</label>
+              <input id="estimated_value" name="estimated_value" type="number" min="0" step="0.01" placeholder="0.00" value={formData.estimated_value} onChange={handleChange} className={inputClass('estimated_value')} data-testid="new-claim-value" />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass}>Description</label>
-              <textarea name="description" rows={3} placeholder="Describe the claim details..." value={formData.description} onChange={handleChange} className={`${inputClass('description')} resize-none`} data-testid="new-claim-description" />
+              <label htmlFor="description" className={labelClass}>Description</label>
+              <textarea id="description" name="description" rows={3} placeholder="Describe the claim details..." value={formData.description} onChange={handleChange} className={`${inputClass('description')} resize-none`} data-testid="new-claim-description" />
             </div>
           </div>
 

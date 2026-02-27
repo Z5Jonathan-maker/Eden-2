@@ -165,16 +165,21 @@ const Layout = () => {
 
   return (
     <div className="flex h-screen bg-zinc-950">
+      {/* Skip to main content link */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-orange-500 focus:text-white focus:rounded-lg focus:text-sm focus:font-bold">
+        Skip to main content
+      </a>
+
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      
+
       {/* Tactical Sidebar */}
-      <aside className={`
+      <aside aria-label="Main navigation" className={`
         fixed lg:relative inset-y-0 left-0 z-50
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         w-64 lg:w-64 bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800/50
@@ -197,6 +202,7 @@ const Layout = () => {
           <button
             onClick={() => setSidebarOpen(false)}
             className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-colors text-zinc-400"
+            aria-label="Close navigation menu"
             data-testid="sidebar-close"
           >
             <X className="w-5 h-5" />
@@ -204,7 +210,7 @@ const Layout = () => {
         </div>
 
         {/* Navigation - Tactical Style with 3D Icons */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
+        <nav aria-label="Sidebar navigation" className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
@@ -305,13 +311,14 @@ const Layout = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto lg:ml-0 bg-zinc-950">
+      <main id="main-content" className="flex-1 overflow-y-auto lg:ml-0 bg-zinc-950">
         {/* Top Header - Tactical HUD Style */}
         <div className="bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-800/50 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-all duration-200 text-zinc-400"
+              aria-label="Open navigation menu"
               data-testid="mobile-menu-btn"
             >
               <Menu className="w-5 h-5" />

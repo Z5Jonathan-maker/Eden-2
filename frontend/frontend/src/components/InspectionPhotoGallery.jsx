@@ -568,7 +568,7 @@ const PhotoCard = ({ photo, selectMode, selected, onToggleSelect, onOpen }) => {
 
 
 const PhotoLightbox = ({ photo, currentIndex, totalCount, onClose, onPrev, onNext, onAnnotate }) => (
-  <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col" onClick={onClose}>
+  <div role="dialog" aria-label={`Photo ${currentIndex + 1} of ${totalCount}`} className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col" onClick={onClose}>
     {/* Header */}
     <div className="flex items-center justify-between p-4" onClick={(e) => e.stopPropagation()}>
       <span className="text-sm font-mono text-zinc-400 tabular-nums">
@@ -593,6 +593,7 @@ const PhotoLightbox = ({ photo, currentIndex, totalCount, onClose, onPrev, onNex
       <button
         onClick={onPrev}
         className="absolute left-4 z-10 p-2 rounded-full bg-zinc-900/80 border border-zinc-700/50 text-zinc-300 hover:text-orange-400 hover:border-orange-500/40 hover:bg-zinc-800/90 transition-all"
+        aria-label="Previous photo"
         title="Previous (←)"
       >
         <ChevronLeft className="w-6 h-6" />
@@ -607,6 +608,7 @@ const PhotoLightbox = ({ photo, currentIndex, totalCount, onClose, onPrev, onNex
       <button
         onClick={onNext}
         className="absolute right-4 z-10 p-2 rounded-full bg-zinc-900/80 border border-zinc-700/50 text-zinc-300 hover:text-orange-400 hover:border-orange-500/40 hover:bg-zinc-800/90 transition-all"
+        aria-label="Next photo"
         title="Next (→)"
       >
         <ChevronRight className="w-6 h-6" />

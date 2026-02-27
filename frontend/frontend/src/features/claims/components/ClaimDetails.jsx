@@ -712,12 +712,37 @@ const ClaimDetails = () => {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner-tactical w-12 h-12 mx-auto mb-4" />
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-            Loading mission data...
-          </p>
+      <div className="p-4 md:p-8 min-h-screen">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-8 h-8 rounded bg-zinc-800 animate-pulse" />
+          <div className="h-6 w-40 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-5 w-20 bg-zinc-800 rounded-full animate-pulse ml-2" />
+        </div>
+        {/* Info cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card-tactical p-4">
+              <div className="h-3 w-20 bg-zinc-800/60 rounded animate-pulse mb-3" />
+              <div className="h-5 w-full bg-zinc-800 rounded animate-pulse mb-2" />
+              <div className="h-4 w-3/4 bg-zinc-800/60 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        {/* Tabs skeleton */}
+        <div className="flex gap-2 mb-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-8 w-20 bg-zinc-800 rounded animate-pulse" />
+          ))}
+        </div>
+        {/* Content skeleton */}
+        <div className="card-tactical p-5 space-y-4">
+          <div className="h-5 w-48 bg-zinc-800 rounded animate-pulse" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-4 bg-zinc-800/40 rounded animate-pulse" style={{ width: `${90 - i * 10}%` }} />
+            ))}
+          </div>
         </div>
       </div>
     );
