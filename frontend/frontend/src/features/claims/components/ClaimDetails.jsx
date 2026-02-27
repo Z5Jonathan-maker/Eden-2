@@ -48,8 +48,10 @@ import { Input } from '../../../shared/ui/input';
 import { Label } from '../../../shared/ui/label';
 import { toast } from 'sonner';
 import { useGamma, GAMMA_AUDIENCES } from '../../../hooks/useGamma';
+import useDriveBackup from '../../../hooks/useDriveBackup';
 import ClientStatusPanel from '../../../components/ClientStatusPanel';
 import { FEATURE_ICONS } from '../../../assets/badges';
+import ComplianceDeadlineTracker from './ComplianceDeadlineTracker';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -91,6 +93,10 @@ const ClaimDetails = () => {
 
   // Gamma hook for presentation generation
   const { createDeckForAudience, loading: gammaLoading } = useGamma();
+
+  // Drive backup
+  const { backupClaim, cancelBackup, isBackingUp, progress: backupProgress, getBackupStatus } = useDriveBackup();
+  const backupStatus = getBackupStatus(claimId);
 
   // Calendar scheduling state
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -704,6 +710,57 @@ const ClaimDetails = () => {
         isSaving={saving}
       />
 
+      {/* Compliance Warning Banner */}
+      {(() => {
+        const urgentDeadlines = (floridaReadiness?.deadlines || []).filter(
+          (d) => d.status === 'overdue' || (d.status === 'due_soon' && d.days_remaining <= 7)
+        );
+        if (urgentDeadlines.length === 0) return null;
+        return (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-300">
+                {urgentDeadlines.length} compliance deadline{urgentDeadlines.length > 1 ? 's' : ''} require attention
+              </p>
+              <p className="text-xs text-red-400/70 mt-0.5 truncate">
+                {urgentDeadlines.map((d) => d.label).join(', ')}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Drive Backup */}
+      <div className="mb-4 flex items-center gap-3 flex-wrap">
+        <button
+          onClick={() => isBackingUp ? cancelBackup() : backupClaim(claimId, claim?.claim_number)}
+          disabled={!claim}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border transition-colors ${
+            isBackingUp
+              ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+              : 'border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50'
+          }`}
+        >
+          {isBackingUp ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {backupProgress.phase || 'Backing up...'}
+            </>
+          ) : (
+            <>
+              <Upload className="w-3.5 h-3.5" />
+              Backup to Drive
+            </>
+          )}
+        </button>
+        {backupStatus && !isBackingUp && (
+          <span className="text-[10px] text-zinc-500">
+            Last backup: {new Date(backupStatus.lastBackup).toLocaleDateString()} ({backupStatus.successCount}/{backupStatus.totalFiles} files)
+          </span>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
         {/* Claim Information - Tactical Style */}
         <div className="lg:col-span-2 card-tactical p-5">
@@ -826,6 +883,11 @@ const ClaimDetails = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
         <ClaimCarrierInfo claim={claim} />
         <ClaimFinancials claim={claim} />
+      </div>
+
+      {/* Florida Compliance Deadline Tracker */}
+      <div className="mb-4 md:mb-6">
+        <ComplianceDeadlineTracker floridaReadiness={floridaReadiness} />
       </div>
 
       {/* Tasks Panel */}

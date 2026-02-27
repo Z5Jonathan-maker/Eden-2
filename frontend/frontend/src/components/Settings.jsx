@@ -22,6 +22,8 @@ import IntegrationCard from './settings/IntegrationCard';
 import StatusBadge from './settings/StatusBadge';
 import './settings/settings.css';
 import { apiGet, apiPut, apiDelete, getAuthToken } from '@/lib/api';
+import { getStorageItem, setStorageItem } from '@/lib/core';
+import { HardDrive, FolderOpen } from 'lucide-react';
 
 const DEFAULT_OAUTH_STATUS = {
   google: { connected: false, user_email: null, scopes: [] },
@@ -83,6 +85,11 @@ const Settings = () => {
   const [profilePhone] = useState(user?.phone || '');
 
   const [notificationPrefs, setNotificationPrefs] = useState(readNotificationPrefs);
+
+  // Backup preferences
+  const [backupPrefs, setBackupPrefs] = useState(() => getStorageItem('backup_prefs', { autoBackup: false }));
+  useEffect(() => { setStorageItem('backup_prefs', backupPrefs); }, [backupPrefs]);
+
   const [aiMetrics, setAiMetrics] = useState(null);
   const [loadingAiMetrics, setLoadingAiMetrics] = useState(false);
   const [aiMetricsError, setAiMetricsError] = useState('');
@@ -602,6 +609,52 @@ const Settings = () => {
                 />
               </div>
               <p className="text-xs text-slate-400">Receive alerts for integration failures or auth issues.</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <h2 className="settings-section-title">Data & Backup</h2>
+          <div className="settings-divider" />
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <article className="settings-card settings-fade-in">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-slate-300" />
+                  <h3 className="text-sm font-semibold text-slate-100">Google Drive Auto-Backup</h3>
+                </div>
+                <Switch
+                  checked={backupPrefs.autoBackup}
+                  onCheckedChange={(checked) =>
+                    setBackupPrefs((prev) => ({ ...prev, autoBackup: checked }))
+                  }
+                  disabled={!oauthStatuses.google?.connected}
+                />
+              </div>
+              <p className="text-xs text-slate-400">
+                Automatically backup new photos and documents to Google Drive when uploaded.
+              </p>
+              {!oauthStatuses.google?.connected && (
+                <p className="text-xs text-amber-400 mt-2">
+                  Connect Google Workspace in Integrations to enable Drive backup.
+                </p>
+              )}
+            </article>
+
+            <article className="settings-card settings-fade-in">
+              <div className="mb-2 flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-slate-300" />
+                <h3 className="text-sm font-semibold text-slate-100">Backup Folder Structure</h3>
+              </div>
+              <div className="text-xs text-slate-400 space-y-0.5 font-mono mt-2">
+                <p>Google Drive /</p>
+                <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Photos/</p>
+                <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Documents/</p>
+                <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Contracts/</p>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-3">
+                Manual backup is always available via the "Backup to Drive" button on each claim.
+              </p>
             </article>
           </div>
         </section>

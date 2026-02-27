@@ -11,7 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { api, apiPost, apiUpload, apiDelete, API_URL, getAuthToken, clearCache } from '../../../lib/api';
-import { computeSha256 } from '../../../lib/core';
+import { computeSha256, getStorageItem } from '../../../lib/core';
 
 /**
  * useInspectionPhotos Hook
@@ -38,22 +38,21 @@ export function useInspectionPhotos(options = {}) {
   const bulkInFlightRef = useRef(false);
 
   /**
-   * Format photo URL with API_URL prefix and add token for img tag auth
+   * Format photo URL with API_URL prefix.
+   * No longer appends auth token to URL — use SecureImage component
+   * or fetch with Authorization header instead.
    */
   const formatPhotoUrl = useCallback((photo) => {
     if (!photo) return photo;
-    
-    const token = getAuthToken();
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-    
+
     return {
       ...photo,
-      url: photo.url?.startsWith('http') 
-        ? photo.url 
-        : `${API_URL}${photo.url}${tokenParam}`,
-      thumbnail_url: photo.thumbnail_url?.startsWith('http') 
-        ? photo.thumbnail_url 
-        : `${API_URL}${photo.thumbnail_url || photo.url}${tokenParam}`
+      url: photo.url?.startsWith('http')
+        ? photo.url
+        : `${API_URL}${photo.url}`,
+      thumbnail_url: photo.thumbnail_url?.startsWith('http')
+        ? photo.thumbnail_url
+        : `${API_URL}${photo.thumbnail_url || photo.url}`
     };
   }, []);
   
@@ -208,6 +207,28 @@ export function useInspectionPhotos(options = {}) {
         clearCache('/api/inspections');
         
         onUploadComplete?.(uploadedPhoto);
+
+        // Auto-backup to Drive if enabled (fire-and-forget)
+        try {
+          const backupPrefs = getStorageItem('backup_prefs', {});
+          if (backupPrefs.autoBackup && data.id) {
+            const token = getAuthToken();
+            const photoUrl = `${API_URL}/api/inspections/photos/${data.id}/image`;
+            fetch(photoUrl, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+              credentials: 'include',
+            })
+              .then((r) => r.ok ? r.blob() : null)
+              .then((blob) => {
+                if (!blob) return;
+                const fd = new FormData();
+                fd.append('file', blob, `Eden_${claimId}_Photos_${photo.filename || `photo_${data.id}.jpg`}`);
+                return apiUpload('/api/integrations/google/drive/upload', fd);
+              })
+              .catch(() => { /* silent — auto-backup is best-effort */ });
+          }
+        } catch { /* ignore auto-backup errors */ }
+
         return uploadedPhoto;
       } else {
         const errorMsg = apiError || 'Upload failed';

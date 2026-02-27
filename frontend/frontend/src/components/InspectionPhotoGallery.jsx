@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { useInspectionPhotos } from '../features/inspections/hooks';
 import PhotoAnnotator from './PhotoAnnotator';
+import SecureImage from './SecureImage';
 
 const ROOM_OPTIONS = [
   'Exterior - Front', 'Exterior - Back', 'Exterior - Left Side', 'Exterior - Right Side',
@@ -418,11 +419,10 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
                 >
                   <div className="relative aspect-video bg-zinc-800">
                     {pair.before ? (
-                      <img
+                      <SecureImage
                         src={pair.before.thumbnail_url || pair.before.url}
                         alt={pair.before.ai_caption || 'Before'}
                         className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -451,11 +451,10 @@ const InspectionPhotoGallery = ({ claimId, sessionId }) => {
                 >
                   <div className="relative aspect-video bg-zinc-800">
                     {pair.after ? (
-                      <img
+                      <SecureImage
                         src={pair.after.thumbnail_url || pair.after.url}
                         alt={pair.after.ai_caption || 'After'}
                         className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -530,11 +529,10 @@ const PhotoCard = ({ photo, selectMode, selected, onToggleSelect, onOpen }) => {
         selected ? 'ring-2 ring-orange-500 ring-offset-1 ring-offset-zinc-900' : 'hover:ring-1 hover:ring-zinc-600'
       }`}
     >
-      <img
+      <SecureImage
         src={photo.thumbnail_url || photo.url}
         alt={photo.ai_caption || ''}
         className="w-full h-full object-cover"
-        loading="lazy"
       />
       {selectMode && (
         <div className="absolute top-2 left-2">
@@ -602,7 +600,7 @@ const PhotoLightbox = ({ photo, currentIndex, totalCount, onClose, onPrev, onNex
         <ChevronLeft className="w-6 h-6" />
       </button>
 
-      <img
+      <SecureImage
         src={photo.url}
         alt={photo.ai_caption || ''}
         className="max-w-full max-h-[70vh] object-contain rounded-lg"

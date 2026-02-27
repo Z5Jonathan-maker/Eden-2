@@ -71,12 +71,19 @@ export const clearAuthToken = () => localStorage.removeItem(TOKEN_KEY);
 // Build headers with auth token when available
 const buildHeaders = (isFormData) => {
   const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+
+  // CSRF protection: this header cannot be set by cross-origin form submissions.
+  headers['X-Requested-With'] = 'XMLHttpRequest';
+
   const token = getAuthToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 };
+
+// In-flight mutation tracking to prevent duplicate requests (double-click protection)
+const inFlightMutations = new Map();
 
 // Simple in-memory cache with TTL
 const cache = new Map();
@@ -99,6 +106,27 @@ const setCache = (key, data) => {
  * Make an authenticated API request
  */
 export async function api(endpoint, options = {}) {
+  const method = options.method || 'GET';
+
+  // Dedup: prevent duplicate non-GET requests to the same endpoint
+  if (method !== 'GET') {
+    const dedupKey = `${method}:${endpoint}`;
+    if (inFlightMutations.has(dedupKey)) {
+      return inFlightMutations.get(dedupKey);
+    }
+    const promise = _apiFetch(endpoint, options);
+    inFlightMutations.set(dedupKey, promise);
+    try {
+      return await promise;
+    } finally {
+      inFlightMutations.delete(dedupKey);
+    }
+  }
+
+  return _apiFetch(endpoint, options);
+}
+
+async function _apiFetch(endpoint, options = {}) {
   const baseUrl = assertApiUrl();
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   const method = options.method || 'GET';

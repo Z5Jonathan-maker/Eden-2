@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { apiGet, apiPost, apiDelete, apiUpload, API_URL, getAuthToken } from '../../lib/api';
 import { EMAIL_TEMPLATES, TEMPLATE_CATEGORIES, SIGNATURE_BLOCK } from '../../config/emailTemplates';
+import { sanitizeEmailHtml } from '../../lib/sanitize';
 
 /* ─── Constants ─── */
 const FOLDERS = [
@@ -919,7 +920,7 @@ const GmailTab = () => {
                     {messageDetail.body_html ? (
                       <div
                         className="prose prose-invert prose-sm max-w-none [&_a]:text-orange-400 [&_img]:rounded-lg [&_img]:max-w-full"
-                        dangerouslySetInnerHTML={{ __html: messageDetail.body_html }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(messageDetail.body_html) }}
                       />
                     ) : (
                       <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed">

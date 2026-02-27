@@ -435,6 +435,25 @@ export function removeStorageItem(key) {
   }
 }
 
+/**
+ * Clear ALL eden-related data from localStorage.
+ * Called on logout to prevent sensitive data from persisting across sessions.
+ */
+export function clearAllEdenStorage() {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith(STORAGE_PREFIX) || key.startsWith('eden-') || key === 'eden_offline_queue')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch (e) {
+    console.warn('[Eden] Failed to clear storage on logout:', e);
+  }
+}
+
 // ============================================
 // ERROR HANDLING
 // ============================================

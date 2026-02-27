@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSentryUser, clearSentryUser } from '../lib/sentry';
-import { apiGet, apiPost, setAuthToken, clearAuthToken } from '../lib/api';
+import { apiGet, apiPost, setAuthToken, clearAuthToken, clearCache } from '../lib/api';
+import { clearAllEdenStorage } from '../lib/core';
 
 // Empty string = same-origin (behind Vercel/nginx proxy). Use ?? so "" isn't skipped.
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? import.meta.env.REACT_APP_API_URL ?? '';
@@ -25,6 +26,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleAuthExpired = () => {
       clearAuthToken();
+      clearCache();
+      clearAllEdenStorage();
       clearSentryUser();
       setUser(null);
     };
@@ -127,6 +130,8 @@ export const AuthProvider = ({ children }) => {
       // Continue with local logout even if backend call fails
     } finally {
       clearAuthToken();
+      clearCache();
+      clearAllEdenStorage();
       clearSentryUser();
       setUser(null);
     }

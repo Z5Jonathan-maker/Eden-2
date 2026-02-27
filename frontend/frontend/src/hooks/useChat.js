@@ -126,6 +126,8 @@ export default function useChat(initialChannelId = null) {
     const apiUrl = assertApiUrl();
     const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
     const wsHost = apiUrl.replace(/^https?:\/\//, '');
+    // Phase A: keep query param for backward compat, but also send auth as first message.
+    // Phase B (after backend update): remove ?token= from URL entirely.
     const wsUrl = `${wsProtocol}://${wsHost}/ws/notifications?token=${token}`;
 
     let ws;
@@ -135,6 +137,11 @@ export default function useChat(initialChannelId = null) {
       try {
         ws = new WebSocket(wsUrl);
         wsRef.current = ws;
+
+        ws.onopen = () => {
+          // Send auth token as first message (preferred over URL query param)
+          try { ws.send(JSON.stringify({ type: 'auth', token })); } catch { /* ignore */ }
+        };
 
         ws.onmessage = (event) => {
           try {
