@@ -252,15 +252,20 @@ const Settings = () => {
 
   const fetchAllData = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      fetchOAuthStatus(),
-      fetchCompanySettings(),
-      fetchGammaStatus(),
-      fetchAiMetrics(),
-      fetchAiRouting(),
-      fetchAiProviderHealth(),
-    ]);
-    setLoading(false);
+    try {
+      await Promise.all([
+        fetchOAuthStatus(),
+        fetchCompanySettings(),
+        fetchGammaStatus(),
+        fetchAiMetrics(),
+        fetchAiRouting(),
+        fetchAiProviderHealth(),
+      ]);
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [fetchOAuthStatus, fetchCompanySettings, fetchGammaStatus, fetchAiMetrics, fetchAiRouting, fetchAiProviderHealth]);
 
   useEffect(() => {

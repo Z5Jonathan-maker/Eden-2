@@ -12,14 +12,18 @@ const ClaimEvidenceReviewTab = ({ claimId }) => {
 
   const fetchQueue = async () => {
     setLoading(true);
-    const res = await apiGet(`/api/claims/${claimId}/evidence/review-queue?status=pending`);
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Failed to load review queue');
+    try {
+      const res = await apiGet(`/api/claims/${claimId}/evidence/review-queue?status=pending`);
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Failed to load review queue');
+        return;
+      }
+      setQueueItems(res.data.items || []);
+    } catch {
+      toast.error('Failed to load review queue');
+    } finally {
       setLoading(false);
-      return;
     }
-    setQueueItems(res.data.items || []);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -29,42 +33,54 @@ const ClaimEvidenceReviewTab = ({ claimId }) => {
 
   const approveItem = async (queueId) => {
     setWorkingId(queueId);
-    const res = await apiPost(`/api/claims/${claimId}/evidence/review-queue/${queueId}/approve`, {
-      tags: [],
-      note: '',
-    });
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Failed to approve item');
+    try {
+      const res = await apiPost(`/api/claims/${claimId}/evidence/review-queue/${queueId}/approve`, {
+        tags: [],
+        note: '',
+      });
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Failed to approve item');
+        return;
+      }
+      toast.success('Evidence approved');
+      await fetchQueue();
+    } catch {
+      toast.error('Failed to approve item');
+    } finally {
       setWorkingId(null);
-      return;
     }
-    toast.success('Evidence approved');
-    await fetchQueue();
-    setWorkingId(null);
   };
 
   const rejectItem = async (queueId) => {
     const reason = window.prompt('Reject reason');
     if (!reason) return;
     setWorkingId(queueId);
-    const res = await apiPost(`/api/claims/${claimId}/evidence/review-queue/${queueId}/reject`, { reason });
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Failed to reject item');
+    try {
+      const res = await apiPost(`/api/claims/${claimId}/evidence/review-queue/${queueId}/reject`, { reason });
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Failed to reject item');
+        return;
+      }
+      toast.success('Evidence rejected');
+      await fetchQueue();
+    } catch {
+      toast.error('Failed to reject item');
+    } finally {
       setWorkingId(null);
-      return;
     }
-    toast.success('Evidence rejected');
-    await fetchQueue();
-    setWorkingId(null);
   };
 
   const openRawSource = async (evidenceId) => {
-    const res = await apiGet(`/api/claims/${claimId}/evidence/items/${evidenceId}/raw`);
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Raw source unavailable');
-      return;
+    try {
+      const res = await apiGet(`/api/claims/${claimId}/evidence/items/${evidenceId}/raw`);
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Raw source unavailable');
+        return;
+      }
+      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('Raw source unavailable');
     }
-    window.open(res.data.url, '_blank', 'noopener,noreferrer');
   };
 
   return (

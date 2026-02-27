@@ -522,32 +522,44 @@ const GmailTab = () => {
 
   const handleBatchTrash = async () => {
     const ids = [...selectedIds];
-    for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/trash`);
-    toast.success(`${ids.length} moved to trash`);
-    setMessages(prev => prev.filter(m => !selectedIds.has(m.id)));
-    if (selectedIds.has(selectedId)) { setSelectedId(null); setMessageDetail(null); }
-    setSelectedIds(new Set());
-    fetchLabels();
+    try {
+      for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/trash`);
+      toast.success(`${ids.length} moved to trash`);
+      setMessages(prev => prev.filter(m => !selectedIds.has(m.id)));
+      if (selectedIds.has(selectedId)) { setSelectedId(null); setMessageDetail(null); }
+      setSelectedIds(new Set());
+      fetchLabels();
+    } catch {
+      toast.error('Failed to trash messages');
+    }
   };
 
   const handleBatchArchive = async () => {
     const ids = [...selectedIds];
-    for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/modify`, { remove_labels: ['INBOX'] });
-    toast.success(`${ids.length} archived`);
-    if (activeFolder === 'INBOX') setMessages(prev => prev.filter(m => !selectedIds.has(m.id)));
-    setSelectedIds(new Set());
-    fetchLabels();
+    try {
+      for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/modify`, { remove_labels: ['INBOX'] });
+      toast.success(`${ids.length} archived`);
+      if (activeFolder === 'INBOX') setMessages(prev => prev.filter(m => !selectedIds.has(m.id)));
+      setSelectedIds(new Set());
+      fetchLabels();
+    } catch {
+      toast.error('Failed to archive messages');
+    }
   };
 
   const handleBatchRead = async () => {
     const ids = [...selectedIds];
-    for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/modify`, { remove_labels: ['UNREAD'] });
-    setMessages(prev => prev.map(m =>
-      selectedIds.has(m.id) ? { ...m, isUnread: false, labelIds: m.labelIds.filter(l => l !== 'UNREAD') } : m
-    ));
-    setSelectedIds(new Set());
-    toast.success('Marked as read');
-    fetchLabels();
+    try {
+      for (const id of ids) await apiPost(`/api/integrations/google/gmail/messages/${id}/modify`, { remove_labels: ['UNREAD'] });
+      setMessages(prev => prev.map(m =>
+        selectedIds.has(m.id) ? { ...m, isUnread: false, labelIds: m.labelIds.filter(l => l !== 'UNREAD') } : m
+      ));
+      setSelectedIds(new Set());
+      toast.success('Marked as read');
+      fetchLabels();
+    } catch {
+      toast.error('Failed to mark messages as read');
+    }
   };
 
   /* ─── Attachments ─── */

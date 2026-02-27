@@ -139,10 +139,15 @@ const GardenDashboard = () => {
 
   const fetchDashboard = useCallback(async () => {
     if (data) setRefreshing(true); else setLoading(true);
-    const res = await apiGet('/api/garden/dashboard', { cache: false });
-    if (res.ok) { setData(res.data); setLastRefresh(new Date()); }
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const res = await apiGet('/api/garden/dashboard', { cache: false });
+      if (res.ok) { setData(res.data); setLastRefresh(new Date()); }
+    } catch {
+      // Network error — leave existing data visible
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [data]);
 
   useEffect(() => { fetchDashboard(); }, []); // eslint-disable-line react-hooks/exhaustive-deps

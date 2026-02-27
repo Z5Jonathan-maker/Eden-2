@@ -34,18 +34,22 @@ const ClaimTimelineTab = ({ claimId }) => {
 
   const fetchTimeline = async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (eventType) params.set('event_type', eventType);
-    if (query.trim()) params.set('q', query.trim());
+    try {
+      const params = new URLSearchParams();
+      if (eventType) params.set('event_type', eventType);
+      if (query.trim()) params.set('q', query.trim());
 
-    const res = await apiGet(`/api/claims/${claimId}/timeline?${params.toString()}`);
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Failed to load timeline');
+      const res = await apiGet(`/api/claims/${claimId}/timeline?${params.toString()}`);
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Failed to load timeline');
+        return;
+      }
+      setEvents(res.data.events || []);
+    } catch {
+      toast.error('Failed to load timeline');
+    } finally {
       setLoading(false);
-      return;
     }
-    setEvents(res.data.events || []);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -55,42 +59,53 @@ const ClaimTimelineTab = ({ claimId }) => {
 
   const runIngestion = async () => {
     setRunningIngest(true);
-    const res = await apiPost(`/api/claims/${claimId}/evidence/ingest/run`, { mode: 'manual' });
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Ingestion failed');
+    try {
+      const res = await apiPost(`/api/claims/${claimId}/evidence/ingest/run`, { mode: 'manual' });
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Ingestion failed');
+        return;
+      }
+      toast.success(`Ingestion ${res.data.status || 'started'}`);
+      await fetchTimeline();
+    } catch {
+      toast.error('Ingestion failed');
+    } finally {
       setRunningIngest(false);
-      return;
     }
-    toast.success(`Ingestion ${res.data.status || 'started'}`);
-    await fetchTimeline();
-    setRunningIngest(false);
   };
 
   const openEventEvidence = async (eventId) => {
     setLoadingEvidence(true);
-    const res = await apiGet(`/api/claims/${claimId}/timeline/events/${eventId}`);
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Failed to load event evidence');
+    try {
+      const res = await apiGet(`/api/claims/${claimId}/timeline/events/${eventId}`);
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Failed to load event evidence');
+        return;
+      }
+      const primaryEvidence = (res.data.evidence || [])[0];
+      if (!primaryEvidence) {
+        toast.error('No linked evidence found for this event');
+        return;
+      }
+      setSelectedEvidence(primaryEvidence);
+    } catch {
+      toast.error('Failed to load event evidence');
+    } finally {
       setLoadingEvidence(false);
-      return;
     }
-    const primaryEvidence = (res.data.evidence || [])[0];
-    if (!primaryEvidence) {
-      toast.error('No linked evidence found for this event');
-      setLoadingEvidence(false);
-      return;
-    }
-    setSelectedEvidence(primaryEvidence);
-    setLoadingEvidence(false);
   };
 
   const openRawSource = async (evidenceId) => {
-    const res = await apiGet(`/api/claims/${claimId}/evidence/items/${evidenceId}/raw`);
-    if (!res.ok) {
-      toast.error(res.error?.detail || res.error || 'Raw source unavailable');
-      return;
+    try {
+      const res = await apiGet(`/api/claims/${claimId}/evidence/items/${evidenceId}/raw`);
+      if (!res.ok) {
+        toast.error(res.error?.detail || res.error || 'Raw source unavailable');
+        return;
+      }
+      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('Raw source unavailable');
     }
-    window.open(res.data.url, '_blank', 'noopener,noreferrer');
   };
 
   return (

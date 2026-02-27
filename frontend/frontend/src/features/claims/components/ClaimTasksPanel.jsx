@@ -34,9 +34,14 @@ const ClaimTasksPanel = ({ claimId }) => {
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
-    const res = await apiGet(`/api/tasks/claim/${claimId}`, { cache: false });
-    if (res.ok) setTasks(res.data || []);
-    setLoading(false);
+    try {
+      const res = await apiGet(`/api/tasks/claim/${claimId}`, { cache: false });
+      if (res.ok) setTasks(res.data || []);
+    } catch {
+      toast.error('Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
   }, [claimId]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
@@ -44,31 +49,44 @@ const ClaimTasksPanel = ({ claimId }) => {
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
     setCreating(true);
-    const res = await apiPost('/api/tasks/', { ...form, claim_id: claimId });
-    if (res.ok) {
-      setTasks(prev => [...prev, res.data]);
-      setForm({ title: '', description: '', due_date: '', priority: 'Medium', task_type: 'follow_up' });
-      setShowForm(false);
-      toast.success('Task created');
-    } else {
-      toast.error(res.error || 'Failed to create task');
+    try {
+      const res = await apiPost('/api/tasks/', { ...form, claim_id: claimId });
+      if (res.ok) {
+        setTasks(prev => [...prev, res.data]);
+        setForm({ title: '', description: '', due_date: '', priority: 'Medium', task_type: 'follow_up' });
+        setShowForm(false);
+        toast.success('Task created');
+      } else {
+        toast.error(res.error || 'Failed to create task');
+      }
+    } catch {
+      toast.error('Network error creating task');
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const toggleStatus = async (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-    const res = await apiPut(`/api/tasks/${task.id}`, { status: newStatus });
-    if (res.ok) {
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+    try {
+      const res = await apiPut(`/api/tasks/${task.id}`, { status: newStatus });
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+      }
+    } catch {
+      toast.error('Failed to update task');
     }
   };
 
   const deleteTask = async (taskId) => {
-    const res = await apiDelete(`/api/tasks/${taskId}`);
-    if (res.ok) {
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success('Task deleted');
+    try {
+      const res = await apiDelete(`/api/tasks/${taskId}`);
+      if (res.ok) {
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+        toast.success('Task deleted');
+      }
+    } catch {
+      toast.error('Failed to delete task');
     }
   };
 
