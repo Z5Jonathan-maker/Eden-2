@@ -160,24 +160,24 @@ const ClaimTabs = ({
   return (
     <div className="card-tactical p-5">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-1">
+        <TabsList className="flex w-full overflow-x-auto md:grid md:grid-cols-7 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-1 scrollbar-hide">
           <TabsTrigger
             value="notes"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="notes-tab"
           >
             Notes ({notes.length})
           </TabsTrigger>
           <TabsTrigger
             value="photos"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="photos-tab"
           >
             <Camera className="w-4 h-4 mr-1" />({photos.length})
           </TabsTrigger>
           <TabsTrigger
             value="messages"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="messages-tab"
           >
             <Phone className="w-4 h-4 mr-1" />
@@ -185,14 +185,14 @@ const ClaimTabs = ({
           </TabsTrigger>
           <TabsTrigger
             value="documents"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="documents-tab"
           >
             Docs ({documents.length})
           </TabsTrigger>
           <TabsTrigger
             value="timeline"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="timeline-tab"
           >
             <History className="w-4 h-4 mr-1" />
@@ -200,7 +200,7 @@ const ClaimTabs = ({
           </TabsTrigger>
           <TabsTrigger
             value="review"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="review-tab"
           >
             <ShieldCheck className="w-4 h-4 mr-1" />
@@ -208,7 +208,7 @@ const ClaimTabs = ({
           </TabsTrigger>
           <TabsTrigger
             value="reports"
-            className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
+            className="flex-shrink-0 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 font-mono text-xs uppercase"
             data-testid="reports-tab"
           >
             <Presentation className="w-4 h-4 mr-1" />

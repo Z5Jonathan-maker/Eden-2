@@ -29,6 +29,7 @@ import ClaimsPipeline from './ClaimsPipeline';
 import GardenDashboard from './GardenDashboard';
 
 const VIEW_MODES = { list: 'list', pipeline: 'pipeline', dashboard: 'dashboard' };
+const ITEMS_PER_PAGE = 25;
 
 const ClaimsList = () => {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ const ClaimsList = () => {
   const [batchAction, setBatchAction] = useState(null); // null, 'archive', 'status', 'assign'
   const [batchValue, setBatchValue] = useState('');
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,6 +98,7 @@ const ClaimsList = () => {
     setSortField(option.field);
     setSortDirection(option.direction);
     setShowSortDropdown(false);
+    setCurrentPage(1);
   };
 
   const getCurrentSortLabel = () => {
@@ -135,6 +138,18 @@ const ClaimsList = () => {
       }
       return aVal < bVal ? 1 : -1;
     });
+
+  // ── Pagination ──
+  const totalPages = Math.ceil(sortedAndFilteredClaims.length / ITEMS_PER_PAGE);
+  const paginatedClaims = sortedAndFilteredClaims.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
 
   // ── Multi-select helpers ──
   const toggleSelect = (id, e) => {
@@ -477,7 +492,7 @@ const ClaimsList = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {sortedAndFilteredClaims.map((claim, index) => (
+            {paginatedClaims.map((claim, index) => (
               <div
                 key={claim.id}
                 className={`group p-4 md:p-5 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 border stagger-item interactive-card ${selectedIds.has(claim.id) ? 'border-orange-500/50 bg-orange-500/5' : 'border-zinc-700/30 hover:border-orange-500/30'}`}
@@ -558,6 +573,55 @@ const ClaimsList = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && !loading && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-700/30">
+            <p className="text-xs text-zinc-500 font-mono">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredClaims.length)} of {sortedAndFilteredClaims.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                .reduce((acc, page, idx, arr) => {
+                  if (idx > 0 && page - arr[idx - 1] > 1) acc.push('...');
+                  acc.push(page);
+                  return acc;
+                }, [])
+                .map((item, idx) =>
+                  item === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-zinc-600 text-xs">...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item)}
+                      className={`w-8 h-8 rounded text-xs font-mono transition-all ${
+                        currentPage === item
+                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+                          : 'text-zinc-400 hover:text-orange-400 border border-transparent hover:border-orange-500/30'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>}
