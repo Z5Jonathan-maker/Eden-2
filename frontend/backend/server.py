@@ -240,36 +240,8 @@ async def health_check():
         "status": "healthy" if db_status == "connected" else "degraded",
         "service": "eden-claims-api",
         "checks": {
-            "database": db_status,
+            "database": "ok" if db_status == "connected" else "error",
             "storage": storage_status
-        },
-        "integrations": {
-            "google_oauth": bool(os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET")),
-            "signnow": bool(os.environ.get("SIGNNOW_CLIENT_ID") and os.environ.get("SIGNNOW_CLIENT_SECRET")),
-            "gamma": bool(os.environ.get("GAMMA_API_KEY")),
-            "stripe": bool(os.environ.get("STRIPE_SECRET_KEY")),
-            "ollama": bool(get_ollama_api_key()),
-            "openai": bool(os.environ.get("OPENAI_API_KEY")),
-        },
-        "env_debug": {
-            k: (v[:4] + "..." if v else "NOT SET")
-            for k, v in {
-                "GOOGLE_CLIENT_ID": os.environ.get("GOOGLE_CLIENT_ID", ""),
-                "GOOGLE_CLIENT_SECRET": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
-                "SIGNNOW_CLIENT_ID": os.environ.get("SIGNNOW_CLIENT_ID", ""),
-                "SIGNNOW_CLIENT_SECRET": os.environ.get("SIGNNOW_CLIENT_SECRET", ""),
-                "GAMMA_API_KEY": os.environ.get("GAMMA_API_KEY", ""),
-                "OLLAMA_API_KEY_raw": os.environ.get("OLLAMA_API_KEY", ""),
-                "OLLAMA_API_TOKEN_raw": os.environ.get("OLLAMA_API_TOKEN", ""),
-                "OLLAMA_TOKEN_raw": os.environ.get("OLLAMA_TOKEN", ""),
-                "OLLAMA_resolved": get_ollama_api_key(),
-                "OLLAMA_BASE_URL": os.environ.get("OLLAMA_BASE_URL", ""),
-                "OLLAMA_MODEL": os.environ.get("OLLAMA_MODEL", ""),
-                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
-                "BASE_URL": os.environ.get("BASE_URL", ""),
-                "FRONTEND_URL": os.environ.get("FRONTEND_URL", ""),
-                "CORS_ORIGINS": os.environ.get("CORS_ORIGINS", ""),
-            }.items()
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -287,7 +259,7 @@ async def ai_ping():
     url = ollama_endpoint(base, "/api/chat")
 
     if not key:
-        return {"status": "no_key", "detail": "OLLAMA_API_KEY not set", "key_preview": "EMPTY", "url": url}
+        return {"status": "no_key", "detail": "AI provider not configured"}
 
     try:
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
@@ -295,13 +267,12 @@ async def ai_ping():
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(url, json=payload, headers=headers)
         if resp.status_code == 200:
-            data = resp.json()
-            content = data.get("message", {}).get("content", "")[:100]
-            return {"status": "ok", "model": model, "url": url, "key_preview": key[:4] + "...", "response_preview": content}
+            return {"status": "ok", "model": model}
         else:
-            return {"status": "error", "http_code": resp.status_code, "detail": resp.text[:300], "key_preview": key[:4] + "...", "url": url}
+            return {"status": "error", "http_code": resp.status_code}
     except Exception as e:
-        return {"status": "exception", "detail": str(e)[:300], "key_preview": key[:4] + "...", "url": url}
+        logger.error(f"AI ping failed: {e}")
+        return {"status": "error", "detail": "AI service unreachable"}
 
 
 async def require_admin_user(authorization: str = Header(default=None)):

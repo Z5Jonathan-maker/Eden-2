@@ -1333,7 +1333,7 @@ async def assess_photo_damage(
         raise
     except Exception as e:
         print(f"[DamageAI] LLM call failed for photo {photo_id}: {e}")
-        raise HTTPException(status_code=502, detail=f"AI damage assessment failed: {str(e)}")
+        raise HTTPException(status_code=502, detail="AI damage assessment failed")
 
     # 5. Parse the JSON response
     assessment = None
@@ -1945,7 +1945,7 @@ async def generate_inspection_report(
         
     except Exception as e:
         print(f"[Report] Generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Report generation failed")
 
 
 @router.get("/sessions/{session_id}/reports")
@@ -2142,7 +2142,7 @@ async def export_photo_report_pdf(
             rooms=rooms,
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Resource not found")
 
     return StreamingResponse(
         buf,

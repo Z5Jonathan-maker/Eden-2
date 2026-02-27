@@ -153,7 +153,7 @@ async def start_email_scan(
                 "error": str(e),
             }},
         )
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
     except Exception as e:
         logger.error(f"Email scan failed for {user_id}: {e}")

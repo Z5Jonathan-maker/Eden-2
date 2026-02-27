@@ -50,7 +50,7 @@ class ClaimsService:
             
         except Exception as e:
             logger.error(f"Create claim error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def update_claim(self, claim_id: str, updates: ClaimUpdate, current_user: Dict[str, Any]) -> Claim:
         """Update a claim with STRICT status transition logic"""
@@ -91,7 +91,7 @@ class ClaimsService:
             raise
         except Exception as e:
             logger.error(f"Update claim error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def get_claims(self, filter_status: Optional[str], include_archived: bool, limit: int, current_user: Dict[str, Any]) -> List[Claim]:
         """Get all claims (filtered by role). Archived claims hidden by default."""
@@ -117,7 +117,7 @@ class ClaimsService:
             
         except Exception as e:
             logger.error(f"Get claims error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def get_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Claim:
         """Get specific claim by ID with permission check"""
@@ -137,7 +137,7 @@ class ClaimsService:
             raise
         except Exception as e:
             logger.error(f"Get claim error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def delete_claim(self, claim_id: str, permanent: bool, current_user: Dict[str, Any]) -> Dict[str, str]:
         """Soft-delete (archive) or hard-delete a claim"""
@@ -180,7 +180,7 @@ class ClaimsService:
             raise
         except Exception as e:
             logger.error(f"Delete claim error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def restore_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Dict[str, str]:
         """Restore an archived claim"""
@@ -219,7 +219,7 @@ class ClaimsService:
             raise
         except Exception as e:
             logger.error(f"Restore claim error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     # --- Internal Enforcement Methods ---
 

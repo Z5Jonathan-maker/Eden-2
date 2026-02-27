@@ -1720,7 +1720,7 @@ async def generate_inspection_report(
         
     except Exception as e:
         print(f"[Report] Generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Report generation failed")
 
 
 @router.get("/sessions/{session_id}/reports")

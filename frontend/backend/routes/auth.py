@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Response
+from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
 from fastapi.responses import JSONResponse
 from models import UserCreate, UserLogin, User, Token, ROLES
-from auth import get_password_hash, verify_password, create_access_token
+from auth import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from dependencies import db, get_current_active_user, require_role
 from datetime import datetime, timezone
 import uuid
@@ -12,10 +12,31 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
+REGISTRATION_SECRET = os.environ.get("REGISTRATION_SECRET", "").strip()
+
 @router.post("/register", response_model=User)
-async def register(user_data: UserCreate):
-    """Register a new user"""
+async def register(user_data: UserCreate, request: Request):
+    """Register a new user. In production, requires a valid invite code."""
     try:
+        # In production, require an invite/registration secret
+        is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+        if is_production and REGISTRATION_SECRET:
+            body = await request.json() if hasattr(request, '_body') else {}
+            # Accept invite_code from the original Pydantic-parsed body won't have it,
+            # so re-parse the raw body to check for extra fields
+            import json
+            raw_body = await request.body()
+            try:
+                raw = json.loads(raw_body)
+            except Exception:
+                raw = {}
+            invite_code = raw.get("invite_code", "")
+            if invite_code != REGISTRATION_SECRET:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Valid invite code required for registration"
+                )
+
         # Check if user exists
         existing_user = await db.users.find_one({"email": user_data.email})
         if existing_user:
@@ -23,24 +44,24 @@ async def register(user_data: UserCreate):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        
+
         # Create user
         user_dict = user_data.dict()
         user_dict["password"] = get_password_hash(user_dict["password"])
-        
+
         user_obj = User(**{k: v for k, v in user_dict.items() if k != "password"})
         user_dict_with_id = {**user_obj.dict(), "password": user_dict["password"]}
-        
+
         await db.users.insert_one(user_dict_with_id)
-        
+
         logger.info(f"User registered: {user_obj.email}")
         return user_obj
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Registration error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Registration failed")
 
 @router.post("/login")
 async def login(credentials: UserLogin, response: Response):
@@ -61,21 +82,32 @@ async def login(credentials: UserLogin, response: Response):
                 detail="Incorrect email or password"
             )
 
-        # Create token
+        # Create access + refresh tokens
         access_token = create_access_token(data={"sub": user["id"]})
+        refresh_token = create_refresh_token(data={"sub": user["id"]})
 
-        # Set httpOnly cookie (7 days expiry to match token)
-        max_age = 60 * 60 * 24 * 7  # 7 days in seconds
         is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
 
+        # Access token cookie — short-lived (1 hour)
         response.set_cookie(
             key="eden_token",
             value=access_token,
             httponly=True,
-            secure=is_production,  # HTTPS only in production
-            samesite="none" if is_production else "lax",  # "none" for cross-domain (Vercel↔Render), "lax" for local dev
-            max_age=max_age,
+            secure=is_production,
+            samesite="none" if is_production else "lax",
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/"
+        )
+
+        # Refresh token cookie — long-lived (7 days)
+        response.set_cookie(
+            key="eden_refresh",
+            value=refresh_token,
+            httponly=True,
+            secure=is_production,
+            samesite="none" if is_production else "lax",
+            max_age=60 * 60 * 24 * 7,
+            path="/api/auth"  # Only sent to auth endpoints
         )
 
         user_obj = User(**{k: v for k, v in user.items() if k != "password"})
@@ -109,15 +141,58 @@ async def get_current_user_info(current_user: dict = Depends(get_current_active_
     user_data["level"] = role_info["level"]
     return user_data
 
-@router.post("/logout")
-async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
-    """Logout user and clear httpOnly cookie"""
+@router.post("/refresh")
+async def refresh_token(request: Request, response: Response):
+    """Exchange a valid refresh token for a new access token."""
+    refresh = request.cookies.get("eden_refresh")
+    if not refresh:
+        raise HTTPException(status_code=401, detail="No refresh token")
+
+    payload = decode_access_token(refresh)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    # Verify user still exists and is active
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    # Issue new access token
+    new_access = create_access_token(data={"sub": user_id})
     is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
 
-    # Clear the httpOnly cookie
+    response.set_cookie(
+        key="eden_token",
+        value=new_access,
+        httponly=True,
+        secure=is_production,
+        samesite="none" if is_production else "lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/"
+    )
+
+    return {"access_token": new_access, "token_type": "bearer"}
+
+@router.post("/logout")
+async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
+    """Logout user and clear httpOnly cookies"""
+    is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
+    # Clear both cookies
     response.delete_cookie(
         key="eden_token",
         path="/",
+        httponly=True,
+        secure=is_production,
+        samesite="none" if is_production else "lax"
+    )
+    response.delete_cookie(
+        key="eden_refresh",
+        path="/api/auth",
         httponly=True,
         secure=is_production,
         samesite="none" if is_production else "lax"
@@ -185,4 +260,4 @@ async def seed_test_users(current_user: dict = Depends(require_role(["admin"])))
         
     except Exception as e:
         logger.error(f"Test users seeding error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to seed test users")

@@ -91,7 +91,7 @@ async def transcribe_audio(
     except ImportError:
         raise HTTPException(status_code=500, detail="Transcription library not installed")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Transcription failed")
 
 
 @router.post("/match-photos")
@@ -130,4 +130,4 @@ async def match_transcription_to_photos(
         return {"success": True, "matched_photos": matched}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Matching failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Photo matching failed")

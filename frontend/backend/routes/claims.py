@@ -448,7 +448,7 @@ async def add_note(
         raise
     except Exception as e:
         logger.error(f"Add note error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/{claim_id}/notes", response_model=List[Note])
 async def get_notes(
@@ -464,7 +464,7 @@ async def get_notes(
         raise
     except Exception as e:
         logger.error(f"Get notes error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Documents endpoints (To be refactored to DocumentService in next phase)
 @router.post("/{claim_id}/documents", response_model=Document, dependencies=[Depends(require_permission("documents.create"))])
@@ -514,7 +514,7 @@ async def upload_document(
         raise
     except Exception as e:
         logger.error(f"Upload document error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/{claim_id}/documents", response_model=List[Document])
 async def get_documents(
@@ -530,7 +530,7 @@ async def get_documents(
         raise
     except Exception as e:
         logger.error(f"Get documents error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ──────────────────────────────────────────────

@@ -594,7 +594,7 @@ async def send_contract_for_signature(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send contract: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send contract")
 
 
 @router.get("/{contract_id}/status")
@@ -1140,7 +1140,7 @@ async def sign_contract_in_person(
         logger.error(f"[SignNow] In-person sign error: {e}")
         raise HTTPException(
             status_code=502,
-            detail=f"SignNow signing error: {str(e)}"
+            detail="SignNow signing error"
         )
 
 

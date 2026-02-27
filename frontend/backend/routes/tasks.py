@@ -25,7 +25,7 @@ async def create_task(
         return task_obj
     except Exception as e:
         logger.error(f"Create task error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/claim/{claim_id}", response_model=List[Task])
@@ -42,7 +42,7 @@ async def get_tasks_for_claim(
         return [Task(**t) for t in tasks]
     except Exception as e:
         logger.error(f"Get tasks error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/{task_id}", response_model=Task)
@@ -69,7 +69,7 @@ async def update_task(
         raise
     except Exception as e:
         logger.error(f"Update task error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{task_id}")
@@ -86,7 +86,7 @@ async def delete_task(
         raise
     except Exception as e:
         logger.error(f"Delete task error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/my", response_model=List[Task])
@@ -105,7 +105,7 @@ async def get_my_tasks(
         return [Task(**t) for t in tasks]
     except Exception as e:
         logger.error(f"Get my tasks error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/overdue", response_model=List[Task])
@@ -126,4 +126,4 @@ async def get_overdue_tasks(
         return [Task(**t) for t in tasks]
     except Exception as e:
         logger.error(f"Get overdue tasks error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

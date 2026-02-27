@@ -69,7 +69,7 @@ async def trigger_bot_job(
         raise
     except Exception as e:
         logger.error(f"Bot trigger error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/notifications/recent")

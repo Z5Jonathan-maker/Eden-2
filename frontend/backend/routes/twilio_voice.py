@@ -13,11 +13,33 @@ from fastapi.responses import PlainTextResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from dependencies import db
 from voice_models import (
-    AssistantConfig, ScriptSet, GuardrailConfig, CallLog, 
+    AssistantConfig, ScriptSet, GuardrailConfig, CallLog,
     CallIntent, AppointmentAction, AssistantMode
 )
 
 logger = logging.getLogger(__name__)
+
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+
+async def validate_twilio_request(request: Request):
+    """Validate Twilio webhook signature. Skips if auth token not configured."""
+    if not TWILIO_AUTH_TOKEN:
+        return  # Twilio not configured — allow through for dev
+    try:
+        from twilio.request_validator import RequestValidator
+        validator = RequestValidator(TWILIO_AUTH_TOKEN)
+        signature = request.headers.get("X-Twilio-Signature", "")
+        form_data = await request.form()
+        # Reconstruct the full URL Twilio used to call us
+        url = str(request.url).split("?")[0]  # Strip query params
+        if not validator.validate(url, dict(form_data), signature):
+            logger.warning(f"Invalid Twilio signature for {request.url.path}")
+            raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Twilio signature validation error: {e}")
+        raise HTTPException(status_code=403, detail="Webhook validation failed")
 
 router = APIRouter(prefix="/api/twilio/voice", tags=["voice"])
 
@@ -196,6 +218,7 @@ async def handle_inbound_call(request: Request):
     Twilio webhook for inbound voice calls.
     Returns TwiML instructions for how to handle the call.
     """
+    await validate_twilio_request(request)
     try:
         form_data = await request.form()
         call_sid = form_data.get("CallSid", "")
@@ -405,6 +428,7 @@ def generate_appointment_confirm_response(scripts: ScriptSet, client_name: str, 
 @router.post("/appointment-response")
 async def handle_appointment_response(request: Request):
     """Handle DTMF response for appointment confirmation"""
+    await validate_twilio_request(request)
     try:
         form_data = await request.form()
         digits = form_data.get("Digits", "")
@@ -507,6 +531,7 @@ async def handle_appointment_response(request: Request):
 @router.post("/take-message")
 async def take_message(request: Request):
     """Fallback endpoint for taking a message"""
+    await validate_twilio_request(request)
     call_log_id = request.query_params.get("call_log_id")
     
     scripts = await get_active_script_set()
@@ -544,6 +569,7 @@ async def handle_recording(request: Request):
     Webhook called when recording completes.
     Triggers transcription and summarization.
     """
+    await validate_twilio_request(request)
     try:
         form_data = await request.form()
         call_sid = form_data.get("CallSid", "")
@@ -608,6 +634,7 @@ async def handle_recording(request: Request):
 @router.post("/status")
 async def handle_call_status(request: Request):
     """Webhook for call status updates from Twilio"""
+    await validate_twilio_request(request)
     try:
         form_data = await request.form()
         call_sid = form_data.get("CallSid", "")

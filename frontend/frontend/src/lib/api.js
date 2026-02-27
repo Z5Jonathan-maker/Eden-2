@@ -137,6 +137,36 @@ export async function api(endpoint, options = {}) {
   return _apiFetch(endpoint, options);
 }
 
+// Token refresh lock — prevent multiple simultaneous refresh attempts
+let _refreshPromise = null;
+
+async function _tryRefreshToken() {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const baseUrl = assertApiUrl();
+      const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.access_token) {
+          setAuthToken(data.access_token);
+        }
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
+}
+
 async function _apiFetch(endpoint, options = {}) {
   const baseUrl = assertApiUrl();
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
@@ -176,9 +206,14 @@ async function _apiFetch(endpoint, options = {}) {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
 
-      // Global 401 interception — notify auth layer that session expired.
-      // Skip for auth endpoints (login/register) so login errors aren't misread.
-      if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+      // On 401, try refreshing the token before giving up
+      const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh');
+      if (res.status === 401 && !isAuthEndpoint && !options._retried) {
+        const refreshed = await _tryRefreshToken();
+        if (refreshed) {
+          // Retry the original request with the new token
+          return _apiFetch(endpoint, { ...options, _retried: true });
+        }
         window.dispatchEvent(new CustomEvent('eden:auth-expired'));
       }
 

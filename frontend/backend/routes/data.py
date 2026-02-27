@@ -212,7 +212,7 @@ async def preview_claims_import(
         raise
     except Exception as e:
         logger.error(f"Preview import claims error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/import/claims/capabilities")
 async def get_import_claims_capabilities(
@@ -269,7 +269,7 @@ async def export_claims_csv(
         raise
     except Exception as e:
         logger.error(f"Export claims error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/export/claims/json")
 async def export_claims_json(
@@ -301,7 +301,7 @@ async def export_claims_json(
         raise
     except Exception as e:
         logger.error(f"Export claims JSON error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/import/claims")
 async def import_claims_csv(
@@ -515,7 +515,7 @@ async def import_claims_csv(
         raise
     except Exception as e:
         logger.error(f"Import claims error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/template/claims")
 async def get_import_template(
@@ -592,4 +592,4 @@ async def get_data_stats(
         }
     except Exception as e:
         logger.error(f"Get stats error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -113,7 +113,7 @@ async def list_themes(current_user: dict = Depends(get_current_active_user)):
                 raise HTTPException(status_code=400, detail=f"Gamma API error: {response.text[:500]}")
             return {"themes": response.json()}
     except httpx.RequestError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to reach Gamma: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reach Gamma service")
 
 
 # ============ LOCAL SYNC TRACKING (MongoDB only, no Gamma API) ============

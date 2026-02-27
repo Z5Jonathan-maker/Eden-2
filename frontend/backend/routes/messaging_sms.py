@@ -505,13 +505,15 @@ async def twilio_webhook(
     if SMS_WEBHOOK_SECRET and secret != SMS_WEBHOOK_SECRET:
         logger.warning(f"Twilio webhook called with invalid secret")
         raise HTTPException(status_code=403, detail="Invalid webhook secret")
-    
-    # Optional: Full Twilio signature validation
-    # signature = request.headers.get("X-Twilio-Signature", "")
-    # form_data = await request.form()
-    # url = str(request.url)
-    # if not validate_twilio_signature(url, dict(form_data), signature):
-    #     raise HTTPException(status_code=403, detail="Invalid signature")
+
+    # Twilio signature validation (if auth token configured)
+    signature = request.headers.get("X-Twilio-Signature", "")
+    if signature:
+        url = str(request.url).split("?")[0]  # Strip query params for validation
+        form_data = await request.form()
+        if not validate_twilio_signature(url, dict(form_data), signature):
+            logger.warning("Invalid Twilio signature on SMS webhook")
+            raise HTTPException(status_code=403, detail="Invalid Twilio signature")
     
     now = datetime.now(timezone.utc).isoformat()
     

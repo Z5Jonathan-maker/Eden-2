@@ -1108,7 +1108,7 @@ async def apply_auto_fix(
         
     except Exception as e:
         logger.error(f"Failed to apply fix: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to apply fix: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to apply fix")
 
 
 @router.post("/apply-responsive-fix")
@@ -1214,4 +1214,4 @@ async def revert_fix(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to revert: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to revert fix")

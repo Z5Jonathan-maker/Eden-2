@@ -154,7 +154,7 @@ class PaymentsService:
             raise
         except Exception as e:
             logger.error(f"Create checkout error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def get_payment_status(self, session_id: str) -> Dict[str, Any]:
         """Get payment status and sync with Stripe"""
@@ -193,7 +193,7 @@ class PaymentsService:
             
         except Exception as e:
             logger.error(f"Get payment status error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def handle_webhook(self, body: bytes, signature: str, host_url: str) -> Dict[str, str]:
         """Process Stripe Webhooks securely"""
@@ -233,7 +233,7 @@ class PaymentsService:
             
         except Exception as e:
             logger.error(f"Webhook error: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail="Internal server error")
 
     async def get_user_transactions(self, current_user: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Get transaction history for a user"""
@@ -246,7 +246,7 @@ class PaymentsService:
             return transactions
         except Exception as e:
             logger.error(f"Get transactions error: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def get_user_subscription(self, current_user: Dict[str, Any]) -> Dict[str, Any]:
         """Get current subscription status"""

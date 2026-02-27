@@ -191,7 +191,7 @@ async def upload_estimate(
         return response_data
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid estimate data")
     except Exception as e:
         logger.error(f"Error uploading estimate: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to process estimate")
@@ -344,7 +344,7 @@ async def compare_estimates_endpoint(
         
     except Exception as e:
         logger.error(f"Error comparing estimates: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to compare estimates: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to compare estimates")
 
 
 @router.get("/comparisons")
@@ -430,7 +430,7 @@ async def analyze_comparison_endpoint(
         
     except Exception as e:
         logger.error(f"Error analyzing comparison: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to analyze comparison: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to analyze comparison")
 
 
 @router.post("/dispute-letter")
@@ -478,7 +478,7 @@ async def generate_dispute_letter_endpoint(
         
     except Exception as e:
         logger.error(f"Error generating dispute letter: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate dispute letter: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate dispute letter")
 
 
 @router.get("/stats")

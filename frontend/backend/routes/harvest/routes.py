@@ -1370,5 +1370,5 @@ async def trigger_coach_manually(
         await trigger_manual_run(run_type)
         return {"message": f"Harvest Coach {run_type} run triggered successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 

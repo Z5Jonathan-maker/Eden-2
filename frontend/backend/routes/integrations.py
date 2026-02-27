@@ -248,7 +248,7 @@ async def send_email(
         
     except Exception as e:
         logger.error(f"Error sending email: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Google Drive Routes
 @router.post("/drive/create-folder")
@@ -271,7 +271,7 @@ async def create_drive_folder(
         
     except Exception as e:
         logger.error(f"Error creating folder: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/drive/upload-file")
 async def upload_to_drive(
@@ -301,7 +301,7 @@ async def upload_to_drive(
         
     except Exception as e:
         logger.error(f"Error uploading file: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Gamma Routes
 @router.post("/gamma/create-claim")
@@ -322,7 +322,7 @@ async def create_notion_claim(request: GammaClaimRequest):
         
     except Exception as e:
         logger.error(f"Error creating Gamma claim: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.put("/gamma/update-claim/{page_id}")
 async def update_notion_claim(page_id: str, request: GammaUpdateRequest):
@@ -343,7 +343,7 @@ async def update_notion_claim(page_id: str, request: GammaUpdateRequest):
         
     except Exception as e:
         logger.error(f"Error updating Gamma claim: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/gamma/append-content/{page_id}")
 async def append_notion_content(page_id: str, content: str = Form(...)):
@@ -356,7 +356,7 @@ async def append_notion_content(page_id: str, content: str = Form(...)):
         
     except Exception as e:
         logger.error(f"Error appending content: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Gamma Routes
 @router.post("/gamma/generate-presentation")
@@ -374,7 +374,7 @@ async def generate_presentation(request: GammaPresentationRequest):
         
     except Exception as e:
         logger.error(f"Error generating presentation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/gamma/themes")
 async def list_gamma_themes():
@@ -387,7 +387,7 @@ async def list_gamma_themes():
         
     except Exception as e:
         logger.error(f"Error listing themes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Test endpoint
 @router.get("/test")
@@ -429,7 +429,7 @@ async def upload_document_to_signnow(
         
     except Exception as e:
         logger.error(f"Error uploading to SignNow: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/signnow/send-for-signature")
 async def send_document_for_signature(request: SignNowSignRequest):
@@ -449,7 +449,7 @@ async def send_document_for_signature(request: SignNowSignRequest):
         
     except Exception as e:
         logger.error(f"Error sending for signature: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/signnow/document-status/{document_id}")
 async def get_document_status(document_id: str):
@@ -462,7 +462,7 @@ async def get_document_status(document_id: str):
         
     except Exception as e:
         logger.error(f"Error getting document status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/signnow/download-signed/{document_id}")
 async def download_signed_document(document_id: str):
@@ -482,4 +482,4 @@ async def download_signed_document(document_id: str):
         
     except Exception as e:
         logger.error(f"Error downloading signed document: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

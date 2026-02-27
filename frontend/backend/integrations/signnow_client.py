@@ -351,7 +351,7 @@ async def create_in_person_invite(
         raise
     except Exception as e:
         logger.error(f"[SignNow] In-person invite error: {e}")
-        raise HTTPException(status_code=502, detail=f"SignNow signing error: {str(e)}")
+        raise HTTPException(status_code=502, detail="SignNow signing error")
 
 
 async def upload_contract_to_signnow(access_token: str, contract: dict, signer_email: str) -> Optional[str]:
