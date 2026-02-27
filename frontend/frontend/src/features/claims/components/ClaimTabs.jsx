@@ -354,6 +354,7 @@ const ClaimTabs = ({
                       src={`${API_URL}/api/inspections/photos/${photo.id}/image`}
                       alt={photo.room || 'Inspection photo'}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-2">

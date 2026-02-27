@@ -8,13 +8,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuthToken, API_URL } from '../lib/api';
 
-const SecureImage = ({ src, alt = '', className = '', fallback, ...props }) => {
+const SecureImage = ({ src, alt = '', className = '', fallback, lazy = true, ...props }) => {
   const [blobUrl, setBlobUrl] = useState(null);
   const [error, setError] = useState(false);
+  const [isVisible, setIsVisible] = useState(!lazy);
   const revokeRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // IntersectionObserver for lazy loading — only fetch when visible
+  useEffect(() => {
+    if (!lazy || isVisible) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [lazy, isVisible]);
 
   useEffect(() => {
-    if (!src) { setError(true); return; }
+    if (!src || !isVisible) { if (!src) setError(true); return; }
 
     let cancelled = false;
 
@@ -52,7 +68,7 @@ const SecureImage = ({ src, alt = '', className = '', fallback, ...props }) => {
         revokeRef.current = null;
       }
     };
-  }, [src]);
+  }, [src, isVisible]);
 
   if (error) {
     return fallback || (
@@ -64,7 +80,7 @@ const SecureImage = ({ src, alt = '', className = '', fallback, ...props }) => {
 
   if (!blobUrl) {
     return (
-      <div className={`flex items-center justify-center bg-zinc-800/30 animate-pulse ${className}`} {...props} />
+      <div ref={containerRef} className={`flex items-center justify-center bg-zinc-800/30 animate-pulse ${className}`} {...props} />
     );
   }
 
