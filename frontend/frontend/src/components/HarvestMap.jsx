@@ -145,6 +145,9 @@ const HarvestMapInner = ({
   fetchPins,
   dispositions,
   onPinStatusChange,
+  isOnline = true,
+  isSyncing = false,
+  unsyncedCount = 0,
 }) => {
   const map = useMap();
   const [selectedPin, setSelectedPin] = useState(null);
@@ -237,6 +240,36 @@ const HarvestMapInner = ({
           <button onClick={refreshPosition} className="ml-2 hover:bg-red-700 p-1 rounded">
             <RefreshCw className="w-3 h-3" />
           </button>
+        </div>
+      )}
+
+      {/* Offline / Sync Banner */}
+      {(!isOnline || unsyncedCount > 0) && (
+        <div
+          className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 text-xs px-3 py-2 rounded-full shadow-lg flex items-center gap-2 ${
+            !isOnline
+              ? 'bg-amber-600 text-white'
+              : 'bg-blue-600 text-white'
+          }`}
+          data-testid="offline-banner"
+        >
+          {!isOnline ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+              Offline — changes queued
+              {unsyncedCount > 0 && <span className="font-mono">({unsyncedCount})</span>}
+            </>
+          ) : isSyncing ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Syncing {unsyncedCount} changes...
+            </>
+          ) : unsyncedCount > 0 ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {unsyncedCount} pending sync
+            </>
+          ) : null}
         </div>
       )}
 
@@ -371,6 +404,9 @@ export const HarvestMap = ({
     logVisit,
     fetchPins,
     dispositions,
+    isOnline,
+    isSyncing,
+    unsyncedCount,
   } = useHarvestPins({ territoryId });
 
   const filteredPins = activeFilters
@@ -408,6 +444,9 @@ export const HarvestMap = ({
           fetchPins={fetchPins}
           dispositions={dispositions}
           onPinStatusChange={onPinStatusChange}
+          isOnline={isOnline}
+          isSyncing={isSyncing}
+          unsyncedCount={unsyncedCount}
         />
       </APIProvider>
     </div>

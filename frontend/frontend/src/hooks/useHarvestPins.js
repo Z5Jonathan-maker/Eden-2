@@ -1,10 +1,14 @@
 /**
  * useHarvestPins - CRUD + Derived Fields for Harvest pins
  * Phone-first UX for canvassing
+ *
+ * Integrates with useOfflineSync so pin creates/updates/fetches
+ * gracefully degrade to IndexedDB when the device is offline.
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { recordKnockMetric } from '../lib/harvestMetrics';
 import { harvestService } from '../services/harvestService';
+import { useOfflineSync } from '../components/harvest/useOfflineSync';
 
 // DoorMamba-class 6-pin system
 export const DEFAULT_PIN_STATUSES = {
@@ -73,6 +77,11 @@ export const useHarvestPins = (options = {}) => {
   const [dispositions, setDispositions] = useState(DEFAULT_PIN_STATUSES);
   const [dispositionsLoaded, setDispositionsLoaded] = useState(false);
 
+  // Offline sync layer — gracefully queues operations when offline
+  const offline = useOfflineSync();
+  const offlineRef = useRef(offline);
+  offlineRef.current = offline;
+
   const fetchDispositions = useCallback(async () => {
     try {
       const data = await harvestService.getDispositions();
@@ -112,6 +121,18 @@ export const useHarvestPins = (options = {}) => {
         setLoading(false);
         return normalizedPins;
       } catch (err) {
+        // Offline fallback: serve cached pins from IndexedDB
+        if (offlineRef.current.offlineReady) {
+          try {
+            const cached = await offlineRef.current.fetchPins();
+            const cachedPins = (cached.pins || []).map(normalizePin);
+            setPins(cachedPins);
+            setLoading(false);
+            return cachedPins;
+          } catch (cacheErr) {
+            console.warn('Offline cache miss:', cacheErr);
+          }
+        }
         setError(err.message);
         setLoading(false);
         return [];
@@ -122,16 +143,16 @@ export const useHarvestPins = (options = {}) => {
 
   const createPin = useCallback(
     async (input) => {
-      try {
-        const payload = {
-          latitude: input.lat,
-          longitude: input.lng,
-          address: input.address || null,
-          disposition: 'unmarked',
-          notes: input.notes || null,
-          territory_id: input.territory_id || territoryId || null,
-        };
+      const payload = {
+        latitude: input.lat,
+        longitude: input.lng,
+        address: input.address || null,
+        disposition: 'unmarked',
+        notes: input.notes || null,
+        territory_id: input.territory_id || territoryId || null,
+      };
 
+      try {
         const created = await harvestService.createPin(payload);
 
         const newPin = normalizePin({
@@ -143,9 +164,29 @@ export const useHarvestPins = (options = {}) => {
           last_visit_at: created.last_visit_at || null,
         });
 
+        // Cache to IndexedDB for offline access
+        if (offlineRef.current.offlineReady) {
+          try { await offlineRef.current.createPin(payload); } catch (_) { /* best-effort cache */ }
+        }
+
         setPins((prev) => [...prev, newPin]);
         return newPin;
       } catch (err) {
+        // Offline fallback: queue the pin creation locally
+        if (offlineRef.current.offlineReady && !offlineRef.current.isOnline) {
+          const result = await offlineRef.current.createPin(payload);
+          if (result.success) {
+            const offlinePin = normalizePin({
+              ...result.pin,
+              latitude: input.lat,
+              longitude: input.lng,
+              address: input.address || null,
+              disposition: 'unmarked',
+            });
+            setPins((prev) => [...prev, offlinePin]);
+            return offlinePin;
+          }
+        }
         setError(err.message);
         throw err;
       }
@@ -155,15 +196,15 @@ export const useHarvestPins = (options = {}) => {
 
   const logVisit = useCallback(async (pinId, status, lat, lng, notes = null) => {
     const startedAt = performance.now();
-    try {
-      const payload = {
-        pin_id: pinId,
-        status,
-        lat,
-        lng,
-        notes,
-      };
+    const payload = {
+      pin_id: pinId,
+      status,
+      lat,
+      lng,
+      notes,
+    };
 
+    try {
       const result = await harvestService.logVisit(payload);
 
       recordKnockMetric({
@@ -188,6 +229,38 @@ export const useHarvestPins = (options = {}) => {
 
       return result;
     } catch (err) {
+      // Offline fallback: update pin locally and queue sync
+      if (offlineRef.current.offlineReady && !offlineRef.current.isOnline) {
+        const statusToDisp = statusToDisposition[status] || status;
+        await offlineRef.current.updatePin(pinId, {
+          disposition: statusToDisp,
+          last_status: status,
+          visit_count_delta: 1,
+        });
+
+        recordKnockMetric({
+          type: 'visit_log',
+          durationMs: performance.now() - startedAt,
+          status,
+          success: true,
+          offline: true,
+        });
+
+        setPins((prev) =>
+          prev.map((pin) => {
+            if (pin.id !== pinId) return pin;
+            return {
+              ...pin,
+              status,
+              visit_count: (pin.visit_count || 0) + 1,
+              last_visit_at: new Date().toISOString(),
+            };
+          })
+        );
+
+        return { offline: true, status };
+      }
+
       recordKnockMetric({
         type: 'visit_log',
         durationMs: performance.now() - startedAt,
@@ -272,6 +345,12 @@ export const useHarvestPins = (options = {}) => {
     dispositions,
     dispositionsLoaded,
     fetchDispositions,
+    // Offline state — consumers can show banners/indicators
+    isOnline: offline.isOnline,
+    isSyncing: offline.isSyncing,
+    unsyncedCount: offline.unsyncedCount,
+    offlineReady: offline.offlineReady,
+    syncToServer: offline.syncToServer,
   };
 };
 

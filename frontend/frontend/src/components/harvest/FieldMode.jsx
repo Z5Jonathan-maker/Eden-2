@@ -94,12 +94,26 @@ const FieldModeInner = ({
   sessionStats,
   setSessionStats,
   onEndSession,
+  isOnline = true,
+  isSyncing = false,
+  unsyncedCount = 0,
 }) => {
   const map = useMap();
   const [pendingPin, setPendingPin] = useState(null);
   const [showConversionForm, setShowConversionForm] = useState(null);
   const [dropping, setDropping] = useState(false);
-  const [sessionStartTime] = useState(Date.now());
+  const [sessionStartTime] = useState(() => {
+    const STORAGE_KEY = 'eden_field_session_start';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const ts = Number(saved);
+      // Restore if saved within 24 hours
+      if (Date.now() - ts < 24 * 60 * 60 * 1000) return ts;
+    }
+    const now = Date.now();
+    localStorage.setItem(STORAGE_KEY, String(now));
+    return now;
+  });
   const [followGps, setFollowGps] = useState(true);
   const hasCentered = useRef(false);
 
@@ -233,6 +247,28 @@ const FieldModeInner = ({
         </div>
       )}
 
+      {/* Offline Banner */}
+      {(!isOnline || unsyncedCount > 0) && (
+        <div
+          className={`absolute ${gpsError ? 'top-24' : 'top-14'} left-3 right-3 z-10 text-xs px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
+            !isOnline ? 'bg-amber-600 text-white' : 'bg-blue-600 text-white'
+          }`}
+        >
+          {!isOnline ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+              Offline — pins queued locally
+              {unsyncedCount > 0 && <span className="font-mono">({unsyncedCount})</span>}
+            </>
+          ) : (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Syncing {unsyncedCount} changes...
+            </>
+          )}
+        </div>
+      )}
+
       {/* Map — fills all space between top bar and bottom bar */}
       <div className="flex-1 relative overflow-hidden">
         <Map
@@ -359,6 +395,9 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
     logVisit,
     fetchPins,
     dispositions,
+    isOnline,
+    isSyncing,
+    unsyncedCount,
   } = useHarvestPins({ territoryId });
 
   const [sessionId, setSessionId] = useState(null);
@@ -379,6 +418,7 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
 
   // End session handler
   const handleEndSession = useCallback(async () => {
+    localStorage.removeItem('eden_field_session_start');
     let summary = null;
     if (sessionId) {
       try {
@@ -425,6 +465,9 @@ const FieldMode = ({ onEndSession, territoryId = null }) => {
         sessionStats={sessionStats}
         setSessionStats={setSessionStats}
         onEndSession={handleEndSession}
+        isOnline={isOnline}
+        isSyncing={isSyncing}
+        unsyncedCount={unsyncedCount}
       />
     </APIProvider>
   );
