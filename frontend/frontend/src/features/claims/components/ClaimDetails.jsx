@@ -314,6 +314,7 @@ const ClaimDetails = () => {
   const handleSaveEdit = async () => {
     try {
       setSaving(true);
+      const previousStatus = claim?.status;
       const res = await apiPut(`/api/claims/${claimId}`, editForm);
 
       if (!res.ok) {
@@ -323,6 +324,16 @@ const ClaimDetails = () => {
       setClaim(res.data);
       setIsEditing(false);
       toast.success('Claim updated successfully');
+
+      // Auto-backup on status change (fire-and-forget)
+      if (editForm.status && editForm.status !== previousStatus) {
+        try {
+          const prefs = JSON.parse(localStorage.getItem('eden_backup_prefs') || '{}');
+          if (prefs.autoBackup) {
+            backupClaim(claimId, claim?.claim_number);
+          }
+        } catch { /* ignore backup errors */ }
+      }
     } catch (err) {
       toast.error('Failed to update claim: ' + err.message);
     } finally {

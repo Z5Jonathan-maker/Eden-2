@@ -23,10 +23,12 @@ import {
   UserPlus,
   ArrowRightLeft,
   X,
+  Download,
 } from 'lucide-react';
 import { NAV_ICONS } from '../../../assets/badges';
 import ClaimsPipeline from './ClaimsPipeline';
 import GardenDashboard from './GardenDashboard';
+import { exportClaimsCsv } from '@/lib/exportCsv';
 
 const VIEW_MODES = { list: 'list', pipeline: 'pipeline', dashboard: 'dashboard' };
 const ITEMS_PER_PAGE = 25;
@@ -267,6 +269,21 @@ const ClaimsList = () => {
               </button>
             ))}
           </div>
+          <button
+            className="px-3 py-2.5 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 text-sm flex items-center gap-2 transition-all"
+            onClick={() => {
+              const toExport = selectedIds.size > 0
+                ? sortedAndFilteredClaims.filter(c => selectedIds.has(c.id))
+                : sortedAndFilteredClaims;
+              exportClaimsCsv(toExport);
+              toast.success(`Exported ${toExport.length} claims to CSV`);
+            }}
+            disabled={loading || sortedAndFilteredClaims.length === 0}
+            title={selectedIds.size > 0 ? `Export ${selectedIds.size} selected` : 'Export all visible'}
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">CSV</span>
+          </button>
           <button
             className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 justify-center"
             onClick={() => navigate('/claims/new')}

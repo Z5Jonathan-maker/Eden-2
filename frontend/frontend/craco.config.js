@@ -1,6 +1,7 @@
 // craco.config.js
 const path = require("path");
 require("dotenv").config();
+const WorkboxWebpackPlugin = require("workbox-webpack-plugin");
 
 // Only enable dev-server plugins when actually running local dev server.
 // `craco test` runs with NODE_ENV=test and should not load dev-only plugins.
@@ -79,6 +80,37 @@ const webpackConfig = {
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
       }
+
+      // Add Workbox service worker for PWA offline shell (production only)
+      if (process.env.NODE_ENV === 'production') {
+        // Remove any existing service worker plugin from CRA defaults
+        webpackConfig.plugins = webpackConfig.plugins.filter(
+          (plugin) => !['GenerateSW', 'InjectManifest'].includes(plugin.constructor.name)
+        );
+        webpackConfig.plugins.push(
+          new WorkboxWebpackPlugin.GenerateSW({
+            clientsClaim: true,
+            skipWaiting: true,
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+            runtimeCaching: [
+              {
+                urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
+                handler: 'StaleWhileRevalidate',
+                options: { cacheName: 'google-fonts' },
+              },
+              {
+                urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'images',
+                  expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                },
+              },
+            ],
+          })
+        );
+      }
+
       return webpackConfig;
     },
   },

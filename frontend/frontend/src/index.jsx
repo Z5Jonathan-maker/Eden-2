@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
 import { initSentry } from './lib/sentry';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // ============ SENTRY INITIALIZATION ============
 // Initialize error tracking before React loads
@@ -29,3 +30,6 @@ root.render(
     <App />
   </React.StrictMode>,
 );
+
+// Register service worker for offline shell caching
+serviceWorkerRegistration.register();
