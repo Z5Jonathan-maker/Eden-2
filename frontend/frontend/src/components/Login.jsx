@@ -6,12 +6,19 @@ import { APP_LOGO } from '../assets/badges';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState('INITIALIZING');
+
+  // Redirect already-authenticated users
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate(user?.role === 'client' ? '/client' : '/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   useEffect(() => {
     // Simulate tactical boot sequence
@@ -27,17 +34,11 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.success) {
-      const storedUser = localStorage.getItem('eden_user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        if (user.role === 'client') {
-          navigate('/client');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        navigate('/dashboard');
-      }
+      // Role-based redirect will be handled by the useEffect above once
+      // auth context updates. As a fallback, navigate to dashboard.
+      // The useEffect watching isAuthenticated will correct the route
+      // for client users on the next render cycle.
+      navigate('/dashboard', { replace: true });
     } else {
       setError(result.error);
     }

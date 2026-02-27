@@ -6,7 +6,7 @@
  * Updated to use centralized API client (Feb 4, 2026)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Shield } from 'lucide-react';
 import { apiGet, apiPost, API_URL } from '../lib/api';
 import {
@@ -49,12 +49,30 @@ const Adam = () => {
   const [mobileRegression, setMobileRegression] = useState(null);
   const [isMobileRegressionRunning, setIsMobileRegressionRunning] = useState(false);
 
-  // Fetch CQIL data on mount
+  // Track all polling intervals/timeouts for cleanup on unmount
+  const pollTimers = useRef(new Set());
+  const registerTimer = useCallback((id) => pollTimers.current.add(id), []);
+  const clearTimer = useCallback((id) => {
+    clearInterval(id);
+    clearTimeout(id);
+    pollTimers.current.delete(id);
+  }, []);
+
+  // Fetch CQIL data on mount — clean up ALL timers on unmount
   useEffect(() => {
     fetchCqilData();
     fetchSentinelData();
     const interval = setInterval(fetchCqilData, 60000);
-    return () => clearInterval(interval);
+    registerTimer(interval);
+    return () => {
+      clearTimer(interval);
+      // Clear every interval/timeout created by scan/crawl/regression functions
+      for (const id of pollTimers.current) {
+        clearInterval(id);
+        clearTimeout(id);
+      }
+      pollTimers.current.clear();
+    };
   }, []);
 
   // API Functions
@@ -97,18 +115,21 @@ const Adam = () => {
             setSentinelScan(updatedScan);
 
             if (updatedScan.status === 'completed' || updatedScan.status === 'failed') {
-              clearInterval(pollInterval);
+              clearTimer(pollInterval);
+              clearTimer(safetyTimeout);
               setIsScanRunning(false);
               fetchCqilData();
               fetchSentinelData();
             }
           }
         }, 1000);
+        registerTimer(pollInterval);
 
-        setTimeout(() => {
-          clearInterval(pollInterval);
+        const safetyTimeout = setTimeout(() => {
+          clearTimer(pollInterval);
           setIsScanRunning(false);
         }, 60000);
+        registerTimer(safetyTimeout);
       }
     } catch (err) {
       console.error('Centurion scan error:', err);
@@ -136,17 +157,20 @@ const Adam = () => {
             setBrowserCrawl(updatedCrawl);
 
             if (updatedCrawl.status === 'completed' || updatedCrawl.status === 'failed') {
-              clearInterval(pollInterval);
+              clearTimer(pollInterval);
+              clearTimer(safetyTimeout);
               setIsBrowserCrawlRunning(false);
               fetchCqilData();
             }
           }
         }, 2000);
+        registerTimer(pollInterval);
 
-        setTimeout(() => {
-          clearInterval(pollInterval);
+        const safetyTimeout = setTimeout(() => {
+          clearTimer(pollInterval);
           setIsBrowserCrawlRunning(false);
         }, 120000);
+        registerTimer(safetyTimeout);
       }
     } catch (err) {
       console.error('Browser crawl error:', err);
@@ -197,18 +221,21 @@ const Adam = () => {
             setMobileRegression(updatedRegression);
 
             if (updatedRegression.status === 'completed' || updatedRegression.status === 'failed') {
-              clearInterval(pollInterval);
+              clearTimer(pollInterval);
+              clearTimer(safetyTimeout);
               setIsMobileRegressionRunning(false);
               fetchCqilData();
             }
           }
         }, 3000);
+        registerTimer(pollInterval);
 
         // Timeout after 5 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
+        const safetyTimeout = setTimeout(() => {
+          clearTimer(pollInterval);
           setIsMobileRegressionRunning(false);
         }, 300000);
+        registerTimer(safetyTimeout);
       }
     } catch (err) {
       console.error('Mobile regression error:', err);

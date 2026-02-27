@@ -85,6 +85,17 @@ const buildHeaders = (isFormData) => {
 // In-flight mutation tracking to prevent duplicate requests (double-click protection)
 const inFlightMutations = new Map();
 
+// Fast body fingerprint for dedup keys (not cryptographic, just collision-resistant)
+const bodyFingerprint = (body) => {
+  if (body == null) return '';
+  const str = typeof body === 'string' ? body : JSON.stringify(body);
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return h.toString(36);
+};
+
 // Simple in-memory cache with TTL
 const cache = new Map();
 const CACHE_TTL = 30000;
@@ -110,7 +121,7 @@ export async function api(endpoint, options = {}) {
 
   // Dedup: prevent duplicate non-GET requests to the same endpoint
   if (method !== 'GET') {
-    const dedupKey = `${method}:${endpoint}`;
+    const dedupKey = `${method}:${endpoint}:${bodyFingerprint(options.body)}`;
     if (inFlightMutations.has(dedupKey)) {
       return inFlightMutations.get(dedupKey);
     }

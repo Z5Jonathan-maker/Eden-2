@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { apiGet, apiPost } from '@/lib/api';
 import { Loader2, FileDown, Share2, RefreshCw, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ const ClaimReportsTab = ({ claimId }) => {
     [templates, selectedTemplateId]
   );
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     const res = await apiGet(`/api/claims/${claimId}/reports/templates?report_type=${reportType}`);
     if (!res.ok) {
       toast.error(res.error?.detail || res.error || 'Failed to load templates');
@@ -34,9 +34,9 @@ const ClaimReportsTab = ({ claimId }) => {
     if (!templateList.some((template) => template.id === selectedTemplateId)) {
       setSelectedTemplateId(templateList[0]?.id || '');
     }
-  };
+  }, [claimId, reportType, selectedTemplateId]);
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     const [jobRes, reportRes] = await Promise.all([
       apiGet(`/api/claims/${claimId}/reports/jobs?limit=20`),
@@ -52,16 +52,22 @@ const ClaimReportsTab = ({ claimId }) => {
       toast.error(reportRes.error?.detail || reportRes.error || 'Failed to load reports');
     }
     setLoading(false);
-  };
+  }, [claimId, reportType]);
+
+  // Stable ref so polling callbacks always call the latest fetchReports
+  const fetchReportsRef = useRef(fetchReports);
+  fetchReportsRef.current = fetchReports;
 
   useEffect(() => {
     fetchTemplates();
     fetchReports();
     return () => {
-      if (pollingRef.current) window.clearInterval(pollingRef.current);
+      if (pollingRef.current) {
+        window.clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [claimId, reportType]);
+  }, [fetchTemplates, fetchReports]);
 
   const pollJob = (jobId) => {
     if (pollingRef.current) window.clearInterval(pollingRef.current);
@@ -88,7 +94,7 @@ const ClaimReportsTab = ({ claimId }) => {
         pollingRef.current = null;
         setGenerating(false);
         toast.success('Report generated');
-        fetchReports();
+        fetchReportsRef.current();
       }
       if (res.data.status === 'failed') {
         window.clearInterval(pollingRef.current);

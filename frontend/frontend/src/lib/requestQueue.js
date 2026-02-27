@@ -51,29 +51,54 @@ class RequestQueue {
   }
 
   /**
+   * Build a fingerprint from method + url + body for dedup.
+   */
+  _fingerprint(url, config) {
+    const body = config.body || '';
+    const str = `${config.method}:${url}:${typeof body === 'string' ? body : JSON.stringify(body)}`;
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+    return h.toString(36);
+  }
+
+  /**
    * Add a request to the queue
    * @param {string} url - Full URL
    * @param {object} config - Fetch config object
    */
   add(url, config) {
     if (!this.isEnabled) return;
-    
+
     // Don't queue GET requests
     if (config.method === 'GET' || !config.method) return;
-    
+
     // Don't queue uploads (FormData) - too complex for simple JSON storage
     if (config.body instanceof FormData) {
       console.warn('[OfflineQueue] Cannot queue FormData uploads yet');
       return;
     }
 
+    // Idempotency: reject duplicate requests queued within 5 seconds
+    const fp = this._fingerprint(url, config);
+    const now = Date.now();
+    const isDuplicate = this.queue.some(
+      (item) => item.fingerprint === fp && now - item.timestamp < 5000
+    );
+    if (isDuplicate) {
+      console.log('[OfflineQueue] Duplicate request suppressed:', url);
+      return;
+    }
+
     const item = {
       id: Date.now().toString() + Math.random().toString().slice(2, 5),
+      fingerprint: fp,
       timestamp: Date.now(),
       request: { url, config },
       retryCount: 0
     };
-    
+
     this.queue.push(item);
     this.saveQueue();
     console.log('[OfflineQueue] Request queued:', item);

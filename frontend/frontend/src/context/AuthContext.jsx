@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSentryUser, clearSentryUser } from '../lib/sentry';
 import { apiGet, apiPost, setAuthToken, clearAuthToken, clearCache } from '../lib/api';
 import { clearAllEdenStorage } from '../lib/core';
+import { toast } from 'sonner';
 
 // Empty string = same-origin (behind Vercel/nginx proxy). Use ?? so "" isn't skipped.
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? import.meta.env.REACT_APP_API_URL ?? '';
@@ -22,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Global listener: any 401 from api.js triggers logout (debounced to prevent race conditions)
+  // Global listener: any 401 from api.js triggers logout + redirect (debounced)
   useEffect(() => {
     let handled = false;
     const handleAuthExpired = () => {
@@ -33,6 +34,13 @@ export const AuthProvider = ({ children }) => {
       clearAllEdenStorage();
       clearSentryUser();
       setUser(null);
+      toast.error('Session expired — please log in again.', { duration: 4000 });
+      // Redirect to login. Uses window.location so it works regardless of
+      // which component tree we're in (no dependency on useNavigate).
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && currentPath !== '/register') {
+        window.location.replace('/login');
+      }
       // Reset flag after short delay so future expirations (re-login then expire) still work
       setTimeout(() => { handled = false; }, 2000);
     };
