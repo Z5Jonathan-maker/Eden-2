@@ -57,38 +57,48 @@ function UserManagement() {
   async function handleCreateUser(e) {
     e.preventDefault();
     setError('');
+    try {
+      var res = await apiPost('/api/users/', formData);
 
-    var res = await apiPost('/api/users/', formData);
-
-    if (res.ok) {
-      setShowCreateForm(false);
-      setFormData({ email: '', full_name: '', password: '', role: 'adjuster' });
-      fetchData();
-    } else {
-      setError(res.error || 'Failed to create user');
+      if (res.ok) {
+        setShowCreateForm(false);
+        setFormData({ email: '', full_name: '', password: '', role: 'adjuster' });
+        fetchData();
+      } else {
+        setError(res.error || 'Failed to create user');
+      }
+    } catch (err) {
+      setError(err.message || 'Network error creating user');
     }
   }
 
   async function handleUpdateUser(userId, updateData) {
-    var res = await apiPut('/api/users/' + userId, updateData);
+    try {
+      var res = await apiPut('/api/users/' + userId, updateData);
 
-    if (res.ok) {
-      setEditingUser(null);
-      fetchData();
-    } else {
-      setError(res.error || 'Failed to update user');
+      if (res.ok) {
+        setEditingUser(null);
+        fetchData();
+      } else {
+        setError(res.error || 'Failed to update user');
+      }
+    } catch (err) {
+      setError(err.message || 'Network error updating user');
     }
   }
 
   async function handleDeleteUser(userId) {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      var res = await apiDelete('/api/users/' + userId);
 
-    var res = await apiDelete('/api/users/' + userId);
-
-    if (res.ok) {
-      fetchData();
-    } else {
-      setError(res.error || 'Failed to delete user');
+      if (res.ok) {
+        fetchData();
+      } else {
+        setError(res.error || 'Failed to delete user');
+      }
+    } catch (err) {
+      setError(err.message || 'Network error deleting user');
     }
   }
 

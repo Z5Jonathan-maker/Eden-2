@@ -138,10 +138,14 @@ const ChatComposer = ({
   };
 
   const handleGifSelect = async (gifUrl, caption) => {
-    const res = await onSendGif(gifUrl, caption, replyTo?.id || null);
-    if (res?.ok) {
-      setShowGifPicker(false);
-      onCancelReply?.();
+    try {
+      const res = await onSendGif(gifUrl, caption, replyTo?.id || null);
+      if (res?.ok) {
+        setShowGifPicker(false);
+        onCancelReply?.();
+      }
+    } catch {
+      toast.error('Failed to send GIF');
     }
   };
 
@@ -170,8 +174,12 @@ const ChatComposer = ({
     const files = Array.from(e.target.files || []);
     for (const file of files) {
       if (!validateFile(file)) continue;
-      const res = await onUpload(file);
-      if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
+      try {
+        const res = await onUpload(file);
+        if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
+      } catch {
+        toast.error(`Failed to upload ${file.name}`);
+      }
     }
     e.target.value = '';
   };
@@ -182,8 +190,12 @@ const ChatComposer = ({
     const files = Array.from(e.dataTransfer?.files || []);
     for (const file of files) {
       if (!validateFile(file)) continue;
-      const res = await onUpload(file);
-      if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
+      try {
+        const res = await onUpload(file);
+        if (!res?.ok) toast.error(`Failed to upload ${file.name}`);
+      } catch {
+        toast.error(`Failed to upload ${file.name}`);
+      }
     }
   }, [onUpload]);
 

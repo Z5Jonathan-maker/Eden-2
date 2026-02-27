@@ -163,7 +163,7 @@ export default function useChat(initialChannelId = null) {
                 });
               }
               // Refresh inbox for unread counts
-              loadInboxAndChannels();
+              loadInboxAndChannels().catch(() => {});
             }
 
             if (data.type === 'chat_reaction') {
@@ -213,13 +213,17 @@ export default function useChat(initialChannelId = null) {
 
   // ── Polling fallback ───────────────────────────────────────────
   useEffect(() => {
-    pollRef.current = setInterval(() => {
+    pollRef.current = setInterval(async () => {
       if (skipNextPollRef.current) {
         skipNextPollRef.current = false;
         return;
       }
-      if (activeChannelId) loadMessages(activeChannelId);
-      loadInboxAndChannels();
+      try {
+        if (activeChannelId) await loadMessages(activeChannelId);
+        await loadInboxAndChannels();
+      } catch {
+        // Polling failures are transient — suppress to avoid unhandled rejections
+      }
     }, POLL_INTERVAL);
 
     return () => clearInterval(pollRef.current);

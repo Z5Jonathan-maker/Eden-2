@@ -24,7 +24,9 @@ const ClaimEditModal = ({ isOpen, editForm, setEditForm, onSave, onCancel, isSav
     if (!isOpen) return;
     apiGet('/api/users/team').then(res => {
       if (res.ok) setTeamMembers(res.data || []);
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('[ClaimEdit] Failed to load team members:', err);
+    });
   }, [isOpen]);
 
   if (!isOpen) return null;
