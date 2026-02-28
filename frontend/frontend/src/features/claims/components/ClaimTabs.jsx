@@ -15,14 +15,14 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { apiUpload, apiPut, apiDelete } from '@/lib/api';
+import { apiUpload, apiPut, apiDelete, assertApiUrl } from '@/lib/api';
 import { toast } from 'sonner';
 import ClaimCommsPanel from './ClaimCommsPanel';
 import ClaimTimelineTab from './ClaimTimelineTab';
 import ClaimEvidenceReviewTab from './ClaimEvidenceReviewTab';
 import ClaimReportsTab from './ClaimReportsTab';
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? '';
+const API_URL = assertApiUrl();
 
 const ClaimTabs = ({
   activeTab,

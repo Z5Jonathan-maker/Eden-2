@@ -197,6 +197,12 @@ async def get_file(file_id: str, current_user: dict = Depends(get_current_active
     if not file_meta:
         raise HTTPException(status_code=404, detail="File not found")
 
+    # Access control: admin/manager can access all; others only their own uploads
+    role = current_user.get("role", "client")
+    if role not in ("admin", "manager"):
+        if file_meta.get("uploaded_by") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="Access denied")
+
     mime_type = file_meta.get("mime_type", "application/octet-stream")
     original_name = file_meta.get("original_name", file_meta.get("filename", "file"))
 

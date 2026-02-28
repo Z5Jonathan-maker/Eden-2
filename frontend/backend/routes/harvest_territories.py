@@ -109,7 +109,7 @@ async def create_territory(
     
     await db.harvest_territories.insert_one(territory_doc)
     
-    logger.info(f"Territory created: {body.name} by {current_user.get('email')}")
+    logger.info("Territory created: %s by %s", body.name, current_user.get('email'))
     
     return {
         "id": territory_id,
@@ -378,7 +378,7 @@ async def assign_territory(
         }
     )
     
-    logger.info(f"Territory {territory['name']} assigned to {user.get('email')} by {current_user.get('email')}")
+    logger.info("Territory %s assigned to %s by %s", territory['name'], user.get('email'), current_user.get('email'))
     
     return {
         "message": f"Territory assigned to {user.get('full_name')}",

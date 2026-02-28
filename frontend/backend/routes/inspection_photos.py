@@ -6,10 +6,13 @@ import os
 import uuid
 import json
 import asyncio
+import logging
 import base64
 from datetime import datetime, timezone
 from typing import Optional, List
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -40,8 +43,8 @@ async def get_user_from_bearer_token(credentials: Optional[HTTPAuthorizationCred
         if payload:
             user_id = payload.get("sub")
             if user_id:
-                return await db.users.find_one({"id": user_id})
-    except:
+                return await db.users.find_one({"id": user_id}, {"_id": 0})
+    except Exception:
         pass
     return None
 
@@ -264,9 +267,9 @@ async def _generate_ai_caption(photo_id: str, file_path: str):
             {"id": photo_id},
             {"$set": {"ai_caption": caption}},
         )
-        print(f"[AI Caption] {photo_id[:8]}… → {caption[:80]}")
+        logger.info("AI Caption %s: %s", photo_id[:8], caption[:80])
     except Exception as e:
-        print(f"[AI Caption] Error for {photo_id[:8]}…: {e}")
+        logger.error("AI Caption error for %s: %s", photo_id[:8], e)
 
 
 # ========== PHOTO UPLOAD & MANAGEMENT ==========
@@ -370,7 +373,11 @@ async def upload_inspection_photo(
     await db.inspection_photos.insert_one(metadata_dict)
 
     # Fire-and-forget: generate AI caption in background
-    asyncio.ensure_future(_generate_ai_caption(photo_id, file_path))
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_generate_ai_caption(photo_id, file_path))
+    except RuntimeError:
+        pass  # No running event loop
 
     # Build full image URL
     base_url = os.environ.get("BASE_URL", "")
@@ -400,7 +407,7 @@ async def get_photo_image(
     """Get the actual photo image. Accepts Bearer token via Authorization header or ?token= query param."""
     
     user = None
-    
+
     # Try Bearer token first
     if credentials:
         try:
@@ -408,30 +415,36 @@ async def get_photo_image(
             if payload:
                 user_id = payload.get("sub")
                 if user_id:
-                    user = await db.users.find_one({"id": user_id})
-        except:
+                    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        except Exception:
             pass
-    
+
     # Fall back to query param token
     if not user and token:
         user = await get_user_from_token_param(token)
-    
+
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized - valid token required")
-    
+
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    
+
     # Build file path
     if photo.get("claim_id"):
         file_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
     else:
         file_path = os.path.join(PHOTO_DIR, photo["filename"])
-    
+
+    # Path traversal protection
+    real_photo_dir = os.path.realpath(PHOTO_DIR)
+    real_file_path = os.path.realpath(file_path)
+    if not real_file_path.startswith(real_photo_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Photo file not found on disk")
-    
+
     return FileResponse(file_path, media_type=photo.get("mime_type", "image/jpeg"))
 
 
@@ -449,8 +462,8 @@ async def get_photo_thumbnail(
             if payload:
                 user_id = payload.get("sub")
                 if user_id:
-                    user = await db.users.find_one({"id": user_id})
-        except:
+                    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        except Exception:
             pass
     if not user and token:
         user = await get_user_from_token_param(token)
@@ -486,7 +499,7 @@ async def get_photo_thumbnail(
                 fmt = "PNG"
             img.save(thumb_path, format=fmt, quality=85)
         except Exception as e:
-            print(f"[Thumbnail] Generation failed for {photo_id}: {e}")
+            logger.warning("Thumbnail generation failed for %s: %s", photo_id, e)
             # Fallback: serve full image
             return FileResponse(original_path, media_type=photo.get("mime_type", "image/jpeg"))
 
@@ -1048,9 +1061,9 @@ async def upload_session_voice(
         await attach_voice_snippets_to_photos(session_id, response)
 
     except Exception as e:
-        print(f"[Whisper] Transcription error: {e}")
+        logger.error("Whisper transcription error for session %s: %s", session_id, e)
         # Don't fail the upload if transcription fails
-        transcript_text = f"Transcription pending (error: {str(e)[:100]})"
+        transcript_text = "Transcription pending"
     
     return {
         "voice_recording_id": voice_id,
@@ -1125,7 +1138,7 @@ async def attach_voice_snippets_to_photos(session_id: str, whisper_response):
                     {"$set": {"voice_snippet": voice_snippet}}
                 )
         except Exception as e:
-            print(f"[VoiceMatch] Error matching photo {photo.get('id')}: {e}")
+            logger.warning("VoiceMatch error for photo %s: %s", photo.get("id"), e)
             continue
     
     # After attaching snippets, extract AI tags
@@ -1207,7 +1220,7 @@ async def extract_ai_tags_for_session(session_id: str):
                 {"id": photo["id"]},
                 {"$set": update_data}
             )
-            print(f"[AITag] Photo {photo['id'][:8]}... tagged: room={detected_room}, tags={ai_tags}")
+            logger.info("AITag photo %s: room=%s tags=%s", photo["id"][:8], detected_room, ai_tags)
 
 
 @router.post("/photos/{photo_id}/ai-tag")
@@ -1719,7 +1732,7 @@ async def generate_inspection_report(
         }
         
     except Exception as e:
-        print(f"[Report] Generation error: {e}")
+        logger.error("Report generation error: %s", e)
         raise HTTPException(status_code=500, detail="Report generation failed")
 
 

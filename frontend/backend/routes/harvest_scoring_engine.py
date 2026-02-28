@@ -4,7 +4,6 @@ Single source of truth for points, streaks, badges, and competitions.
 
 This module is called by all visit/pin operations to ensure consistent scoring.
 """
-import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import uuid

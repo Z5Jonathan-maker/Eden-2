@@ -6,16 +6,27 @@ import { ArrowLeft, Save, Loader2, AlertCircle, Target } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { CLAIM_TYPES } from '../lib/core';
 
-const DRAFT_KEY = 'eden_new_claim_draft';
+// User-scoped draft key to prevent data leaks on shared devices
+const getDraftKey = () => {
+  try {
+    const token = localStorage.getItem('eden_token');
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return `eden_new_claim_draft_${payload.sub || payload.id || 'anon'}`;
+    }
+  } catch { /* ignore */ }
+  return 'eden_new_claim_draft';
+};
 
 const NewClaim = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const draftKey = getDraftKey();
   const [formData, setFormData] = useState(() => {
     try {
-      const saved = localStorage.getItem(DRAFT_KEY);
+      const saved = localStorage.getItem(draftKey);
       if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
     return {
@@ -36,7 +47,7 @@ const NewClaim = () => {
   useEffect(() => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(formData)); } catch { /* ignore */ }
+      try { localStorage.setItem(draftKey, JSON.stringify(formData)); } catch { /* ignore */ }
     }, 2000);
     return () => clearTimeout(saveTimer.current);
   }, [formData]);
@@ -87,7 +98,7 @@ const NewClaim = () => {
         throw new Error(res.error || 'Failed to create claim');
       }
 
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       navigate(`/claims/${res.data.id}`);
     } catch (err) {
       setError(err.message);

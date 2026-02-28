@@ -7,9 +7,8 @@ import {
 } from '../types/types';
 import { apiGet, apiPost } from '@/lib/api';
 
-const PA_TEMPLATE_ID = process.env.REACT_APP_SIGNNOW_TEMPLATE_ID || 'care-claims-pa-agreement';
+const PA_TEMPLATE_ID = process.env.REACT_APP_PA_TEMPLATE_ID || 'care-claims-pa-agreement';
 const DFS_TEMPLATE_ID = 'dfs-h1-1982-disclosure';
-const SIGNNOW_TEMPLATE_ID = PA_TEMPLATE_ID;
 
 function normalizeStatus(raw: string): ContractStatus {
   const v = (raw || '').toLowerCase();
@@ -72,43 +71,16 @@ export async function fetchClaimPrefill(claimId: string): Promise<Record<string,
   return res.data?.prefilled_values || {};
 }
 
-async function createViaConstruct(payload: CreateContractPayload): Promise<ContractItem | null> {
-  const body = {
-    template_id: payload.templateId || SIGNNOW_TEMPLATE_ID,
-    name: payload.name,
-    fields: payload.fields,
-    claim_id: payload.claimId,
-    type: payload.type,
-  };
-  const endpoints = ['/api/contracts/signnow/construct', '/api/contracts/construct'];
-  for (const path of endpoints) {
-    const res = await apiPost(path, body);
-    if (res.ok) {
-      return {
-        id: String(res.data.id || res.data.contract_id || res.data.document_id || Date.now()),
-        claimId: payload.claimId,
-        documentId: res.data.document_id || '',
-        name: res.data.name || payload.name,
-        type: payload.type,
-        status: normalizeStatus(res.data.status || 'draft'),
-        createdAt: res.data.created_at || new Date().toISOString(),
-        updatedAt: res.data.updated_at || new Date().toISOString(),
-        documentUrl: res.data.document_url || res.data.document_link || '',
-      };
-    }
-  }
-  return null;
-}
-
-async function createLegacy(payload: CreateContractPayload): Promise<ContractItem> {
+export async function createContract(payload: CreateContractPayload): Promise<ContractItem> {
   const res = await apiPost('/api/contracts/', {
-    template_id: payload.templateId || SIGNNOW_TEMPLATE_ID,
+    template_id: payload.templateId || PA_TEMPLATE_ID,
     claim_id: payload.claimId,
     client_name: payload.fields.client_name,
     client_email: payload.fields.email,
+    client_phone: payload.fields.phone,
     field_values: payload.fields,
   });
-  if (!res.ok) throw new Error('Failed to create contract');
+  if (!res.ok) throw new Error(res.data?.detail || 'Failed to create contract');
   return {
     id: String(res.data.id || res.data.contract_id || Date.now()),
     claimId: payload.claimId,
@@ -125,39 +97,19 @@ async function createLegacy(payload: CreateContractPayload): Promise<ContractIte
   };
 }
 
-export async function createContract(payload: CreateContractPayload): Promise<ContractItem> {
-  const constructed = await createViaConstruct(payload);
-  if (constructed) return constructed;
-  return createLegacy(payload);
-}
-
 export async function sendInvite(
   contract: ContractItem,
   channel: 'email' | 'sms',
   recipient: string,
   signerName: string
 ): Promise<void> {
-  const primaryId = contract.documentId || contract.id;
-  const inviteBody = {
-    document_id: primaryId,
-    email: channel === 'email' ? recipient : undefined,
-    phone: channel === 'sms' ? recipient : undefined,
-    role: 'Signer',
-    order: 1,
-    delivery_method: channel === 'sms' ? 'sms' : 'email',
-    signer_name: signerName,
-  };
-
-  const inviteTry = await apiPost(`/api/contracts/${contract.id}/invite`, inviteBody);
-  if (inviteTry.ok) return;
-
-  const legacyTry = await apiPost(`/api/contracts/${contract.id}/send`, {
+  const res = await apiPost(`/api/contracts/${contract.id}/send`, {
     signer_email: channel === 'email' ? recipient : contract.clientEmail || '',
     signer_phone: channel === 'sms' ? recipient : contract.clientPhone || '',
     signer_name: signerName || contract.clientName || '',
     delivery_method: channel,
   });
-  if (!legacyTry.ok) throw new Error('Failed to send invite');
+  if (!res.ok) throw new Error(res.data?.detail || 'Failed to send invite');
 }
 
 export async function getEmbeddedSigningUrl(contract: ContractItem): Promise<string> {
@@ -195,9 +147,15 @@ export async function getContractPdfUrl(contract: ContractItem): Promise<string>
     _lastPdfBlobUrl = null;
   }
 
-  // For PDF blob downloads, use raw fetch with credentials
+  // For PDF blob downloads, use raw fetch with credentials + Bearer token
   const base = (import.meta as any).env?.REACT_APP_BACKEND_URL || '';
-  const res = await fetch(`${base}/api/contracts/${contract.id}/pdf`, { credentials: 'include' });
+  const token = localStorage.getItem('eden_token');
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${base}/api/contracts/${contract.id}/pdf`, {
+    credentials: 'include',
+    headers,
+  });
   if (!res.ok) return contract.documentUrl || '';
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/pdf')) {

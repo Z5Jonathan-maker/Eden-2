@@ -31,7 +31,7 @@ def get_llm_client():
             # Auto-select best available provider
             _llm_client._resolve_default_provider()
         except Exception as e:
-            logger.error(f"Failed to initialize LLM client: {e}")
+            logger.error("Failed to initialize LLM client: %s", e)
             raise
     return _llm_client
 
@@ -139,6 +139,27 @@ def hash_input(request: AIRequest) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
+def _sanitize_context_value(value) -> str:
+    """
+    Sanitize a value before injecting into LLM prompt context.
+    Strips common prompt injection patterns from claim data.
+    """
+    text = str(value)
+    # Strip instruction-like patterns that could override system prompt
+    injection_patterns = [
+        r'(?i)ignore\s+(all\s+)?previous\s+instructions?',
+        r'(?i)you\s+are\s+now\s+a',
+        r'(?i)forget\s+(all\s+|everything\s+)?above',
+        r'(?i)new\s+instructions?:',
+        r'(?i)system\s*:\s*',
+        r'(?i)assistant\s*:\s*',
+        r'(?i)<\|?(system|im_start|im_end)\|?>',
+    ]
+    for pattern in injection_patterns:
+        text = re.sub(pattern, '[FILTERED]', text)
+    return text
+
+
 # System prompts by type
 SYSTEM_PROMPTS = {
     "eve_conversation": """You are Eve, an AI assistant for Care Claims, a public adjusting firm in Florida. 
@@ -199,13 +220,13 @@ async def generate(request: AIRequest) -> AIResponse:
         # Build prompt
         system_prompt = SYSTEM_PROMPTS.get(request.prompt_type, SYSTEM_PROMPTS["eve_conversation"])
         
-        # Add claim context if provided
+        # Add claim context if provided (sanitized against prompt injection)
         context_str = ""
         if request.claim_context:
             context_str = f"\n\nClaim Context:\n"
             for k, v in request.claim_context.items():
                 if v:
-                    context_str += f"- {k}: {v}\n"
+                    context_str += f"- {k}: {_sanitize_context_value(v)}\n"
             
             # --- GUARDRAIL: Stage-Awareness ---
             status = request.claim_context.get("status", "New")
@@ -216,12 +237,12 @@ async def generate(request: AIRequest) -> AIResponse:
             elif status == "Litigation":
                 context_str += "\nCRITICAL: This claim is in LITIGATION. Do NOT provide strategy advice. Direct the user to legal counsel immediately.\n"
         
-        # Add additional context
+        # Add additional context (sanitized)
         if request.additional_context:
             context_str += f"\nAdditional Info:\n"
             for k, v in request.additional_context.items():
                 if v:
-                    context_str += f"- {k}: {v}\n"
+                    context_str += f"- {k}: {_sanitize_context_value(v)}\n"
         
         full_system = system_prompt + context_str
 
@@ -301,21 +322,21 @@ async def generate(request: AIRequest) -> AIResponse:
         )
         
     except Exception as e:
-        logger.error(f"AI generation error: {e}")
-        
+        logger.error("AI generation error: %s", e)
+
         # Log failed attempt
         await log_ai_interaction(
             audit_id=audit_id,
             request=request,
-            output_text=f"ERROR: {str(e)}",
+            output_text="ERROR: generation failed",
             confidence=0.0,
-            warnings=[f"Generation failed: {str(e)}"]
+            warnings=["Generation failed — see server logs for details"]
         )
-        
+
         return AIResponse(
             draft_text="I apologize, but I'm unable to generate a response right now. Please try again or contact support.",
             confidence=0.0,
-            warnings=[f"Generation failed: {str(e)}"],
+            warnings=["Generation failed — see server logs for details"],
             requires_human_approval=True,
             audit_id=audit_id
         )
@@ -346,10 +367,10 @@ async def log_ai_interaction(
         }
         
         await db.ai_audit.insert_one(audit_record)
-        logger.info(f"AI audit logged: {audit_id}")
+        logger.info("AI audit logged: %s", audit_id)
         
     except Exception as e:
-        logger.error(f"Failed to log AI audit: {e}")
+        logger.error("Failed to log AI audit: %s", e)
 
 
 async def mark_approved(audit_id: str, sent: bool = True):
@@ -364,7 +385,7 @@ async def mark_approved(audit_id: str, sent: bool = True):
             {"$set": update}
         )
     except Exception as e:
-        logger.error(f"Failed to mark AI audit approved: {e}")
+        logger.error("Failed to mark AI audit approved: %s", e)
 
 
 async def mark_rejected(audit_id: str, reason: str = None):
@@ -379,7 +400,7 @@ async def mark_rejected(audit_id: str, reason: str = None):
             {"$set": update}
         )
     except Exception as e:
-        logger.error(f"Failed to mark AI audit rejected: {e}")
+        logger.error("Failed to mark AI audit rejected: %s", e)
 
 
 # Convenience functions for specific use cases

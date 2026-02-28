@@ -69,7 +69,7 @@ async def get_coach_config() -> dict:
         return config
         
     except Exception as e:
-        logger.warning(f"Failed to load coach config from database: {e}")
+        logger.warning("Failed to load coach config from database: %s", e)
         return DEFAULT_CONFIG
 
 
@@ -147,10 +147,10 @@ async def run_hourly_check():
             if comp_notif:
                 notifications_created += 1
         
-        logger.info(f"Harvest Coach: Hourly check complete. Created {notifications_created} notifications.")
+        logger.info("Harvest Coach: Hourly check complete. Created %d notifications.", notifications_created)
         
     except Exception as e:
-        logger.error(f"Harvest Coach hourly check error: {e}")
+        logger.error("Harvest Coach hourly check error: %s", e)
 
 
 async def run_nightly_summary():
@@ -180,10 +180,10 @@ async def run_nightly_summary():
             if notif:
                 notifications_created += 1
         
-        logger.info(f"Harvest Coach: Nightly summary complete. Created {notifications_created} notifications.")
+        logger.info("Harvest Coach: Nightly summary complete. Created %d notifications.", notifications_created)
         
     except Exception as e:
-        logger.error(f"Harvest Coach nightly summary error: {e}")
+        logger.error("Harvest Coach nightly summary error: %s", e)
 
 
 # ============================================
@@ -274,7 +274,7 @@ async def check_daily_goal_nudge(user_id: str, user_name: str, config: Dict[str,
             expires_at=(now + timedelta(hours=4)).isoformat()
         )
         
-        logger.info(f"Daily goal nudge sent to {user_name}: {today_doors}/{door_goal} doors")
+        logger.info("Daily goal nudge sent to %s: %d/%d doors", user_name, today_doors, door_goal)
         return notification
     
     return None
@@ -363,7 +363,7 @@ async def check_streak_nudge(user_id: str, user_name: str, config: Dict[str, Any
             expires_at=(now + timedelta(hours=6)).isoformat()  # Expires in 6 hours
         )
         
-        logger.info(f"Streak nudge sent to {user_name}: {doors_needed} doors needed (threshold: {streak_threshold})")
+        logger.info("Streak nudge sent to %s: %d doors needed (threshold: %d)", user_name, doors_needed, streak_threshold)
         return notification
     
     return None
@@ -451,7 +451,7 @@ async def check_competition_nudge(user_id: str, user_name: str) -> Optional[dict
                 expires_at=(now + timedelta(hours=4)).isoformat()
             )
             
-            logger.info(f"Competition nudge sent to {user_name}: #{user_position}, {gap} doors to move up")
+            logger.info("Competition nudge sent to %s: #%d, %d doors to move up", user_name, user_position, gap)
             return notification
     
     return None
@@ -588,7 +588,7 @@ async def create_daily_highlights(user_id: str, user_name: str, config: Dict[str
         }
     )
     
-    logger.info(f"Daily highlights sent to {user_name}: {doors} doors, {appointments} appts, {goals_hit}/3 goals hit")
+    logger.info("Daily highlights sent to %s: %d doors, %d appts, %d/3 goals hit", user_name, doors, appointments, goals_hit)
     return notification
 
 
@@ -706,7 +706,7 @@ async def trigger_manual_run(run_type: str = "hourly"):
     elif run_type == "nightly":
         await run_nightly_summary()
     else:
-        logger.warning(f"Unknown run type: {run_type}")
+        logger.warning("Unknown run type: %s", run_type)
 
 
 # ============================================
@@ -729,9 +729,9 @@ async def update_coach_config(new_config: dict) -> dict:
             if isinstance(value, expected_type):
                 validated_config[key] = value
             else:
-                logger.warning(f"Invalid type for config key {key}: expected {expected_type}, got {type(value)}")
+                logger.warning("Invalid type for config key %s: expected %s, got %s", key, expected_type, type(value))
         else:
-            logger.warning(f"Unknown config key: {key}")
+            logger.warning("Unknown config key: %s", key)
     
     if not validated_config:
         raise ValueError("No valid configuration updates provided")
@@ -753,7 +753,7 @@ async def update_coach_config(new_config: dict) -> dict:
     _config_cache = None
     _config_last_updated = None
     
-    logger.info(f"Harvest coach configuration updated: {validated_config}")
+    logger.info("Harvest coach configuration updated: %s", validated_config)
     return validated_config
 
 

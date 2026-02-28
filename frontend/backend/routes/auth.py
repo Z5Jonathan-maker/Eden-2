@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
 from fastapi.responses import JSONResponse
 from models import UserCreate, UserLogin, User, Token, ROLES
-from auth import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from auth import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, validate_password_strength
 from dependencies import db, get_current_active_user, require_role
+from security import check_rate_limit
 from datetime import datetime, timezone
 import uuid
 import logging
@@ -37,6 +38,14 @@ async def register(user_data: UserCreate, request: Request):
                     detail="Valid invite code required for registration"
                 )
 
+        # Validate password strength
+        password_error = validate_password_strength(user_data.password)
+        if password_error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=password_error
+            )
+
         # Check if user exists
         existing_user = await db.users.find_one({"email": user_data.email})
         if existing_user:
@@ -64,12 +73,17 @@ async def register(user_data: UserCreate, request: Request):
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @router.post("/login")
-async def login(credentials: UserLogin, response: Response):
+async def login(credentials: UserLogin, request: Request, response: Response):
     """Login user and set httpOnly cookie with JWT token"""
     try:
+        # Rate-limit login attempts by IP
+        client_ip = request.client.host if request.client else "unknown"
+        check_rate_limit(f"auth:{client_ip}", "auth")
+
         # Find user
         user = await db.users.find_one({"email": credentials.email})
         if not user:
+            logger.warning("Login failed – unknown email: %s from IP %s", credentials.email, client_ip)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
@@ -77,6 +91,7 @@ async def login(credentials: UserLogin, response: Response):
 
         # Verify password
         if not verify_password(credentials.password, user["password"]):
+            logger.warning("Login failed – bad password for %s from IP %s", credentials.email, client_ip)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
@@ -161,8 +176,9 @@ async def refresh_token(request: Request, response: Response):
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
-    # Issue new access token
+    # Issue new access token + rotate refresh token
     new_access = create_access_token(data={"sub": user_id})
+    new_refresh = create_refresh_token(data={"sub": user_id})
     is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
 
     response.set_cookie(
@@ -173,6 +189,17 @@ async def refresh_token(request: Request, response: Response):
         samesite="none" if is_production else "lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/"
+    )
+
+    # Rotate refresh token — old one becomes invalid on next use
+    response.set_cookie(
+        key="eden_refresh",
+        value=new_refresh,
+        httponly=True,
+        secure=is_production,
+        samesite="none" if is_production else "lax",
+        max_age=60 * 60 * 24 * 7,
+        path="/api/auth"
     )
 
     return {"access_token": new_access, "token_type": "bearer"}

@@ -69,7 +69,10 @@ async def start_email_scan(
     Kick off email scan + DNA analysis + template extraction.
     Runs synchronously (takes 30-60s depending on email count and LLM speed).
     """
+    from security import check_rate_limit
     user_id = current_user.get("id")
+    # Expensive operation — limit to 3 scans per 10 minutes per user
+    check_rate_limit(f"email_scan:{user_id}", "ai")
 
     # Check for existing scan in progress
     existing_job = await db.email_scan_jobs.find_one(

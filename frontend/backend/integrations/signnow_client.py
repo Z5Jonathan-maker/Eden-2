@@ -16,7 +16,7 @@ In-Person Signing Flow:
 5. SignNow webhook updates contract status
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
@@ -162,7 +162,7 @@ async def get_app_level_token() -> Optional[str]:
                 
                 return data["access_token"]
     except Exception as e:
-        print(f"[SignNow] Failed to get app token: {e}")
+        logger.error(f"[SignNow] Failed to get app token: {e}")
     
     return None
 
@@ -206,7 +206,7 @@ async def refresh_signnow_token(user_email: str, refresh_token: str) -> Optional
                 
                 return data["access_token"]
     except Exception as e:
-        print(f"[SignNow] Token refresh failed: {e}")
+        logger.error(f"[SignNow] Token refresh failed: {e}")
     
     return None
 
@@ -258,11 +258,14 @@ async def create_in_person_invite(
                     detail="Failed to upload contract to SignNow. Check that the contract PDF exists."
                 )
 
-            # Update contract with SignNow document ID
-            await db.contracts.update_one(
-                {"id": request.contract_id},
+            # Atomic conditional update — prevent double-upload race
+            result = await db.contracts.update_one(
+                {"id": request.contract_id, "signnow_document_id": {"$in": [None, ""]}},
                 {"$set": {"signnow_document_id": signnow_doc_id}}
             )
+            if result.matched_count == 0:
+                refreshed = await db.contracts.find_one({"id": request.contract_id}, {"_id": 0, "signnow_document_id": 1})
+                signnow_doc_id = refreshed.get("signnow_document_id") if refreshed else signnow_doc_id
 
         # Create embedded invite
         headers = {
@@ -355,89 +358,67 @@ async def create_in_person_invite(
 
 
 async def upload_contract_to_signnow(access_token: str, contract: dict, signer_email: str) -> Optional[str]:
-    """Upload a contract document to SignNow"""
+    """Upload a contract document to SignNow.
+
+    Generates the PDF dynamically from contract data, then uploads to SignNow.
+    Falls back to local file path if one exists.
+    """
     headers = {"Authorization": f"Bearer {access_token}"}
 
     try:
+        pdf_bytes = None
+        filename = f"contract_{contract.get('id', 'unknown')}.pdf"
+
+        # Priority 1: Local file path (if contract was pre-generated)
         file_path = contract.get("file_path") or contract.get("pdf_path")
         if file_path and os.path.exists(file_path):
-            async with httpx.AsyncClient() as client:
-                with open(file_path, "rb") as f:
-                    files = {"file": (os.path.basename(file_path), f, "application/pdf")}
-                    resp = await client.post(
-                        f"{SIGNNOW_API_BASE}/document",
-                        files=files,
-                        headers=headers,
-                        timeout=30.0
-                    )
-                    if resp.status_code in [200, 201]:
-                        return resp.json().get("id")
-                    print(f"[SignNow] Upload failed: {resp.status_code} {resp.text}")
+            with open(file_path, "rb") as f:
+                pdf_bytes = f.read()
+            filename = os.path.basename(file_path)
         else:
-            print(f"[SignNow] No local file for contract {contract.get('id')}")
+            # Priority 2: Generate PDF dynamically from contract data
+            try:
+                template_id = contract.get("template_id", "")
+                if template_id == "dfs-h1-1982-disclosure":
+                    # DFS Disclosure: generate from scratch using the contracts route generator
+                    from routes.contracts import _generate_dfs_disclosure_pdf
+                    import io as _io
+                    field_values = contract.get("field_values", {})
+                    doc = _generate_dfs_disclosure_pdf(contract, field_values)
+                    pdf_buf = _io.BytesIO()
+                    doc.save(pdf_buf)
+                    doc.close()
+                    pdf_bytes = pdf_buf.getvalue()
+                    filename = f"DFS_Disclosure_{contract.get('id', 'unknown')}.pdf"
+                else:
+                    # PA Agreement: overlay on template
+                    from services.contracts_pdf import build_contract_pdf_bytes
+                    pdf_url = "https://customer-assets.emergentagent.com/job_eden-insurance/artifacts/2wnjf18n_Care%20Claims%20Contract%20New.pdf"
+                    pdf_bytes = await build_contract_pdf_bytes(contract, pdf_url)
+            except Exception as gen_err:
+                logger.error(f"[SignNow] PDF generation failed: {gen_err}")
+                return None
+
+        if not pdf_bytes:
+            logger.warning(f"[SignNow] No PDF content for contract {contract.get('id')}")
+            return None
+
+        async with httpx.AsyncClient() as client:
+            files = {"file": (filename, pdf_bytes, "application/pdf")}
+            resp = await client.post(
+                f"{SIGNNOW_API_BASE}/document",
+                files=files,
+                headers=headers,
+                timeout=30.0
+            )
+            if resp.status_code in [200, 201]:
+                return resp.json().get("id")
+            logger.error(f"[SignNow] Upload failed: {resp.status_code}")
+
     except Exception as e:
-        print(f"[SignNow] Document upload error: {e}")
+        logger.error(f"[SignNow] Document upload error: {e}")
 
     return None
-
-
-def create_mock_signing_response(contract_id: str, signer_name: str) -> dict:
-    """Create a mock signing response when SignNow is not configured"""
-    return {
-        "signing_link": f"/contracts/{contract_id}/sign-demo?signer={signer_name}",
-        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=45)).isoformat(),
-        "contract_id": contract_id,
-        "signer_name": signer_name,
-        "mock": True,
-        "message": "SignNow not configured. Using demo signing page."
-    }
-
-
-@router.post("/complete-signing/{contract_id}")
-async def complete_in_person_signing(
-    contract_id: str,
-    signature_data: str = Form(None),
-    current_user: dict = Depends(get_current_active_user)
-):
-    """
-    Mark a contract as signed after in-person signing completes.
-    Called after the client finishes signing on the device.
-    """
-    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    # Update contract status
-    await db.contracts.update_one(
-        {"id": contract_id},
-        {"$set": {
-            "status": "signed",
-            "signed_at": datetime.now(timezone.utc).isoformat(),
-            "signed_in_person": True,
-            "signature_data": signature_data  # Base64 signature image if captured locally
-        }}
-    )
-    
-    # If contract is linked to a claim, update claim
-    if contract.get("claim_id"):
-        await db.claims.update_one(
-            {"id": contract["claim_id"]},
-            {"$push": {
-                "events": {
-                    "type": "contract_signed",
-                    "contract_id": contract_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "details": "Contract signed in person"
-                }
-            }}
-        )
-    
-    return {
-        "contract_id": contract_id,
-        "status": "signed",
-        "signed_at": datetime.now(timezone.utc).isoformat(),
-        "message": "Contract signed successfully"
-    }
 
 
 @router.get("/signing-status/{contract_id}")
@@ -524,6 +505,6 @@ class SignNowClient:
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
-            print(f"[SignNow] Status check error: {e}")
+            logger.error(f"[SignNow] Status check error: {e}")
         
         return {"status": "unknown", "error": "Failed to check status"}

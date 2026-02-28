@@ -146,10 +146,10 @@ def can_access_resource(user: dict, resource: dict, resource_type: str) -> bool:
     
     # Adjuster access rules
     if user_role == UserRole.ADJUSTER.value:
-        # Check if assigned to
-        if resource.get("assigned_to") == user.get("full_name"):
-            return True
+        # Check if assigned to (prefer ID match; fall back to name for legacy data)
         if resource.get("assigned_to_id") == user_id:
+            return True
+        if resource.get("assigned_to") == user.get("full_name"):
             return True
         # Check if created by
         if resource.get("created_by") == user_id:
@@ -244,7 +244,7 @@ rate_limiter = RateLimiter()
 
 # Rate limit configurations by endpoint type
 RATE_LIMITS = {
-    "auth": {"limit": 10, "window": 60, "block": 300},      # 10/min, block 5min
+    "auth": {"limit": 5, "window": 60, "block": 300},       # 5/min, block 5min
     "ai": {"limit": 30, "window": 60, "block": 60},         # 30/min, block 1min
     "upload": {"limit": 50, "window": 60, "block": 120},    # 50/min, block 2min
     "api": {"limit": 100, "window": 60, "block": 60},       # 100/min, block 1min

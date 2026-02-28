@@ -91,7 +91,7 @@ async def update_assistant_config(
     
     await db.voice_assistant_config.insert_one(new_config)
     
-    logger.info(f"Voice assistant config updated to version {new_version}")
+    logger.info("Voice assistant config updated to version %d", new_version)
     return {"message": "Configuration updated", "version": new_version}
 
 
@@ -118,7 +118,7 @@ async def toggle_assistant(
         await db.voice_assistant_config.insert_one(new_config)
     
     status = "enabled" if enabled else "disabled"
-    logger.info(f"Voice assistant {status} by {current_user.get('email')}")
+    logger.info("Voice assistant %s by %s", status, current_user.get('email'))
     return {"message": f"Voice assistant {status}", "enabled": enabled}
 
 

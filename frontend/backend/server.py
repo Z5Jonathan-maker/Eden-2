@@ -6,6 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
 from typing import List
+import asyncio
 import os
 import logging
 import uuid
@@ -448,15 +449,29 @@ async def startup_event():
     await ensure_workbooks_exist()
     await initialize_harvest_gamification()
     await initialize_background_scheduler()
-    # Ensure inspection photo dedup index
+    # Ensure database indexes for performance
     try:
         from dependencies import db as startup_db
         await startup_db.inspection_photos.create_index(
             [("claim_id", 1), ("sha256_hash", 1)],
             background=True, sparse=True
         )
+        # Notification indexes — queried on every poll (every 15s per user)
+        await startup_db.notifications.create_index(
+            [("user_id", 1), ("is_read", 1), ("created_at", -1)],
+            background=True
+        )
+        await startup_db.notifications.create_index(
+            [("user_id", 1), ("created_at", -1)],
+            background=True
+        )
+        # Contract indexes
+        await startup_db.contracts.create_index(
+            [("claim_id", 1), ("status", 1)],
+            background=True
+        )
     except Exception as e:
-        logging.warning(f"Could not create inspection photo dedup index: {e}")
+        logging.warning(f"Could not create database indexes: {e}")
 
 
 async def ensure_workbooks_exist():
@@ -533,33 +548,73 @@ async def ensure_admin_user():
 # WebSocket endpoint for real-time notifications
 @app.websocket("/ws/notifications")
 async def websocket_notifications(websocket: WebSocket, token: str = None):
-    """WebSocket endpoint for real-time notifications"""
+    """WebSocket endpoint for real-time notifications.
+
+    Auth flow (in priority order):
+    1. Query-param token  — ``/ws/notifications?token=<jwt>``
+    2. Message-based auth — first message ``{"type":"auth","token":"<jwt>"}``
+    The frontend uses method 2 (avoids leaking tokens in access logs).
+    """
+    import json as _json
+
     user_id = None
     try:
-        # Authenticate the WebSocket connection
-        if not token:
-            await websocket.close(code=4001, reason="Missing token")
-            return
-        
-        payload = decode_access_token(token)
-        if not payload:
-            await websocket.close(code=4001, reason="Invalid token")
-            return
-        
-        user_id = payload.get("sub")
-        if not user_id:
-            await websocket.close(code=4001, reason="Invalid token payload")
-            return
-        
-        # Accept connection and register
-        await manager.connect(websocket, user_id)
-        
+        # --- Method 1: query-param token (legacy / direct clients) ---
+        if token:
+            payload = decode_access_token(token)
+            if not payload or not payload.get("sub"):
+                await websocket.close(code=4001, reason="Invalid token")
+                return
+            user_id = payload["sub"]
+            await manager.connect(websocket, user_id)
+        else:
+            # --- Method 2: message-based auth (frontend) ---
+            # Accept first so the client can send the auth message.
+            await websocket.accept()
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=10)
+            except (asyncio.TimeoutError, WebSocketDisconnect):
+                try:
+                    await websocket.close(code=4001, reason="Auth timeout")
+                except Exception:
+                    pass
+                return
+
+            try:
+                auth_msg = _json.loads(raw)
+            except (ValueError, TypeError):
+                try:
+                    await websocket.close(code=4001, reason="Invalid auth message")
+                except Exception:
+                    pass
+                return
+
+            auth_token = auth_msg.get("token") if isinstance(auth_msg, dict) else None
+            if not auth_token:
+                try:
+                    await websocket.close(code=4001, reason="Missing token")
+                except Exception:
+                    pass
+                return
+
+            payload = decode_access_token(auth_token)
+            if not payload or not payload.get("sub"):
+                try:
+                    await websocket.close(code=4001, reason="Invalid token")
+                except Exception:
+                    pass
+                return
+
+            user_id = payload["sub"]
+            # Register via manager (enforces per-user connection cap)
+            await manager.register_accepted(websocket, user_id)
+
         # Send initial connection success message
         await websocket.send_json({
             "type": "connected",
             "message": "WebSocket connected successfully"
         })
-        
+
         # Keep connection alive and handle incoming messages
         while True:
             try:
@@ -572,7 +627,7 @@ async def websocket_notifications(websocket: WebSocket, token: str = None):
             except Exception as e:
                 logger.error(f"WebSocket receive error: {e}")
                 break
-                
+
     except WebSocketDisconnect:
         pass
     except Exception as e:

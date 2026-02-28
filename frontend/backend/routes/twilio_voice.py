@@ -22,9 +22,14 @@ logger = logging.getLogger(__name__)
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
 
 async def validate_twilio_request(request: Request):
-    """Validate Twilio webhook signature. Skips if auth token not configured."""
+    """Validate Twilio webhook signature. Rejects in production if token not configured."""
     if not TWILIO_AUTH_TOKEN:
-        return  # Twilio not configured — allow through for dev
+        is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+        if is_production:
+            logger.error("TWILIO_AUTH_TOKEN not configured in production — rejecting webhook")
+            raise HTTPException(status_code=403, detail="Twilio auth not configured")
+        logger.warning("TWILIO_AUTH_TOKEN not set — skipping signature validation (dev only)")
+        return
     try:
         from twilio.request_validator import RequestValidator
         validator = RequestValidator(TWILIO_AUTH_TOKEN)
@@ -33,12 +38,12 @@ async def validate_twilio_request(request: Request):
         # Reconstruct the full URL Twilio used to call us
         url = str(request.url).split("?")[0]  # Strip query params
         if not validator.validate(url, dict(form_data), signature):
-            logger.warning(f"Invalid Twilio signature for {request.url.path}")
+            logger.warning("Invalid Twilio signature for %s", request.url.path)
             raise HTTPException(status_code=403, detail="Invalid Twilio signature")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Twilio signature validation error: {e}")
+        logger.error("Twilio signature validation error: %s", e)
         raise HTTPException(status_code=403, detail="Webhook validation failed")
 
 router = APIRouter(prefix="/api/twilio/voice", tags=["voice"])
@@ -187,7 +192,7 @@ def is_within_business_hours(business_hours: dict) -> bool:
         return open_time <= current_time <= close_time
         
     except Exception as e:
-        logger.error(f"Error checking business hours: {e}")
+        logger.error("Error checking business hours: %s", e)
         return True  # Default to open if error
 
 
@@ -208,7 +213,7 @@ def format_appointment_time(appointment: dict) -> str:
     try:
         start_time = datetime.fromisoformat(appointment.get("start_time", "").replace("Z", "+00:00"))
         return start_time.strftime("%A, %B %d at %I:%M %p")
-    except:
+    except Exception:
         return appointment.get("start_time", "your scheduled time")
 
 
@@ -225,7 +230,7 @@ async def handle_inbound_call(request: Request):
         from_number = form_data.get("From", "")
         to_number = form_data.get("To", "")
         
-        logger.info(f"Inbound call: {call_sid} from {from_number} to {to_number}")
+        logger.info("Inbound call: %s from %s to %s", call_sid, from_number, to_number)
         
         # Load configurations
         config = await get_active_assistant_config()
@@ -287,7 +292,7 @@ async def handle_inbound_call(request: Request):
             )
             
     except Exception as e:
-        logger.error(f"Error handling inbound call: {e}")
+        logger.error("Error handling inbound call: %s", e)
         # Return a safe fallback response
         response = VoiceResponse()
         response.say(
@@ -436,7 +441,7 @@ async def handle_appointment_response(request: Request):
         call_log_id = request.query_params.get("call_log_id")
         appointment_id = request.query_params.get("appointment_id")
         
-        logger.info(f"Appointment response: {digits} for call {call_sid}")
+        logger.info("Appointment response: %s for call %s", digits, call_sid)
         
         scripts = await get_active_script_set()
         if not scripts:
@@ -522,7 +527,7 @@ async def handle_appointment_response(request: Request):
         return Response(content=str(response), media_type="application/xml")
         
     except Exception as e:
-        logger.error(f"Error handling appointment response: {e}")
+        logger.error("Error handling appointment response: %s", e)
         response = VoiceResponse()
         response.say("Thank you. Goodbye.", voice=TTS_VOICE, language=TTS_LANGUAGE)
         return Response(content=str(response), media_type="application/xml")
@@ -580,7 +585,7 @@ async def handle_recording(request: Request):
         call_log_id = request.query_params.get("call_log_id")
         intent_override = request.query_params.get("intent")
         
-        logger.info(f"Recording complete: {call_sid}, duration: {recording_duration}s")
+        logger.info("Recording complete: %s, duration: %ds", call_sid, recording_duration)
         
         # Update call log with recording info
         update_data = {
@@ -625,7 +630,7 @@ async def handle_recording(request: Request):
         return Response(content=str(response), media_type="application/xml")
         
     except Exception as e:
-        logger.error(f"Error handling recording: {e}")
+        logger.error("Error handling recording: %s", e)
         response = VoiceResponse()
         response.say("Thank you for your message. Goodbye.", voice=TTS_VOICE, language=TTS_LANGUAGE)
         return Response(content=str(response), media_type="application/xml")
@@ -641,7 +646,7 @@ async def handle_call_status(request: Request):
         call_status = form_data.get("CallStatus", "")
         call_duration = form_data.get("CallDuration", "0")
         
-        logger.info(f"Call status update: {call_sid} -> {call_status}")
+        logger.info("Call status update: %s -> %s", call_sid, call_status)
         
         # Update call log if call completed
         if call_status in ["completed", "busy", "no-answer", "failed"]:
@@ -658,5 +663,5 @@ async def handle_call_status(request: Request):
         return PlainTextResponse("OK")
         
     except Exception as e:
-        logger.error(f"Error handling call status: {e}")
+        logger.error("Error handling call status: %s", e)
         return PlainTextResponse("OK")

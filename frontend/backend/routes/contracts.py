@@ -4,7 +4,7 @@ Integrates with SignNow for electronic signatures
 """
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
@@ -15,6 +15,7 @@ import re
 
 from dependencies import db, get_current_active_user as get_current_user
 from services.signnow_service import SignNowService
+from services.contracts_pdf import PA_AGREEMENT_FIELD_POSITIONS
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 logger = logging.getLogger(__name__)
@@ -157,13 +158,16 @@ class ContractCreate(BaseModel):
     template_id: str
     claim_id: str  # REQUIRED - contracts must be linked to claims
     client_name: str
-    client_email: str
+    client_email: str = ""  # Optional for DFS Disclosure (only name + signature needed)
+    client_phone: Optional[str] = None
     field_values: Dict[str, Any]  # Filled-in field values
 
 
 class ContractSendRequest(BaseModel):
-    signer_email: str
+    signer_email: str = ""
     signer_name: str
+    signer_phone: Optional[str] = None
+    delivery_method: Optional[str] = "email"  # "email" or "sms"
     subject: Optional[str] = None
     message: Optional[str] = None
 
@@ -417,6 +421,7 @@ async def create_contract(
         "claim_id": contract.claim_id,
         "client_name": contract.client_name,
         "client_email": contract.client_email,
+        "client_phone": contract.client_phone or "",
         "field_values": contract.field_values,
         "status": "draft",
         "created_by": current_user.get("id"),
@@ -556,13 +561,33 @@ async def send_contract_for_signature(
         doc_id = contract.get("signnow_document_id")
         
         if not doc_id:
-            # Need to upload document first
-            # For now, return instructions
-            return {
-                "status": "needs_upload",
-                "message": "Contract needs to be uploaded to SignNow first",
-                "contract_id": contract_id
-            }
+            # Auto-upload contract PDF to SignNow before sending
+            try:
+                doc_id = await upload_contract_to_signnow(
+                    signnow_token, contract, request.signer_email
+                )
+                if doc_id:
+                    # Atomic conditional update — prevent double-upload race
+                    result = await db.contracts.update_one(
+                        {"id": contract_id, "signnow_document_id": {"$in": [None, ""]}},
+                        {"$set": {"signnow_document_id": doc_id}}
+                    )
+                    if result.matched_count == 0:
+                        refreshed = await db.contracts.find_one({"id": contract_id}, {"_id": 0, "signnow_document_id": 1})
+                        doc_id = refreshed.get("signnow_document_id") if refreshed else doc_id
+                else:
+                    return {
+                        "status": "upload_failed",
+                        "message": "Failed to upload contract to SignNow. Try the in-person signing flow instead.",
+                        "contract_id": contract_id
+                    }
+            except Exception as upload_err:
+                logger.error("Failed to auto-upload contract %s to SignNow: %s", contract_id, upload_err)
+                return {
+                    "status": "upload_failed",
+                    "message": "Failed to upload contract to SignNow. Check your SignNow configuration.",
+                    "contract_id": contract_id
+                }
         
         # Send for signature
         subject = request.subject or f"Please sign: {contract['template_name']}"
@@ -577,19 +602,24 @@ async def send_contract_for_signature(
         )
         
         # Update contract status
+        update_set = {
+            "status": "pending",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "signer_email": request.signer_email,
+            "signer_name": request.signer_name,
+            "delivery_method": request.delivery_method or "email",
+        }
+        if request.signer_phone:
+            update_set["signer_phone"] = request.signer_phone
         await db.contracts.update_one(
             {"id": contract_id},
-            {"$set": {
-                "status": "pending",
-                "sent_at": datetime.now(timezone.utc).isoformat(),
-                "signer_email": request.signer_email,
-                "signer_name": request.signer_name
-            }}
+            {"$set": update_set}
         )
-        
+
+        delivery_target = request.signer_email if request.delivery_method != "sms" else request.signer_phone
         return {
             "status": "sent",
-            "message": f"Contract sent to {request.signer_email}",
+            "message": f"Contract sent to {delivery_target}",
             "invite_id": result.get("invite_id")
         }
         
@@ -617,20 +647,23 @@ async def get_contract_signature_status(
         signnow = SignNowService(signnow_token)
         result = await signnow.get_document_status(doc_id)
         
-        # Update local status if signed
-        if result.get("status") == "completed":
-            await db.contracts.update_one(
-                {"id": contract_id},
-                {"$set": {
-                    "status": "signed",
-                    "signed_at": datetime.now(timezone.utc).isoformat()
-                }}
+        # Update local status if signed remotely
+        if result.get("status") == "completed" and contract.get("status") != "signed":
+            now = datetime.now(timezone.utc).isoformat()
+            update_result = await db.contracts.update_one(
+                {"id": contract_id, "status": {"$ne": "signed"}},
+                {"$set": {"status": "signed", "signed_at": now}}
             )
-        
+            # Send signed copy email only if we just transitioned to signed
+            if update_result.modified_count > 0:
+                updated_contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0}) or contract
+                await _send_signed_copy_email(updated_contract, contract_id)
+
         return result
         
     except Exception as e:
-        return {"status": contract.get("status", "draft"), "error": str(e)}
+        logger.warning(f"SignNow status check failed for {contract_id}: {e}")
+        return {"status": contract.get("status", "draft")}
 
 
 @router.get("/{contract_id}/download")
@@ -653,7 +686,7 @@ async def download_contract(
                 io.BytesIO(content),
                 media_type="application/pdf",
                 headers={
-                    "Content-Disposition": f"attachment; filename=contract_{contract_id}.pdf"
+                    "Content-Disposition": f'attachment; filename="contract_{contract_id}.pdf"'
                 }
             )
         except Exception as e:
@@ -839,10 +872,26 @@ async def generate_filled_pdf(
     import base64
 
     contract = await _get_contract_for_user_or_403(contract_id, current_user)
-    field_values = contract.get("field_values", {})
+    raw_field_values = contract.get("field_values", {})
     signature_data = contract.get("signature_data")
     template_id = contract.get("template_id", "")
     template = _get_builtin_template(template_id) or CARE_CLAIMS_TEMPLATE
+
+    # Map frontend ContractMergeFields keys → PA template field IDs
+    # so PDFs fill correctly regardless of which naming convention was stored
+    _MERGE_TO_PA_MAP = {
+        "client_name": "policyholder_name",
+        "email": "policyholder_email",
+        "client_address": "policyholder_address",
+        "phone": "policyholder_phone",
+        "carrier": "insurance_company",
+        "property_address": "loss_address",
+        "loss_date": "date_of_loss",
+    }
+    field_values = dict(raw_field_values)
+    for merge_key, pa_key in _MERGE_TO_PA_MAP.items():
+        if merge_key in field_values and pa_key not in field_values:
+            field_values[pa_key] = field_values[merge_key]
 
     try:
         # ── DFS Disclosure: generate from scratch ──
@@ -859,33 +908,10 @@ async def generate_filled_pdf(
 
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
+            # Single source of truth: shared constant from contracts_pdf.py
             # All fill-in fields: 12pt Regular (Helvetica)
             # Fee disclosure percentage: 18pt Bold (Helvetica-Bold) — FL DFS non-negotiable
-            field_positions = {
-                "policyholder_name": {"page": 0, "x": 160, "y": 148, "fontsize": 12},
-                "policyholder_email": {"page": 0, "x": 160, "y": 163, "fontsize": 12},
-                "policyholder_address": {"page": 0, "x": 160, "y": 178, "fontsize": 12},
-                "policyholder_city": {"page": 0, "x": 160, "y": 193, "fontsize": 12},
-                "policyholder_state": {"page": 0, "x": 320, "y": 193, "fontsize": 12},
-                "policyholder_zip": {"page": 0, "x": 380, "y": 193, "fontsize": 12},
-                "policyholder_phone": {"page": 0, "x": 160, "y": 208, "fontsize": 12},
-                "policyholder_mobile": {"page": 0, "x": 320, "y": 208, "fontsize": 12},
-                "insurance_company": {"page": 0, "x": 160, "y": 258, "fontsize": 12},
-                "policy_number": {"page": 0, "x": 400, "y": 258, "fontsize": 12},
-                "claim_number": {"page": 0, "x": 160, "y": 273, "fontsize": 12},
-                "insurance_address": {"page": 0, "x": 160, "y": 288, "fontsize": 12},
-                "field_adjuster": {"page": 0, "x": 160, "y": 303, "fontsize": 12},
-                "field_adjuster_phone": {"page": 0, "x": 400, "y": 303, "fontsize": 12},
-                "desk_adjuster": {"page": 0, "x": 160, "y": 318, "fontsize": 12},
-                "desk_adjuster_phone": {"page": 0, "x": 400, "y": 318, "fontsize": 12},
-                "loss_address": {"page": 0, "x": 160, "y": 368, "fontsize": 12},
-                "loss_city": {"page": 0, "x": 160, "y": 383, "fontsize": 12},
-                "loss_state_zip": {"page": 0, "x": 320, "y": 383, "fontsize": 12},
-                "date_of_loss": {"page": 0, "x": 160, "y": 398, "fontsize": 12},
-                "description_of_loss": {"page": 0, "x": 160, "y": 413, "fontsize": 12, "width": 400},
-                "claim_type": {"page": 0, "x": 160, "y": 443, "fontsize": 12},
-                "fee_percentage": {"page": 0, "x": 400, "y": 478, "fontsize": 18, "bold": True},
-            }
+            field_positions = PA_AGREEMENT_FIELD_POSITIONS
 
             for field_id, pos in field_positions.items():
                 value = field_values.get(field_id, "")
@@ -947,7 +973,7 @@ async def generate_filled_pdf(
         return StreamingResponse(
             pdf_output,
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
         )
 
     except Exception as e:
@@ -955,7 +981,7 @@ async def generate_filled_pdf(
         fallback_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
         return {
             "pdf_url": fallback_url,
-            "message": f"PDF generation failed: {str(e)}. Download blank template instead.",
+            "message": "PDF generation failed. Download blank template instead.",
             "field_values": field_values,
         }
 # Pre-fill from Claim
@@ -1069,10 +1095,15 @@ async def sign_contract_in_person(
                 status_code=502,
                 detail="Failed to upload contract to SignNow. Ensure the contract PDF exists."
             )
-        await db.contracts.update_one(
-            {"id": contract_id},
+        # Atomic conditional update — only set if still None (prevents double-upload race)
+        result = await db.contracts.update_one(
+            {"id": contract_id, "signnow_document_id": {"$in": [None, ""]}},
             {"$set": {"signnow_document_id": signnow_doc_id}}
         )
+        if result.matched_count == 0:
+            # Another request already uploaded — use their document ID
+            refreshed = await db.contracts.find_one({"id": contract_id}, {"_id": 0, "signnow_document_id": 1})
+            signnow_doc_id = refreshed.get("signnow_document_id") if refreshed else signnow_doc_id
 
     try:
         headers = {
@@ -1145,8 +1176,8 @@ async def sign_contract_in_person(
 
 
 class CompleteSigningRequest(BaseModel):
-    signature_data: Optional[str] = None  # Base64 encoded signature image
-    signer_name: Optional[str] = None
+    signature_data: Optional[str] = Field(default=None, max_length=500_000)  # Base64 signature (max ~375KB image)
+    signer_name: Optional[str] = Field(default=None, max_length=200)
     signed_in_person: bool = True
 
 
@@ -1156,37 +1187,54 @@ async def _send_signed_copy_email(contract: dict, contract_id: str):
         client_email = contract.get("client_email")
         client_name = contract.get("client_name", "Policyholder")
         if not client_email:
-            logger.warning(f"[Contract {contract_id}] No client email — cannot send signed copy")
+            logger.warning("[Contract %s] No client email — cannot send signed copy", contract_id)
             return
 
-        # Try to send via backend email service
         try:
             from services.email_service import send_email
             template_id = contract.get("template_id", "")
             is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
             doc_type = "DFS Disclosure" if is_dfs else "PA Agreement"
-            pdf_download_url = f"/api/contracts/{contract_id}/pdf"
+
+            # Build proper HTML email with download link
+            base_url = os.environ.get("BACKEND_URL", os.environ.get("REACT_APP_BACKEND_URL", ""))
+            pdf_url = f"{base_url}/api/contracts/{contract_id}/pdf" if base_url else ""
+            download_section = (
+                f'<p><a href="{pdf_url}" style="color:#2563eb;text-decoration:underline;">'
+                f'Download Your Signed {doc_type}</a></p>'
+            ) if pdf_url else ""
+
+            html_body = (
+                f"<div style='font-family:Arial,sans-serif;max-width:600px;'>"
+                f"<p>Dear {client_name},</p>"
+                f"<p>Your <strong>{doc_type}</strong> has been signed successfully.</p>"
+                f"{download_section}"
+                f"<p>A copy of your signed document is attached to this email for your records.</p>"
+                f"<p>If you have any questions, please contact your public adjuster.</p>"
+                f"<br>"
+                f"<p>— Care Claims / Operation Eden</p>"
+                f"<hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0;'>"
+                f"<p style='font-size:11px;color:#6b7280;'>"
+                f"Per Florida Statute §626.854, you are entitled to receive a copy of all "
+                f"signed documents. Please retain this email for your records.</p>"
+                f"</div>"
+            )
 
             await send_email(
                 to_email=client_email,
                 subject=f"Your Signed {doc_type} — Care Claims",
-                body=(
-                    f"Dear {client_name},\n\n"
-                    f"Your {doc_type} has been signed successfully. "
-                    f"A copy of your signed document is available for download at the link below.\n\n"
-                    f"If you have any questions, please contact your public adjuster.\n\n"
-                    f"— Care Claims / Operation Eden"
-                ),
-                metadata={"contract_id": contract_id, "type": "signed_copy"},
+                html_content=html_body,
             )
-            logger.info(f"[Contract {contract_id}] Signed copy email sent to {client_email}")
+            logger.info("[Contract %s] Signed copy email sent to %s", contract_id, client_email)
         except ImportError:
-            # Email service not available — log but don't block signing
-            logger.warning(f"[Contract {contract_id}] Email service not available. "
-                           f"Signed copy NOT sent to {client_email}. "
-                           f"FL §626.854 requires policyholder receive a copy.")
+            logger.warning(
+                "[Contract %s] Email service not available. "
+                "Signed copy NOT sent to %s. "
+                "FL §626.854 requires policyholder receive a copy.",
+                contract_id, client_email
+            )
     except Exception as e:
-        logger.error(f"[Contract {contract_id}] Failed to send signed copy email: {e}")
+        logger.error("[Contract %s] Failed to send signed copy email: %s", contract_id, e)
 
 
 @router.post("/{contract_id}/complete-signing")
@@ -1235,11 +1283,19 @@ async def complete_contract_signing(
         or contract.get("client_name")
     )
 
-    # Update contract status to signed
-    await db.contracts.update_one(
-        {"id": contract_id},
+    # Atomic conditional update — only sign if still in a signable state (prevents double-signing)
+    sign_result = await db.contracts.update_one(
+        {"id": contract_id, "status": {"$in": list(signable_states)}},
         {"$set": update_data}
     )
+    if sign_result.matched_count == 0:
+        # Already signed by another concurrent request — return success (idempotent)
+        return {
+            "contract_id": contract_id,
+            "status": "signed",
+            "message": "Contract was already signed",
+            "has_signature": bool(contract.get("signature_data"))
+        }
 
     # If contract is linked to a claim, add event to claim
     if contract.get("claim_id"):
@@ -1264,7 +1320,21 @@ async def complete_contract_signing(
     )
 
     # FL §626.854: Send signed copy to policyholder
-    await _send_signed_copy_email(contract, contract_id)
+    # Re-fetch contract after update so email has latest data (signature, signer_name, etc.)
+    updated_contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0}) or contract
+    await _send_signed_copy_email(updated_contract, contract_id)
+
+    # Notify team about the signed contract
+    try:
+        from routes.notifications import notify_contract_signed
+        await notify_contract_signed(
+            claim_id=contract.get("claim_id", ""),
+            contract_id=contract_id,
+            client_name=contract.get("client_name", "Client"),
+            signer_user_id=current_user.get("id"),
+        )
+    except Exception as e:
+        logger.warning("Failed to send contract signed notification: %s", e)
 
     return {
         "contract_id": contract_id,

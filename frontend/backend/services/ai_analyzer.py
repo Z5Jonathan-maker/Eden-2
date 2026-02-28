@@ -56,7 +56,7 @@ class AIAnalyzer:
             return self._parse_ai_response(response, comparison_result)
             
         except Exception as e:
-            logger.error(f"AI analysis failed: {str(e)}")
+            logger.error("AI analysis failed: %s", e)
             # Return a fallback analysis
             return self._generate_fallback_analysis(comparison_result)
     
@@ -239,7 +239,7 @@ The contractor estimate totals ${summary.get('contractor_total', 0):,.2f}, which
             return response
             
         except Exception as e:
-            logger.error(f"Failed to generate dispute letter: {str(e)}")
+            logger.error("Failed to generate dispute letter: %s", e)
             return "Error generating dispute letter. Please try again or compose manually."
 
 

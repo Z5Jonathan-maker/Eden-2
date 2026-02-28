@@ -414,7 +414,7 @@ async def delete_claim(
     """Soft-delete a claim (admin only). Use permanent=true for hard delete."""
     return await service.delete_claim(claim_id, permanent, current_user)
 
-@router.post("/{claim_id}/restore", response_model=Claim)
+@router.post("/{claim_id}/restore")
 async def restore_claim(
     claim_id: str,
     current_user: dict = Depends(require_role(["admin"])),
@@ -440,7 +440,7 @@ async def add_note(
         note_dict["author_name"] = current_user["full_name"]
         
         note_obj = Note(**note_dict)
-        await db.notes.insert_one(note_obj.dict())
+        await db.notes.insert_one(note_obj.model_dump())
         
         logger.info(f"Note added to claim: {claim_id}")
         return note_obj
@@ -506,7 +506,7 @@ async def upload_document(
         }
         
         doc_obj = Document(**doc_dict)
-        await db.documents.insert_one(doc_obj.dict())
+        await db.documents.insert_one(doc_obj.model_dump())
         
         logger.info(f"Document uploaded to claim: {claim_id}")
         return doc_obj
@@ -550,7 +550,13 @@ async def download_document(
     file_path = doc.get("file_path")
     if not file_path or not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found on disk")
-    return FileResponse(file_path, filename=doc.get("name", "download"), media_type="application/octet-stream")
+    # Validate file is within allowed upload directory to prevent path traversal
+    base_upload_dir = os.path.realpath(os.getenv("UPLOAD_DIR", "/tmp/eden_uploads"))
+    real_path = os.path.realpath(file_path)
+    if not real_path.startswith(base_upload_dir):
+        logger.warning(f"Path traversal blocked: {file_path} resolves outside {base_upload_dir}")
+        raise HTTPException(status_code=403, detail="Access denied")
+    return FileResponse(real_path, filename=doc.get("name", "download"), media_type="application/octet-stream")
 
 
 # ──────────────────────────────────────────────
@@ -652,5 +658,6 @@ async def batch_claims_action(
             results["success"] += 1
         except Exception as e:
             results["failed"] += 1
-            results["errors"].append({"id": cid, "error": str(e)})
+            logger.warning(f"Batch operation failed for claim {cid}: {e}")
+            results["errors"].append({"id": cid, "error": "Operation failed"})
     return results

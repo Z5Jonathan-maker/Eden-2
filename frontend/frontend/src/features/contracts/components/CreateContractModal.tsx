@@ -242,7 +242,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
               </div>
             ) : isDfs ? (
               /* ── DFS Disclosure Fields ── */
-              <div className="mt-4 grid grid-cols-2 gap-6">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="col-span-2 text-xs uppercase tracking-wide text-amber-300">
                   Insured Information
                 </div>
@@ -255,7 +255,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
               </div>
             ) : (
               /* ── PA Agreement Fields ── */
-              <div className="mt-4 grid grid-cols-2 gap-6">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="col-span-2 text-xs uppercase tracking-wide text-cyan-300">
                   Client Information
                 </div>

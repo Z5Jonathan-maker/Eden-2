@@ -3,12 +3,13 @@ from fastapi.responses import RedirectResponse
 from dependencies import db, get_current_active_user
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import uuid
 import httpx
 import logging
 from urllib.parse import urlencode
+from services.encryption_service import encryption
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +28,16 @@ BASE_URL = os.environ.get("BASE_URL", "http://localhost:8001").strip().rstrip("/
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").strip().rstrip("/")
 
 
+_OAUTH_STATE_TTL_MINUTES = 10  # State parameters expire after 10 minutes
+
+
 def _resolve_base_url(request: Optional[Request] = None) -> str:
     """Resolve API public base URL, preferring env but falling back to request headers."""
     configured = os.environ.get("BASE_URL", "").strip().rstrip("/")
     if configured:
         return configured
+
+    is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
 
     if request:
         proto = (
@@ -39,11 +45,36 @@ def _resolve_base_url(request: Optional[Request] = None) -> str:
             or request.url.scheme
             or "https"
         )
+        # Force HTTPS in production regardless of header
+        if is_production:
+            proto = "https"
         host = request.headers.get("x-forwarded-host") or request.headers.get("host")
         if host:
             return f"{proto}://{host}".rstrip("/")
 
     return BASE_URL
+
+
+async def _validate_oauth_state(state: str, provider: str) -> dict:
+    """Validate and consume an OAuth state parameter. Checks TTL and returns state doc."""
+    state_doc = await db.oauth_states.find_one({"state": state, "provider": provider})
+    if not state_doc:
+        return None
+
+    # Check TTL
+    created_at_str = state_doc.get("created_at", "")
+    try:
+        created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) - created_at > timedelta(minutes=_OAUTH_STATE_TTL_MINUTES):
+            logger.warning("OAuth state expired for provider=%s (created %s)", provider, created_at_str)
+            await db.oauth_states.delete_one({"state": state})
+            return None
+    except (ValueError, TypeError):
+        logger.warning("OAuth state has invalid created_at: %s", created_at_str)
+
+    # Consume the state (single-use)
+    await db.oauth_states.delete_one({"state": state})
+    return state_doc
 
 class OAuthStatus(BaseModel):
     provider: str
@@ -216,14 +247,13 @@ async def google_oauth_callback(
     state: str
 ):
     """Handle Google OAuth callback"""
-    # Verify state
-    state_doc = await db.oauth_states.find_one({"state": state, "provider": "google"})
+    # Verify state (with TTL and single-use)
+    state_doc = await _validate_oauth_state(state, "google")
     if not state_doc:
-        logger.error("Google callback: invalid state=%s", state[:20])
+        logger.error("Google callback: invalid/expired state=%s", state[:20])
         return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=error&reason=invalid_state")
 
     user_id = state_doc.get("user_id")
-    await db.oauth_states.delete_one({"state": state})
 
     # Exchange code for tokens using exact redirect URI used at connect-time.
     redirect_uri = state_doc.get("redirect_uri") or f"{_resolve_base_url(request)}/api/oauth/google/callback"
@@ -273,21 +303,25 @@ async def google_oauth_callback(
         logger.exception("Google callback token exchange exception: %s", exc)
         return RedirectResponse(url=f"{FRONTEND_URL}/settings?oauth=google&status=error&reason=token_exchange_failed")
 
-    # Store tokens
+    # Store tokens (encrypted at rest)
+    raw_access = tokens.get("access_token", "")
+    raw_refresh = tokens.get("refresh_token", "")
+    token_set = {
+        "user_id": user_id,
+        "provider": "google",
+        "access_token": encryption.encrypt_token(raw_access) if raw_access else "",
+        "refresh_token": encryption.encrypt_token(raw_refresh) if raw_refresh else "",
+        "encrypted": True,
+        "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
+        "scopes": tokens.get("scope", "").split(" "),
+        "user_info": user_info,
+        "connected_at": datetime.now(timezone.utc).isoformat(),
+        "token_stale": False,
+        "last_refresh_error": None,
+    }
     await db.oauth_tokens.update_one(
         {"user_id": user_id, "provider": "google"},
-        {"$set": {
-            "user_id": user_id,
-            "provider": "google",
-            "access_token": tokens.get("access_token"),
-            "refresh_token": tokens.get("refresh_token"),
-            "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
-            "scopes": tokens.get("scope", "").split(" "),
-            "user_info": user_info,
-            "connected_at": datetime.now(timezone.utc).isoformat(),
-            "token_stale": False,
-            "last_refresh_error": None,
-        }},
+        {"$set": token_set},
         upsert=True
     )
 
@@ -326,12 +360,11 @@ async def signnow_oauth_connect(current_user: dict = Depends(get_current_active_
 @router.get("/signnow/callback")
 async def signnow_oauth_callback(code: str, state: str):
     """Handle SignNow OAuth callback"""
-    state_doc = await db.oauth_states.find_one({"state": state, "provider": "signnow"})
+    state_doc = await _validate_oauth_state(state, "signnow")
     if not state_doc:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    
+        raise HTTPException(status_code=400, detail="Invalid or expired state parameter")
+
     user_id = state_doc.get("user_id")
-    await db.oauth_states.delete_one({"state": state})
     
     redirect_uri = f"{BASE_URL}/api/oauth/signnow/callback"
     
@@ -353,13 +386,16 @@ async def signnow_oauth_callback(code: str, state: str):
         
         tokens = token_response.json()
     
+    sn_access = tokens.get("access_token", "")
+    sn_refresh = tokens.get("refresh_token", "")
     await db.oauth_tokens.update_one(
         {"user_id": user_id, "provider": "signnow"},
         {"$set": {
             "user_id": user_id,
             "provider": "signnow",
-            "access_token": tokens.get("access_token"),
-            "refresh_token": tokens.get("refresh_token"),
+            "access_token": encryption.encrypt_token(sn_access) if sn_access else "",
+            "refresh_token": encryption.encrypt_token(sn_refresh) if sn_refresh else "",
+            "encrypted": True,
             "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
             "user_info": {},
             "connected_at": datetime.now(timezone.utc).isoformat()
@@ -401,12 +437,11 @@ async def notion_oauth_connect(current_user: dict = Depends(get_current_active_u
 @router.get("/notion/callback")
 async def notion_oauth_callback(code: str, state: str):
     """Handle Notion OAuth callback"""
-    state_doc = await db.oauth_states.find_one({"state": state, "provider": "gamma"})
+    state_doc = await _validate_oauth_state(state, "gamma")
     if not state_doc:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    
+        raise HTTPException(status_code=400, detail="Invalid or expired state parameter")
+
     user_id = state_doc.get("user_id")
-    await db.oauth_states.delete_one({"state": state})
     
     redirect_uri = f"{BASE_URL}/api/oauth/notion/callback"
     
@@ -464,6 +499,20 @@ async def disconnect_oauth(provider: str, current_user: dict = Depends(get_curre
 
 # ============ TOKEN REFRESH ============
 
+def _decrypt_token_field(token_doc: dict, field: str) -> str:
+    """Decrypt a token field, handling both encrypted and legacy plaintext tokens."""
+    raw = token_doc.get(field, "")
+    if not raw:
+        return ""
+    if token_doc.get("encrypted"):
+        try:
+            return encryption.decrypt_token(raw)
+        except Exception:
+            logger.warning("Failed to decrypt %s for user=%s — may be legacy plaintext", field, token_doc.get("user_id"))
+            return raw  # Fall back to raw value (legacy unencrypted)
+    return raw
+
+
 async def refresh_google_token(user_id: str):
     """Refresh Google OAuth token"""
     token_doc = await db.oauth_tokens.find_one({"user_id": user_id, "provider": "google"})
@@ -475,6 +524,11 @@ async def refresh_google_token(user_id: str):
         logger.error("Google refresh failed: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not configured")
         return None
 
+    refresh_token_plain = _decrypt_token_field(token_doc, "refresh_token")
+    if not refresh_token_plain:
+        logger.warning("Google refresh failed: empty refresh_token after decryption for user=%s", user_id)
+        return None
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -482,7 +536,7 @@ async def refresh_google_token(user_id: str):
                 data={
                     "client_id": GOOGLE_CLIENT_ID,
                     "client_secret": GOOGLE_CLIENT_SECRET,
-                    "refresh_token": token_doc["refresh_token"],
+                    "refresh_token": refresh_token_plain,
                     "grant_type": "refresh_token"
                 }
             )
@@ -492,7 +546,6 @@ async def refresh_google_token(user_id: str):
                     "Google token refresh HTTP %d for user=%s: %s",
                     response.status_code, user_id, response.text[:300]
                 )
-                # Mark token as stale so status endpoint can report accurately
                 await db.oauth_tokens.update_one(
                     {"user_id": user_id, "provider": "google"},
                     {"$set": {"token_stale": True, "last_refresh_error": response.text[:200]}}
@@ -500,11 +553,13 @@ async def refresh_google_token(user_id: str):
                 return None
 
             tokens = response.json()
+            new_access = tokens.get("access_token", "")
 
             await db.oauth_tokens.update_one(
                 {"user_id": user_id, "provider": "google"},
                 {"$set": {
-                    "access_token": tokens.get("access_token"),
+                    "access_token": encryption.encrypt_token(new_access) if new_access else "",
+                    "encrypted": True,
                     "expires_at": datetime.now(timezone.utc).timestamp() + tokens.get("expires_in", 3600),
                     "token_stale": False,
                     "last_refresh_error": None,
@@ -512,7 +567,7 @@ async def refresh_google_token(user_id: str):
             )
 
             logger.info("Google token refreshed for user=%s", user_id)
-            return tokens.get("access_token")
+            return new_access
     except Exception as exc:
         logger.exception("Google token refresh exception for user=%s: %s", user_id, exc)
         return None
@@ -532,7 +587,6 @@ async def get_valid_token(user_id: str, provider: str):
         logger.info("Token expired for user=%s provider=%s (expired %.0fs ago), refreshing...", user_id, provider, now - expires_at)
         if provider == "google":
             return await refresh_google_token(user_id)
-        # Non-google providers: token is expired and no refresh logic
         return None
 
-    return token_doc.get("access_token")
+    return _decrypt_token_field(token_doc, "access_token")

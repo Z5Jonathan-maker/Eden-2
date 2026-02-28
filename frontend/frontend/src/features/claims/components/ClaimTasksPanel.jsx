@@ -72,6 +72,8 @@ const ClaimTasksPanel = ({ claimId }) => {
       const res = await apiPut(`/api/tasks/${task.id}`, { status: newStatus });
       if (res.ok) {
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+      } else {
+        toast.error(res.error || 'Failed to update task');
       }
     } catch {
       toast.error('Failed to update task');
@@ -84,6 +86,8 @@ const ClaimTasksPanel = ({ claimId }) => {
       if (res.ok) {
         setTasks(prev => prev.filter(t => t.id !== taskId));
         toast.success('Task deleted');
+      } else {
+        toast.error(res.error || 'Failed to delete task');
       }
     } catch {
       toast.error('Failed to delete task');

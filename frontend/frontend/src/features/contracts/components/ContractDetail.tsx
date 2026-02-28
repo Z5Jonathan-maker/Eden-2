@@ -47,45 +47,50 @@ const ContractDetail: React.FC<Props> = ({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="min-h-[65vh] rounded-lg border border-zinc-800 bg-zinc-950">
+          <div className="min-h-[50vh] lg:min-h-[65vh] rounded-lg border border-zinc-800 bg-zinc-950">
             {pdfUrl ? (
               <iframe
                 title="Contract preview"
                 src={pdfUrl}
-                className="h-[65vh] w-full rounded-lg"
+                className="h-[50vh] lg:h-[65vh] w-full rounded-lg"
+                sandbox="allow-same-origin allow-scripts allow-popups"
               />
             ) : (
-              <div className="flex h-[65vh] items-center justify-center text-zinc-500">
+              <div className="flex h-[50vh] lg:h-[65vh] items-center justify-center text-zinc-500">
                 Contract preview unavailable
               </div>
             )}
           </div>
           <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/70 p-4">
             <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">Actions</p>
-            <button
-              type="button"
-              onClick={onOpenSignOnDevice}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-500/10"
-            >
-              <PenSquare className="h-4 w-4" />
-              Sign On Device
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenInvite('email')}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-emerald-500 hover:text-emerald-300"
-            >
-              <Mail className="h-4 w-4" />
-              Send to Email
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenInvite('sms')}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-amber-500 hover:text-amber-300"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Send to Text
-            </button>
+            {contract.status !== 'signed' && (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenSignOnDevice}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-500/10"
+                >
+                  <PenSquare className="h-4 w-4" />
+                  Sign On Device
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenInvite('email')}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-emerald-500 hover:text-emerald-300"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send to Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenInvite('sms')}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-amber-500 hover:text-amber-300"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Send to Text
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={onDownload}
@@ -94,14 +99,16 @@ const ContractDetail: React.FC<Props> = ({
               <Download className="h-4 w-4" />
               Download PDF
             </button>
-            <button
-              type="button"
-              onClick={onRegenerate}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-orange-500 hover:text-orange-300"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Regenerate
-            </button>
+            {contract.status !== 'signed' && !contract.type?.toLowerCase().includes('dfs') && (
+              <button
+                type="button"
+                onClick={onRegenerate}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-orange-500 hover:text-orange-300"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Regenerate
+              </button>
+            )}
             <div className="mt-4 border-t border-zinc-800 pt-3 text-xs text-zinc-500">
               <p>Client: {contract.clientName || 'Unknown'}</p>
               <p>Email: {contract.clientEmail || 'N/A'}</p>

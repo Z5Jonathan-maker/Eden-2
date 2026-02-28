@@ -253,7 +253,7 @@ const ClaimDetails = () => {
             tags: [],
           });
           if (noteRes.ok) {
-            setNotes([noteRes.data, ...notes]);
+            setNotes(prev => [noteRes.data, ...prev]);
           }
         } catch (e) {
           // Note failed, but appointment was created
@@ -292,7 +292,7 @@ const ClaimDetails = () => {
         throw new Error(res.error || 'Failed to add note');
       }
 
-      setNotes([res.data, ...notes]);
+      setNotes(prev => [res.data, ...prev]);
       setNewNote('');
     } catch (err) {
       toast.error('Failed to add note: ' + err.message);
@@ -330,7 +330,7 @@ const ClaimDetails = () => {
         try {
           const prefs = JSON.parse(localStorage.getItem('eden_backup_prefs') || '{}');
           if (prefs.autoBackup) {
-            backupClaim(claimId, claim?.claim_number);
+            backupClaim(claimId, res.data?.claim_number || claim?.claim_number);
           }
         } catch { /* ignore backup errors */ }
       }

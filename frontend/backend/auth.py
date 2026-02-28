@@ -2,7 +2,11 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 import os
+import re
 import secrets
+import logging
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -40,5 +44,28 @@ def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError:
+    except JWTError as e:
+        logger.warning("JWT decode failed: %s", e)
         return None
+
+
+# ============================================
+# PASSWORD STRENGTH VALIDATION
+# ============================================
+
+_MIN_PASSWORD_LENGTH = 8
+
+def validate_password_strength(password: str) -> str | None:
+    """
+    Validate password meets minimum complexity requirements.
+    Returns None if valid, or an error message string if invalid.
+    """
+    if len(password) < _MIN_PASSWORD_LENGTH:
+        return f"Password must be at least {_MIN_PASSWORD_LENGTH} characters"
+    if not re.search(r"[A-Z]", password):
+        return "Password must contain at least one uppercase letter"
+    if not re.search(r"[a-z]", password):
+        return "Password must contain at least one lowercase letter"
+    if not re.search(r"\d", password):
+        return "Password must contain at least one digit"
+    return None

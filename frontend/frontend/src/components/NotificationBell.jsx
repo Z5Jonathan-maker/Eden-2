@@ -6,7 +6,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Button } from '../shared/ui/button';
-import { apiGet, apiPut, API_URL } from '@/lib/api';
+import { apiGet, apiPut, API_URL, getAuthToken } from '@/lib/api';
 
 const NotificationBell = () => {
   const navigate = useNavigate();
@@ -47,16 +47,21 @@ const NotificationBell = () => {
     }
   }, []);
 
-  // Connect to WebSocket
-  // Note: WebSocket can't use httpOnly cookies, so we rely on polling fallback
+  // Connect to WebSocket with message-based JWT auth
+  // Backend accepts: connect → send {"type":"auth","token":"<jwt>"} → authenticated
   const connectWebSocket = useCallback(() => {
-    // WebSocket auth with httpOnly cookies is not supported
-    // Fall back to polling which works with httpOnly cookies
-    startPolling();
-    return undefined;
+    const token = getAuthToken();
+    if (!token) {
+      // No JWT token — fall back to polling
+      startPolling();
+      return undefined;
+    }
 
-    /* WebSocket connection disabled - httpOnly cookies don't work with WebSocket URLs
-    const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    const wsUrl = (API_URL || '').replace('https://', 'wss://').replace('http://', 'ws://');
+    if (!wsUrl) {
+      startPolling();
+      return undefined;
+    }
 
     try {
       const ws = new WebSocket(`${wsUrl}/ws/notifications`);
@@ -70,25 +75,28 @@ const NotificationBell = () => {
 
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        setWsConnected(true);
-        stopPolling();
-
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
+        // Send auth message with JWT token (Method 2: message-based auth)
+        ws.send(JSON.stringify({ type: 'auth', token }));
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
 
-          if (data.type === 'notification') {
+          if (data.type === 'connected') {
+            // Auth confirmed — switch from polling to WebSocket
+            setWsConnected(true);
+            stopPolling();
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+              reconnectTimeoutRef.current = null;
+            }
+          } else if (data.type === 'notification') {
             setNotifications(prev => [data.data, ...prev]);
             setUnreadCount(prev => prev + 1);
           }
         } catch (e) {
-          console.error('Failed to parse WebSocket message:', e);
+          // Ignore non-JSON messages (e.g. "pong")
         }
       };
 
@@ -96,9 +104,9 @@ const NotificationBell = () => {
         clearTimeout(connectionTimeout);
         setWsConnected(false);
         wsRef.current = null;
-
         startPolling();
 
+        // Auto-reconnect unless intentional close or auth failure
         if (event.code !== 1000 && event.code !== 4001) {
           reconnectTimeoutRef.current = setTimeout(() => {
             connectWebSocket();
@@ -106,13 +114,13 @@ const NotificationBell = () => {
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = () => {
         clearTimeout(connectionTimeout);
       };
 
       wsRef.current = ws;
 
+      // Keep-alive ping every 25 seconds
       const pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send('ping');
@@ -127,11 +135,9 @@ const NotificationBell = () => {
         }
       };
     } catch (e) {
-      console.error('WebSocket creation failed:', e);
       startPolling();
       return undefined;
     }
-    */
   }, [startPolling, stopPolling]);
 
   useEffect(() => {
@@ -365,7 +371,7 @@ const NotificationBell = () => {
               {(wsConnected || pollingActive) ? (
                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                   <Wifi className="w-3 h-3" />
-                  Live
+                  {wsConnected ? 'Live' : 'Polling'}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -452,7 +458,7 @@ const NotificationBell = () => {
               {(wsConnected || pollingActive) ? (
                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                   <Wifi className="w-3 h-3" />
-                  Live
+                  {wsConnected ? 'Live' : 'Polling'}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">

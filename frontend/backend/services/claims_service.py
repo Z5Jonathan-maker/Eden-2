@@ -56,29 +56,49 @@ class ClaimsService:
         """Update a claim with STRICT status transition logic"""
         try:
             # Only operational roles can update claim records
-            if current_user["role"] not in ["admin", "manager", "adjuster"]:
+            user_role = current_user.get("role", "")
+            if user_role not in ["admin", "manager", "adjuster"]:
                 raise HTTPException(status_code=403, detail="Not authorized to update claims")
-            
-            claim = await self.db.claims.find_one({"id": claim_id})
+
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
             if not claim:
                 raise HTTPException(status_code=404, detail="Claim not found")
-            
+
+            # Adjusters can only update their own assigned claims
+            if user_role == "adjuster":
+                assigned_to_id = claim.get("assigned_to_id") or claim.get("created_by")
+                if assigned_to_id != current_user.get("id"):
+                    raise HTTPException(status_code=403, detail="You can only update claims assigned to you")
+
             current_status = claim.get("status", "New")
             new_status = updates.status
-            
+
             # --- 3. Lifecycle Enforcement (Enforcement Rule #3) ---
             if new_status and new_status != current_status:
                 self._validate_transition(current_status, new_status)
-            
+
             update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
             update_data["updated_at"] = datetime.now(timezone.utc)
-            
-            await self.db.claims.update_one(
-                {"id": claim_id},
+
+            # Atomic conditional update: include current status in filter to prevent race conditions
+            update_filter = {"id": claim_id}
+            if new_status and new_status != current_status:
+                update_filter["status"] = current_status
+
+            result = await self.db.claims.update_one(
+                update_filter,
                 {"$set": update_data}
             )
-            
-            updated_claim_doc = await self.db.claims.find_one({"id": claim_id})
+
+            if result.matched_count == 0 and "status" in update_filter:
+                # Status changed between our read and write — retry once
+                claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+                if claim and claim.get("status") == new_status:
+                    pass  # Already at target status, proceed
+                else:
+                    raise HTTPException(status_code=409, detail="Claim status was changed by another user. Please refresh and try again.")
+
+            updated_claim_doc = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
             updated_claim = Claim(**updated_claim_doc)
             
             # --- 4. Domain Events (Enforcement Rule #4) ---
@@ -122,11 +142,11 @@ class ClaimsService:
     async def get_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Claim:
         """Get specific claim by ID with permission check"""
         try:
-            claim = await self.db.claims.find_one({"id": claim_id})
-            
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+
             if not claim:
                 raise HTTPException(status_code=404, detail="Claim not found")
-            
+
             # Clients can only view their own claims
             if current_user["role"] == "client" and claim["client_email"] != current_user["email"]:
                 raise HTTPException(status_code=403, detail="Access denied")
@@ -142,7 +162,7 @@ class ClaimsService:
     async def delete_claim(self, claim_id: str, permanent: bool, current_user: Dict[str, Any]) -> Dict[str, str]:
         """Soft-delete (archive) or hard-delete a claim"""
         try:
-            claim = await self.db.claims.find_one({"id": claim_id})
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
             if not claim:
                 raise HTTPException(status_code=404, detail="Claim not found")
             
@@ -185,7 +205,7 @@ class ClaimsService:
     async def restore_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Dict[str, str]:
         """Restore an archived claim"""
         try:
-            claim = await self.db.claims.find_one({"id": claim_id})
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
             if not claim:
                 raise HTTPException(status_code=404, detail="Claim not found")
             
@@ -294,9 +314,10 @@ class ClaimsService:
         # Persist to MongoDB for frontend activity feed
         try:
             import asyncio
-            asyncio.ensure_future(self._persist_activity(log_data))
-        except Exception:
-            pass  # Non-blocking
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._persist_activity(log_data))
+        except RuntimeError:
+            pass  # No running event loop (e.g. during testing)
 
     async def _persist_activity(self, log_data: dict):
         """Store activity record in claim_activity collection"""

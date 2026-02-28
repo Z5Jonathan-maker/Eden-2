@@ -7,6 +7,9 @@ from pathlib import Path
 from models import ROLES, has_permission, get_role_level
 from typing import Optional
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
@@ -53,6 +56,16 @@ async def get_current_user(
     payload = decode_access_token(token)
 
     if payload is None:
+        logger.warning("Auth failed: invalid/expired token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Reject refresh tokens used as access tokens
+    if payload.get("type") == "refresh":
+        logger.warning("Auth failed: refresh token used as access token for user %s", payload.get("sub"))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
@@ -61,6 +74,7 @@ async def get_current_user(
 
     user_id = payload.get("sub")
     if user_id is None:
+        logger.warning("Auth failed: token missing 'sub' claim")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -68,6 +82,7 @@ async def get_current_user(
 
     user = await db.users.find_one({"id": user_id})
     if user is None:
+        logger.warning("Auth failed: user %s not found in DB", user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"

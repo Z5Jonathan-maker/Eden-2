@@ -6,8 +6,6 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
 import uuid
 import logging
 
@@ -16,16 +14,11 @@ from services.parser_factory import parse_estimate
 from services.document_segmenter import segment_document
 from services.estimate_matcher import compare_estimates, ComparisonResult
 from services.ai_analyzer import analyze_comparison, generate_dispute_letter
-from dependencies import get_current_user
+from dependencies import db, get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/scales", tags=["scales"])
-
-# Database connection
-mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'test_database')]
 
 
 # Pydantic Models
@@ -193,7 +186,7 @@ async def upload_estimate(
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Invalid estimate data")
     except Exception as e:
-        logger.error(f"Error uploading estimate: {str(e)}")
+        logger.error("Error uploading estimate: %s", e)
         raise HTTPException(status_code=500, detail="Failed to process estimate")
 
 
@@ -343,7 +336,7 @@ async def compare_estimates_endpoint(
         return comparison_doc
         
     except Exception as e:
-        logger.error(f"Error comparing estimates: {str(e)}")
+        logger.error("Error comparing estimates: %s", e)
         raise HTTPException(status_code=500, detail="Failed to compare estimates")
 
 
@@ -429,7 +422,7 @@ async def analyze_comparison_endpoint(
         return analysis_doc
         
     except Exception as e:
-        logger.error(f"Error analyzing comparison: {str(e)}")
+        logger.error("Error analyzing comparison: %s", e)
         raise HTTPException(status_code=500, detail="Failed to analyze comparison")
 
 
@@ -477,7 +470,7 @@ async def generate_dispute_letter_endpoint(
         }
         
     except Exception as e:
-        logger.error(f"Error generating dispute letter: {str(e)}")
+        logger.error("Error generating dispute letter: %s", e)
         raise HTTPException(status_code=500, detail="Failed to generate dispute letter")
 
 

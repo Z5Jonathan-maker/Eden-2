@@ -20,7 +20,13 @@ router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 # TYPES & MODELS
 # ============================================
 
-NOTIFICATION_TYPES = ["harvest_coach", "claims_ops", "comms_bot", "system", "claim_created", "claim_assigned", "claim_updated"]
+NOTIFICATION_TYPES = [
+    "harvest_coach", "claims_ops", "comms_bot", "system",
+    "claim_created", "claim_assigned", "claim_updated", "status_change",
+]
+
+# Allowed extra keys that can be passed via kwargs to create_notification
+_ALLOWED_NOTIFICATION_EXTRA_KEYS = {"claim_id", "claim_number", "old_status", "new_status", "source", "priority"}
 
 
 class MarkReadRequest(BaseModel):
@@ -113,7 +119,9 @@ async def mark_notifications_read(
     
     if not request.notification_ids:
         raise HTTPException(status_code=400, detail="No notification IDs provided")
-    
+    if len(request.notification_ids) > 500:
+        raise HTTPException(status_code=400, detail="Cannot mark more than 500 notifications at once")
+
     result = await db.notifications.update_many(
         {
             "id": {"$in": request.notification_ids},
@@ -227,9 +235,9 @@ async def create_notification(
         "expires_at": expires_at
     }
     
-    # Add any extra fields from kwargs (for backwards compat with old notification types)
+    # Add allowed extra fields from kwargs (sanitized to prevent document injection)
     for key, value in kwargs.items():
-        if key not in notification:
+        if key in _ALLOWED_NOTIFICATION_EXTRA_KEYS and key not in notification:
             notification[key] = value
     
     await db.notifications.insert_one(notification)
@@ -243,7 +251,7 @@ async def create_notification(
             "data": {k: v for k, v in notification.items() if k != "_id"}
         })
     except Exception as e:
-        logger.debug(f"WebSocket broadcast skipped: {e}")
+        logger.warning("WebSocket notification broadcast failed for user %s: %s", user_id, e)
     
     return {k: v for k, v in notification.items() if k != "_id"}
 
@@ -278,7 +286,31 @@ async def create_bulk_notifications(notifications: List[dict]) -> int:
     
     result = await db.notifications.insert_many(docs)
     logger.info(f"Created {len(result.inserted_ids)} bulk notifications")
-    
+
+    # Broadcast via WebSocket — group by user, send concurrently
+    try:
+        import asyncio
+        from websocket_manager import manager
+        # Group notifications by user to minimize per-user send calls
+        user_docs: dict = {}
+        for doc in docs:
+            uid = doc["user_id"]
+            if uid not in user_docs:
+                user_docs[uid] = []
+            user_docs[uid].append(doc)
+
+        async def _send_user_batch(uid: str, batch: list):
+            for doc in batch:
+                clean_doc = {k: v for k, v in doc.items() if k != "_id"}
+                await manager.send_to_user(uid, {"type": "notification", "data": clean_doc})
+
+        await asyncio.gather(
+            *(_send_user_batch(uid, batch) for uid, batch in user_docs.items()),
+            return_exceptions=True,
+        )
+    except Exception as e:
+        logger.warning("Bulk notification WebSocket broadcast failed: %s", e)
+
     return len(result.inserted_ids)
 
 
@@ -344,3 +376,27 @@ async def notify_status_change(claim_id: str, claim_number: str, old_status: str
             )
     except Exception as e:
         logger.error(f"Notify status change error: {e}")
+
+
+async def notify_contract_signed(claim_id: str, contract_id: str, client_name: str, signer_user_id: str):
+    """Notify team when a contract is signed"""
+    try:
+        users = await db.users.find(
+            {"role": {"$in": ["adjuster", "admin"]}},
+            {"_id": 0, "id": 1}
+        ).to_list(100)
+
+        for user in users:
+            if user["id"] == signer_user_id:
+                continue  # Don't notify the person who collected the signature
+            await create_notification(
+                user_id=user["id"],
+                type="claims_ops",
+                title="Contract Signed",
+                body=f"{client_name} signed a contract (claim linked)",
+                cta_label="View Claim",
+                cta_route=f"/claims/{claim_id}" if claim_id else None,
+                data={"claim_id": claim_id, "contract_id": contract_id}
+            )
+    except Exception as e:
+        logger.error(f"Notify contract signed error: {e}")

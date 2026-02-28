@@ -127,8 +127,8 @@ const MessageBubble = memo(({
                   Announcement
                 </span>
               </div>
-              {message.announcement_title && (
-                <h4 className="text-sm font-bold text-zinc-100 mb-1">{message.announcement_title}</h4>
+              {message.title && (
+                <h4 className="text-sm font-bold text-zinc-100 mb-1">{message.title}</h4>
               )}
               <p className="text-sm text-zinc-300 whitespace-pre-wrap">{renderBody(message.body)}</p>
             </div>

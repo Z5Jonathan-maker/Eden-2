@@ -244,7 +244,7 @@ async def get_florida_statute_context(query: str) -> str:
             
             relevant_context.append("--- END FLORIDA STATUTES ---\n")
     except Exception as e:
-        logger.error(f"Error fetching statutes: {e}")
+        logger.error("Error fetching statutes: %s", e)
         # Fall back to static data
         return get_florida_law_context_fallback(query)
     
@@ -478,7 +478,7 @@ async def fetch_claim_context(claim_ref: str, current_user: dict) -> Optional[di
         return context
         
     except Exception as e:
-        logger.error(f"Error fetching claim context: {e}")
+        logger.error("Error fetching claim context: %s", e)
         return None
 
 
@@ -501,7 +501,7 @@ async def get_user_claims_summary(user_id: str, limit: int = 10) -> List[dict]:
         
         return claims
     except Exception as e:
-        logger.error(f"Error fetching claims summary: {e}")
+        logger.error("Error fetching claims summary: %s", e)
         return []
 
 
@@ -1282,7 +1282,10 @@ async def chat_with_eve(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Send a message to Eve AI and get a response"""
-    
+    from security import check_rate_limit
+    user_id_for_rl = current_user.get("id", "unknown")
+    check_rate_limit(f"ai:{user_id_for_rl}", "ai")
+
     if not EMERGENT_LLM_KEY:
         raise HTTPException(
             status_code=500,
@@ -1330,7 +1333,7 @@ async def chat_with_eve(
                 detected_claim_context = await fetch_claim_context(claim_ref, current_user)
                 if detected_claim_context:
                     claim_context_str = format_claim_context_for_prompt(detected_claim_context)
-                    logger.info(f"Eve auto-detected claim reference: {claim_ref}")
+                    logger.info("Eve auto-detected claim reference: %s", claim_ref)
         
         # Priority 4: Check session for previously referenced claim
         if not claim_context_str and session and session.get("active_claim_id"):
@@ -1415,7 +1418,7 @@ async def chat_with_eve(
         
     except Exception as e:
         err_str = str(e)
-        logger.error(f"Eve AI error: {err_str}")
+        logger.error("Eve AI error: %s", err_str)
         # Give user-friendly message for common config issues
         if "OLLAMA_API_KEY" in err_str or "No AI provider" in err_str:
             detail = "AI is not configured yet. An admin needs to set the OLLAMA_API_KEY in the server environment. Get a free key at https://ollama.com/settings/keys"
@@ -1424,7 +1427,7 @@ async def chat_with_eve(
         elif "timed out" in err_str.lower() or "timeout" in err_str.lower():
             detail = "AI service timed out. Please try again in a moment."
         else:
-            detail = f"AI service error: {err_str}"
+            detail = "AI service encountered an unexpected error. Please try again or contact support."
         raise HTTPException(status_code=500, detail=detail)
 
 
@@ -1434,7 +1437,9 @@ async def claim_copilot_next_actions(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Generate prioritized claim next actions from claim context."""
+    from security import check_rate_limit
     user_id = current_user.get("id")
+    check_rate_limit(f"ai:{user_id}", "ai")
     context = await fetch_claim_context(claim_id, current_user)
     if not context:
         raise HTTPException(status_code=404, detail="Claim not found")
@@ -1492,7 +1497,7 @@ async def claim_copilot_next_actions(
             confidence=confidence if confidence in {"high", "medium", "low"} else "medium"
         )
     except Exception as err:
-        logger.warning(f"Claim copilot fallback for {claim_id}: {err}")
+        logger.warning("Claim copilot fallback for %s: %s", claim_id, err)
         fallback_actions = [ClaimCopilotAction(**item) for item in _build_copilot_fallback_actions(context)]
         fallback_gaps = [ClaimEvidenceGap(**item) for item in _derive_claim_evidence_gaps(context)]
         return ClaimCopilotResponse(
@@ -1513,7 +1518,9 @@ async def claim_comms_copilot(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Generate communications summary + next-best action + suggested reply for claim thread."""
+    from security import check_rate_limit
     user_id = current_user.get("id")
+    check_rate_limit(f"ai:{user_id}", "ai")
     context = await fetch_claim_context(claim_id, current_user)
     if not context:
         raise HTTPException(status_code=404, detail="Claim not found")
@@ -1598,7 +1605,7 @@ async def claim_comms_copilot(
             confidence=confidence if confidence in {"high", "medium", "low"} else "medium",
         )
     except Exception as err:
-        logger.warning(f"Comms copilot fallback for {claim_id}: {err}")
+        logger.warning("Comms copilot fallback for %s: %s", claim_id, err)
         fallback = _build_comms_copilot_fallback(context, request, recent_messages)
         return CommsCopilotResponse(
             claim_id=context.get("claim_id", claim_id),
@@ -1673,7 +1680,7 @@ async def team_comms_copilot(
             confidence=confidence if confidence in {"high", "medium", "low"} else "medium",
         )
     except Exception as err:
-        logger.warning(f"Team comms copilot fallback for {request.channel_id}: {err}")
+        logger.warning("Team comms copilot fallback for %s: %s", request.channel_id, err)
         fallback = _build_team_comms_fallback(request)
         return TeamCommsCopilotResponse(
             provider="fallback",
@@ -1785,7 +1792,7 @@ async def get_claims_for_context(
         return {"claims": claims}
         
     except Exception as e:
-        logger.error(f"Error fetching claims for context: {e}")
+        logger.error("Error fetching claims for context: %s", e)
         return {"claims": []}
 
 
@@ -1820,7 +1827,9 @@ async def upload_document_for_eve(
     Supports: PDF, images (JPG, PNG, WEBP), Word docs, and text files.
     Returns document ID and extracted text if possible.
     """
+    from security import check_rate_limit
     user_id = current_user.get("id")
+    check_rate_limit(f"upload:{user_id}", "upload")
     
     # Validate file type
     allowed_types = [
@@ -1859,7 +1868,7 @@ async def upload_document_for_eve(
         else:
             extracted_text = f"[Document uploaded: {file.filename}]"
     except Exception as e:
-        logger.error(f"Error extracting text: {e}")
+        logger.error("Error extracting text: %s", e)
         extracted_text = f"[Document uploaded: {file.filename}]"
     
     # Store document metadata in database

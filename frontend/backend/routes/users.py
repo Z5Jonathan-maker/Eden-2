@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from dependencies import db, get_current_active_user, require_permission
 from models import UserCreate, UserUpdate, ROLES, has_permission
-from auth import get_password_hash
+from auth import get_password_hash, validate_password_strength
 from datetime import datetime, timezone
 import uuid
 
@@ -72,6 +73,11 @@ async def get_user(user_id: str, current_user: dict = Depends(require_permission
 @router.post("/")
 async def create_user(user_data: UserCreate, current_user: dict = Depends(require_permission("users.create"))):
     """Create a new user (admin only)"""
+    # Validate password strength
+    password_error = validate_password_strength(user_data.password)
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
+
     # Check if email already exists
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
@@ -174,14 +180,26 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_permiss
     await db.users.delete_one({"id": user_id})
     return {"message": "User deleted successfully"}
 
+class PasswordResetRequest(BaseModel):
+    new_password: str
+
+
 @router.post("/{user_id}/reset-password")
-async def reset_user_password(user_id: str, new_password: str, current_user: dict = Depends(require_permission("users.update"))):
-    """Reset a user's password (admin only)"""
+async def reset_user_password(
+    user_id: str,
+    body: PasswordResetRequest,
+    current_user: dict = Depends(require_permission("users.update")),
+):
+    """Reset a user's password (admin only). Password sent in request body, NOT query params."""
+    password_error = validate_password_strength(body.new_password)
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
+
     user = await db.users.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    hashed_password = get_password_hash(new_password)
+
+    hashed_password = get_password_hash(body.new_password)
     await db.users.update_one({"id": user_id}, {"$set": {"password": hashed_password}})
-    
+
     return {"message": "Password reset successfully"}

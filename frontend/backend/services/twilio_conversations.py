@@ -30,7 +30,7 @@ def _get_twilio_client():
             from twilio.rest import Client
             _twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         except Exception as exc:
-            logger.error(f"Failed to initialize Twilio client: {exc}")
+            logger.error("Failed to initialize Twilio client: %s", exc)
             return None
 
     return _twilio_client
@@ -64,7 +64,7 @@ def create_access_token(identity: str) -> Optional[str]:
         jwt_token = token.to_jwt()
         return jwt_token.decode("utf-8") if isinstance(jwt_token, bytes) else jwt_token
     except Exception as exc:
-        logger.error(f"Failed to create Conversations token: {exc}")
+        logger.error("Failed to create Conversations token: %s", exc)
         return None
 
 
@@ -89,7 +89,7 @@ def create_conversation(
         ).conversations.create(**payload)
         return conversation.sid
     except Exception as exc:
-        logger.error(f"Failed to create conversation: {exc}")
+        logger.error("Failed to create conversation: %s", exc)
         return None
 
 
@@ -120,7 +120,7 @@ def add_participant(conversation_sid: str, identity: str) -> bool:
     except Exception as exc:
         if "Participant already exists" in str(exc):
             return True
-        logger.warning(f"Failed to add participant: {exc}")
+        logger.warning("Failed to add participant: %s", exc)
         return False
 
 
@@ -135,5 +135,5 @@ def send_system_message(conversation_sid: str, body: str, author: str = "system"
         ).conversations(conversation_sid).messages.create(author=author, body=body)
         return True
     except Exception as exc:
-        logger.warning(f"Failed to send system message: {exc}")
+        logger.warning("Failed to send system message: %s", exc)
         return False

@@ -6,7 +6,6 @@ Harvest v2 API Routes - Built from Spotio + Enzy patterns
 Uses harvest_scoring_engine for unified gamification logic.
 Uses incentives_engine/events for unified game event bus.
 """
-import os
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional, Literal
@@ -376,7 +375,7 @@ async def create_visit(
             disposition_points=scoring_result.get("points_earned", 0)
         )
     except Exception as e:
-        logger.warning(f"Failed to emit game event: {e}")
+        logger.warning("Failed to emit game event: %s", e)
     
     status_info = VISIT_STATUSES.get(visit.status, {"points": 1, "label": "Unknown", "color": "#9CA3AF"})
     
@@ -445,7 +444,7 @@ async def get_pins_with_history(
                 sw_lat, sw_lng, ne_lat, ne_lng = coords
                 query["latitude"] = {"$gte": sw_lat, "$lte": ne_lat}
                 query["longitude"] = {"$gte": sw_lng, "$lte": ne_lng}
-        except:
+        except Exception:
             pass
     
     pins = await db.canvassing_pins.find(
@@ -1166,7 +1165,7 @@ Be specific with names and numbers where relevant."""
         return result
         
     except Exception as e:
-        logger.error(f"Harvest Assistant error: {e}")
+        logger.error("Harvest Assistant error: %s", e)
         return {
             "insights": [
                 f"Team has knocked {team_stats['total_visits']} doors this period.",
@@ -1349,7 +1348,7 @@ async def get_coach_status(
         from workers.scheduler import get_scheduler_status
         return get_scheduler_status()
     except Exception as e:
-        return {"error": str(e), "running": False, "jobs": []}
+        return {"error": "Failed to get scheduler status", "running": False, "jobs": []}
 
 
 @router.post("/coach/trigger")

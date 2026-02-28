@@ -316,7 +316,8 @@ export default function Scales() {
       a.href = url;
       a.download = `dispute-letter-${activeComparison.id.slice(0, 8)}.txt`;
       a.click();
-      
+      URL.revokeObjectURL(url);
+
       toast.success('Dispute letter generated!');
       
     } catch (error) {

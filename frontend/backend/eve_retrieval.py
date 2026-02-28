@@ -65,7 +65,7 @@ async def search_statutes(query: str, limit: int = 3) -> List[Dict[str, Any]]:
                 statutes = await cursor.to_list(limit)
     
     except Exception as e:
-        logger.error(f"Statute search error: {e}")
+        logger.error("Statute search error: %s", e)
     
     return statutes
 
@@ -116,7 +116,7 @@ async def get_expert_insights(topic: str, limit: int = 2) -> List[Dict[str, Any]
             experts = await cursor.to_list(limit)
     
     except Exception as e:
-        logger.error(f"Expert search error: {e}")
+        logger.error("Expert search error: %s", e)
     
     return experts
 
@@ -142,7 +142,7 @@ async def get_gamma_context(query: str, user: dict) -> Optional[str]:
         return None
     
     except Exception as e:
-        logger.error(f"Notion context error: {e}")
+        logger.error("Notion context error: %s", e)
         return None
 
 
@@ -324,7 +324,7 @@ async def log_eve_interaction(
     try:
         await db.eve_logs.insert_one(log_entry)
     except Exception as e:
-        logger.error(f"Failed to log Eve interaction: {e}")
+        logger.error("Failed to log Eve interaction: %s", e)
     
     return log_id
 
@@ -343,7 +343,7 @@ async def submit_eve_feedback(
         )
         return result.modified_count > 0
     except Exception as e:
-        logger.error(f"Failed to save Eve feedback: {e}")
+        logger.error("Failed to save Eve feedback: %s", e)
         return False
 
 

@@ -4,6 +4,7 @@ Implements initWebchat-style flow and token refresh.
 """
 import uuid
 import os
+import re
 from datetime import datetime, timezone
 from typing import Optional, Literal
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
@@ -110,6 +111,24 @@ async def _ensure_channel_access(channel_id: str, user: dict) -> tuple[dict, dic
     if not membership and not _can_manage_channels(user):
         raise HTTPException(status_code=403, detail="Access denied")
     return channel, membership or {}
+
+
+ALLOWED_UPLOAD_EXTENSIONS = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg",  # images
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",  # documents
+    ".txt", ".csv", ".rtf", ".odt", ".ods",  # text/data
+    ".mp4", ".mov", ".avi", ".webm",  # video
+    ".mp3", ".wav", ".ogg", ".m4a",  # audio
+    ".zip", ".gz", ".tar",  # archives
+}
+
+BLOCKED_UPLOAD_EXTENSIONS = {
+    ".exe", ".bat", ".cmd", ".com", ".msi", ".scr", ".pif",  # Windows executables
+    ".sh", ".bash", ".csh",  # shell scripts
+    ".php", ".asp", ".aspx", ".jsp", ".py", ".rb", ".pl",  # server-side scripts
+    ".js", ".vbs", ".wsf", ".hta",  # scripting
+    ".dll", ".sys", ".drv",  # system binaries
+}
 
 
 def _comms_upload_base_dir() -> str:
@@ -594,6 +613,13 @@ async def send_channel_message(
         {"$set": {"updated_at": now}},
     )
 
+    # Increment reply_count on parent message if this is a thread reply
+    if payload.reply_to_message_id:
+        await db.comms_messages.update_one(
+            {"id": payload.reply_to_message_id, "channel_id": channel_id},
+            {"$inc": {"reply_count": 1}},
+        )
+
     if channel.get("twilio_conversation_sid") and is_conversations_configured():
         send_system_message(
             channel["twilio_conversation_sid"],
@@ -681,7 +707,14 @@ async def upload_channel_attachment(
 
     attachment_id = str(uuid.uuid4())
     safe_name = upload.filename or "file.bin"
-    ext = os.path.splitext(safe_name)[1]
+    ext = os.path.splitext(safe_name)[1].lower()
+
+    # Block dangerous file types
+    if ext in BLOCKED_UPLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' is not allowed for security reasons")
+    if ext and ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' is not supported. Allowed: images, documents, media, archives")
+
     file_name = f"{attachment_id}{ext}"
     file_path = os.path.join(_comms_upload_base_dir(), file_name)
 
@@ -763,6 +796,12 @@ async def get_channel_attachment(
     file_path = attachment.get("file_path")
     if not file_path or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Attachment file missing")
+
+    # Path traversal protection: ensure file is within the uploads directory
+    base_upload_dir = os.path.realpath(os.getenv("UPLOAD_DIR", "/tmp/eden_uploads"))
+    real_path = os.path.realpath(file_path)
+    if not real_path.startswith(base_upload_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     return FileResponse(
         path=file_path,
@@ -894,6 +933,11 @@ async def post_channel_announcement(
             author=str(current_user.get("id")),
         )
 
+    # Broadcast announcement to channel members via WebSocket
+    await _broadcast_chat_event(channel_id, "chat_message", {
+        "channel_id": channel_id, "message": message_doc,
+    })
+
     return {"message": message_doc}
 
 
@@ -975,43 +1019,42 @@ async def toggle_reaction(
     current_user: dict = Depends(get_current_active_user),
 ):
     await _ensure_channel_access(channel_id, current_user)
-    message = await db.comms_messages.find_one(
-        {"id": message_id, "channel_id": channel_id, "is_deleted": {"$ne": True}},
-        {"_id": 0},
-    )
-    if not message:
-        raise HTTPException(status_code=404, detail="Message not found")
 
     user_id = current_user.get("id")
     user_name = current_user.get("full_name") or current_user.get("email")
-    reactions = message.get("reactions") or []
+    reaction_filter = {"emoji": payload.emoji, "user_id": user_id}
 
-    existing_idx = next(
-        (i for i, r in enumerate(reactions) if r.get("emoji") == payload.emoji and r.get("user_id") == user_id),
-        None,
+    # Atomically try to remove the reaction first
+    pull_result = await db.comms_messages.update_one(
+        {"id": message_id, "channel_id": channel_id, "is_deleted": {"$ne": True}, "reactions": {"$elemMatch": reaction_filter}},
+        {"$pull": {"reactions": reaction_filter}},
     )
-    if existing_idx is not None:
-        reactions.pop(existing_idx)
-    else:
-        reactions.append({"emoji": payload.emoji, "user_id": user_id, "user_name": user_name, "created_at": _utc_now()})
 
-    await db.comms_messages.update_one(
+    if pull_result.matched_count == 0:
+        # Reaction didn't exist — check if message exists, then add it
+        msg_exists = await db.comms_messages.find_one(
+            {"id": message_id, "channel_id": channel_id, "is_deleted": {"$ne": True}},
+            {"_id": 0, "id": 1},
+        )
+        if not msg_exists:
+            raise HTTPException(status_code=404, detail="Message not found")
+
+        await db.comms_messages.update_one(
+            {"id": message_id, "channel_id": channel_id},
+            {"$push": {"reactions": {"emoji": payload.emoji, "user_id": user_id, "user_name": user_name, "created_at": _utc_now()}}},
+        )
+
+    # Fetch updated reactions for response & broadcast
+    updated_msg = await db.comms_messages.find_one(
         {"id": message_id, "channel_id": channel_id},
-        {"$set": {"reactions": reactions}},
+        {"_id": 0, "reactions": 1},
     )
+    reactions = (updated_msg or {}).get("reactions") or []
 
     # Broadcast reaction update via WebSocket
-    try:
-        from websocket_manager import manager
-        member_ids = [m["user_id"] async for m in db.comms_channel_memberships.find(
-            {"channel_id": channel_id, "is_active": True}, {"_id": 0, "user_id": 1}
-        )]
-        await manager.broadcast_to_users(member_ids, {
-            "type": "chat_reaction",
-            "data": {"channel_id": channel_id, "message_id": message_id, "reactions": reactions},
-        })
-    except Exception:
-        pass
+    await _broadcast_chat_event(channel_id, "chat_reaction", {
+        "channel_id": channel_id, "message_id": message_id, "reactions": reactions,
+    })
 
     return {"reactions": reactions}
 
@@ -1072,12 +1115,11 @@ async def search_messages(
 
     query = {"channel_id": {"$in": accessible_channel_ids}, "is_deleted": {"$ne": True}}
     if q:
-        import re
         query["body"] = {"$regex": re.escape(q), "$options": "i"}
     if channel_id:
         query["channel_id"] = channel_id
     if sender:
-        query["sender_name"] = {"$regex": sender, "$options": "i"}
+        query["sender_name"] = {"$regex": re.escape(sender), "$options": "i"}
     if has_file:
         query["type"] = "attachment"
     if from_date:
@@ -1124,43 +1166,48 @@ async def create_or_find_dm(
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Look for existing DM channel between these two users
+    # Atomic find-or-create DM channel to prevent duplicates
     pair_key = "__".join(sorted([my_id, target_id]))
-    existing = await db.comms_channels.find_one(
-        {"dm_pair_key": pair_key, "is_archived": {"$ne": True}},
-        {"_id": 0},
-    )
-    if existing:
-        return {"channel": existing, "created": False}
-
-    # Create new DM channel
     my_name = current_user.get("full_name") or current_user.get("email") or "Unknown"
     target_name = target_user.get("full_name") or target_user.get("email") or "Unknown"
     channel_id = str(uuid.uuid4())
     now = _utc_now()
 
-    channel_doc = {
-        "id": channel_id,
-        "name": f"{my_name} & {target_name}",
-        "type": "internal_private",
-        "description": "",
-        "posting_policy": "all_members",
-        "dm_pair_key": pair_key,
-        "is_dm": True,
-        "created_by_user_id": my_id,
-        "created_at": now,
-        "updated_at": now,
-        "is_archived": False,
-    }
-    await db.comms_channels.insert_one(channel_doc)
+    # Use find_one_and_update with upsert to atomically find or create
+    result = await db.comms_channels.find_one_and_update(
+        {"dm_pair_key": pair_key, "is_archived": {"$ne": True}},
+        {
+            "$setOnInsert": {
+                "id": channel_id,
+                "name": f"{my_name} & {target_name}",
+                "type": "internal_private",
+                "description": "",
+                "posting_policy": "all_members",
+                "dm_pair_key": pair_key,
+                "is_dm": True,
+                "created_by_user_id": my_id,
+                "created_at": now,
+                "updated_at": now,
+                "is_archived": False,
+            },
+        },
+        upsert=True,
+        return_document=True,
+    )
 
-    membership_docs = [
-        {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": my_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
-        {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": target_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
-    ]
-    await db.comms_channel_memberships.insert_many(membership_docs)
+    # Remove _id for JSON response
+    channel_doc = {k: v for k, v in result.items() if k != "_id"}
 
-    return {"channel": channel_doc, "created": True}
+    # If this was a new channel (our id matched), create memberships
+    created = channel_doc.get("id") == channel_id
+    if created:
+        membership_docs = [
+            {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": my_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
+            {"id": str(uuid.uuid4()), "channel_id": channel_id, "user_id": target_id, "role": "member", "is_active": True, "created_at": now, "updated_at": now},
+        ]
+        await db.comms_channel_memberships.insert_many(membership_docs)
+
+    return {"channel": channel_doc, "created": created}
 
 
 # ── WebSocket broadcast helper ───────────────────────────────────
@@ -1173,13 +1220,13 @@ async def _broadcast_chat_event(channel_id: str, event_type: str, data: dict):
             {"channel_id": channel_id, "is_active": True}, {"_id": 0, "user_id": 1}
         )]
         await manager.broadcast_to_users(member_ids, {"type": event_type, "data": data})
-    except Exception:
-        pass
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).debug("Chat broadcast failed for channel %s: %s", channel_id, exc)
 
 
 async def _parse_and_notify_mentions(body: str, channel_id: str, sender: dict, message_id: str):
     """Parse @mentions from message body and send notifications."""
-    import re
     mention_pattern = re.findall(r"@(\w[\w ]*\w|\w+)", body)
     if not mention_pattern:
         return []
@@ -1222,7 +1269,8 @@ async def _parse_and_notify_mentions(body: str, channel_id: str, sender: dict, m
                 cta_route=f"/comms/chat/{channel_id}",
                 data={"channel_id": channel_id, "message_id": message_id},
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to notify mention for user %s: %s", uid, exc)
 
     return mentioned_ids

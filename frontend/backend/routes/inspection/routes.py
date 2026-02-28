@@ -8,9 +8,12 @@ import json
 import re
 import base64
 import hashlib
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse, StreamingResponse, Response
 import zipfile
@@ -46,6 +49,33 @@ except Exception as e:
     raise RuntimeError(f"Failed to create photo directory '{PHOTO_DIR}': {e}")
 
 MAX_PHOTO_SIZE = 20 * 1024 * 1024  # 20MB per photo
+MAX_BULK_PHOTO_IDS = 200  # Max photos in a single bulk operation
+
+
+async def _check_photo_access(photo: dict, user: dict) -> None:
+    """
+    Verify the user has access to a photo's parent claim.
+    Admin/manager can access all; adjusters can access assigned claims.
+    Raises HTTPException 403 on denial.
+    """
+    role = user.get("role", "client")
+    if role in ("admin", "manager"):
+        return  # full access
+
+    claim_id = photo.get("claim_id")
+    if not claim_id:
+        return  # orphaned photos are accessible
+
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0, "assigned_to_id": 1, "created_by": 1, "user_id": 1})
+    if not claim:
+        return  # claim deleted — allow photo cleanup
+
+    user_id = user.get("id")
+    if claim.get("assigned_to_id") == user_id or claim.get("created_by") == user_id or claim.get("user_id") == user_id:
+        return
+
+    raise HTTPException(status_code=403, detail="You do not have access to this claim's photos")
+
 
 # Helper to get user from Bearer token
 async def get_user_from_bearer_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
@@ -57,8 +87,8 @@ async def get_user_from_bearer_token(credentials: Optional[HTTPAuthorizationCred
         if payload:
             user_id = payload.get("sub")
             if user_id:
-                return await db.users.find_one({"id": user_id})
-    except:
+                return await db.users.find_one({"id": user_id}, {"_id": 0})
+    except Exception:
         pass
     return None
 
@@ -273,7 +303,7 @@ async def upload_inspection_photo(
                             longitude = lng
                 img.close()
         except Exception as e:
-            print(f"[EXIF] Could not extract GPS: {e}")
+            logger.debug("Could not extract EXIF GPS: %s", e)
 
     # Parse tags
     tag_list = []
@@ -343,7 +373,7 @@ async def get_photo_image(
     """Get the actual photo image. Accepts Bearer token via Authorization header or ?token= query param."""
     
     user = None
-    
+
     # Try Bearer token first
     if credentials:
         try:
@@ -351,30 +381,39 @@ async def get_photo_image(
             if payload:
                 user_id = payload.get("sub")
                 if user_id:
-                    user = await db.users.find_one({"id": user_id})
-        except:
+                    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        except Exception:
             pass
-    
+
     # Fall back to query param token
     if not user and token:
         user = await get_user_from_token_param(token)
-    
+
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized - valid token required")
-    
+
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    
+
+    # Claim access check
+    await _check_photo_access(photo, user)
+
     # Build file path
     if photo.get("claim_id"):
         file_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
     else:
         file_path = os.path.join(PHOTO_DIR, photo["filename"])
-    
+
+    # Path traversal protection
+    real_photo_dir = os.path.realpath(PHOTO_DIR)
+    real_file_path = os.path.realpath(file_path)
+    if not real_file_path.startswith(real_photo_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Photo file not found on disk")
-    
+
     return FileResponse(file_path, media_type=photo.get("mime_type", "image/jpeg"))
 
 
@@ -414,7 +453,7 @@ async def get_photo_watermarked(
             if payload:
                 user_id = payload.get("sub")
                 if user_id:
-                    user = await db.users.find_one({"id": user_id})
+                    user = await db.users.find_one({"id": user_id}, {"_id": 0})
         except Exception:
             pass
 
@@ -434,6 +473,12 @@ async def get_photo_watermarked(
         file_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
     else:
         file_path = os.path.join(PHOTO_DIR, photo["filename"])
+
+    # Path traversal protection
+    real_photo_dir = os.path.realpath(PHOTO_DIR)
+    real_file_path = os.path.realpath(file_path)
+    if not real_file_path.startswith(real_photo_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Photo file not found on disk")
@@ -547,11 +592,13 @@ async def get_photo_metadata(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get photo metadata"""
-    
+
     photo = await db.inspection_photos.find_one({"id": photo_id}, {"_id": 0})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    
+
+    await _check_photo_access(photo, current_user)
+
     photo["url"] = f"/api/inspections/photos/{photo_id}/image"
     return photo
 
@@ -562,11 +609,13 @@ async def delete_photo(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Delete an inspection photo"""
-    
+
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    
+
+    await _check_photo_access(photo, current_user)
+
     # Delete file
     if photo.get("claim_id"):
         file_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
@@ -597,7 +646,12 @@ async def save_photo_annotations(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Save annotations for a photo"""
-    
+
+    photo = await db.inspection_photos.find_one({"id": photo_id}, {"claim_id": 1})
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    await _check_photo_access(photo, current_user)
+
     annotations_json = json.dumps([a.model_dump() for a in annotations])
     
     result = await db.inspection_photos.update_one(
@@ -648,6 +702,14 @@ async def bulk_photo_action(
     """Bulk operations on photos: delete, re-categorize, or move to room."""
     if not data.photo_ids:
         raise HTTPException(status_code=400, detail="No photo IDs provided")
+    if len(data.photo_ids) > MAX_BULK_PHOTO_IDS:
+        raise HTTPException(status_code=400, detail=f"Cannot process more than {MAX_BULK_PHOTO_IDS} photos at once")
+
+    # Verify access to all photos' claims before proceeding
+    for pid in data.photo_ids:
+        p = await db.inspection_photos.find_one({"id": pid}, {"claim_id": 1})
+        if p:
+            await _check_photo_access(p, current_user)
 
     affected = 0
 
@@ -890,7 +952,6 @@ async def get_inspection_stats(
 
 # ========== VOICE RECORDING & TRANSCRIPTION ==========
 
-import os
 AUDIO_DIR = os.environ.get("AUDIO_DIR", "/tmp/audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
@@ -979,9 +1040,9 @@ async def upload_session_voice(
         await attach_voice_snippets_to_photos(session_id, response)
         
     except Exception as e:
-        print(f"[Whisper] Transcription error: {e}")
+        logger.error("Whisper transcription error for session %s: %s", session_id, e)
         # Don't fail the upload if transcription fails
-        transcript_text = f"Transcription pending (error: {str(e)[:100]})"
+        transcript_text = "Transcription pending"
     
     return {
         "voice_recording_id": voice_id,
@@ -1056,7 +1117,7 @@ async def attach_voice_snippets_to_photos(session_id: str, whisper_response):
                     {"$set": {"voice_snippet": voice_snippet}}
                 )
         except Exception as e:
-            print(f"[VoiceMatch] Error matching photo {photo.get('id')}: {e}")
+            logger.warning("VoiceMatch error for photo %s: %s", photo.get("id"), e)
             continue
     
     # After attaching snippets, extract AI tags
@@ -1138,7 +1199,7 @@ async def extract_ai_tags_for_session(session_id: str):
                 {"id": photo["id"]},
                 {"$set": update_data}
             )
-            print(f"[AITag] Photo {photo['id'][:8]}... tagged: room={detected_room}, tags={ai_tags}")
+            logger.info("AITag photo %s: room=%s tags=%s", photo["id"][:8], detected_room, ai_tags)
 
 
 @router.post("/photos/{photo_id}/ai-tag")
@@ -1260,15 +1321,26 @@ async def assess_photo_damage(
     The result is persisted on the photo document as ai_damage_assessment.
     """
     # 1. Fetch photo metadata
+    from security import check_rate_limit
+    check_rate_limit(f"ai:{current_user.get('id', 'unknown')}", "ai")
+
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+
+    await _check_photo_access(photo, current_user)
 
     # 2. Read the photo file from disk
     if photo.get("claim_id"):
         file_path = os.path.join(PHOTO_DIR, photo["claim_id"], photo["filename"])
     else:
         file_path = os.path.join(PHOTO_DIR, photo["filename"])
+
+    # Path traversal protection
+    real_photo_dir = os.path.realpath(PHOTO_DIR)
+    real_file_path = os.path.realpath(file_path)
+    if not real_file_path.startswith(real_photo_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Photo file not found on disk")
@@ -1325,14 +1397,14 @@ async def assess_photo_damage(
 
         if resp.status_code != 200:
             error_detail = resp.text[:300]
-            print(f"[DamageAI] OpenAI API error {resp.status_code}: {error_detail}")
+            logger.error("DamageAI OpenAI API error %s: %s", resp.status_code, error_detail)
             raise HTTPException(status_code=502, detail=f"AI vision API error: {resp.status_code}")
 
         response = resp.json()["choices"][0]["message"]["content"].strip()
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[DamageAI] LLM call failed for photo {photo_id}: {e}")
+        logger.error("DamageAI LLM call failed for photo %s: %s", photo_id, e)
         raise HTTPException(status_code=502, detail="AI damage assessment failed")
 
     # 5. Parse the JSON response
@@ -1944,7 +2016,7 @@ async def generate_inspection_report(
         }
         
     except Exception as e:
-        print(f"[Report] Generation error: {e}")
+        logger.error("Report generation error: %s", e)
         raise HTTPException(status_code=500, detail="Report generation failed")
 
 
@@ -2049,7 +2121,7 @@ async def export_zip(
             file_path = os.path.join(PHOTO_DIR, claim_id, photo.get("filename", ""))
             if not os.path.exists(file_path):
                 # Skip missing files gracefully
-                print(f"[export-zip] WARNING: file not found, skipping: {file_path}")
+                logger.warning("export-zip: file not found, skipping: %s", file_path)
                 continue
 
             try:
@@ -2057,7 +2129,7 @@ async def export_zip(
                     zf.writestr(arc_path, f.read())
                 files_added += 1
             except Exception as e:
-                print(f"[export-zip] WARNING: failed to read {file_path}: {e}")
+                logger.warning("export-zip: failed to read %s: %s", file_path, e)
                 continue
 
             # Collect metadata for manifest

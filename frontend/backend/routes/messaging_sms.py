@@ -10,25 +10,26 @@ Endpoints:
 - GET /api/sms/status - Check Twilio configuration status
 """
 import os
+import re
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Literal
 from fastapi import APIRouter, HTTPException, Depends, Request, Query, Form
 from pydantic import BaseModel
 
 from dependencies import db, get_current_active_user
 from services.sms_twilio import (
-    send_sms, 
-    is_configured, 
+    send_sms,
+    is_configured,
     get_config_status,
     validate_twilio_signature,
     format_phone_number,
     render_template,
     SMS_TEMPLATES,
-    SMS_WEBHOOK_SECRET
+    SMS_WEBHOOK_SECRET,
+    TWILIO_AUTH_TOKEN,
 )
-from routes.notifications import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ def _parse_iso_datetime(value: str) -> Optional[datetime]:
 async def _issue_ai_sms_confirmation_token(claim_id: str, current_user: dict) -> dict:
     token = uuid.uuid4().hex
     now_dt = _now_utc()
-    expires_at = now_dt + __import__("datetime").timedelta(minutes=AI_SMS_CONFIRM_TTL_MINUTES)
+    expires_at = now_dt + timedelta(minutes=AI_SMS_CONFIRM_TTL_MINUTES)
     doc = {
         "id": str(uuid.uuid4()),
         "claim_id": claim_id,
@@ -138,7 +139,9 @@ async def _consume_ai_sms_confirmation_token(claim_id: str, token: str, current_
             detail="AI-generated outbound SMS requires confirmation token. Request one before sending.",
         )
 
-    doc = await db.ai_outbound_confirmations.find_one(
+    now = _now_utc()
+    # Atomically find and consume the token to prevent double-use
+    doc = await db.ai_outbound_confirmations.find_one_and_update(
         {
             "claim_id": claim_id,
             "user_id": current_user.get("id"),
@@ -146,20 +149,22 @@ async def _consume_ai_sms_confirmation_token(claim_id: str, token: str, current_
             "purpose": "ai_outbound_sms",
             "used": False,
         },
-        {"_id": 0},
+        {"$set": {"used": True, "used_at": now.isoformat()}},
+        return_document=False,
     )
     if not doc:
         raise HTTPException(status_code=412, detail="Invalid or already-used confirmation token")
 
     expires_at = _parse_iso_datetime(doc.get("expires_at"))
-    if not expires_at or expires_at < _now_utc():
+    if not expires_at or expires_at < now:
+        # Token expired — roll back the consumed flag
+        await db.ai_outbound_confirmations.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"used": False}},
+        )
         raise HTTPException(status_code=412, detail="Confirmation token expired")
 
-    await db.ai_outbound_confirmations.update_one(
-        {"id": doc["id"]},
-        {"$set": {"used": True, "used_at": _now_utc().isoformat()}},
-    )
-    return doc
+    return {k: v for k, v in doc.items() if k != "_id"}
 
 
 # ============================================
@@ -233,7 +238,7 @@ async def send_claim_sms(
         )
     
     # 2. Check rate limiting
-    one_hour_ago = (datetime.now(timezone.utc) - __import__('datetime').timedelta(hours=1)).isoformat()
+    one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
     recent_count = await db.messages.count_documents({
         "claim_id": claim_id,
         "direction": "outbound",
@@ -345,7 +350,7 @@ async def send_claim_sms(
         )
         
         logger.error(f"SMS failed for claim {claim_id}: {result}")
-        raise HTTPException(status_code=500, detail=f"Failed to send SMS: {result}")
+        raise HTTPException(status_code=500, detail="Failed to send SMS. Check Twilio configuration and recipient number.")
 
 
 # ============================================
@@ -408,7 +413,7 @@ async def get_sms_risk_audit(
     if not _is_admin_user(current_user):
         raise HTTPException(status_code=403, detail="Admin access required for SMS audit logs")
 
-    window_start = (_now_utc() - __import__("datetime").timedelta(days=days)).isoformat()
+    window_start = (_now_utc() - timedelta(days=days)).isoformat()
     query = {
         "channel": "sms",
         "direction": "outbound",
@@ -503,12 +508,15 @@ async def twilio_webhook(
     """
     # Basic secret validation (if configured)
     if SMS_WEBHOOK_SECRET and secret != SMS_WEBHOOK_SECRET:
-        logger.warning(f"Twilio webhook called with invalid secret")
+        logger.warning("Twilio webhook called with invalid secret")
         raise HTTPException(status_code=403, detail="Invalid webhook secret")
 
-    # Twilio signature validation (if auth token configured)
+    # Twilio signature validation — required when auth token is configured
     signature = request.headers.get("X-Twilio-Signature", "")
-    if signature:
+    if TWILIO_AUTH_TOKEN:
+        if not signature:
+            logger.warning("Twilio webhook missing X-Twilio-Signature header")
+            raise HTTPException(status_code=403, detail="Missing Twilio signature")
         url = str(request.url).split("?")[0]  # Strip query params for validation
         form_data = await request.form()
         if not validate_twilio_signature(url, dict(form_data), signature):
@@ -642,7 +650,6 @@ async def get_sms_templates(current_user: dict = Depends(get_current_active_user
 
 def _extract_template_variables(template: str) -> List[str]:
     """Extract variable names from template string"""
-    import re
     return re.findall(r'\{(\w+)\}', template)
 
 
@@ -673,8 +680,9 @@ async def send_fnol_sms(claim_id: str, to_phone: str, status_link: str):
     if body:
         success, result, _ = await send_sms(to_phone, body)
         if success:
-            # Log the message
             await _log_system_sms(claim_id, to_phone, body, result, "fnol_created")
+        else:
+            logger.error("FNOL SMS failed for claim %s to %s: %s", claim_id, to_phone, result)
 
 
 async def send_appointment_sms(claim_id: str, to_phone: str, date_time: str, address: str):
@@ -699,6 +707,8 @@ async def send_appointment_sms(claim_id: str, to_phone: str, date_time: str, add
         success, result, _ = await send_sms(to_phone, body)
         if success:
             await _log_system_sms(claim_id, to_phone, body, result, "appointment_scheduled")
+        else:
+            logger.error("Appointment SMS failed for claim %s to %s: %s", claim_id, to_phone, result)
 
 
 async def send_photos_request_sms(claim_id: str, to_phone: str, rapid_capture_link: str):
@@ -722,6 +732,8 @@ async def send_photos_request_sms(claim_id: str, to_phone: str, rapid_capture_li
         success, result, _ = await send_sms(to_phone, body)
         if success:
             await _log_system_sms(claim_id, to_phone, body, result, "photos_requested")
+        else:
+            logger.error("Photos request SMS failed for claim %s to %s: %s", claim_id, to_phone, result)
 
 
 async def send_payment_sms(claim_id: str, to_phone: str, payment_link: str):
@@ -745,6 +757,8 @@ async def send_payment_sms(claim_id: str, to_phone: str, payment_link: str):
         success, result, _ = await send_sms(to_phone, body)
         if success:
             await _log_system_sms(claim_id, to_phone, body, result, "payment_issued")
+        else:
+            logger.error("Payment SMS failed for claim %s to %s: %s", claim_id, to_phone, result)
 
 
 async def _log_system_sms(

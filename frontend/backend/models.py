@@ -1,7 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
+
+
+def _utc_now():
+    return datetime.now(timezone.utc)
 
 # Role and Permission Definitions
 ROLES = {
@@ -78,7 +82,7 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
     is_active: bool = True
     
     model_config = ConfigDict(
@@ -167,8 +171,8 @@ class Claim(ClaimBase):
     assigned_to: Optional[str] = None
     priority: str = "Medium"
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
     # Client status fields
     stage: str = "intake"  # intake, inspection, negotiation, settlement, closed
     next_actions_firm: Optional[str] = None
@@ -185,7 +189,7 @@ class Note(NoteCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     author_id: str
     author_name: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
 
 # Document Models
 class DocumentCreate(BaseModel):
@@ -197,7 +201,7 @@ class DocumentCreate(BaseModel):
 class Document(DocumentCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     uploaded_by: str
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: datetime = Field(default_factory=_utc_now)
     file_path: Optional[str] = None
 
 # Inspection Models
@@ -219,7 +223,7 @@ class Inspection(InspectionCreate):
     status: str = "In Progress"
     rooms: List[InspectionRoom] = []
     total_photos: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
 
 # Notification Models
 class NotificationCreate(BaseModel):
@@ -233,7 +237,7 @@ class NotificationCreate(BaseModel):
 class Notification(NotificationCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     is_read: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
 
 # Task / Follow-up Models
 class TaskCreate(BaseModel):
@@ -260,5 +264,5 @@ class Task(TaskCreate):
     created_by: str
     created_by_name: str
     completed_at: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)

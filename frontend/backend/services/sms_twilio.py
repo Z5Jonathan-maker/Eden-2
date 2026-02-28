@@ -49,7 +49,7 @@ def get_twilio_client():
             logger.error("Twilio package not installed. Run: pip install twilio")
             return None
         except Exception as e:
-            logger.error(f"Failed to initialize Twilio client: {e}")
+            logger.error("Failed to initialize Twilio client: %s", e)
             return None
     
     return _twilio_client
@@ -105,7 +105,7 @@ async def send_sms(
     # Dry-run mode - don't actually send
     if SMS_DRY_RUN:
         dry_run_sid = f"dry-run-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
-        logger.info(f"[DRY-RUN] Would send SMS to {to}: {body[:50]}...")
+        logger.info("[DRY-RUN] Would send SMS to %s: %s...", to, body[:50])
         return (True, dry_run_sid, "sent")
     
     # Check configuration
@@ -137,13 +137,12 @@ async def send_sms(
         # Send the message
         message = client.messages.create(**kwargs)
         
-        logger.info(f"SMS sent successfully to {to}, SID: {message.sid}")
+        logger.info("SMS sent successfully to %s, SID: %s", to, message.sid)
         return (True, message.sid, message.status)
         
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Failed to send SMS to {to}: {error_msg}")
-        return (False, error_msg, None)
+        logger.error("Failed to send SMS to %s: %s", to, e)
+        return (False, "SMS delivery failed", None)
 
 
 def validate_twilio_signature(url: str, params: dict, signature: str) -> bool:
@@ -170,7 +169,7 @@ def validate_twilio_signature(url: str, params: dict, signature: str) -> bool:
         logger.error("Twilio package not installed")
         return False
     except Exception as e:
-        logger.error(f"Signature validation error: {e}")
+        logger.error("Signature validation error: %s", e)
         return False
 
 
@@ -249,11 +248,11 @@ def render_template(template_key: str, **kwargs) -> Optional[str]:
     """
     template = SMS_TEMPLATES.get(template_key)
     if not template:
-        logger.warning(f"SMS template not found: {template_key}")
+        logger.warning("SMS template not found: %s", template_key)
         return None
     
     try:
         return template["template"].format(**kwargs)
     except KeyError as e:
-        logger.error(f"Missing template variable: {e}")
+        logger.error("Missing template variable: %s", e)
         return None
