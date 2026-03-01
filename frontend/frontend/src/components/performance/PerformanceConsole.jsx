@@ -19,7 +19,7 @@ import { apiGet, apiPut } from '@/lib/api';
 
 // Import existing admin consoles
 import HarvestAdminConsole from '../HarvestAdminConsole';
-import IncentivesAdminConsole from '../IncentivesAdminConsole';
+import IncentivesAdminConsole from '../../features/incentives/components/IncentivesAdminConsole';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
 const SMS_AUDIT_PRESETS_KEY = 'eden_sms_audit_presets_v1';

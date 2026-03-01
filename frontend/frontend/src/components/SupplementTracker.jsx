@@ -192,27 +192,27 @@ function SupplementTracker() {
 
   if (loading) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <Button variant="ghost" onClick={function() { navigate('/claims/' + claimId); }} className="mb-4">
+        <Button variant="ghost" onClick={function() { navigate('/claims/' + claimId); }} className="mb-4 min-h-[44px]">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Claim
         </Button>
-        
-        <div className="flex items-center justify-between">
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">SUPPLEMENT TRACKER</h1>
+            <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">SUPPLEMENT TRACKER</h1>
             {claim && <p className="text-gray-600">Claim #{claim.claim_number} - {claim.client_name}</p>}
           </div>
-          <Button className="bg-orange-600 hover:bg-orange-700" onClick={function() { setShowNewForm(true); }}>
+          <Button className="bg-orange-600 hover:bg-orange-700 min-h-[44px] w-full sm:w-auto" onClick={function() { setShowNewForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             New Supplement
           </Button>
@@ -220,7 +220,7 @@ function SupplementTracker() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-gray-900">
           <CardContent className="p-6">
             <p className="text-blue-100 text-sm">Total Requested</p>
@@ -260,7 +260,7 @@ function SupplementTracker() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Title *</label>
                   <Input
@@ -284,7 +284,8 @@ function SupplementTracker() {
                 <h4 className="font-medium mb-3">Line Items</h4>
                 
                 {newSupplement.line_items.length > 0 && (
-                  <table className="w-full mb-4 text-sm">
+                  <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <table className="w-full mb-4 text-sm min-w-[600px]">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-2">Description</th>
@@ -319,11 +320,12 @@ function SupplementTracker() {
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 )}
 
                 {/* Add Line Item Form */}
-                <div className="grid grid-cols-6 gap-2 items-end">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 items-end">
+                  <div className="col-span-2 sm:col-span-2 lg:col-span-2">
                     <label className="block text-xs mb-1">Description</label>
                     <Input
                       value={newLineItem.description}
@@ -402,20 +404,20 @@ function SupplementTracker() {
               <Card key={supp.id}>
                 <CardContent className="p-0">
                   {/* Header Row */}
-                  <div 
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  <div
+                    className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-gray-50 min-h-[44px]"
                     onClick={function() { setExpandedSupplement(isExpanded ? null : supp.id); }}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                      <div className="w-10 h-10 flex-shrink-0 bg-orange-100 rounded-lg flex items-center justify-center">
                         <span className="text-orange-600 font-bold">#{supp.supplement_number}</span>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{supp.title}</h3>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold truncate">{supp.title}</h3>
                         <p className="text-sm text-gray-500">{supp.line_items ? supp.line_items.length : 0} line items</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center gap-3 sm:space-x-4 flex-shrink-0">
                       <div className="text-right">
                         <p className="font-semibold">{formatCurrency(supp.total_requested)}</p>
                         {supp.carrier_approved_amount > 0 && (
@@ -423,7 +425,7 @@ function SupplementTracker() {
                         )}
                       </div>
                       <Badge className={STATUS_COLORS[supp.status]}>{STATUS_LABELS[supp.status]}</Badge>
-                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      {isExpanded ? <ChevronUp className="w-5 h-5 flex-shrink-0" /> : <ChevronDown className="w-5 h-5 flex-shrink-0" />}
                     </div>
                   </div>
 
@@ -432,7 +434,8 @@ function SupplementTracker() {
                     <div className="border-t p-4 bg-gray-50">
                       {/* Line Items Table */}
                       {supp.line_items && supp.line_items.length > 0 && (
-                        <table className="w-full text-sm mb-4">
+                        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <table className="w-full text-sm mb-4 min-w-[700px]">
                           <thead>
                             <tr className="border-b">
                               <th className="text-left p-2">Description</th>
@@ -469,6 +472,7 @@ function SupplementTracker() {
                             </tr>
                           </tbody>
                         </table>
+                        </div>
                       )}
 
                       {/* AI Justification */}
@@ -493,15 +497,16 @@ function SupplementTracker() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="text-sm text-gray-500">
                           {supp.submitted_at && <span>Submitted: {new Date(supp.submitted_at).toLocaleDateString()}</span>}
                           {supp.carrier_response_date && <span className="ml-4">Response: {new Date(supp.carrier_response_date).toLocaleDateString()}</span>}
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
                             variant="outline"
+                            className="min-h-[44px] sm:min-h-0"
                             onClick={function(e) {
                               e.stopPropagation();
                               generateAiJustification(supp);

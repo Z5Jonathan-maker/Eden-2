@@ -171,7 +171,7 @@ const Dashboard = () => {
           </div>
         </div>
         {/* Stats grid skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="card-tactical p-3 sm:p-5">
               <div className="flex items-start justify-between mb-3">
@@ -256,7 +256,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid - HUD Style */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 stagger-children">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 stagger-children">
         {/* Total Claims */}
         <div
           className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"

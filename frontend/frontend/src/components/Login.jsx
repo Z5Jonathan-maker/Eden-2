@@ -47,7 +47,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-tactical-animated relative overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-tactical-animated relative overflow-hidden flex items-center justify-center p-4 pb-[env(safe-area-inset-bottom)]">
       {/* Background Grid Pattern */}
       <div className="absolute inset-0 grid-pattern opacity-50" />
       
@@ -57,7 +57,7 @@ const Login = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 px-4 sm:px-0">
         {/* Operation Eden Logo */}
         <div className="text-center mb-8">
           <div className="relative inline-block">
@@ -142,7 +142,7 @@ const Login = () => {
 
             <button
               type="submit"
-              className="btn-tactical w-full py-3 text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+              className="btn-tactical w-full py-3 min-h-[44px] text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               disabled={loading}
               data-testid="login-submit-btn"
             >
