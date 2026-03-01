@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useDebounce } from './useDebounce';
 
@@ -8,7 +8,9 @@ describe('useDebounce', () => {
     expect(result.current).toBe('hello');
   });
 
-  it('should debounce value updates', async () => {
+  it('should debounce value updates', () => {
+    vi.useFakeTimers();
+
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 100),
       { initialProps: { value: 'initial' } }
@@ -20,13 +22,11 @@ describe('useDebounce', () => {
     rerender({ value: 'updated' });
     expect(result.current).toBe('initial'); // Still old value
 
-    // Wait for debounce
-    await waitFor(
-      () => {
-        expect(result.current).toBe('updated');
-      },
-      { timeout: 200 }
-    );
+    // Advance past debounce delay
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(result.current).toBe('updated');
+
+    vi.useRealTimers();
   });
 
   it('should cancel previous timeout on rapid changes', async () => {
@@ -53,7 +53,9 @@ describe('useDebounce', () => {
     vi.useRealTimers();
   });
 
-  it('should use custom delay', async () => {
+  it('should use custom delay', () => {
+    vi.useFakeTimers();
+
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 200),
       { initialProps: { value: 'initial' } }
@@ -62,54 +64,62 @@ describe('useDebounce', () => {
     rerender({ value: 'updated' });
 
     // Should not update after 100ms
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    act(() => { vi.advanceTimersByTime(100); });
     expect(result.current).toBe('initial');
 
     // But should update after 200ms
-    await waitFor(
-      () => {
-        expect(result.current).toBe('updated');
-      },
-      { timeout: 300 }
-    );
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(result.current).toBe('updated');
+
+    vi.useRealTimers();
   });
 
-  it('should handle numbers', async () => {
+  it('should handle numbers', () => {
+    vi.useFakeTimers();
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 50),
       { initialProps: { value: 42 } }
     );
     rerender({ value: 100 });
-    await waitFor(() => expect(result.current).toBe(100), { timeout: 200 });
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(result.current).toBe(100);
+    vi.useRealTimers();
   });
 
-  it('should handle booleans', async () => {
+  it('should handle booleans', () => {
+    vi.useFakeTimers();
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 50),
       { initialProps: { value: true } }
     );
     rerender({ value: false });
-    await waitFor(() => expect(result.current).toBe(false), { timeout: 200 });
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(result.current).toBe(false);
+    vi.useRealTimers();
   });
 
-  it('should handle objects', async () => {
+  it('should handle objects', () => {
+    vi.useFakeTimers();
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 50),
       { initialProps: { value: { name: 'John' } } }
     );
     const newObj = { name: 'Jane' };
     rerender({ value: newObj });
-    await waitFor(() => expect(result.current).toBe(newObj), { timeout: 200 });
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(result.current).toBe(newObj);
+    vi.useRealTimers();
   });
 
-  it('should return latest value after timeout', async () => {
+  it('should return latest value after timeout', () => {
+    vi.useFakeTimers();
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 50),
       { initialProps: { value: 'test' } }
     );
-
     rerender({ value: 'updated' });
-
-    await waitFor(() => expect(result.current).toBe('updated'), { timeout: 200 });
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(result.current).toBe('updated');
+    vi.useRealTimers();
   });
 });
