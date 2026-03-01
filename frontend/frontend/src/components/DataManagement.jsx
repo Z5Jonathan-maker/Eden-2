@@ -2,7 +2,7 @@ import React from 'react';
 import { Download, Upload, FileSpreadsheet, FileJson, Database } from 'lucide-react';
 import { NAV_ICONS } from '../assets/badges';
 import { toast } from 'sonner';
-import { apiGet, apiPost, API_URL } from '@/lib/api';
+import { apiGet, apiPost, API_URL, getAuthToken } from '@/lib/api';
 const IMPORT_MAPPING_PRESETS_KEY = 'eden_data_import_mapping_presets_v1';
 const IMPORT_MAPPING_PREFERRED_PRESET_KEY = 'eden_data_import_preferred_preset_v1';
 const IMPORT_MAPPING_PRESET_LOCK_KEY = 'eden_data_import_preset_lock_v1';
@@ -420,10 +420,14 @@ function DataManagement() {
   );
 
   function handleExportCSV() {
+    var token = getAuthToken();
+    var headers = token ? { Authorization: 'Bearer ' + token } : {};
     fetch(API_URL + '/api/data/export/claims', {
       credentials: 'include',
+      headers: headers,
     })
       .then(function (res) {
+        if (!res.ok) throw new Error('Export failed');
         return res.blob();
       })
       .then(function (blob) {
@@ -432,14 +436,22 @@ function DataManagement() {
         a.href = url;
         a.download = 'claims_export.csv';
         a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(function () {
+        toast.error('CSV export failed');
       });
   }
 
   function handleExportJSON() {
+    var token = getAuthToken();
+    var headers = token ? { Authorization: 'Bearer ' + token } : {};
     fetch(API_URL + '/api/data/export/claims/json', {
       credentials: 'include',
+      headers: headers,
     })
       .then(function (res) {
+        if (!res.ok) throw new Error('Export failed');
         return res.blob();
       })
       .then(function (blob) {
@@ -448,14 +460,22 @@ function DataManagement() {
         a.href = url;
         a.download = 'claims_export.json';
         a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(function () {
+        toast.error('JSON export failed');
       });
   }
 
   function handleDownloadTemplate() {
+    var token = getAuthToken();
+    var headers = token ? { Authorization: 'Bearer ' + token } : {};
     fetch(API_URL + '/api/data/template/claims', {
       credentials: 'include',
+      headers: headers,
     })
       .then(function (res) {
+        if (!res.ok) throw new Error('Download failed');
         return res.blob();
       })
       .then(function (blob) {
@@ -464,6 +484,10 @@ function DataManagement() {
         a.href = url;
         a.download = 'claims_template.csv';
         a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(function () {
+        toast.error('Template download failed');
       });
   }
 

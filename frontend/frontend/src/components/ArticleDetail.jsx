@@ -12,17 +12,22 @@ function ArticleDetail() {
   var navigate = useNavigate();
   var [article, setArticle] = useState(null);
   var [loading, setLoading] = useState(true);
+  var [error, setError] = useState('');
 
   const fetchArticle = useCallback(
     async function fetchArticle() {
       setLoading(true);
+      setError('');
       try {
         const res = await apiGet('/api/university/articles/' + articleId);
         if (res.ok) {
           setArticle(res.data);
+        } else {
+          setError(res.error || 'Failed to load article');
         }
-      } catch (error) {
-        console.error('Failed to fetch article:', error);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch article');
+        console.error('Failed to fetch article:', err);
       } finally {
         setLoading(false);
       }
@@ -51,15 +56,21 @@ function ArticleDetail() {
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold">Article not found</h3>
-            <Button
-              className="mt-4"
-              onClick={function () {
-                navigate('/university');
-              }}
-            >
-              Back
-            </Button>
+            <h3 className="text-xl font-semibold">
+              {error ? 'Failed to load article' : 'Article not found'}
+            </h3>
+            {error && <p className="text-gray-500 text-sm mt-2">{error}</p>}
+            <div className="flex gap-3 justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={function () {
+                  navigate('/university');
+                }}
+              >
+                Back
+              </Button>
+              {error && <Button onClick={fetchArticle}>Retry</Button>}
+            </div>
           </CardContent>
         </Card>
       </div>

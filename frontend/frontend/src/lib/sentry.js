@@ -1,86 +1,113 @@
 /**
- * Sentry Error Tracking Configuration
+ * Sentry Error Tracking - Lazy-loaded
  *
- * Production-grade error monitoring and performance tracking
+ * @sentry/react (~70KB gzip) is loaded via dynamic import() so it stays OUT
+ * of the critical rendering path.  The exported functions are thin wrappers
+ * that queue calls until the SDK finishes loading.
+ *
+ * Consumers can continue to `import { captureError } from '../lib/sentry'`
+ * without any changes — the static import only pulls this small shim into
+ * the main bundle, not the actual Sentry SDK.
  */
 
-import * as Sentry from '@sentry/react';
-import { browserTracingIntegration, replayIntegration } from '@sentry/react';
+const SENTRY_DSN = typeof import.meta !== 'undefined'
+  ? import.meta.env?.REACT_APP_SENTRY_DSN
+  : undefined;
 
-// Only initialize Sentry in production
-const SENTRY_DSN = import.meta.env.REACT_APP_SENTRY_DSN;
-const ENVIRONMENT = import.meta.env.REACT_APP_ENVIRONMENT || import.meta.env.NODE_ENV;
+const ENVIRONMENT = typeof import.meta !== 'undefined'
+  ? (import.meta.env?.REACT_APP_ENVIRONMENT || import.meta.env?.NODE_ENV)
+  : 'development';
 
+// Resolved once the SDK is loaded (or null if skipped)
+let _sentry = null;
+let _loaded = false;
+
+/**
+ * Lazily load the Sentry SDK. Returns the Sentry namespace or null.
+ */
+function loadSentry() {
+  if (_loaded) return Promise.resolve(_sentry);
+  if (!SENTRY_DSN || ENVIRONMENT === 'development') {
+    _loaded = true;
+    return Promise.resolve(null);
+  }
+
+  return import('@sentry/react').then((mod) => {
+    _sentry = mod;
+    _loaded = true;
+    return mod;
+  }).catch((err) => {
+    console.warn('[Sentry] Failed to load SDK', err);
+    _loaded = true;
+    return null;
+  });
+}
+
+/**
+ * Initialize Sentry. Call once at app startup.
+ */
 export function initSentry() {
-  // Skip initialization if no DSN or in development
   if (!SENTRY_DSN || ENVIRONMENT === 'development') {
     console.log('[Sentry] Skipped initialization (dev mode or no DSN)');
     return;
   }
 
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: ENVIRONMENT,
-    integrations: [
-      browserTracingIntegration(),
-      replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
+  loadSentry().then((Sentry) => {
+    if (!Sentry) return;
 
-    // Performance Monitoring
-    tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0, // 10% in prod, 100% in staging
+    const { browserTracingIntegration, replayIntegration } = Sentry;
 
-    // Session Replay (for debugging)
-    replaysSessionSampleRate: 0.1, // 10% of sessions
-    replaysOnErrorSampleRate: 1.0, // 100% when errors occur
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: ENVIRONMENT,
+      integrations: [
+        browserTracingIntegration(),
+        replayIntegration({
+          maskAllText: true,
+          blockAllMedia: true,
+        }),
+      ],
+      tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      release: import.meta.env?.REACT_APP_VERSION || 'unknown',
+      ignoreErrors: [
+        'ResizeObserver loop limit exceeded',
+        'Non-Error promise rejection captured',
+        'Network request failed',
+        'Failed to fetch',
+        'Load failed',
+        'AbortError',
+      ],
+      beforeSend(event) {
+        if (event.request) {
+          delete event.request.cookies;
+          delete event.request.headers;
+        }
+        if (event.tags) {
+          event.tags.userAgent = navigator.userAgent;
+          event.tags.viewport = `${window.innerWidth}x${window.innerHeight}`;
+        }
+        return event;
+      },
+    });
 
-    // Release tracking
-    release: import.meta.env.REACT_APP_VERSION || 'unknown',
-
-    // Ignore common non-critical errors
-    ignoreErrors: [
-      'ResizeObserver loop limit exceeded',
-      'Non-Error promise rejection captured',
-      'Network request failed',
-      'Failed to fetch',
-      'Load failed',
-      'AbortError',
-    ],
-
-    // User context (do not send PII)
-    beforeSend(event, hint) {
-      // Remove sensitive data
-      if (event.request) {
-        delete event.request.cookies;
-        delete event.request.headers;
-      }
-
-      // Add custom tags
-      if (event.tags) {
-        event.tags.userAgent = navigator.userAgent;
-        event.tags.viewport = `${window.innerWidth}x${window.innerHeight}`;
-      }
-
-      return event;
-    },
+    console.log('[Sentry] Initialized successfully');
   });
-
-  console.log('[Sentry] Initialized successfully');
 }
 
 /**
  * Set user context (call after login)
- * @param {object} user - User object with id, email, role
  */
 export function setSentryUser(user) {
   if (!SENTRY_DSN) return;
-
-  Sentry.setUser({
-    id: user.id,
-    email: user.email, // Sentry sanitizes emails by default
-    role: user.role,
+  loadSentry().then((Sentry) => {
+    if (!Sentry) return;
+    Sentry.setUser({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
   });
 }
 
@@ -89,44 +116,39 @@ export function setSentryUser(user) {
  */
 export function clearSentryUser() {
   if (!SENTRY_DSN) return;
-  Sentry.setUser(null);
+  loadSentry().then((Sentry) => {
+    if (!Sentry) return;
+    Sentry.setUser(null);
+  });
 }
 
 /**
  * Manually capture an error
- * @param {Error} error - Error object
- * @param {object} context - Additional context
  */
 export function captureError(error, context = {}) {
   if (!SENTRY_DSN) {
     console.error('[Sentry fallback]', error, context);
     return;
   }
-
-  Sentry.captureException(error, {
-    extra: context,
+  loadSentry().then((Sentry) => {
+    if (!Sentry) return;
+    Sentry.captureException(error, { extra: context });
   });
 }
 
 /**
  * Capture a breadcrumb (for debugging)
- * @param {string} message - Breadcrumb message
- * @param {object} data - Additional data
  */
 export function captureBreadcrumb(message, data = {}) {
   if (!SENTRY_DSN) return;
-
-  Sentry.addBreadcrumb({
-    message,
-    data,
-    level: 'info',
+  loadSentry().then((Sentry) => {
+    if (!Sentry) return;
+    Sentry.addBreadcrumb({ message, data, level: 'info' });
   });
 }
 
 /**
  * Wrap an async function with error tracking
- * @param {Function} fn - Async function to wrap
- * @param {string} operationName - Name for tracking
  */
 export function withErrorTracking(fn, operationName) {
   return async (...args) => {
@@ -135,11 +157,14 @@ export function withErrorTracking(fn, operationName) {
     } catch (error) {
       captureError(error, {
         operation: operationName,
-        args: JSON.stringify(args).substring(0, 200), // Limit size
+        args: JSON.stringify(args).substring(0, 200),
       });
       throw error;
     }
   };
 }
 
-export default Sentry;
+// Default export: a proxy-like object for backward compat
+// Code that did `import Sentry from './sentry'` and called Sentry.xyz
+// should migrate to the named exports above.
+export default { captureError, captureException: captureError, setSentryUser, clearSentryUser };

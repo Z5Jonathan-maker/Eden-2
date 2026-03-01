@@ -207,6 +207,20 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen page-enter">
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 p-4 rounded-lg flex items-center gap-3 border bg-red-500/10 border-red-500/30 text-red-400">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm flex-1 font-mono">{error}</span>
+          <button
+            onClick={fetchDashboardData}
+            className="text-sm text-zinc-400 hover:text-orange-400 font-mono uppercase focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Payment Status Banner */}
       {paymentStatus && (
         <div

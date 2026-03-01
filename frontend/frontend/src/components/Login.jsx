@@ -31,19 +31,23 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
-    
-    if (result.success) {
-      // Role-based redirect will be handled by the useEffect above once
-      // auth context updates. As a fallback, navigate to dashboard.
-      // The useEffect watching isAuthenticated will correct the route
-      // for client users on the next render cycle.
-      navigate('/dashboard', { replace: true });
-    } else {
-      setError(result.error);
+    try {
+      const result = await login(email, password);
+
+      if (result.success) {
+        // Role-based redirect will be handled by the useEffect above once
+        // auth context updates. As a fallback, navigate to dashboard.
+        // The useEffect watching isAuthenticated will correct the route
+        // for client users on the next render cycle.
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(result.error || 'Login failed');
+      }
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (

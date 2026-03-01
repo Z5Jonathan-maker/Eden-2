@@ -20,12 +20,18 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!formData.fullName.trim()) { setError('Name is required'); return; }
     if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
     if (formData.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
-    const result = await register(formData.email, formData.password, formData.fullName, formData.role);
-    if (result.success) { navigate('/dashboard'); } else { setError(result.error); }
-    setLoading(false);
+    try {
+      const result = await register(formData.email, formData.password, formData.fullName, formData.role);
+      if (result.success) { navigate('/dashboard'); } else { setError(result.error || 'Registration failed'); }
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = "w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700/50 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 font-mono text-sm";

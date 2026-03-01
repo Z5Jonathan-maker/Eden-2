@@ -221,7 +221,14 @@ async function _apiFetch(endpoint, options = {}) {
     }
 
     const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (_parseErr) {
+        return { ok: false, error: 'Invalid response from server (malformed JSON)' };
+      }
+    }
 
     if (method === 'GET' && cacheOption !== false) {
       setCache(url, data);

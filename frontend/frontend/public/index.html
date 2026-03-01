@@ -16,7 +16,8 @@
         
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
+        <!-- All fonts loaded here (NOT via CSS @import which is render-blocking) -->
+        <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
         
         <title>Eden Claims Management</title>
 
@@ -39,7 +40,9 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
         <!-- Emergent badge removed for local development -->
+        <!-- PostHog Analytics (production only — skipped in dev to reduce overhead) -->
         <script>
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             !(function (t, e) {
                 var o, n, p, r;
                 e.__SV ||
@@ -103,12 +106,13 @@
             })(document, window.posthog || []);
             posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
                 api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
+                person_profiles: "identified_only",
                 session_recording: {
                     recordCrossOriginIframes: true,
                     capturePerformance: false,
                 },
             });
+            }
         </script>
     </body>
 </html>

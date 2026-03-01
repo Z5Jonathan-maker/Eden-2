@@ -251,7 +251,7 @@ function AppRoutes() {
             </StaffRoute>
           }
         >
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<Safe label="Dashboard"><Dashboard /></Safe>} />
           <Route path="claims" element={<Safe label="Garden"><ClaimsList /></Safe>} />
           <Route path="claims/new" element={<Safe label="New Claim"><NewClaim /></Safe>} />
           <Route path="claims/:claimId" element={<Safe label="Claim Detail"><ClaimDetails /></Safe>} />

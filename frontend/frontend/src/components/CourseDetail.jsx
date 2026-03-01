@@ -44,6 +44,7 @@ function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [activeLesson, setActiveLesson] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Study mode: 'learn' | 'flashcards' | 'practice' | 'test'
   const [viewMode, setViewMode] = useState('learn');
@@ -65,6 +66,7 @@ function CourseDetail() {
 
   const fetchCourse = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await apiGet('/api/university/courses/' + courseId);
       if (res.ok) {
@@ -76,8 +78,11 @@ function CourseDetail() {
           res.data.quiz.forEach((_, i) => { answers[i] = null; });
           setQuizAnswers(answers);
         }
+      } else {
+        setError(res.error || 'Failed to load course');
       }
     } catch (err) {
+      setError(err.message || 'Failed to fetch course');
       console.error('Failed to fetch course:', err);
     } finally {
       setLoading(false);
@@ -210,8 +215,14 @@ function CourseDetail() {
         <Card className="border-zinc-700">
           <CardContent className="p-12 text-center">
             <AlertCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-zinc-200">Course not found</h3>
-            <Button className="mt-4" onClick={() => navigate('/university')}>Back</Button>
+            <h3 className="text-xl font-semibold text-zinc-200">
+              {error ? 'Failed to load course' : 'Course not found'}
+            </h3>
+            {error && <p className="text-zinc-400 text-sm mt-2 font-mono">{error}</p>}
+            <div className="flex gap-3 justify-center mt-4">
+              <Button variant="outline" className="border-zinc-700" onClick={() => navigate('/university')}>Back</Button>
+              {error && <Button onClick={fetchCourse}>Retry</Button>}
+            </div>
           </CardContent>
         </Card>
       </div>

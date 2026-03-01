@@ -78,6 +78,14 @@ class ErrorBoundary extends React.Component {
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null, errorId: null });
+              }}
+              className="w-full mb-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-mono uppercase tracking-wide text-zinc-300 hover:bg-zinc-700"
+              data-testid="error-boundary-retry"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => {
                 window.location.reload();
               }}
               className="btn-tactical px-6 py-2.5 text-sm"

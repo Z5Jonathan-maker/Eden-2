@@ -6,7 +6,8 @@ import { initSentry } from './lib/sentry';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // ============ SENTRY INITIALIZATION ============
-// Initialize error tracking before React loads
+// @sentry/react is lazy-loaded inside sentry.js via dynamic import(),
+// so this call is cheap — it only triggers an async fetch of the SDK.
 initSentry();
 
 // ============ ENVIRONMENT VALIDATION ============

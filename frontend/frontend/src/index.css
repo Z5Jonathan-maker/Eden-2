@@ -2,8 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts - Eden Tactical Ops Design System */
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+/* Google Fonts loaded via <link> in index.html — NOT here.
+   CSS @import url() is render-blocking and creates a waterfall:
+   HTML → CSS bundle → font CSS → font files.
+   Moving to <link rel="stylesheet"> in HTML lets the browser discover
+   the font CSS at parse time, in parallel with the JS/CSS bundles. */
 
 /* ============================================
    GLOBAL DARK TACTICAL THEME ENFORCEMENT

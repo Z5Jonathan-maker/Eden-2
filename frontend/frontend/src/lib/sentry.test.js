@@ -1,5 +1,8 @@
 /**
- * Tests for sentry.js — error tracking configuration
+ * Tests for sentry.js — lazy-loaded error tracking configuration
+ *
+ * Since sentry.js uses dynamic import() internally, all Sentry SDK calls
+ * happen asynchronously via .then(). We flush microtasks before asserting.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -9,12 +12,6 @@ vi.mock('@sentry/react', () => ({
   setUser: vi.fn(),
   captureException: vi.fn(),
   addBreadcrumb: vi.fn(),
-  default: {
-    init: vi.fn(),
-    setUser: vi.fn(),
-    captureException: vi.fn(),
-    addBreadcrumb: vi.fn(),
-  },
   browserTracingIntegration: vi.fn(() => 'browser-tracing-mock'),
   replayIntegration: vi.fn(() => 'replay-mock'),
 }));
@@ -35,6 +32,9 @@ const {
 
 const Sentry = await import('@sentry/react');
 
+/** Flush microtask queue so .then() callbacks in sentry.js execute */
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -42,42 +42,48 @@ beforeEach(() => {
 // ── initSentry ───────────────────────────────────────────────────────
 
 describe('initSentry', () => {
-  it('initializes Sentry when DSN is configured and environment is production', () => {
+  it('initializes Sentry when DSN is configured and environment is production', async () => {
     initSentry();
+    await flush();
     expect(Sentry.init).toHaveBeenCalledOnce();
     const config = Sentry.init.mock.calls[0][0];
     expect(config.dsn).toBe('https://fake@sentry.io/123');
     expect(config.environment).toBe('production');
   });
 
-  it('configures performance monitoring with 10% sample rate in production', () => {
+  it('configures performance monitoring with 10% sample rate in production', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     expect(config.tracesSampleRate).toBe(0.1);
   });
 
-  it('configures replay integrations', () => {
+  it('configures replay integrations', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     expect(config.replaysSessionSampleRate).toBe(0.1);
     expect(config.replaysOnErrorSampleRate).toBe(1.0);
   });
 
-  it('sets release version', () => {
+  it('sets release version', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     expect(config.release).toBe('1.0.0-test');
   });
 
-  it('includes ignoreErrors list', () => {
+  it('includes ignoreErrors list', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     expect(config.ignoreErrors).toContain('Failed to fetch');
     expect(config.ignoreErrors).toContain('AbortError');
   });
 
-  it('beforeSend strips cookies and headers from request', () => {
+  it('beforeSend strips cookies and headers from request', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     const event = {
       request: { cookies: 'secret', headers: { auth: 'token' } },
@@ -88,8 +94,9 @@ describe('initSentry', () => {
     expect(processed.request.headers).toBeUndefined();
   });
 
-  it('beforeSend adds viewport and userAgent tags', () => {
+  it('beforeSend adds viewport and userAgent tags', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     const event = { tags: {} };
     const processed = config.beforeSend(event, {});
@@ -97,15 +104,17 @@ describe('initSentry', () => {
     expect(processed.tags.viewport).toBeDefined();
   });
 
-  it('beforeSend handles event without request gracefully', () => {
+  it('beforeSend handles event without request gracefully', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     const event = { tags: {} };
     expect(() => config.beforeSend(event, {})).not.toThrow();
   });
 
-  it('beforeSend handles event without tags gracefully', () => {
+  it('beforeSend handles event without tags gracefully', async () => {
     initSentry();
+    await flush();
     const config = Sentry.init.mock.calls[0][0];
     const event = { request: { cookies: 'x' } };
     expect(() => config.beforeSend(event, {})).not.toThrow();
@@ -115,8 +124,9 @@ describe('initSentry', () => {
 // ── setSentryUser ────────────────────────────────────────────────────
 
 describe('setSentryUser', () => {
-  it('calls Sentry.setUser with user data when DSN is configured', () => {
+  it('calls Sentry.setUser with user data when DSN is configured', async () => {
     setSentryUser({ id: '1', email: 'test@test.com', role: 'admin' });
+    await flush();
     expect(Sentry.setUser).toHaveBeenCalledWith({
       id: '1',
       email: 'test@test.com',
@@ -128,8 +138,9 @@ describe('setSentryUser', () => {
 // ── clearSentryUser ──────────────────────────────────────────────────
 
 describe('clearSentryUser', () => {
-  it('calls Sentry.setUser with null when DSN is configured', () => {
+  it('calls Sentry.setUser with null when DSN is configured', async () => {
     clearSentryUser();
+    await flush();
     expect(Sentry.setUser).toHaveBeenCalledWith(null);
   });
 });
@@ -137,18 +148,20 @@ describe('clearSentryUser', () => {
 // ── captureError ─────────────────────────────────────────────────────
 
 describe('captureError', () => {
-  it('calls Sentry.captureException when DSN is configured', () => {
+  it('calls Sentry.captureException when DSN is configured', async () => {
     const error = new Error('test error');
     captureError(error, { context: 'test' });
+    await flush();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(error, {
       extra: { context: 'test' },
     });
   });
 
-  it('accepts empty context', () => {
+  it('accepts empty context', async () => {
     const error = new Error('test');
     captureError(error);
+    await flush();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(error, {
       extra: {},
@@ -159,8 +172,9 @@ describe('captureError', () => {
 // ── captureBreadcrumb ────────────────────────────────────────────────
 
 describe('captureBreadcrumb', () => {
-  it('calls Sentry.addBreadcrumb when DSN is configured', () => {
+  it('calls Sentry.addBreadcrumb when DSN is configured', async () => {
     captureBreadcrumb('navigation', { page: '/home' });
+    await flush();
     expect(Sentry.addBreadcrumb).toHaveBeenCalledWith({
       message: 'navigation',
       data: { page: '/home' },
@@ -168,8 +182,9 @@ describe('captureBreadcrumb', () => {
     });
   });
 
-  it('uses empty object for data when not provided', () => {
+  it('uses empty object for data when not provided', async () => {
     captureBreadcrumb('test message');
+    await flush();
     expect(Sentry.addBreadcrumb).toHaveBeenCalledWith({
       message: 'test message',
       data: {},
@@ -212,8 +227,8 @@ describe('withErrorTracking', () => {
     const wrapped = withErrorTracking(fn, 'trackedOp');
 
     await expect(wrapped('arg1')).rejects.toThrow('tracked error');
+    await flush();
 
-    // With DSN configured, captureError calls Sentry.captureException
     expect(Sentry.captureException).toHaveBeenCalledWith(error, {
       extra: {
         operation: 'trackedOp',

@@ -376,6 +376,7 @@ const LandingPage = () => {
                     alt={feature.title}
                     width={64}
                     height={64}
+                    loading="lazy"
                     className="w-16 h-16 sm:w-20 sm:h-20 object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 animate-float-slow"
                     style={{
                       filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.5))',
@@ -421,6 +422,7 @@ const LandingPage = () => {
                 alt="Agent Eve"
                 width={192}
                 height={192}
+                loading="lazy"
                 className="w-48 h-48 sm:w-72 sm:h-72 mx-auto object-contain relative z-10 animate-float"
                 style={{
                   filter: 'drop-shadow(0 20px 40px rgba(59, 130, 246, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.4))'
@@ -495,6 +497,7 @@ const LandingPage = () => {
                     alt={tier.name}
                     width={64}
                     height={64}
+                    loading="lazy"
                     className="w-16 h-16 sm:w-20 sm:h-20 mx-auto object-contain"
                   />
                 </div>
@@ -553,6 +556,7 @@ const LandingPage = () => {
             alt="Operation Eden"
             width={64}
             height={64}
+            loading="lazy"
             className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6"
             style={{ filter: 'drop-shadow(0 0 20px rgba(234, 88, 12, 0.4))' }}
           />
