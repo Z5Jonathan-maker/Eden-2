@@ -61,20 +61,19 @@ const Login = () => {
         {/* Operation Eden Logo */}
         <div className="text-center mb-8">
           <div className="relative inline-block">
-            <img 
-              src={APP_LOGO} 
-              alt="Operation Eden" 
-              className="w-24 h-24 mx-auto mb-4 animate-glow-breathe"
-              style={{ filter: 'drop-shadow(0 0 30px rgba(234, 88, 12, 0.5))' }}
+            <img
+              src={APP_LOGO}
+              alt="Operation Eden"
+              className="w-24 h-24 mx-auto mb-4 animate-glow-breathe glow-orange-lg"
             />
             {/* Status Indicator */}
-            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${systemStatus === 'ONLINE' ? 'bg-green-500' : 'bg-yellow-500'}`} style={{ boxShadow: systemStatus === 'ONLINE' ? '0 0 15px rgba(34, 197, 94, 0.8)' : '0 0 15px rgba(234, 179, 8, 0.8)' }} />
+            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${systemStatus === 'ONLINE' ? 'bg-green-500 shadow-glow-green' : 'bg-yellow-500 shadow-glow-orange'}`} />
           </div>
           <h1 className="text-3xl font-tactical font-bold mb-2 tracking-wider">
             <span className="text-white">OPERATION</span>
             <span className="text-orange-500 ml-2 text-glow-orange">EDEN</span>
           </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-widest">Tactical Claims Platform</p>
+          <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest">Tactical Claims Platform</p>
           
           {/* System Status */}
           <div className="mt-4 flex items-center justify-center gap-2 text-xs font-mono">
@@ -98,7 +97,7 @@ const Login = () => {
               <Crosshair className="w-5 h-5 text-orange-500" />
               <h2 className="text-xl font-tactical font-bold text-white uppercase tracking-wide">Access Terminal</h2>
             </div>
-            <p className="text-zinc-500 text-sm">Enter credentials to authenticate</p>
+            <p className="text-zinc-400 text-sm">Enter credentials to authenticate</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -120,7 +119,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input-tactical w-full px-4 py-3 text-sm"
+                className="input-tactical w-full px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500/40"
                 data-testid="login-email-input"
               />
             </div>
@@ -136,14 +135,14 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="input-tactical w-full px-4 py-3 text-sm"
+                className="input-tactical w-full px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500/40"
                 data-testid="login-password-input"
               />
             </div>
 
             <button
               type="submit"
-              className="btn-tactical w-full py-3 text-sm flex items-center justify-center gap-2"
+              className="btn-tactical w-full py-3 text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               disabled={loading}
               data-testid="login-submit-btn"
             >
@@ -162,9 +161,9 @@ const Login = () => {
           </form>
 
           <div className="mt-6 pt-4 border-t border-zinc-700/50 text-center">
-            <p className="text-zinc-500 text-sm">
+            <p className="text-zinc-400 text-sm">
               New operator?{' '}
-              <Link to="/register" className="text-orange-500 hover:text-orange-400 font-semibold transition-colors hover-line">
+              <Link to="/register" className="text-orange-500 hover:text-orange-400 font-semibold transition-colors hover-line focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
                 Request Access
               </Link>
             </p>
@@ -173,7 +172,7 @@ const Login = () => {
 
         {/* Version Info */}
         <div className="mt-6 text-center">
-          <p className="text-zinc-600 text-xs font-mono">
+          <p className="text-zinc-500 text-xs font-mono">
             OPERATION EDEN v2.0 // SECURE CHANNEL
           </p>
         </div>

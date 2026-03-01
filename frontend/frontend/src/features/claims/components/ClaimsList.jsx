@@ -242,7 +242,7 @@ const ClaimsList = () => {
               THE GARDEN
             </h1>
           </div>
-          <p className="text-zinc-500 font-mono text-xs sm:text-sm uppercase tracking-wider">
+          <p className="text-zinc-400 font-mono text-xs sm:text-sm uppercase tracking-wider">
             Track and manage all property claims
           </p>
         </div>
@@ -257,10 +257,10 @@ const ClaimsList = () => {
               <button
                 key={mode}
                 onClick={() => { setViewMode(mode); localStorage.setItem('garden_view', mode); }}
-                className={`px-3 py-2 text-xs font-mono uppercase flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-2 text-xs font-mono uppercase flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                   viewMode === mode
                     ? 'bg-orange-500/20 text-orange-400'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    : 'text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/50'
                 }`}
                 title={label}
               >
@@ -270,7 +270,7 @@ const ClaimsList = () => {
             ))}
           </div>
           <button
-            className="px-3 py-2.5 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 text-sm flex items-center gap-2 transition-all"
+            className="px-3 py-2.5 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 text-sm flex items-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             onClick={() => {
               const toExport = selectedIds.size > 0
                 ? sortedAndFilteredClaims.filter(c => selectedIds.has(c.id))
@@ -285,7 +285,7 @@ const ClaimsList = () => {
             <span className="hidden sm:inline">CSV</span>
           </button>
           <button
-            className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 justify-center"
+            className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 justify-center focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             onClick={() => navigate('/claims/new')}
             data-testid="new-claim-btn"
           >
@@ -307,7 +307,7 @@ const ClaimsList = () => {
               placeholder="Search by claim ID, client name, or address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-tactical w-full pl-10 py-2.5"
+              className="input-tactical w-full pl-10 py-2.5 focus:ring-2 focus:ring-orange-500/40"
               data-testid="claims-search-input"
             />
           </div>
@@ -316,7 +316,7 @@ const ClaimsList = () => {
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                   filterStatus === status
                     ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
                     : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50 hover:border-orange-500/30 hover:text-zinc-200'
@@ -338,7 +338,7 @@ const ClaimsList = () => {
           <span className="text-sm font-mono">{error}</span>
           <button
             onClick={fetchClaims}
-            className="ml-auto text-sm text-zinc-400 hover:text-orange-400"
+            className="ml-auto text-sm text-zinc-400 hover:text-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           >
             Retry
           </button>
@@ -369,30 +369,30 @@ const ClaimsList = () => {
           <div className="flex items-center gap-2 flex-wrap flex-1">
             <button
               onClick={() => { setBatchAction('archive'); setBatchValue(''); }}
-              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'archive' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-red-500/30'}`}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${batchAction === 'archive' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-red-500/30'}`}
             >
               <Archive className="w-3.5 h-3.5" /> Archive
             </button>
             <button
               onClick={() => setBatchAction('status')}
-              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'status' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-blue-500/30'}`}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${batchAction === 'status' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-blue-500/30'}`}
             >
               <ArrowRightLeft className="w-3.5 h-3.5" /> Status
             </button>
             <button
               onClick={() => setBatchAction('assign')}
-              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 ${batchAction === 'assign' ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-purple-500/30'}`}
+              className={`px-3 py-1.5 rounded text-xs font-mono uppercase border transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${batchAction === 'assign' ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'text-zinc-400 border-zinc-700/50 hover:border-purple-500/30'}`}
             >
               <UserPlus className="w-3.5 h-3.5" /> Assign
             </button>
             {batchAction === 'status' && (
-              <select className="input-tactical px-2 py-1.5 text-xs" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+              <select className="input-tactical px-2 py-1.5 text-xs focus:ring-2 focus:ring-orange-500/40" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
                 <option value="">Pick status...</option>
                 {['New', 'In Progress', 'Under Review', 'Approved', 'Denied', 'Completed', 'Closed'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             )}
             {batchAction === 'assign' && (
-              <input className="input-tactical px-2 py-1.5 text-xs w-40" placeholder="Assignee name..." value={batchValue} onChange={e => setBatchValue(e.target.value)} />
+              <input className="input-tactical px-2 py-1.5 text-xs w-40 focus:ring-2 focus:ring-orange-500/40" placeholder="Assignee name..." value={batchValue} onChange={e => setBatchValue(e.target.value)} />
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -400,13 +400,13 @@ const ClaimsList = () => {
               <button
                 onClick={handleBatchExecute}
                 disabled={batchProcessing || (batchAction !== 'archive' && !batchValue)}
-                className="btn-tactical px-4 py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-50"
+                className="btn-tactical px-4 py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 {batchProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 Apply
               </button>
             )}
-            <button onClick={clearSelection} className="text-zinc-500 hover:text-zinc-300 p-1.5">
+            <button onClick={clearSelection} className="text-zinc-500 hover:text-zinc-300 p-1.5 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" aria-label="Clear selection">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -418,7 +418,7 @@ const ClaimsList = () => {
       <div className="card-tactical p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <button onClick={selectAll} className="text-zinc-500 hover:text-orange-400 transition-colors" title="Select all">
+            <button onClick={selectAll} className="text-zinc-500 hover:text-orange-400 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" title="Select all" aria-label="Select all">
               {selectedIds.size === sortedAndFilteredClaims.length && sortedAndFilteredClaims.length > 0
                 ? <CheckSquare className="w-5 h-5 text-orange-400" />
                 : <Square className="w-5 h-5" />
@@ -432,7 +432,7 @@ const ClaimsList = () => {
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="px-3 py-2 rounded border border-zinc-700/50 bg-zinc-800/50 text-zinc-300 text-xs font-mono uppercase flex items-center gap-2 hover:border-orange-500/30"
+              className="px-3 py-2 rounded border border-zinc-700/50 bg-zinc-800/50 text-zinc-300 text-xs font-mono uppercase flex items-center gap-2 hover:border-orange-500/30 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               data-testid="sort-btn"
             >
               {sortDirection === 'asc' ? (
@@ -454,7 +454,7 @@ const ClaimsList = () => {
                     <button
                       key={idx}
                       onClick={() => handleSortSelect(option)}
-                      className={`w-full px-4 py-2 text-left text-xs font-mono uppercase tracking-wider flex items-center justify-between ${
+                      className={`w-full px-4 py-2 text-left text-xs font-mono uppercase tracking-wider flex items-center justify-between focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                         sortField === option.field && sortDirection === option.direction
                           ? 'bg-orange-500/10 text-orange-400'
                           : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -491,17 +491,17 @@ const ClaimsList = () => {
         ) : sortedAndFilteredClaims.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
-              <AlertCircle className="w-8 h-8 text-zinc-600" />
+              <AlertCircle className="w-8 h-8 text-zinc-500" />
             </div>
             <h3 className="text-lg font-tactical font-bold text-white mb-2 uppercase">
               No Targets Found
             </h3>
-            <p className="text-zinc-500 mb-6 max-w-sm mx-auto font-mono text-sm">
+            <p className="text-zinc-400 mb-6 max-w-sm mx-auto font-mono text-sm">
               Initialize your first mission to begin operations
             </p>
             <button
               onClick={() => navigate('/claims/new')}
-              className="btn-tactical px-6 py-3 text-sm"
+              className="btn-tactical px-6 py-3 text-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             >
               <Plus className="w-4 h-4 mr-2 inline" />
               Create First Mission
@@ -512,7 +512,9 @@ const ClaimsList = () => {
             {paginatedClaims.map((claim, index) => (
               <div
                 key={claim.id}
-                className={`group p-4 md:p-5 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 border stagger-item interactive-card ${selectedIds.has(claim.id) ? 'border-orange-500/50 bg-orange-500/5' : 'border-zinc-700/30 hover:border-orange-500/30'}`}
+                className={`group p-4 md:p-5 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 border stagger-item interactive-card focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${selectedIds.has(claim.id) ? 'border-orange-500/50 bg-orange-500/5' : 'border-zinc-700/30 hover:border-orange-500/30'}`}
+                tabIndex={0}
+                role="button"
                 onClick={() => navigate(`/claims/${claim.id}`)}
                 data-testid={`claim-item-${claim.id}`}
               >
@@ -521,7 +523,8 @@ const ClaimsList = () => {
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <button
                         onClick={(e) => toggleSelect(claim.id, e)}
-                        className="text-zinc-500 hover:text-orange-400 transition-colors mr-1 flex-shrink-0"
+                        className="text-zinc-500 hover:text-orange-400 transition-colors mr-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                        aria-label={selectedIds.has(claim.id) ? 'Deselect claim' : 'Select claim'}
                       >
                         {selectedIds.has(claim.id) ? <CheckSquare className="w-4 h-4 text-orange-400" /> : <Square className="w-4 h-4" />}
                       </button>
@@ -542,25 +545,25 @@ const ClaimsList = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-3">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Client</p>
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Client</p>
                         <p className="text-sm font-medium text-zinc-200 truncate">
                           {claim.client_name}
                         </p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
                           Location
                         </p>
                         <p className="text-sm text-zinc-300 truncate">{claim.property_address}</p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
                           Date of Loss
                         </p>
                         <p className="text-sm text-zinc-300">{claim.date_of_loss}</p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Type</p>
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Type</p>
                         <p className="text-sm text-zinc-300 truncate">{claim.claim_type}</p>
                       </div>
                     </div>
@@ -581,11 +584,11 @@ const ClaimsList = () => {
                       <p className="text-xl md:text-2xl font-tactical font-bold text-orange-400">
                         ${((claim.estimated_value || 0) / 1000).toFixed(0)}K
                       </p>
-                      <p className="text-[10px] text-zinc-600 font-mono uppercase mt-1">
+                      <p className="text-[10px] text-zinc-500 font-mono uppercase mt-1">
                         Est. Value
                       </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-orange-500 transition-colors hidden md:block" />
+                    <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-orange-500 transition-colors hidden md:block" />
                   </div>
                 </div>
               </div>
@@ -603,7 +606,7 @@ const ClaimsList = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 Prev
               </button>
@@ -621,7 +624,7 @@ const ClaimsList = () => {
                     <button
                       key={item}
                       onClick={() => setCurrentPage(item)}
-                      className={`w-8 h-8 rounded text-xs font-mono transition-all ${
+                      className={`w-8 h-8 rounded text-xs font-mono transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                         currentPage === item
                           ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
                           : 'text-zinc-400 hover:text-orange-400 border border-transparent hover:border-orange-500/30'
@@ -634,7 +637,7 @@ const ClaimsList = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 Next
               </button>

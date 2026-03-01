@@ -941,7 +941,7 @@ const Settings = () => {
                                         : prev
                                     );
                                   }}
-                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200"
+                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200 focus:ring-2 focus:ring-orange-500/40"
                                 >
                                   {providerOptions.map((opt) => (
                                     <option key={`${task}-primary-${opt.value}`} value={opt.value}>
@@ -973,7 +973,7 @@ const Settings = () => {
                                         : prev
                                     );
                                   }}
-                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200"
+                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200 focus:ring-2 focus:ring-orange-500/40"
                                 >
                                   {providerOptions.map((opt) => (
                                     <option key={`${task}-secondary-${opt.value}`} value={opt.value}>

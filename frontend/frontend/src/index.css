@@ -25,8 +25,8 @@
   .text-gray-700  { color: hsl(240 4% 75%) !important; }
   .text-gray-600  { color: hsl(240 4% 65%) !important; }
   .text-gray-500  { color: hsl(240 4% 55%) !important; }
-  .text-gray-400  { color: hsl(240 4% 46%) !important; }
-  .text-gray-300  { color: hsl(240 4% 55%) !important; }
+  .text-gray-400  { color: hsl(240 4% 50%) !important; }
+  .text-gray-300  { color: hsl(240 4% 58%) !important; }
 
   /* === BORDER OVERRIDES === */
   .border-gray-100 { border-color: hsl(240 4% 16% / 0.5) !important; }
@@ -350,6 +350,41 @@
   
   .status-info {
     @apply bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20;
+  }
+
+  /* ========== FOCUS RING SYSTEM ========== */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900;
+  }
+
+  .focus-ring-inset {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-inset;
+  }
+
+  /* ========== GLOW UTILITIES ========== */
+  .glow-orange {
+    filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.5));
+  }
+
+  .glow-orange-lg {
+    filter: drop-shadow(0 0 30px rgba(249, 115, 22, 0.5));
+  }
+
+  .glow-green {
+    filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.8));
+  }
+
+  .glow-blue {
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.5));
+  }
+
+  /* ========== CONTRAST-SAFE TEXT ========== */
+  .text-muted-safe {
+    color: hsl(240 4% 55%);
+  }
+
+  .text-secondary-safe {
+    color: hsl(240 4% 70%);
   }
 }
 

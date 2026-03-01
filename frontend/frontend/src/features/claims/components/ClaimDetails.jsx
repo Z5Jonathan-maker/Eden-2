@@ -753,14 +753,14 @@ const ClaimDetails = () => {
       <div className="p-4 md:p-8 min-h-screen">
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
-            <X className="w-8 h-8 text-zinc-600" />
+            <X className="w-8 h-8 text-zinc-500" />
           </div>
           <p className="text-zinc-400 mb-4 font-mono">{error || 'Mission not found'}</p>
           <div className="flex items-center justify-center gap-3">
-            <button onClick={() => navigate('/claims')} className="btn-tactical px-6 py-2.5 text-sm">
+            <button onClick={() => navigate('/claims')} className="btn-tactical px-6 py-2.5 text-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
               Return to Garden
             </button>
-            <button onClick={fetchClaimData} className="px-6 py-2.5 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <button onClick={fetchClaimData} className="px-6 py-2.5 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
               Retry
             </button>
           </div>
@@ -818,7 +818,7 @@ const ClaimDetails = () => {
         <button
           onClick={() => isBackingUp ? cancelBackup() : backupClaim(claimId, claim?.claim_number)}
           disabled={!claim}
-          className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
             isBackingUp
               ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
               : 'border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50'
@@ -858,7 +858,7 @@ const ClaimDetails = () => {
                 <User className="w-4 h-4 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Client Name</p>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Client Name</p>
                 <p className="font-medium text-zinc-200 truncate" data-testid="client-name">
                   {claim.client_name}
                 </p>
@@ -869,7 +869,7 @@ const ClaimDetails = () => {
                 <Calendar className="w-4 h-4 text-purple-400" />
               </div>
               <div>
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Date of Loss</p>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Date of Loss</p>
                 <p className="font-medium text-zinc-200">{claim.date_of_loss}</p>
               </div>
             </div>
@@ -878,7 +878,7 @@ const ClaimDetails = () => {
                 <MapPin className="w-4 h-4 text-green-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
                   Property Address
                 </p>
                 <p className="font-medium text-zinc-200 break-words">{claim.property_address}</p>
@@ -889,7 +889,7 @@ const ClaimDetails = () => {
                 <DollarSign className="w-4 h-4 text-orange-400" />
               </div>
               <div>
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
                   Estimated Value
                 </p>
                 <p className="font-tactical font-bold text-orange-400 text-lg">
@@ -902,7 +902,7 @@ const ClaimDetails = () => {
                 <FileCheck className="w-4 h-4 text-cyan-400" />
               </div>
               <div>
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Policy Number</p>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Policy Number</p>
                 <p className="font-medium text-zinc-200 font-mono">{claim.policy_number}</p>
               </div>
             </div>
@@ -911,14 +911,14 @@ const ClaimDetails = () => {
                 <User className="w-4 h-4 text-zinc-400" />
               </div>
               <div>
-                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-1">Assigned To</p>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Assigned To</p>
                 <p className="font-medium text-zinc-200">{claim.assigned_to || 'Unassigned'}</p>
               </div>
             </div>
           </div>
           {claim.description && (
             <div className="mt-6 pt-6 border-t border-zinc-700/50">
-              <p className="text-[10px] font-mono text-zinc-600 uppercase mb-2">Description</p>
+              <p className="text-[10px] font-mono text-zinc-500 uppercase mb-2">Description</p>
               <p className="text-zinc-300 break-words">{claim.description}</p>
             </div>
           )}

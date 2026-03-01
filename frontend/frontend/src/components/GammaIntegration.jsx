@@ -88,7 +88,7 @@ const GammaIntegration = () => {
           </svg>
           <div>
             <h1 className="text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">GAMMA INTEGRATION</h1>
-            <p className="text-gray-600">AI-powered presentation generation for claims</p>
+            <p className="text-zinc-400">AI-powered presentation generation for claims</p>
           </div>
         </div>
       </div>
@@ -134,7 +134,7 @@ const GammaIntegration = () => {
                     href="https://gamma.app/settings/api"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline font-medium"
+                    className="underline font-medium focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 rounded"
                   >
                     gamma.app/settings/api
                   </a>{' '}
@@ -252,7 +252,8 @@ const GammaIntegration = () => {
                             href={sync.edit_url || sync.gamma_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-orange-600 hover:text-orange-700"
+                            className="text-orange-600 hover:text-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 rounded"
+                            aria-label="Open presentation in Gamma"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>

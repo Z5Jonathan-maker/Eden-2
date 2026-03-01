@@ -188,14 +188,14 @@ const ContractsPage: React.FC = () => {
           <h1 className="font-tactical text-2xl text-white uppercase tracking-wide">
             Active Contracts
           </h1>
-          <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-500">
+          <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-400">
             PA Agreements & DFS Disclosure | FL compliant | E-signature ready
           </p>
         </div>
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="btn-tactical inline-flex items-center gap-2 px-4 py-2 text-xs uppercase"
+          className="btn-tactical inline-flex items-center gap-2 px-4 py-2 text-xs uppercase focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         >
           <Plus className="h-4 w-4" />
           Create Contract
@@ -211,7 +211,7 @@ const ContractsPage: React.FC = () => {
           { label: 'Signed', value: stats.signed },
         ].map((item) => (
           <div key={item.label} className="rounded-lg border border-zinc-700/40 bg-zinc-900/55 p-3">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
               {item.label}
             </p>
             <p className="mt-1 text-xl font-bold text-white">{item.value}</p>

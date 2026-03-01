@@ -228,7 +228,8 @@ const Dashboard = () => {
           <span className="text-sm flex-1 font-mono">{paymentStatus.message}</span>
           <button
             onClick={() => setPaymentStatus(null)}
-            className="text-zinc-500 hover:text-zinc-300"
+            className="text-zinc-500 hover:text-zinc-300 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+            aria-label="Dismiss payment status"
           >
             <XCircle className="w-4 h-4" />
           </button>
@@ -241,14 +242,13 @@ const Dashboard = () => {
           <img
             src={PAGE_ICONS.command_center}
             alt="Command Center"
-            className="w-12 h-12 sm:w-16 sm:h-16 object-contain animate-glow-breathe"
-            style={{ filter: 'drop-shadow(0 0 15px rgba(249, 115, 22, 0.5))' }}
+            className="w-12 h-12 sm:w-16 sm:h-16 object-contain animate-glow-breathe glow-orange-lg"
           />
           <div>
             <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">
               COMMAND CENTER
             </h1>
-            <p className="text-zinc-500 font-mono text-xs sm:text-sm uppercase tracking-wider">
+            <p className="text-zinc-400 font-mono text-xs sm:text-sm uppercase tracking-wider">
               Operational Overview // Real-time Status
             </p>
           </div>
@@ -259,15 +259,16 @@ const Dashboard = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 stagger-children">
         {/* Total Claims */}
         <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm"
+          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           onClick={() => navigate('/claims')}
+          tabIndex={0}
           data-testid="stat-total-claims"
         >
           <div className="flex items-start justify-between mb-2 sm:mb-3">
             <div className="p-1.5 sm:p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/40 transition-colors">
               <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 group-hover:animate-bounce-gentle" />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-600 uppercase">
+            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
               Total
             </span>
           </div>
@@ -277,29 +278,30 @@ const Dashboard = () => {
           >
             {stats?.totalClaims || 0}
           </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
             Claims Tracked
           </p>
         </div>
 
         {/* Active Claims */}
         <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm"
+          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           onClick={() => navigate('/claims')}
+          tabIndex={0}
           data-testid="stat-active-claims"
         >
           <div className="flex items-start justify-between mb-2 sm:mb-3">
             <div className="p-1.5 sm:p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
               <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 group-hover:animate-bounce-gentle" />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-600 uppercase">
+            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
               Active
             </span>
           </div>
           <p className="text-2xl sm:text-4xl font-tactical font-bold text-orange-400 mb-1">
             {stats?.activeClaims || 0}
           </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
             In Progress
           </p>
         </div>
@@ -313,36 +315,37 @@ const Dashboard = () => {
             <div className="p-1.5 sm:p-2.5 rounded-lg bg-green-500/10 border border-green-500/20 group-hover:border-green-500/40 transition-colors">
               <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 group-hover:animate-bounce-gentle" />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-600 uppercase">
+            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
               Done
             </span>
           </div>
           <p className="text-2xl sm:text-4xl font-tactical font-bold text-green-400 mb-1">
             {stats?.completedThisMonth || 0}
           </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
             This Month
           </p>
         </div>
 
         {/* Inspections */}
         <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm"
+          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           onClick={() => navigate('/inspections')}
+          tabIndex={0}
           data-testid="stat-inspections"
         >
           <div className="flex items-start justify-between mb-2 sm:mb-3">
             <div className="p-1.5 sm:p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 group-hover:border-purple-500/40 transition-colors">
               <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:animate-bounce-gentle" />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-600 uppercase">
+            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
               Recon
             </span>
           </div>
           <p className="text-2xl sm:text-4xl font-tactical font-bold text-purple-400 mb-1">
             {stats?.pendingInspections || 0}
           </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
             Pending
           </p>
         </div>
@@ -361,7 +364,7 @@ const Dashboard = () => {
             </div>
             <button
               onClick={() => navigate('/claims/new')}
-              className="btn-tactical px-4 py-2 text-xs flex items-center gap-2"
+              className="btn-tactical px-4 py-2 text-xs flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               data-testid="dashboard-new-claim"
             >
               <Plus className="w-4 h-4" />
@@ -374,10 +377,10 @@ const Dashboard = () => {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50">
                 <FolderOpen className="w-8 h-8 text-zinc-600" />
               </div>
-              <p className="text-zinc-500 mb-4 font-mono text-sm">No active missions</p>
+              <p className="text-zinc-400 mb-4 font-mono text-sm">No active missions</p>
               <button
                 onClick={() => navigate('/claims/new')}
-                className="btn-tactical px-6 py-2.5 text-sm"
+                className="btn-tactical px-6 py-2.5 text-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 Initialize First Mission
               </button>
@@ -387,8 +390,9 @@ const Dashboard = () => {
               {recentClaims.map((claim, index) => (
                 <div
                   key={claim.id}
-                  className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 group hover-lift-sm"
+                  className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 group hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                   onClick={() => navigate(`/claims/${claim.id}`)}
+                  tabIndex={0}
                   data-testid={`recent-claim-${claim.id}`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -411,7 +415,7 @@ const Dashboard = () => {
                       <p className="text-sm text-zinc-300 font-medium mb-1 truncate">
                         {claim.client_name}
                       </p>
-                      <p className="text-xs text-zinc-500 truncate font-mono">
+                      <p className="text-xs text-zinc-400 truncate font-mono">
                         {claim.property_address}
                       </p>
                     </div>
@@ -419,11 +423,11 @@ const Dashboard = () => {
                       <p className="text-lg font-tactical font-bold text-orange-400">
                         ${((claim.estimated_value || 0) / 1000).toFixed(0)}K
                       </p>
-                      <p className="text-[10px] text-zinc-600 font-mono uppercase">
+                      <p className="text-[10px] text-zinc-500 font-mono uppercase">
                         {claim.claim_type}
                       </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-orange-500 transition-colors flex-shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-orange-500 transition-colors flex-shrink-0" />
                   </div>
                 </div>
               ))}
@@ -432,7 +436,7 @@ const Dashboard = () => {
 
           <button
             onClick={() => navigate('/claims')}
-            className="w-full mt-4 py-3 rounded-lg border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all duration-200 font-tactical text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+            className="w-full mt-4 py-3 rounded-lg border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all duration-200 font-tactical text-sm uppercase tracking-wider flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             data-testid="view-all-claims"
           >
             View All Missions
@@ -445,8 +449,9 @@ const Dashboard = () => {
           {/* Battle Pass Progress Widget */}
           {battlePassProgress && (
             <div
-              className="card-tactical p-5 cursor-pointer hover:border-orange-500/30 transition-all shadow-tactical hover-lift-sm"
+              className="card-tactical p-5 cursor-pointer hover:border-orange-500/30 transition-all shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               onClick={() => navigate('/battle-pass')}
+              tabIndex={0}
               data-testid="battle-pass-widget"
             >
               <div className="flex items-center gap-2 mb-4">
@@ -462,7 +467,7 @@ const Dashboard = () => {
                   className="w-16 h-16 object-contain drop-shadow-lg badge-icon animate-glow-breathe"
                 />
                 <div className="flex-1">
-                  <p className="text-zinc-500 font-mono text-[10px] uppercase">
+                  <p className="text-zinc-400 font-mono text-[10px] uppercase">
                     Tier {battlePassProgress.current_tier || 1}
                   </p>
                   <p className="text-lg font-tactical font-bold text-white">
@@ -486,7 +491,7 @@ const Dashboard = () => {
                           {(battlePassProgress.current_xp || 0).toLocaleString()} XP
                         </p>
                       </div>
-                      <p className="text-[10px] font-mono text-zinc-600">
+                      <p className="text-[10px] font-mono text-zinc-500">
                         Next: {(battlePassProgress.xp_needed_for_next || 1000).toLocaleString()}
                       </p>
                     </div>
@@ -506,7 +511,7 @@ const Dashboard = () => {
             </div>
             <div className="space-y-4">
               <div className="p-3 rounded-lg bg-zinc-800/30 border-l-2 border-orange-500">
-                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
+                <p className="text-[10px] font-mono text-zinc-400 uppercase mb-1">
                   Total Asset Value
                 </p>
                 <p className="text-2xl font-tactical font-bold text-white">
@@ -514,7 +519,7 @@ const Dashboard = () => {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-zinc-800/30 border-l-2 border-blue-500">
-                <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Avg Processing</p>
+                <p className="text-[10px] font-mono text-zinc-400 uppercase mb-1">Avg Processing</p>
                 <p className="text-lg font-tactical text-zinc-300">
                   {stats?.avgProcessingTime || 'N/A'}
                 </p>
@@ -533,41 +538,41 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => navigate('/inspections')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical"
+                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="quick-action-inspection"
               >
                 <Camera className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-500 group-hover:text-zinc-300 uppercase">
+                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
                   Recon
                 </p>
               </button>
               <button
                 onClick={() => navigate('/eve')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical"
+                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="quick-action-ai"
               >
                 <Zap className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-wiggle" />
-                <p className="text-xs font-mono text-zinc-500 group-hover:text-zinc-300 uppercase">
+                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
                   Eve AI
                 </p>
               </button>
               <button
                 onClick={() => navigate('/contracts')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical"
+                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="quick-action-contracts"
               >
                 <FolderOpen className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-500 group-hover:text-zinc-300 uppercase">
+                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
                   Contracts
                 </p>
               </button>
               <button
                 onClick={() => navigate('/documents')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical"
+                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="quick-action-documents"
               >
                 <FolderOpen className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-500 group-hover:text-zinc-300 uppercase">
+                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
                   Docs
                 </p>
               </button>

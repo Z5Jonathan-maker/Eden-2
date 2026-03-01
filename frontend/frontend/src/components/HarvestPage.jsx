@@ -78,10 +78,10 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
               <button
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
-                className={`flex-1 py-2 px-3 text-sm font-mono uppercase tracking-wider rounded-full transition-all duration-200 ${
+                className={`flex-1 py-2 px-3 text-sm font-mono uppercase tracking-wider rounded-full transition-all duration-200 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                   period === p.value
                     ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    : 'text-zinc-400 hover:text-zinc-300'
                 }`}
                 data-testid={`period-${p.value}`}
               >
@@ -92,7 +92,8 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
           <button
             onClick={fetchLeaderboard}
             disabled={loading}
-            className="w-10 h-10 bg-zinc-800/50 rounded-full flex items-center justify-center hover:bg-zinc-700/50 border border-zinc-700/30 transition-all active:scale-95 shrink-0"
+            className="w-10 h-10 bg-zinc-800/50 rounded-full flex items-center justify-center hover:bg-zinc-700/50 border border-zinc-700/30 transition-all active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+            aria-label="Refresh leaderboard"
             data-testid="refresh-leaderboard"
           >
             <RefreshCw className={`w-4 h-4 text-zinc-400 ${loading ? 'animate-spin' : ''}`} />
@@ -111,7 +112,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
               <Trophy className="w-10 h-10 text-zinc-600" />
             </div>
             <p className="text-lg font-tactical font-bold text-white uppercase">No Rankings Yet</p>
-            <p className="text-sm text-zinc-500 font-mono mt-1">
+            <p className="text-sm text-zinc-400 font-mono mt-1">
               Start knocking doors to climb the leaderboard!
             </p>
           </div>
@@ -155,7 +156,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                         <p className="text-sm font-tactical font-semibold text-white mt-2 truncate max-w-[80px]">
                           {player.user_name || player.name}
                         </p>
-                        <p className="text-xs text-zinc-500 font-mono">{player.points || 0} pts</p>
+                        <p className="text-xs text-zinc-400 font-mono">{player.points || 0} pts</p>
                         <div className={pillarClass}>
                           <span className="text-lg font-tactical">{actualRank}</span>
                         </div>
@@ -199,7 +200,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                       <p className="font-tactical font-semibold text-white truncate">
                         {entry.user_name || entry.name}
                       </p>
-                      <p className="text-xs text-zinc-500 font-mono">
+                      <p className="text-xs text-zinc-400 font-mono">
                         {entry.visits || entry.total_visits || 0} doors
                       </p>
                     </div>
@@ -209,7 +210,7 @@ const LeaderboardTab = ({ leaderboard, period, setPeriod, loading, fetchLeaderbo
                         <p className="font-tactical font-bold text-orange-400 text-lg">
                           {entry.points || 0}
                         </p>
-                        <p className="text-xs text-zinc-600 font-mono">pts</p>
+                        <p className="text-xs text-zinc-500 font-mono">pts</p>
                       </div>
                       {getTrendIcon(entry.trend)}
                     </div>
@@ -356,7 +357,7 @@ const HarvestPage = () => {
               {/* GO FIELD MODE button */}
               <button
                 onClick={handleEnterFieldMode}
-                className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 flex items-center gap-2 font-bold text-sm shadow-lg active:scale-95 transition-all"
+                className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 flex items-center gap-2 font-bold text-sm shadow-lg active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="enter-field-mode"
               >
                 <Crosshair className="w-4 h-4" />
@@ -366,7 +367,7 @@ const HarvestPage = () => {
               {/* Filter button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="bg-zinc-900/85 backdrop-blur-lg rounded-lg px-3 py-2 border border-zinc-700/50 flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-lg"
+                className="bg-zinc-900/85 backdrop-blur-lg rounded-lg px-3 py-2 border border-zinc-700/50 flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-lg focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 data-testid="toggle-filters"
               >
                 <Filter className="w-4 h-4" />
@@ -383,9 +384,9 @@ const HarvestPage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Status</span>
                     <div className="flex gap-2">
-                      <button onClick={selectAllFilters} className="text-[10px] text-orange-400 hover:underline font-mono" data-testid="select-all-filters">All</button>
+                      <button onClick={selectAllFilters} className="text-[10px] text-orange-400 hover:underline font-mono focus-visible:ring-2 focus-visible:ring-orange-500/60" data-testid="select-all-filters">All</button>
                       <span className="text-zinc-700">|</span>
-                      <button onClick={clearAllFilters} className="text-[10px] text-zinc-500 hover:underline font-mono" data-testid="clear-all-filters">None</button>
+                      <button onClick={clearAllFilters} className="text-[10px] text-zinc-400 hover:underline font-mono focus-visible:ring-2 focus-visible:ring-orange-500/60" data-testid="clear-all-filters">None</button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -393,10 +394,10 @@ const HarvestPage = () => {
                       <button
                         key={code}
                         onClick={() => toggleFilter(code)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-mono uppercase transition-all ${
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-mono uppercase transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 ${
                           activeFilters.includes(code)
                             ? 'text-white shadow-sm'
-                            : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30'
+                            : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/30'
                         }`}
                         style={activeFilters.includes(code) ? { backgroundColor: color } : {}}
                         data-testid={`filter-${code}`}
@@ -418,14 +419,14 @@ const HarvestPage = () => {
             <div className="bg-zinc-900 border-t border-zinc-800/50 px-3 py-1.5">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
-                  <span className="text-zinc-500 font-mono">TODAY <span className="text-white font-bold">{myStats.today || 0}</span></span>
-                  <span className="text-zinc-500 font-mono">WEEK <span className="text-white font-bold">{myStats.week || 0}</span></span>
+                  <span className="text-zinc-400 font-mono">TODAY <span className="text-white font-bold">{myStats.today || 0}</span></span>
+                  <span className="text-zinc-400 font-mono">WEEK <span className="text-white font-bold">{myStats.week || 0}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
                   {myStats.streak > 0 && (
                     <span className="text-orange-400 font-bold">🔥{myStats.streak}</span>
                   )}
-                  <span className="text-zinc-500 font-mono">DEALS <span className="text-green-400 font-bold">{myStats.signed || myStats.deals || 0}</span></span>
+                  <span className="text-zinc-400 font-mono">DEALS <span className="text-green-400 font-bold">{myStats.signed || myStats.deals || 0}</span></span>
                 </div>
               </div>
             </div>
@@ -464,10 +465,10 @@ const HarvestPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex flex-col items-center justify-center py-1.5 rounded-lg transition-all ${
+                className={`relative flex flex-col items-center justify-center py-1.5 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                   isActive
                     ? 'bg-orange-500/10 text-orange-400'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    : 'text-zinc-400 hover:text-zinc-300'
                 }`}
                 data-testid={`harvest-${tab.id}-tab`}
               >

@@ -190,18 +190,18 @@ const Layout = () => {
         <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <img src={APP_LOGO} alt="Operation Eden" className="w-10 h-10 object-contain animate-glow-breathe" style={{ filter: 'drop-shadow(0 0 10px rgba(234, 88, 12, 0.4))' }} />
-              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-zinc-900 animate-scale-pulse" style={{ boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)' }} />
+              <img src={APP_LOGO} alt="Operation Eden" className="w-10 h-10 object-contain animate-glow-breathe glow-orange" />
+              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-zinc-900 animate-scale-pulse shadow-glow-green" />
             </div>
             <div>
               <span className="text-sm font-tactical font-bold text-white tracking-wider">OPERATION</span>
               <span className="text-sm font-tactical font-bold text-orange-500 tracking-wider ml-1">EDEN</span>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Tactical Ops</p>
+              <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">Tactical Ops</p>
             </div>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-colors text-zinc-400"
+            className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-colors text-zinc-400 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             aria-label="Close navigation menu"
             data-testid="sidebar-close"
           >
@@ -218,7 +218,7 @@ const Layout = () => {
               value={navQuery}
               onChange={(e) => setNavQuery(e.target.value)}
               placeholder="Find module..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-orange-500/40"
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/40"
               data-testid="sidebar-search"
             />
           </div>
@@ -229,7 +229,7 @@ const Layout = () => {
               <div key={section.title} className="pb-2">
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-mono font-semibold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-mono font-semibold text-zinc-500 uppercase tracking-widest hover:text-zinc-400 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                   data-testid={`sidebar-section-${section.title.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   <span>{section.title}</span>
@@ -245,7 +245,7 @@ const Layout = () => {
                           navigate(item.path);
                           if (window.innerWidth < 1024) setSidebarOpen(false);
                         }}
-                        className={`group w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 relative ${
+                        className={`group w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 relative focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                           isActive(item.path)
                             ? 'nav-tactical-active bg-orange-500/10 text-orange-400 shadow-[inset_0_0_20px_rgba(234,88,12,0.05)]'
                             : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 hover:shadow-[inset_0_0_15px_rgba(255,255,255,0.02)]'
@@ -274,7 +274,7 @@ const Layout = () => {
           })}
 
           {visibleSections.length === 0 && (
-            <div className="px-3 py-4 text-center text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <div className="px-3 py-4 text-center text-xs font-mono text-zinc-400 uppercase tracking-wider">
               No modules found
             </div>
           )}
@@ -295,13 +295,13 @@ const Layout = () => {
               </p>
               <div className="flex items-center gap-1.5">
                 <Radio className="w-2.5 h-2.5 text-green-500" />
-                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{user?.role || 'Agent'}</p>
+                <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">{user?.role || 'Agent'}</p>
               </div>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full mt-3 py-2 px-3 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 hover:shadow-[0_0_12px_rgba(239,68,68,0.1)]"
+            className="w-full mt-3 py-2 px-3 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 hover:shadow-[0_0_12px_rgba(239,68,68,0.1)] focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             data-testid="logout-btn"
           >
             <LogOut className="w-4 h-4" />
@@ -317,14 +317,14 @@ const Layout = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-all duration-200 text-zinc-400"
+              className="p-2 hover:bg-zinc-800 rounded-lg lg:hidden transition-all duration-200 text-zinc-400 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               aria-label="Open navigation menu"
               data-testid="mobile-menu-btn"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-2 lg:hidden">
-              <img src={APP_LOGO} alt="Operation Eden" className="w-8 h-8 object-contain" style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.3))' }} />
+              <img src={APP_LOGO} alt="Operation Eden" className="w-8 h-8 object-contain glow-orange" />
               <div>
                 <span className="text-sm font-tactical font-bold text-white tracking-wider">OP</span>
                 <span className="text-sm font-tactical font-bold text-orange-500 tracking-wider ml-0.5">EDEN</span>
@@ -333,7 +333,7 @@ const Layout = () => {
             {/* Breadcrumb / Status */}
             <div className="hidden lg:flex items-center gap-2 text-xs font-mono">
               <Target className="w-3 h-3 text-orange-500 animate-scale-pulse" />
-              <span className="text-zinc-500">SECTOR:</span>
+              <span className="text-zinc-400">SECTOR:</span>
               <span className="text-orange-400 uppercase animate-shimmer">{location.pathname.split('/')[1] || 'HOME'}</span>
             </div>
           </div>

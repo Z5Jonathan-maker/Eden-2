@@ -122,7 +122,7 @@ const NewClaim = () => {
       <div className="mb-6 animate-fade-in-up">
         <button
           onClick={() => navigate('/claims')}
-          className="mb-4 px-3 py-2 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
+          className="mb-4 px-3 py-2 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Garden
@@ -131,7 +131,7 @@ const NewClaim = () => {
           <img src={NAV_ICONS.new_mission} alt="New Mission" className="w-10 h-10 object-contain icon-3d-shadow" />
           <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">NEW MISSION</h1>
         </div>
-        <p className="text-zinc-500 font-mono text-xs sm:text-sm uppercase tracking-wider">Create a new claim file</p>
+        <p className="text-zinc-400 font-mono text-xs sm:text-sm uppercase tracking-wider">Create a new claim file</p>
       </div>
 
       <div className="card-tactical p-4 sm:p-6 max-w-3xl animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -191,10 +191,10 @@ const NewClaim = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
-            <button type="button" onClick={() => navigate('/claims')} className="px-6 py-2.5 rounded-lg border border-zinc-700/50 text-zinc-400 hover:text-white hover:border-zinc-600 font-tactical text-sm uppercase transition-all">
+            <button type="button" onClick={() => navigate('/claims')} className="px-6 py-2.5 rounded-lg border border-zinc-700/50 text-zinc-400 hover:text-white hover:border-zinc-600 font-tactical text-sm uppercase transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="btn-tactical px-6 py-2.5 text-sm flex items-center justify-center gap-2" data-testid="new-claim-submit">
+            <button type="submit" disabled={loading} className="btn-tactical px-6 py-2.5 text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" data-testid="new-claim-submit">
               {loading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
               ) : (

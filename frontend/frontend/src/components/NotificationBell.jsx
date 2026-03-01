@@ -350,7 +350,8 @@ const NotificationBell = () => {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+            aria-label="Notifications"
             data-testid="notification-bell"
           >
             <Bell className="w-5 h-5 text-gray-600" />
@@ -361,7 +362,7 @@ const NotificationBell = () => {
             )}
           </button>
         </div>
-        
+
         {/* Full Screen Modal */}
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           {/* Header */}
@@ -382,7 +383,8 @@ const NotificationBell = () => {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-2 hover:bg-gray-100 rounded-full focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2"
+              aria-label="Close notifications"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
@@ -393,7 +395,7 @@ const NotificationBell = () => {
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-sm text-orange-600 font-medium flex items-center gap-1"
+                className="text-sm text-orange-600 font-medium flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2"
               >
                 <CheckCheck className="w-4 h-4" />
                 Mark all as read ({unreadCount})
@@ -438,7 +440,8 @@ const NotificationBell = () => {
           setIsOpen(!isOpen);
           if (!isOpen) fetchNotifications();
         }}
-        className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+        aria-label="Notifications"
         data-testid="notification-bell"
       >
         <Bell className="w-5 h-5 text-gray-600" />
@@ -470,7 +473,7 @@ const NotificationBell = () => {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2"
                 data-testid="mark-all-read"
               >
                 <CheckCheck className="w-3 h-3" />

@@ -384,7 +384,7 @@ export default function Scales() {
           <img src="/icons/scales.png" alt="Scales" className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
           <div>
             <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SCALES</h1>
-            <p className="text-sm sm:text-base text-zinc-500 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>
+            <p className="text-sm sm:text-base text-zinc-400 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>
           </div>
         </div>
         
@@ -392,17 +392,17 @@ export default function Scales() {
           <div className="grid grid-cols-3 gap-2 sm:gap-6 text-xs sm:text-sm">
             <div className="text-center">
               <p className="text-lg sm:text-2xl font-tactical font-bold text-blue-400">{stats.estimates_uploaded}</p>
-              <p className="text-zinc-500 font-mono text-xs">Estimates</p>
+              <p className="text-zinc-400 font-mono text-xs">Estimates</p>
             </div>
             <div className="text-center">
               <p className="text-lg sm:text-2xl font-tactical font-bold text-purple-400">{stats.comparisons_completed}</p>
-              <p className="text-zinc-500 font-mono text-xs">Comparisons</p>
+              <p className="text-zinc-400 font-mono text-xs">Comparisons</p>
             </div>
             <div className="text-center">
               <p className="text-lg sm:text-2xl font-tactical font-bold text-green-400 truncate">
                 {formatCurrency(stats.total_variance_identified)}
               </p>
-              <p className="text-zinc-500 font-mono text-xs">Variance</p>
+              <p className="text-zinc-400 font-mono text-xs">Variance</p>
             </div>
           </div>
         )}
@@ -492,7 +492,7 @@ export default function Scales() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                           onClick={(e) => { e.preventDefault(); setCarrierOverride(prev => ({ ...prev, enabled: !prev.enabled })); }}
                         >
                           <Settings2 className="w-3 h-3" /> {carrierOverride.enabled ? 'Hide override' : 'Override pages'}
@@ -590,7 +590,7 @@ export default function Scales() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                          className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                           onClick={(e) => { e.preventDefault(); setContractorOverride(prev => ({ ...prev, enabled: !prev.enabled })); }}
                         >
                           <Settings2 className="w-3 h-3" /> {contractorOverride.enabled ? 'Hide override' : 'Override pages'}
@@ -672,9 +672,11 @@ export default function Scales() {
                       <div
                         key={est.id}
                         onClick={() => setSelectedCarrier(est.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                          selectedCarrier === est.id 
-                            ? 'border-indigo-500 bg-indigo-50' 
+                        tabIndex={0}
+                        role="button"
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
+                          selectedCarrier === est.id
+                            ? 'border-indigo-500 bg-indigo-50'
                             : 'border-zinc-700/30 hover:border-indigo-300'
                         }`}
                       >
@@ -707,9 +709,11 @@ export default function Scales() {
                       <div
                         key={est.id}
                         onClick={() => setSelectedContractor(est.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                          selectedContractor === est.id 
-                            ? 'border-emerald-500 bg-emerald-50' 
+                        tabIndex={0}
+                        role="button"
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
+                          selectedContractor === est.id
+                            ? 'border-emerald-500 bg-emerald-50'
                             : 'border-zinc-700/30 hover:border-emerald-300'
                         }`}
                       >
@@ -897,7 +901,7 @@ export default function Scales() {
                       <select
                         value={filterImpact}
                         onChange={(e) => setFilterImpact(e.target.value)}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/40"
                       >
                         <option value="all">All Impact</option>
                         <option value="high">High Impact</option>
@@ -1120,7 +1124,7 @@ export default function Scales() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => deleteEstimate(est.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => deleteEstimate(est.id)} aria-label="Delete estimate">
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
@@ -1142,7 +1146,9 @@ export default function Scales() {
                   {comparisons.map(comp => (
                     <div 
                       key={comp.id} 
-                      className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/60 cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-lg hover:bg-zinc-800/60 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                      tabIndex={0}
+                      role="button"
                       onClick={() => loadComparison(comp.id)}
                     >
                       <div className="flex items-center gap-4">
