@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// NOTE: This file is ONLY used for vitest configuration. The app builds with CRA + Craco.
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -30,32 +31,6 @@ export default defineConfig({
 
   // Environment variable prefix (Vite uses VITE_ by default)
   envPrefix: ['REACT_APP_', 'VITE_'],
-
-  // Build configuration
-  build: {
-    outDir: 'build',
-    sourcemap: true,
-    // Increase chunk size warning limit (default is 500kb)
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        // Manual chunking for better caching
-        manualChunks: {
-          // Vendor chunks
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-radix': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tooltip',
-          ],
-          'vendor-map': ['@vis.gl/react-google-maps'],
-          'vendor-utils': ['framer-motion', 'clsx', 'class-variance-authority'],
-        },
-      },
-    },
-  },
 
   // Dev server configuration
   server: {

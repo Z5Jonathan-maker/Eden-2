@@ -20,17 +20,19 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# Configuration
-JWT_SECRET = "your_jwt_secret_key_here"
+# Configuration — use env vars, never hardcode secrets
+JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "dev-only-change-me")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
-# Mock database
+# Mock database — passwords hashed at startup
+import bcrypt as _bc, os
+_MOCK_HASH = _bc.hashpw(b"password", _bc.gensalt()).decode()
 USERS = {
     "test@eden.com": {
         "id": "user_123",
         "email": "test@eden.com",
-        "password": "password",  # In real app, this would be hashed
+        "password_hash": _MOCK_HASH,
         "full_name": "Test User",
         "role": "adjuster"
     }
@@ -124,7 +126,7 @@ async def health():
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
     user = USERS.get(request.email)
-    if not user or user["password"] != request.password:
+    if not user or not _bc.checkpw(request.password.encode(), user["password_hash"].encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     access_token = create_access_token({"sub": user["email"]})
@@ -147,7 +149,7 @@ async def register(request: LoginRequest):
     new_user = {
         "id": f"user_{len(USERS) + 1}",
         "email": request.email,
-        "password": request.password,
+        "password_hash": _bc.hashpw(request.password.encode(), _bc.gensalt()).decode(),
         "full_name": request.email.split("@")[0],
         "role": "adjuster"
     }

@@ -38,9 +38,7 @@ jobs:
       env:
         MONGO_URL: mongodb://localhost:27017  # Mock or use a service container in future
         JWT_SECRET: test_secret
-      run: |
-        # Running a simple discovery first to ensure tests are collectable
-        pytest --collect-only
+      run: pytest -x --tb=short
 
   frontend-test:
     runs-on: ubuntu-latest
@@ -62,7 +60,7 @@ jobs:
       run: npm ci
 
     - name: Run tests
-      run: npx craco test --watchAll=false --ci --passWithNoTests
+      run: npx craco test --watchAll=false --ci
       env:
         CI: true
 

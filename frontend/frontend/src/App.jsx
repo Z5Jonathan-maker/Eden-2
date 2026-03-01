@@ -22,7 +22,6 @@ import RouteErrorBoundary from './components/RouteErrorBoundary';
 const ClaimsList = lazy(() => import('./features/claims/components/ClaimsList'));
 const ClaimDetails = lazy(() => import('./features/claims/components/ClaimDetails'));
 const NewClaim = lazy(() => import('./components/NewClaim'));
-const InspectionsEnhanced = lazy(() => import('./components/InspectionsEnhanced'));
 const InspectionsNew = lazy(() => import('./components/InspectionsNew'));
 const Documents = lazy(() => import('./features/documents/components/DocumentsPage'));
 const EveAI = lazy(() => import('./features/ai/components/EveAI'));
@@ -255,7 +254,6 @@ function AppRoutes() {
           <Route path="claims/:claimId" element={<Safe label="Claim Detail"><ClaimDetails /></Safe>} />
           <Route path="claims/:claimId/supplements" element={<Safe label="Supplements"><SupplementTracker /></Safe>} />
           <Route path="inspections" element={<Safe label="Recon"><InspectionsNew /></Safe>} />
-          <Route path="inspections/classic" element={<Safe label="Inspections"><InspectionsEnhanced /></Safe>} />
           <Route path="documents" element={<Safe label="Documents"><Documents /></Safe>} />
           <Route path="eve" element={<Safe label="Eve AI"><EveAI /></Safe>} />
           <Route path="email-intelligence" element={<Safe label="Email Intel"><EmailIntelligence /></Safe>} />
