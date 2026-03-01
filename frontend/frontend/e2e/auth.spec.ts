@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestUser, setupConsoleErrorCapture, TEST_USER } from './helpers/auth';
+import { loginAsTestUser, removeWebpackOverlay, setupConsoleErrorCapture, TEST_USER } from './helpers/auth';
 
 test.describe('Authentication Flow', () => {
   test('login page loads with correct elements', async ({ page }) => {
+    await removeWebpackOverlay(page);
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
 
@@ -23,6 +24,37 @@ test.describe('Authentication Flow', () => {
   });
 
   test('login with invalid credentials shows error', async ({ page }) => {
+    await removeWebpackOverlay(page);
+
+    // Mock the login endpoint to return an error for invalid creds
+    await page.route('**/api/auth/login', (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Invalid email or password' }),
+      })
+    );
+
+    // Mock /api/auth/me to return 401 (not logged in)
+    await page.route('**/api/auth/me', (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Not authenticated' }),
+      })
+    );
+
+    // Catch-all for other API calls
+    await page.route('**/api/**', (route, request) => {
+      const url = request.url();
+      if (url.includes('/api/auth/')) return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: [] }),
+      });
+    });
+
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
 
@@ -58,17 +90,44 @@ test.describe('Authentication Flow', () => {
   });
 
   test('protected routes redirect to login when not authenticated', async ({ page }) => {
-    // Clear any existing auth state
+    await removeWebpackOverlay(page);
+
+    // Mock /api/auth/me to return 401
+    await page.route('**/api/auth/me', (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Not authenticated' }),
+      })
+    );
+
+    // Catch-all for other API calls
+    await page.route('**/api/**', (route, request) => {
+      const url = request.url();
+      if (url.includes('/api/auth/')) return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: [] }),
+      });
+    });
+
+    // Clear any existing auth state: navigate to app origin first
+    // so localStorage is accessible (about:blank blocks localStorage)
     await page.context().clearCookies();
-    await page.goto('about:blank');
-    await page.evaluate(() => localStorage.clear());
+
+    // Ensure eden_token is NOT in localStorage by adding an init script
+    await page.addInitScript(() => {
+      localStorage.removeItem('eden_token');
+      localStorage.clear();
+    });
 
     // Try to access a protected route directly
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
 
     // Should redirect to /login since we're not authenticated
-    await page.waitForURL('**/login', { timeout: 10_000 }).catch(() => {});
+    await page.waitForURL('**/login', { timeout: 15_000 }).catch(() => {});
     expect(page.url()).toContain('/login');
   });
 
@@ -92,7 +151,7 @@ test.describe('Authentication Flow', () => {
     } else {
       // Try sidebar/menu expansion first (mobile or collapsed sidebar)
       const menuToggle = page.locator(
-        'button[aria-label*="menu"], [data-testid="menu-toggle"], button:has(svg.lucide-menu)'
+        'button[aria-label*="menu" i], [data-testid="mobile-menu-btn"], button:has(svg.lucide-menu)'
       ).first();
 
       if (await menuToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {

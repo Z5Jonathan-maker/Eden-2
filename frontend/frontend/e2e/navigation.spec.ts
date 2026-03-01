@@ -49,15 +49,8 @@ test.describe('App Navigation', () => {
       }
     }
 
-    // Filter out known non-critical errors (GPS denied, 404s for missing assets)
-    const criticalErrors = errors.filter(
-      (e) =>
-        !e.includes('Geolocation') &&
-        !e.includes('GPS') &&
-        !e.includes('404') &&
-        !e.includes('favicon')
-    );
-    expect(criticalErrors).toHaveLength(0);
+    // setupConsoleErrorCapture already filters known noise patterns
+    expect(errors).toHaveLength(0);
   });
 
   test('breadcrumbs work correctly', async ({ page }) => {
@@ -146,6 +139,10 @@ test.describe('App Navigation', () => {
   });
 
   test('pages load without console errors', async ({ page }) => {
+    // setupConsoleErrorCapture already filters known noise patterns.
+    // We set it up once and check after visiting all pages.
+    const errors = setupConsoleErrorCapture(page);
+
     const pagesToCheck = [
       '/dashboard',
       '/claims',
@@ -155,26 +152,15 @@ test.describe('App Navigation', () => {
     ];
 
     for (const path of pagesToCheck) {
-      const errors = setupConsoleErrorCapture(page);
-
       await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1_500);
 
       // Page should render
       await expect(page.locator('body')).toBeVisible();
-
-      // Filter known non-critical errors
-      const criticalErrors = errors.filter(
-        (e) =>
-          !e.includes('Geolocation') &&
-          !e.includes('GPS') &&
-          !e.includes('404') &&
-          !e.includes('favicon') &&
-          !e.includes('network')
-      );
-
-      expect(criticalErrors).toHaveLength(0);
     }
+
+    // All non-ignorable errors across all pages
+    expect(errors).toHaveLength(0);
   });
 });

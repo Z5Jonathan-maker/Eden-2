@@ -9,6 +9,7 @@ import { defineConfig } from '@playwright/test';
  * - Screenshots captured on failure
  * - Results output to e2e-results/
  * - webServer auto-starts `npm start` if nothing is already on port 3000
+ * - Removes webpack dev server overlay iframe that blocks pointer events
  */
 export default defineConfig({
   testDir: './e2e',
