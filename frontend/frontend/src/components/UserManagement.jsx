@@ -135,7 +135,7 @@ function UserManagement() {
     <div className="p-4 sm:p-8 min-h-screen page-enter">
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <img src={NAV_ICONS.squad} alt="Squad" className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
+          <img src={NAV_ICONS.squad} alt="Squad" width={40} height={40} className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
           <div>
             <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">SQUAD</h1>
             <p className="text-sm sm:text-base text-zinc-500 font-mono uppercase tracking-wider">Manage users and permissions</p>

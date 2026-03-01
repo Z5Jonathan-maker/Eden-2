@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Loader2, AlertCircle, FileQuestion, RefreshCcw, Home } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '../shared/ui/button';
 
 /**
  * Spinner - Loading indicator

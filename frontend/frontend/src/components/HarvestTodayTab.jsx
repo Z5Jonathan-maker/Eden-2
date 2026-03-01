@@ -290,6 +290,8 @@ const IncentivesPanel = ({ data }) => {
                 <img
                   src={featured.image_url}
                   alt={featured.name}
+                  width={64}
+                  height={64}
                   className="w-full h-full object-cover"
                 />
               ) : (

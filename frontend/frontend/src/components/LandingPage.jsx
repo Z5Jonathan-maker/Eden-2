@@ -227,9 +227,11 @@ const LandingPage = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Logo with TRUE transparent background */}
-              <img 
-                src={APP_LOGO} 
-                alt="Operation Eden" 
+              <img
+                src={APP_LOGO}
+                alt="Operation Eden"
+                width={32}
+                height={32}
                 className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                 style={{ filter: 'drop-shadow(0 0 10px rgba(234, 88, 12, 0.4))' }}
               />
@@ -279,11 +281,13 @@ const LandingPage = () => {
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-amber-500/30 blur-2xl animate-pulse" />
               <div className="absolute inset-4 rounded-full bg-gradient-to-r from-orange-500/40 to-amber-500/40 blur-xl animate-pulse" style={{ animationDelay: '0.5s' }} />
               {/* Floating logo with TRUE transparent background */}
-              <img 
-                src={APP_LOGO} 
-                alt="Operation Eden" 
+              <img
+                src={APP_LOGO}
+                alt="Operation Eden"
+                width={128}
+                height={128}
                 className="w-32 h-32 sm:w-48 sm:h-48 relative z-10 object-contain animate-float"
-                style={{ 
+                style={{
                   filter: 'drop-shadow(0 10px 30px rgba(234, 88, 12, 0.5)) drop-shadow(0 5px 15px rgba(0,0,0,0.4))'
                 }}
               />
@@ -367,11 +371,13 @@ const LandingPage = () => {
                     style={{ background: feature.tagColor.includes('yellow') ? '#facc15' : feature.tagColor.includes('blue') ? '#3b82f6' : feature.tagColor.includes('green') ? '#22c55e' : feature.tagColor.includes('purple') ? '#a855f7' : feature.tagColor.includes('red') ? '#ef4444' : feature.tagColor.includes('cyan') ? '#06b6d4' : '#f97316' }}
                   />
                   {/* Icon with TRUE transparent background */}
-                  <img 
-                    src={feature.icon} 
+                  <img
+                    src={feature.icon}
                     alt={feature.title}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 sm:w-20 sm:h-20 object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 animate-float-slow"
-                    style={{ 
+                    style={{
                       filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.5))',
                       animationDelay: `${idx * 0.2}s`
                     }}
@@ -410,11 +416,13 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-radial from-blue-500/30 to-transparent blur-3xl scale-150 animate-pulse" />
               <div className="absolute inset-10 bg-gradient-radial from-cyan-500/20 to-transparent blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
               {/* Agent Eve icon with TRUE transparent background and floating animation */}
-              <img 
-                src={FEATURE_ICONS.agent_eve} 
+              <img
+                src={FEATURE_ICONS.agent_eve}
                 alt="Agent Eve"
+                width={192}
+                height={192}
                 className="w-48 h-48 sm:w-72 sm:h-72 mx-auto object-contain relative z-10 animate-float"
-                style={{ 
+                style={{
                   filter: 'drop-shadow(0 20px 40px rgba(59, 130, 246, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.4))'
                 }}
               />
@@ -482,9 +490,11 @@ const LandingPage = () => {
 
                 {/* Badge */}
                 <div className="text-center mb-3 sm:mb-4">
-                  <img 
-                    src={tier.badge} 
+                  <img
+                    src={tier.badge}
                     alt={tier.name}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 sm:w-20 sm:h-20 mx-auto object-contain"
                   />
                 </div>
@@ -538,9 +548,11 @@ const LandingPage = () => {
       {/* Final CTA */}
       <section className="relative z-10 py-12 sm:py-20 px-4 text-center">
         <div className="max-w-3xl mx-auto">
-          <img 
-            src={APP_LOGO} 
-            alt="Operation Eden" 
+          <img
+            src={APP_LOGO}
+            alt="Operation Eden"
+            width={64}
+            height={64}
             className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6"
             style={{ filter: 'drop-shadow(0 0 20px rgba(234, 88, 12, 0.4))' }}
           />

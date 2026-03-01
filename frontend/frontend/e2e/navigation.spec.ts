@@ -29,13 +29,15 @@ test.describe('App Navigation', () => {
     await expect(main).toBeVisible({ timeout: 15_000 });
 
     for (const item of SIDEBAR_NAV_ITEMS) {
-      // Find the nav link by href or by visible label text
-      const link = page.locator(
-        `a[href="${item.path}"], a[href*="${item.path}"]`
+      // Sidebar uses <button> elements with data-testid, not <a> links.
+      // Build the testid from the label: e.g. "Command" -> "nav-command"
+      const testId = `nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+      const navBtn = page.locator(
+        `[data-testid="${testId}"], a[href="${item.path}"], a[href*="${item.path}"]`
       ).first();
 
-      if (await link.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await link.click({ force: true });
+      if (await navBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await navBtn.click({ force: true });
         await page.waitForLoadState('domcontentloaded');
         await page.waitForTimeout(1_500);
 

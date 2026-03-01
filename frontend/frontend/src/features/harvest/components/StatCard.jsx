@@ -74,4 +74,4 @@ const StatCard = ({ label, value, tone = 'cyan', progress = null, deltaLabel = '
   );
 };
 
-export default StatCard;
+export default React.memo(StatCard);

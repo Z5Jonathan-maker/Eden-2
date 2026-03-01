@@ -295,8 +295,8 @@ const NotificationBell = () => {
     return date.toLocaleDateString();
   };
 
-  // Notification Item Component
-  const NotificationItem = ({ notification }) => {
+  // Notification Item Component (memoized — renders inside list map)
+  const NotificationItem = React.memo(({ notification }) => {
     const typeLabel = getNotificationTypeLabel(notification.type);
     
     return (
@@ -344,7 +344,7 @@ const NotificationBell = () => {
         </div>
       </div>
     );
-  };
+  });
 
   // Mobile Full-Screen Modal
   if (isMobile && isOpen) {

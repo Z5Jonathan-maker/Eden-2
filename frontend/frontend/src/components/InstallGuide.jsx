@@ -15,9 +15,11 @@ const InstallGuide = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header - Tactical Style */}
         <div className="mb-8 text-center animate-fade-in-up">
-          <img 
-            src={APP_LOGO} 
-            alt="Operation Eden" 
+          <img
+            src={APP_LOGO}
+            alt="Operation Eden"
+            width={80}
+            height={80}
             className="w-20 h-20 mx-auto mb-4 animate-glow-breathe"
             style={{ filter: 'drop-shadow(0 0 25px rgba(234, 88, 12, 0.5))' }}
           />

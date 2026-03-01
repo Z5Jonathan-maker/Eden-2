@@ -141,7 +141,7 @@ const VoiceAssistantConsole = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <img src={NAV_ICONS.voice_assistant} alt="Voice Assistant" className="w-12 h-12 object-contain icon-3d-shadow" />
+          <img src={NAV_ICONS.voice_assistant} alt="Voice Assistant" width={48} height={48} className="w-12 h-12 object-contain icon-3d-shadow" />
           <div>
             <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">VOICE ASSISTANT</h1>
             <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Twilio Voice + AI Receptionist</p>

@@ -76,9 +76,9 @@ test.describe('Dashboard', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
 
-    // Find claims/garden link in sidebar
+    // Sidebar uses <button data-testid="nav-garden"> for the claims/garden link
     const claimsLink = page.locator(
-      'a[href="/claims"], a[href*="/claims"], [data-testid*="nav-claims"], text=/Garden|Claims/i'
+      '[data-testid="nav-garden"], a[href="/claims"], a[href*="/claims"], text=/Garden|Claims/i'
     ).first();
 
     await expect(claimsLink).toBeVisible({ timeout: 10_000 });

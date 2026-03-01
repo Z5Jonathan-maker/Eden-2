@@ -36,7 +36,7 @@ const Register = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
-          <img src={APP_LOGO} alt="Operation Eden" className="w-20 h-20 mx-auto mb-3 animate-glow-breathe" style={{ filter: 'drop-shadow(0 0 25px rgba(234, 88, 12, 0.5))' }} />
+          <img src={APP_LOGO} alt="Operation Eden" width={80} height={80} className="w-20 h-20 mx-auto mb-3 animate-glow-breathe" style={{ filter: 'drop-shadow(0 0 25px rgba(234, 88, 12, 0.5))' }} />
           <h1 className="text-2xl font-tactical font-bold tracking-wider">
             <span className="text-white">OPERATION </span>
             <span className="text-orange-500 text-glow-orange">EDEN</span>

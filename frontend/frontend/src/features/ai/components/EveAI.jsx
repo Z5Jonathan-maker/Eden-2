@@ -440,6 +440,8 @@ const EveAI = () => {
             <img
               src={PAGE_ICONS.eve_ai}
               alt="Agent Eve"
+              width={64}
+              height={64}
               className="w-16 h-16 object-contain badge-icon animate-glow-breathe"
               style={{ filter: 'drop-shadow(0 0 15px rgba(59, 130, 246, 0.4))' }}
             />
@@ -684,7 +686,7 @@ const EveAI = () => {
           <div className="card-tactical h-[calc(100vh-200px)] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src={FEATURE_ICONS.agent_eve} alt="Agent Eve" className="w-6 h-6 object-contain" />
+                <img src={FEATURE_ICONS.agent_eve} alt="Agent Eve" width={24} height={24} className="w-6 h-6 object-contain" />
                 <h3 className="font-tactical font-bold text-white text-sm uppercase tracking-wide">
                   Conversation
                 </h3>

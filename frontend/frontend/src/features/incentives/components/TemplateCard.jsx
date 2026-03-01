@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { getCategoryColor, getCategoryIconComponent } from '../utils/incentiveHelpers';
 
-export const TemplateCard = ({ template, onEdit, onDelete, onUse }) => {
+export const TemplateCard = React.memo(({ template, onEdit, onDelete, onUse }) => {
   const CategoryIcon = getCategoryIconComponent(template.category);
 
   return (
@@ -91,4 +91,4 @@ export const TemplateCard = ({ template, onEdit, onDelete, onUse }) => {
       </CardContent>
     </Card>
   );
-};
+});

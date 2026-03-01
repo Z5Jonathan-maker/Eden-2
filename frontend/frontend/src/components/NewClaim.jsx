@@ -128,7 +128,7 @@ const NewClaim = () => {
           Back to Garden
         </button>
         <div className="flex items-center gap-3 mb-2">
-          <img src={NAV_ICONS.new_mission} alt="New Mission" className="w-10 h-10 object-contain icon-3d-shadow" />
+          <img src={NAV_ICONS.new_mission} alt="New Mission" width={40} height={40} className="w-10 h-10 object-contain icon-3d-shadow" />
           <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">NEW MISSION</h1>
         </div>
         <p className="text-zinc-400 font-mono text-xs sm:text-sm uppercase tracking-wider">Create a new claim file</p>

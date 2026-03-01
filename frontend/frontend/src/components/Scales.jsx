@@ -381,7 +381,7 @@ export default function Scales() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <img src="/icons/scales.png" alt="Scales" className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
+          <img src="/icons/scales.png" alt="Scales" width={40} height={40} className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
           <div>
             <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SCALES</h1>
             <p className="text-sm sm:text-base text-zinc-400 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>

@@ -135,4 +135,4 @@ const ChallengeCard = ({
   );
 };
 
-export default ChallengeCard;
+export default React.memo(ChallengeCard);

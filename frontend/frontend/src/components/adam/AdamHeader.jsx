@@ -39,6 +39,8 @@ export const AdamHeader = ({ cqilMetrics, activeTab, setActiveTab }) => {
           <img
             src={PAGE_ICONS.qa_shield}
             alt="QA Shield"
+            width={56}
+            height={56}
             className="w-14 h-14 object-contain animate-glow-breathe"
             style={{ filter: 'drop-shadow(0 0 15px rgba(249, 115, 22, 0.5))' }}
           />

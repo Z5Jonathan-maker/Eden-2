@@ -78,8 +78,9 @@ test.describe('Authentication Flow', () => {
     expect(page.url()).not.toContain('/login');
 
     // Find and click the logout button/link
+    // In Eden, the button says "Disconnect" and has data-testid="logout-btn"
     const logoutBtn = page.locator(
-      'button:has-text("Logout"), button:has-text("Log Out"), button:has-text("Sign Out"), [data-testid="logout-btn"]'
+      '[data-testid="logout-btn"], button:has-text("Disconnect"), button:has-text("Logout"), button:has-text("Log Out"), button:has-text("Sign Out")'
     ).first();
 
     if (await logoutBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -101,7 +102,7 @@ test.describe('Authentication Flow', () => {
 
       // Look for logout in expanded menu
       const logoutInMenu = page.locator(
-        'button:has-text("Logout"), button:has-text("Log Out"), [data-testid="logout-btn"]'
+        '[data-testid="logout-btn"], button:has-text("Disconnect"), button:has-text("Logout"), button:has-text("Log Out")'
       ).first();
 
       if (await logoutInMenu.isVisible({ timeout: 3_000 }).catch(() => false)) {

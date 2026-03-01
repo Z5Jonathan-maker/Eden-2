@@ -59,4 +59,4 @@ const RankBadge = ({ rank = 0, justRankedUp = false, label = 'Rank' }) => {
   );
 };
 
-export default RankBadge;
+export default React.memo(RankBadge);

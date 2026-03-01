@@ -401,6 +401,8 @@ const IndustryExperts = () => {
             <img
               src="/icons/experts.png"
               alt="Experts"
+              width={40}
+              height={40}
               className="w-10 h-10 object-contain icon-3d-shadow"
             />
             Industry Experts

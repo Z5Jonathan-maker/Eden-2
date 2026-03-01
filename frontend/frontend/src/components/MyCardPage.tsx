@@ -350,6 +350,8 @@ const MyCardPage = () => {
           <img
             src={PAGE_ICONS.my_card}
             alt="My Card"
+            width={48}
+            height={48}
             className="w-12 h-12 sm:w-16 sm:h-16 object-contain animate-glow-breathe"
             style={{ filter: 'drop-shadow(0 0 15px rgba(249, 115, 22, 0.5))' }}
           />

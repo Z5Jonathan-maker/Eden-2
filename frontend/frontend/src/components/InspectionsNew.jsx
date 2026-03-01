@@ -139,7 +139,7 @@ const InspectionsNew = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <img src={NAV_ICONS.recon} alt="Recon" className="w-8 h-8 object-contain icon-3d-shadow" />
+                <img src={NAV_ICONS.recon} alt="Recon" width={32} height={32} className="w-8 h-8 object-contain icon-3d-shadow" />
                 <h1 className="text-xl font-tactical font-bold text-white uppercase tracking-wide text-glow-orange">Recon Module</h1>
               </div>
               <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Capture property photos with voice notes</p>

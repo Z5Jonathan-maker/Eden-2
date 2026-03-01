@@ -468,6 +468,8 @@ const Documents = () => {
             <img
               src={NAV_ICONS.documents}
               alt="Documents"
+              width={48}
+              height={48}
               className="w-12 h-12 sm:w-14 sm:h-14 object-contain icon-3d-shadow"
             />
             <div>

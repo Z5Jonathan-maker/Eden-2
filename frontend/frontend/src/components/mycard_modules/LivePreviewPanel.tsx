@@ -48,6 +48,8 @@ const LivePreviewPanel: React.FC<Props> = ({ formData, selectedTemplate, headsho
             <img
               src={headshotPreview || TACTICAL_AVATAR}
               alt="Operator"
+              width={64}
+              height={64}
               className="w-16 h-16 rounded-xl object-cover border border-zinc-700/40"
               onError={(e) => {
                 e.currentTarget.src = TACTICAL_AVATAR;

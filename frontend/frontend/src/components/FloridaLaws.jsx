@@ -340,6 +340,8 @@ const FloridaLaws = () => {
             <img
               src="/icons/laws.png"
               alt="Laws"
+              width={40}
+              height={40}
               className="w-10 h-10 object-contain icon-3d-shadow"
             />
             Florida Laws

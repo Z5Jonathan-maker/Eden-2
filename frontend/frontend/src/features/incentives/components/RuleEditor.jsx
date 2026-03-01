@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Star, Trash2 } from 'lucide-react';
 import { RULE_TYPES } from '../utils/incentiveHelpers';
 
-export const RuleEditor = ({ rule, index, rewards, onUpdate, onRemove }) => {
+export const RuleEditor = React.memo(({ rule, index, rewards, onUpdate, onRemove }) => {
   const ruleType = RULE_TYPES.find((r) => r.value === rule.type);
   const IconComponent = ruleType?.iconComponent;
 
@@ -234,4 +234,4 @@ export const RuleEditor = ({ rule, index, rewards, onUpdate, onRemove }) => {
       </CardContent>
     </Card>
   );
-};
+});

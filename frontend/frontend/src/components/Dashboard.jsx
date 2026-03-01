@@ -242,6 +242,8 @@ const Dashboard = () => {
           <img
             src={PAGE_ICONS.command_center}
             alt="Command Center"
+            width={48}
+            height={48}
             className="w-12 h-12 sm:w-16 sm:h-16 object-contain animate-glow-breathe glow-orange-lg"
           />
           <div>
@@ -464,6 +466,8 @@ const Dashboard = () => {
                 <img
                   src={getTierBadge(battlePassProgress.current_tier || 1)}
                   alt="Current Tier"
+                  width={64}
+                  height={64}
                   className="w-16 h-16 object-contain drop-shadow-lg badge-icon animate-glow-breathe"
                 />
                 <div className="flex-1">
@@ -485,6 +489,8 @@ const Dashboard = () => {
                         <img
                           src={UI_ICONS.xp_orb}
                           alt=""
+                          width={12}
+                          height={12}
                           className="w-3 h-3 object-contain animate-spin-slow"
                         />
                         <p className="text-[10px] font-mono text-orange-400">

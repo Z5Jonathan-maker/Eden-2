@@ -30,7 +30,7 @@ const PropertyHub = () => {
       <div className="bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-800/50 px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <img src={NAV_ICONS.intel_hub} alt="Intel Hub" className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
+            <img src={NAV_ICONS.intel_hub} alt="Intel Hub" width={40} height={40} className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
             <div>
               <h1 className="text-lg sm:text-xl font-tactical font-bold text-white tracking-wide text-glow-orange">INTEL HUB</h1>
               <p className="text-xs sm:text-sm text-zinc-500 font-mono uppercase tracking-wider">DOL Discovery · Imagery · Permits</p>

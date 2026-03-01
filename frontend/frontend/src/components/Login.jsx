@@ -64,6 +64,8 @@ const Login = () => {
             <img
               src={APP_LOGO}
               alt="Operation Eden"
+              width={96}
+              height={96}
               className="w-24 h-24 mx-auto mb-4 animate-glow-breathe glow-orange-lg"
             />
             {/* Status Indicator */}

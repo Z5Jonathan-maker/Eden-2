@@ -539,6 +539,8 @@ const RewardsTab = () => {
                       <img
                         src={reward.image_url}
                         alt={reward.name || 'Reward'}
+                        width={48}
+                        height={48}
                         className="w-12 h-12 object-cover rounded"
                       />
                     ) : (
@@ -1532,6 +1534,8 @@ const HarvestAdminConsole = () => {
               <img
                 src={NAV_ICONS.harvest_admin}
                 alt="Harvest Admin"
+                width={40}
+                height={40}
                 className="w-10 h-10 object-contain icon-3d-shadow"
               />
               <div>

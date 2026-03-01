@@ -313,9 +313,11 @@ const InteractiveVisionBoard = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-4">
-            <img 
-              src={PAGE_ICONS.vision_board} 
-              alt="Vision Board" 
+            <img
+              src={PAGE_ICONS.vision_board}
+              alt="Vision Board"
+              width={56}
+              height={56}
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain animate-glow-breathe"
               style={{ filter: 'drop-shadow(0 0 15px rgba(147, 51, 234, 0.5))' }}
             />

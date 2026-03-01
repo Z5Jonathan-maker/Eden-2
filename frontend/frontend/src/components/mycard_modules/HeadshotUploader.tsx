@@ -29,6 +29,8 @@ const HeadshotUploader: React.FC<Props> = ({ error, previewUrl, onFileSelected }
             <img
               src={previewUrl}
               alt="Headshot preview"
+              width={112}
+              height={112}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = TACTICAL_AVATAR;

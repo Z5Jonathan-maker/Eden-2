@@ -37,6 +37,8 @@ const LeaderboardRow: React.FC<Props> = ({ entry }) => {
         <img
           src={entry.avatarUrl}
           alt={entry.name}
+          width={48}
+          height={48}
           className="h-12 w-12 rounded-full border border-zinc-700 bg-zinc-900 object-contain p-1"
         />
         <div className="min-w-0">
@@ -73,4 +75,4 @@ const LeaderboardRow: React.FC<Props> = ({ entry }) => {
   );
 };
 
-export default LeaderboardRow;
+export default React.memo(LeaderboardRow);

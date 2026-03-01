@@ -91,4 +91,4 @@ const ProfileCard = ({ currentPoints = 0, streakData = {}, stats = {}, nextRewar
   );
 };
 
-export default ProfileCard;
+export default React.memo(ProfileCard);

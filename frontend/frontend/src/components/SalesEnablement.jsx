@@ -389,7 +389,7 @@ const SalesEnablement = () => {
         {/* Header */}
         <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center gap-3 mb-2">
-            <img src={NAV_ICONS.sales_ops} alt="Sales Ops" className="w-10 h-10 object-contain icon-3d-shadow" />
+            <img src={NAV_ICONS.sales_ops} alt="Sales Ops" width={40} height={40} className="w-10 h-10 object-contain icon-3d-shadow" />
             <div>
               <h1 className="text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SALES OPS</h1>
               <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Step-by-step guided sales flows</p>

@@ -236,6 +236,8 @@ const ClaimsList = () => {
             <img
               src={NAV_ICONS.garden}
               alt="Garden"
+              width={40}
+              height={40}
               className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow"
             />
             <h1 className="text-xl sm:text-2xl md:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">

@@ -178,16 +178,18 @@ const PublicCard = () => {
         }}>
           {/* Premium Header with AI Background */}
           <div className="h-40 relative overflow-hidden">
-            <img 
-              src={template.headerBg} 
-              alt="Card Header" 
+            <img
+              src={template.headerBg}
+              alt="Card Header"
+              width={400}
+              height={160}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/60 to-transparent" />
             
             {/* Logo */}
             <div className="absolute top-4 right-4">
-              <img src={APP_LOGO} alt="Logo" className="w-10 h-10 opacity-70" />
+              <img src={APP_LOGO} alt="Logo" width={40} height={40} className="w-10 h-10 opacity-70" />
             </div>
 
             {/* Template Badge */}
@@ -207,15 +209,19 @@ const PublicCard = () => {
                 boxShadow: `0 0 40px ${template.accentColor}30`
               }}>
                 {card.profile_photo_url ? (
-                  <img 
-                    src={card.profile_photo_url} 
-                    alt={card.full_name} 
+                  <img
+                    src={card.profile_photo_url}
+                    alt={card.full_name}
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <img 
-                    src={TACTICAL_AVATAR} 
-                    alt="Operator" 
+                  <img
+                    src={TACTICAL_AVATAR}
+                    alt="Operator"
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover"
                   />
                 )}
@@ -291,7 +297,7 @@ const PublicCard = () => {
             {qrCode && (
               <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/30 flex items-center gap-4 mb-5">
                 <div className="bg-white p-2 rounded-xl shadow-lg">
-                  <img src={`data:image/png;base64,${qrCode}`} alt="QR" className="w-24 h-24" />
+                  <img src={`data:image/png;base64,${qrCode}`} alt="QR" width={96} height={96} className="w-24 h-24" />
                 </div>
                 <div className="flex-1">
                   <p className="text-white text-sm font-medium mb-1 flex items-center gap-2">

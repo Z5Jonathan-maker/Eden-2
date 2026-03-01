@@ -18,6 +18,8 @@ const NavIcon = ({ src, isActive, size = 'w-6 h-6' }) => (
     <img
       src={src}
       alt=""
+      width={24}
+      height={24}
       className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'scale-110 brightness-125' : 'brightness-90 group-hover:brightness-110 group-hover:scale-105'}`}
       loading="lazy"
     />
@@ -191,7 +193,7 @@ const Layout = () => {
         <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <img src={APP_LOGO} alt="Operation Eden" className="w-10 h-10 object-contain animate-glow-breathe glow-orange" />
+              <img src={APP_LOGO} alt="Operation Eden" width={40} height={40} className="w-10 h-10 object-contain animate-glow-breathe glow-orange" />
               <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-zinc-900 animate-scale-pulse shadow-glow-green" />
             </div>
             <div>
@@ -328,7 +330,7 @@ const Layout = () => {
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-2 lg:hidden">
-              <img src={APP_LOGO} alt="Operation Eden" className="w-8 h-8 object-contain glow-orange" />
+              <img src={APP_LOGO} alt="Operation Eden" width={32} height={32} className="w-8 h-8 object-contain glow-orange" />
               <div>
                 <span className="text-sm font-tactical font-bold text-white tracking-wider">OP</span>
                 <span className="text-sm font-tactical font-bold text-orange-500 tracking-wider ml-0.5">EDEN</span>

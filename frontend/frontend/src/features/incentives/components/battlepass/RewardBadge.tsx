@@ -43,6 +43,8 @@ const RewardBadge: React.FC<Props> = ({ reward, unlocked, claimed, unlockFx }) =
           <img
             src={reward.iconUrl}
             alt={reward.name}
+            width={64}
+            height={64}
             className="h-full w-full rounded-full p-3 object-contain"
           />
         </div>

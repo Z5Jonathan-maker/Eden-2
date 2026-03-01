@@ -21,9 +21,11 @@ export const UniversityHeader = ({
   return (
     <div className="mb-6 sm:mb-8">
       <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
-        <img 
-          src={PAGE_ICONS.university} 
-          alt="University" 
+        <img
+          src={PAGE_ICONS.university}
+          alt="University"
+          width={48}
+          height={48}
           className="w-12 h-12 sm:w-16 sm:h-16 object-contain animate-glow-breathe flex-shrink-0"
           style={{ filter: 'drop-shadow(0 0 15px rgba(249, 115, 22, 0.5))' }}
         />

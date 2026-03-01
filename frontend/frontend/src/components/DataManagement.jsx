@@ -178,18 +178,25 @@ function isCsvOnlyError(payload) {
   return detail.includes('only csv');
 }
 
+function escapeCSVField(value) {
+  const str = value == null ? '' : String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
 async function convertSpreadsheetToCsvFile(file) {
-  const XLSX = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
-  const firstSheetName =
-    Array.isArray(workbook.SheetNames) && workbook.SheetNames.length > 0
-      ? workbook.SheetNames[0]
-      : '';
-  if (!firstSheetName || !workbook.Sheets[firstSheetName]) {
+  const readXlsxFile = (await import('read-excel-file/browser')).default;
+  const rows = await readXlsxFile(file);
+  if (!Array.isArray(rows) || rows.length === 0) {
     throw new Error('Unable to read spreadsheet content');
   }
-  const csvText = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheetName], { FS: ',', RS: '\n' });
+  const csvText = rows
+    .map(function (row) {
+      return (row || []).map(escapeCSVField).join(',');
+    })
+    .join('\n');
   const baseName = String(file.name || 'import').replace(/\.[^.]+$/, '');
   return new File([csvText], baseName + '.csv', { type: 'text/csv' });
 }
@@ -802,6 +809,8 @@ function DataManagement() {
           <img
             src={NAV_ICONS.data_ops}
             alt="Data Ops"
+            width={48}
+            height={48}
             className="w-12 h-12 sm:w-14 sm:h-14 object-contain icon-3d-shadow"
           />
           <div>
