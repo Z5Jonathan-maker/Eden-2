@@ -10,6 +10,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Import extracted components
 import ClaimHeader from '../../features/claims/components/ClaimHeader';
@@ -18,7 +19,7 @@ import ScheduleAppointmentModal from '../../features/claims/components/ScheduleA
 import PhotoViewerModal from '../../features/claims/components/PhotoViewerModal';
 
 // Mock navigate function
-const mockNavigate = jest.fn();
+const mockNavigate = vi.fn();
 
 // Mock claim data
 const mockClaim = {
@@ -50,8 +51,8 @@ describe('ClaimHeader Component', () => {
         navigate={mockNavigate}
         gammaPage={null}
         creatingGammaPage={false}
-        createGammaStrategyPage={jest.fn()}
-        handleEditClaim={jest.fn()}
+        createGammaStrategyPage={vi.fn()}
+        handleEditClaim={vi.fn()}
         getStatusColor={mockGetStatusColor}
       />
     );
@@ -67,8 +68,8 @@ describe('ClaimHeader Component', () => {
         navigate={mockNavigate}
         gammaPage={null}
         creatingGammaPage={false}
-        createGammaStrategyPage={jest.fn()}
-        handleEditClaim={jest.fn()}
+        createGammaStrategyPage={vi.fn()}
+        handleEditClaim={vi.fn()}
         getStatusColor={mockGetStatusColor}
       />
     );
@@ -83,8 +84,8 @@ describe('ClaimHeader Component', () => {
         navigate={mockNavigate}
         gammaPage={null}
         creatingGammaPage={false}
-        createGammaStrategyPage={jest.fn()}
-        handleEditClaim={jest.fn()}
+        createGammaStrategyPage={vi.fn()}
+        handleEditClaim={vi.fn()}
         getStatusColor={mockGetStatusColor}
       />
     );
@@ -104,8 +105,8 @@ describe('ClaimHeader Component', () => {
         navigate={mockNavigate}
         gammaPage={mockGammaPage}
         creatingGammaPage={false}
-        createGammaStrategyPage={jest.fn()}
-        handleEditClaim={jest.fn()}
+        createGammaStrategyPage={vi.fn()}
+        handleEditClaim={vi.fn()}
         getStatusColor={mockGetStatusColor}
       />
     );
@@ -122,9 +123,9 @@ describe('ClaimEditModal Component', () => {
       <ClaimEditModal
         isOpen={true}
         editForm={mockEditForm}
-        setEditForm={jest.fn()}
-        onSave={jest.fn()}
-        onCancel={jest.fn()}
+        setEditForm={vi.fn()}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
         isSaving={false}
       />
     );
@@ -139,9 +140,9 @@ describe('ClaimEditModal Component', () => {
       <ClaimEditModal
         isOpen={false}
         editForm={mockEditForm}
-        setEditForm={jest.fn()}
-        onSave={jest.fn()}
-        onCancel={jest.fn()}
+        setEditForm={vi.fn()}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
         isSaving={false}
       />
     );
@@ -156,9 +157,9 @@ describe('ClaimEditModal Component', () => {
       <ClaimEditModal
         isOpen={true}
         editForm={mockEditForm}
-        setEditForm={jest.fn()}
-        onSave={jest.fn()}
-        onCancel={jest.fn()}
+        setEditForm={vi.fn()}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
         isSaving={false}
       />
     );
@@ -182,10 +183,10 @@ describe('ScheduleAppointmentModal Component', () => {
     render(
       <ScheduleAppointmentModal
         open={true}
-        onOpenChange={jest.fn()}
+        onOpenChange={vi.fn()}
         appointmentForm={mockAppointmentForm}
-        setAppointmentForm={jest.fn()}
-        onSchedule={jest.fn()}
+        setAppointmentForm={vi.fn()}
+        onSchedule={vi.fn()}
         isScheduling={false}
       />
     );
@@ -206,10 +207,10 @@ describe('ScheduleAppointmentModal Component', () => {
     render(
       <ScheduleAppointmentModal
         open={true}
-        onOpenChange={jest.fn()}
+        onOpenChange={vi.fn()}
         appointmentForm={mockAppointmentForm}
-        setAppointmentForm={jest.fn()}
-        onSchedule={jest.fn()}
+        setAppointmentForm={vi.fn()}
+        onSchedule={vi.fn()}
         isScheduling={false}
       />
     );
@@ -231,7 +232,7 @@ describe('PhotoViewerModal Component', () => {
     render(
       <PhotoViewerModal
         photo={mockPhoto}
-        onClose={jest.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -242,7 +243,7 @@ describe('PhotoViewerModal Component', () => {
     const { container } = render(
       <PhotoViewerModal
         photo={null}
-        onClose={jest.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -266,8 +267,8 @@ describe('Component Integration', () => {
       navigate: mockNavigate,
       gammaPage: null,
       creatingGammaPage: false,
-      createGammaStrategyPage: jest.fn(),
-      handleEditClaim: jest.fn(),
+      createGammaStrategyPage: vi.fn(),
+      handleEditClaim: vi.fn(),
       getStatusColor: mockGetStatusColor
     };
 

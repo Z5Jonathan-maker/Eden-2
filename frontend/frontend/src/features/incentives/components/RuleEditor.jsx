@@ -71,7 +71,7 @@ export const RuleEditor = ({ rule, index, rewards, onUpdate, onRemove }) => {
         {rule.type === 'milestone' && (
           <div className="space-y-3">
             <Label>Milestone Tiers:</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {['bronze', 'silver', 'gold'].map((tier) => {
                 const milestone = rule.config.milestones?.find((m) => m.tier === tier) || {
                   tier,

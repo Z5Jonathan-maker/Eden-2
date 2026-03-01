@@ -911,7 +911,7 @@ const FloridaLaws = () => {
 
                 <div>
                   <label className="text-[11px] font-mono text-zinc-500 uppercase mb-2 block">Evidence Checklist</label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {[
                       { key: 'photos', label: 'Damage Photos (3-angle)' },
                       { key: 'aerials', label: 'Historical Aerials' },

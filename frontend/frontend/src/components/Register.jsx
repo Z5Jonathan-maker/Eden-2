@@ -58,38 +58,38 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400">
+              <div role="alert" aria-live="assertive" className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm font-mono">{error}</span>
               </div>
             )}
 
             <div>
-              <label className={labelClass}>Operator Name *</label>
-              <input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} required className={inputClass} data-testid="register-name-input" />
+              <label htmlFor="register-fullName" className={labelClass}>Operator Name *</label>
+              <input id="register-fullName" name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} required className={inputClass} data-testid="register-name-input" />
             </div>
 
             <div>
-              <label className={labelClass}>Operator ID (Email) *</label>
-              <input name="email" type="email" placeholder="operator@eden.tactical" value={formData.email} onChange={handleChange} required className={inputClass} data-testid="register-email-input" />
+              <label htmlFor="register-email" className={labelClass}>Operator ID (Email) *</label>
+              <input id="register-email" name="email" type="email" placeholder="operator@eden.tactical" value={formData.email} onChange={handleChange} required className={inputClass} data-testid="register-email-input" />
             </div>
 
             <div>
-              <label className={labelClass}>Clearance Level</label>
-              <select name="role" value={formData.role} onChange={handleChange} className={inputClass} data-testid="register-role-select">
+              <label htmlFor="register-role" className={labelClass}>Clearance Level</label>
+              <select id="register-role" name="role" value={formData.role} onChange={handleChange} className={inputClass} data-testid="register-role-select">
                 <option value="adjuster">Field Operator</option>
                 <option value="client">Observer</option>
               </select>
             </div>
 
             <div>
-              <label className={labelClass}>Access Code *</label>
-              <input name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required className={inputClass} data-testid="register-password-input" />
+              <label htmlFor="register-password" className={labelClass}>Access Code *</label>
+              <input id="register-password" name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required className={inputClass} data-testid="register-password-input" />
             </div>
 
             <div>
-              <label className={labelClass}>Confirm Access Code *</label>
-              <input name="confirmPassword" type="password" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required className={inputClass} data-testid="register-confirm-password-input" />
+              <label htmlFor="register-confirmPassword" className={labelClass}>Confirm Access Code *</label>
+              <input id="register-confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required className={inputClass} data-testid="register-confirm-password-input" />
             </div>
 
             <button type="submit" disabled={loading} className="w-full btn-tactical py-3 flex items-center justify-center gap-2 text-sm" data-testid="register-submit-btn">

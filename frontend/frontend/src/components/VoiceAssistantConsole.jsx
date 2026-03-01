@@ -139,15 +139,15 @@ const VoiceAssistantConsole = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto page-enter" data-testid="voice-assistant-console">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-in-up">
         <div className="flex items-center gap-3">
           <img src={NAV_ICONS.voice_assistant} alt="Voice Assistant" className="w-12 h-12 object-contain icon-3d-shadow" />
           <div>
-            <h1 className="text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">VOICE ASSISTANT</h1>
+            <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">VOICE ASSISTANT</h1>
             <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Twilio Voice + AI Receptionist</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Assistant</span>
@@ -192,13 +192,13 @@ const VoiceAssistantConsole = () => {
         {/* Overview Tab */}
         <TabsContent value="overview">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Today's Calls</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.today_calls || 0}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.today_calls || 0}</p>
                   </div>
                   <PhoneCall className="w-10 h-10 text-orange-500 opacity-50" />
                 </div>
@@ -210,7 +210,7 @@ const VoiceAssistantConsole = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Matched to Claims</p>
-                    <p className="text-3xl font-bold text-green-600">{stats?.today_matched || 0}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats?.today_matched || 0}</p>
                   </div>
                   <CheckCircle className="w-10 h-10 text-green-500 opacity-50" />
                 </div>
@@ -222,7 +222,7 @@ const VoiceAssistantConsole = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Flagged for Review</p>
-                    <p className="text-3xl font-bold text-amber-600">{stats?.today_flagged || 0}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-amber-600">{stats?.today_flagged || 0}</p>
                   </div>
                   <AlertTriangle className="w-10 h-10 text-amber-500 opacity-50" />
                 </div>
@@ -457,7 +457,7 @@ const VoiceAssistantConsole = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Max Recording</Label>
                     <div className="flex items-center gap-2 mt-1">

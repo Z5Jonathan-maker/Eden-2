@@ -538,7 +538,7 @@ const RewardsTab = () => {
                     {reward.image_url ? (
                       <img
                         src={reward.image_url}
-                        alt=""
+                        alt={reward.name || 'Reward'}
                         className="w-12 h-12 object-cover rounded"
                       />
                     ) : (

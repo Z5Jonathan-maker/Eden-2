@@ -1,5 +1,5 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useDebounce } from './useDebounce';
 
 describe('useDebounce', () => {
@@ -30,22 +30,27 @@ describe('useDebounce', () => {
   });
 
   it('should cancel previous timeout on rapid changes', async () => {
+    vi.useFakeTimers();
+
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 100),
       { initialProps: { value: 'first' } }
     );
 
-    // Rapid updates
+    // First rapid update
     rerender({ value: 'second' });
-    setTimeout(() => rerender({ value: 'third' }), 50);
+    // Advance 50ms — debounce not yet settled
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(result.current).toBe('first');
 
-    // Should eventually settle on 'third', not 'second'
-    await waitFor(
-      () => {
-        expect(result.current).toBe('third');
-      },
-      { timeout: 250 }
-    );
+    // Second update before debounce fires — should cancel 'second' timer
+    rerender({ value: 'third' });
+    // Advance past the debounce delay for 'third'
+    act(() => { vi.advanceTimersByTime(100); });
+
+    expect(result.current).toBe('third');
+
+    vi.useRealTimers();
   });
 
   it('should use custom delay', async () => {

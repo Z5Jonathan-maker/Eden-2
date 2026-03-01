@@ -103,7 +103,7 @@ const DnaProfileCard = ({ profile }) => {
           </div>
 
           {/* Tone + Style */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="bg-zinc-800/50 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <MessageSquare className="w-3 h-3 text-blue-400" />
@@ -125,7 +125,7 @@ const DnaProfileCard = ({ profile }) => {
           </div>
 
           {/* Greetings & Sign-offs */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1.5">Greetings</span>
               <div className="flex flex-wrap gap-1">
@@ -439,13 +439,13 @@ const EmailIntelligence = () => {
     <div className="min-h-screen bg-zinc-950 p-4 md:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <h1 className="text-white text-xl font-bold">Email DNA</h1>
+              <h1 className="text-white text-lg sm:text-xl font-bold">Email DNA</h1>
               <p className="text-zinc-500 text-xs">
                 Your writing style powers every AI response
               </p>

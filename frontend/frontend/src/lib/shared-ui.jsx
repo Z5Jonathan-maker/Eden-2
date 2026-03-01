@@ -231,10 +231,10 @@ export function ConfirmDialog({
   };
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
         <p className="text-gray-600 text-sm mb-6">{message}</p>
         
         <div className="flex justify-end gap-3">
@@ -288,9 +288,10 @@ export function InfoBanner({
           {message && <p className="text-sm mt-1 opacity-90">{message}</p>}
         </div>
         {onDismiss && (
-          <button 
+          <button
             onClick={onDismiss}
             className="text-current opacity-60 hover:opacity-100"
+            aria-label="Dismiss notification"
           >
             ×
           </button>

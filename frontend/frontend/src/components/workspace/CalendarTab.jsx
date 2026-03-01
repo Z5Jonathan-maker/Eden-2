@@ -73,19 +73,21 @@ const CreateEventModal = ({ onClose, onCreate, creating, initialDate }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="create-event-title" onClick={onClose}>
       <div className="w-full max-w-lg bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h2 className="text-base font-semibold text-white">New Event</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-zinc-800 rounded-full transition-colors">
+          <h2 id="create-event-title" className="text-base font-semibold text-white">New Event</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-zinc-800 rounded-full transition-colors" aria-label="Close dialog">
             <X className="w-4 h-4 text-zinc-400" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           {/* Title — big and prominent like Google Calendar */}
+          <label htmlFor="event-title" className="sr-only">Event title</label>
           <input
+            id="event-title"
             value={form.title}
             onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
             placeholder="Add title"
@@ -96,14 +98,14 @@ const CreateEventModal = ({ onClose, onCreate, creating, initialDate }) => {
           {/* Date/Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Start</label>
-              <input type="datetime-local" value={form.start_time}
+              <label htmlFor="event-start" className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Start</label>
+              <input id="event-start" type="datetime-local" value={form.start_time}
                 onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white outline-none focus:border-orange-500 transition-colors" />
             </div>
             <div>
-              <label className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">End</label>
-              <input type="datetime-local" value={form.end_time}
+              <label htmlFor="event-end" className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">End</label>
+              <input id="event-end" type="datetime-local" value={form.end_time}
                 onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white outline-none focus:border-orange-500 transition-colors" />
             </div>
@@ -111,10 +113,10 @@ const CreateEventModal = ({ onClose, onCreate, creating, initialDate }) => {
 
           {/* Location */}
           <div>
-            <label className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Location</label>
+            <label htmlFor="event-location" className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Location</label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" aria-hidden="true" />
+              <input id="event-location" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
                 placeholder="Add location"
                 className="w-full pl-10 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white outline-none focus:border-orange-500 transition-colors placeholder:text-zinc-600" />
             </div>
@@ -122,10 +124,10 @@ const CreateEventModal = ({ onClose, onCreate, creating, initialDate }) => {
 
           {/* Attendees */}
           <div>
-            <label className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Guests</label>
+            <label htmlFor="event-attendees" className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Guests</label>
             <div className="relative">
-              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input value={form.attendees} onChange={e => setForm(p => ({ ...p, attendees: e.target.value }))}
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" aria-hidden="true" />
+              <input id="event-attendees" value={form.attendees} onChange={e => setForm(p => ({ ...p, attendees: e.target.value }))}
                 placeholder="Add guests (comma-separated emails)"
                 className="w-full pl-10 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white outline-none focus:border-orange-500 transition-colors placeholder:text-zinc-600" />
             </div>
@@ -133,8 +135,8 @@ const CreateEventModal = ({ onClose, onCreate, creating, initialDate }) => {
 
           {/* Description */}
           <div>
-            <label className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Description</label>
-            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            <label htmlFor="event-description" className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1.5 block font-medium">Description</label>
+            <textarea id="event-description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               placeholder="Add description"
               rows={3}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white outline-none focus:border-orange-500 transition-colors resize-none placeholder:text-zinc-600" />

@@ -577,7 +577,7 @@ const ClaimCommsPanel = ({
   }
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-[400px] sm:h-[500px]">
       {/* SMS Status Banner */}
       {smsStatus && !smsStatus.configured && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-start gap-2">
@@ -684,19 +684,19 @@ const ClaimCommsPanel = ({
           )}
 
         {/* AI Draft Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
           <input
             type="text"
             value={draftIntent}
             onChange={(e) => setDraftIntent(e.target.value)}
             placeholder="Intent (status update, docs request...)"
-            className="md:col-span-2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="sm:col-span-2 md:col-span-2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[44px]"
             data-testid="ai-draft-intent-input"
           />
           <select
             value={draftTone}
             onChange={(e) => setDraftTone(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[44px]"
             data-testid="ai-draft-tone-select"
           >
             <option value="professional">Professional</option>
@@ -720,7 +720,7 @@ const ClaimCommsPanel = ({
             )}
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <Button
             variant="outline"
             onClick={handleSummarizeThread}
@@ -885,7 +885,7 @@ const ClaimCommsPanel = ({
               placeholder="Client phone number (+1...)"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[44px]"
               data-testid="sms-phone-input"
             />
           </div>

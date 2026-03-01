@@ -218,8 +218,8 @@ export const SeasonsTab = () => {
               </div>
 
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm text-muted-foreground">{season.description}</p>
 
                     {/* Progress Bar */}
@@ -234,7 +234,7 @@ export const SeasonsTab = () => {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {new Date(season.start_date).toLocaleDateString()} -{' '}

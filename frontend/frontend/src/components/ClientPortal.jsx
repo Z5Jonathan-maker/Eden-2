@@ -101,23 +101,23 @@ const ClientPortal = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <span className="text-gray-900 font-bold text-xl">E</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Eden Client Portal</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Eden Client Portal</h1>
               <p className="text-sm text-gray-500">Track your claims</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <NotificationBell />
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
               <User className="w-4 h-4" />
               <span data-testid="client-name">{user?.full_name}</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="client-logout">
+            <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="client-logout" className="min-h-[44px]">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -142,7 +142,7 @@ const ClientPortal = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Total Claims</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
                 </div>
                 <FolderOpen className="w-10 h-10 text-blue-500 opacity-50" />
               </div>
@@ -154,7 +154,7 @@ const ClientPortal = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Active Claims</p>
-                  <p className="text-3xl font-bold text-yellow-600">{stats.active}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.active}</p>
                 </div>
                 <Clock className="w-10 h-10 text-yellow-500 opacity-50" />
               </div>
@@ -166,7 +166,7 @@ const ClientPortal = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Completed</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.completed}</p>
                 </div>
                 <CheckCircle2 className="w-10 h-10 text-green-500 opacity-50" />
               </div>
@@ -177,9 +177,9 @@ const ClientPortal = () => {
         {/* Learning Center Quick Access */}
         <Card className="mb-6 bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-200 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-200 rounded-xl flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
@@ -191,7 +191,7 @@ const ClientPortal = () => {
               </div>
               <Button
                 onClick={() => navigate('/client/learn')}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto min-h-[44px]"
               >
                 <HelpCircle className="w-4 h-4 mr-2" />
                 Learn More
@@ -237,7 +237,7 @@ const ClientPortal = () => {
                     onClick={() => setSelectedClaim(selectedClaim?.id === claim.id ? null : claim)}
                     data-testid={`client-claim-${claim.id}`}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                       <div className="flex items-start space-x-4">
                         {getStatusIcon(claim.status)}
                         <div>
@@ -260,7 +260,7 @@ const ClientPortal = () => {
                     {/* Expanded Details */}
                     {selectedClaim?.id === claim.id && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                           <div>
                             <p className="text-gray-500">Date of Loss</p>
                             <p className="font-medium text-gray-900">{claim.date_of_loss}</p>

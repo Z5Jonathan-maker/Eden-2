@@ -14,7 +14,7 @@ const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
 
 // 3D Icon component with glow and animation
 const NavIcon = ({ src, isActive, size = 'w-6 h-6' }) => (
-  <div className={`relative ${size} flex-shrink-0 rounded-md overflow-hidden transition-all duration-300 ${isActive ? 'ring-1 ring-orange-500/40 shadow-[0_0_8px_rgba(234,88,12,0.3)]' : ''}`}>
+  <div className={`relative ${size} flex-shrink-0 rounded-md overflow-hidden transition-all duration-300 ${isActive ? 'ring-1 ring-orange-500/40 shadow-[0_0_8px_rgba(234,88,12,0.3)]' : ''}`} aria-hidden="true">
     <img
       src={src}
       alt=""
@@ -175,6 +175,7 @@ const Layout = () => {
         <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -212,8 +213,10 @@ const Layout = () => {
         {/* Navigation - Tactical Style with 3D Icons */}
         <nav aria-label="Sidebar navigation" className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <label htmlFor="sidebar-nav-search" className="sr-only">Search navigation modules</label>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" aria-hidden="true" />
             <input
+              id="sidebar-nav-search"
               type="text"
               value={navQuery}
               onChange={(e) => setNavQuery(e.target.value)}
@@ -229,6 +232,7 @@ const Layout = () => {
               <div key={section.title} className="pb-2">
                 <button
                   onClick={() => toggleSection(section.title)}
+                  aria-expanded={!isCollapsed}
                   className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-mono font-semibold text-zinc-500 uppercase tracking-widest hover:text-zinc-400 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                   data-testid={`sidebar-section-${section.title.toLowerCase().replace(/\s+/g, '-')}`}
                 >

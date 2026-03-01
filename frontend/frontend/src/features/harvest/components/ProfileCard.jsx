@@ -57,7 +57,7 @@ const ProfileCard = ({ currentPoints = 0, streakData = {}, stats = {}, nextRewar
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-lg border border-zinc-700/50 bg-zinc-900/70 p-3">
           <p className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1">
             <Target className="h-3 w-3 text-cyan-300" /> Accuracy

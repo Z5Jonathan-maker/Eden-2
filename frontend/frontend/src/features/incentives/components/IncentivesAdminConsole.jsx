@@ -31,7 +31,7 @@ const IncentivesAdminConsole = () => {
               className="w-12 h-12 object-contain icon-3d-shadow"
             />
             <div>
-              <h1 className="text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">
+              <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">
                 INCENTIVES ENGINE
               </h1>
               <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">

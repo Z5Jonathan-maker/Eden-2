@@ -434,7 +434,7 @@ const HarvestProfileTab = () => {
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {reward.image_url ? (
-                        <img src={reward.image_url} alt="" className="h-10 w-10 rounded-lg" />
+                        <img src={reward.image_url} alt={reward.name || 'Reward'} className="h-10 w-10 rounded-lg" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
                           <Trophy className="h-5 w-5 text-purple-300" />

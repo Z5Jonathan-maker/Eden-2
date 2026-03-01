@@ -7,16 +7,18 @@ import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ApiConnectivityToast from './components/ApiConnectivityToast';
 
-// Core (eagerly loaded)
-import LandingPage from './components/LandingPage';
+// Core (eagerly loaded — auth-critical only)
 import Layout from './shared/layouts/Layout';
-import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import InstallPrompt from './components/InstallPrompt';
-import InstallGuide from './components/InstallGuide';
-import NotFoundPage from './components/NotFoundPage';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
+
+// Lazy-loaded (non-critical path)
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const InstallGuide = lazy(() => import('./components/InstallGuide'));
+const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 
 // Lazy-loaded heavy components
 const ClaimsList = lazy(() => import('./features/claims/components/ClaimsList'));
@@ -65,8 +67,9 @@ const WorkbookViewer = lazy(() => import('./components/university/WorkbookViewer
 
 // Suspense fallback
 const PageLoader = () => (
-  <div className="min-h-[50vh] flex items-center justify-center">
+  <div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite">
     <div className="spinner-tactical w-10 h-10" />
+    <span className="sr-only">Loading page...</span>
   </div>
 );
 

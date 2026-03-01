@@ -91,6 +91,12 @@
   .text-yellow-800 { color: hsl(48 96% 58%) !important; }
   .text-amber-700  { color: hsl(38 92% 55%) !important; }
 
+  /* === WCAG AA CONTRAST FIX ===
+     zinc-500 (#71717a) on zinc-950 (#09090b) = 4.03:1 (fails AA for normal text).
+     Bumped to 58% lightness (#8b8b96) = ~4.8:1 (passes AA 4.5:1). */
+  .text-zinc-500  { color: hsl(240 5% 58%) !important; }
+  .text-zinc-600  { color: hsl(240 4% 48%) !important; }
+
   /* === HOVER LIGHT BACKGROUNDS === */
   .hover\:bg-orange-50:hover  { background-color: hsl(24 95% 48% / 0.15) !important; }
   .hover\:bg-blue-50:hover    { background-color: hsl(217 91% 60% / 0.15) !important; }

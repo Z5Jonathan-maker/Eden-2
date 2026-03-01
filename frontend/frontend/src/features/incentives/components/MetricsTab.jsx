@@ -48,7 +48,7 @@ export const MetricsTab = () => {
           <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {metrics.map((metric) => (
             <Card key={metric.id} className="hover:border-blue-200 transition-colors">
               <CardContent className="p-4">

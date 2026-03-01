@@ -488,7 +488,7 @@ const IndustryExperts = () => {
           </TabsList>
 
           <TabsContent value="experts" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {experts.map((expert) => (
                 <ExpertCard key={expert.id} expert={expert} onClick={fetchExpertDetail} />
               ))}
@@ -630,7 +630,7 @@ const IndustryExperts = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {mentors.map((mentor) => (
                   <Card
                     key={mentor.id}

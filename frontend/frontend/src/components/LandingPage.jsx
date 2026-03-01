@@ -570,12 +570,12 @@ const LandingPage = () => {
 
       {/* Payment Message */}
       {paymentMessage && (
-        <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg border ${
+        <div role="alert" aria-live="assertive" className={`fixed top-20 right-4 z-50 p-4 rounded-lg border ${
           paymentMessage.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
         }`}>
           <div className="flex items-center gap-3">
             <span className="text-sm font-mono">{paymentMessage.text}</span>
-            <button onClick={() => setPaymentMessage(null)} className="text-zinc-500 hover:text-white">
+            <button onClick={() => setPaymentMessage(null)} className="text-zinc-500 hover:text-white" aria-label="Dismiss payment message">
               <X className="w-4 h-4" />
             </button>
           </div>

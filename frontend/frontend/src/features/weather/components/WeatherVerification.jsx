@@ -684,7 +684,7 @@ const WeatherVerification = ({ embedded = false }) => {
                               : `Max hail ${candidate.max_hail_inches || 0} in | ${candidate.report_count || 0} report(s)`}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            Window: {candidate.peak_window_start || 'n/a'} -> {candidate.peak_window_end || 'n/a'}
+                            Window: {candidate.peak_window_start || 'n/a'} &rarr; {candidate.peak_window_end || 'n/a'}
                           </p>
                         </div>
                       ))}

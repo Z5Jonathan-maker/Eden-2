@@ -5,10 +5,11 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock useAuth
-const mockUseAuth = jest.fn();
-jest.mock('../../context/AuthContext', () => ({
+const mockUseAuth = vi.fn();
+vi.mock('../../context/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
   AuthProvider: ({ children }) => children,
 }));

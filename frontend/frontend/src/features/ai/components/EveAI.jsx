@@ -684,7 +684,7 @@ const EveAI = () => {
           <div className="card-tactical h-[calc(100vh-200px)] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src={FEATURE_ICONS.agent_eve} alt="" className="w-6 h-6 object-contain" />
+                <img src={FEATURE_ICONS.agent_eve} alt="Agent Eve" className="w-6 h-6 object-contain" />
                 <h3 className="font-tactical font-bold text-white text-sm uppercase tracking-wide">
                   Conversation
                 </h3>

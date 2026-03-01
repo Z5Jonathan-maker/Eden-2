@@ -301,7 +301,10 @@ const NotificationBell = () => {
     
     return (
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => handleNotificationClick(notification)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNotificationClick(notification); } }}
         className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
           !notification.is_read ? 'bg-orange-50' : ''
         }`}
@@ -364,7 +367,7 @@ const NotificationBell = () => {
         </div>
 
         {/* Full Screen Modal */}
-        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+        <div className="fixed inset-0 z-50 bg-white flex flex-col" role="dialog" aria-modal="true" aria-label="Notifications">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
             <div className="flex items-center gap-3">

@@ -198,7 +198,7 @@ function CourseDetail() {
 
   if (loading) {
     return (
-      <div className="p-8 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-8 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
       </div>
     );
@@ -206,7 +206,7 @@ function CourseDetail() {
 
   if (!course) {
     return (
-      <div className="p-8 min-h-screen">
+      <div className="p-4 sm:p-8 min-h-screen">
         <Card className="border-zinc-700">
           <CardContent className="p-12 text-center">
             <AlertCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />

@@ -236,23 +236,23 @@ export const CompetitionsTab = () => {
           {competitions.map((comp) => (
             <Card key={comp.id} className="hover:border-orange-200 transition-colors">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
                       style={{ backgroundColor: `${comp.banner_color}20` }}
                     >
                       {comp.icon}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold">{comp.name}</h3>
                         <Badge className={getStatusBadge(comp.status)}>{comp.status}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {comp.tagline || comp.description}
                       </p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
                           {comp.participant_count} participants

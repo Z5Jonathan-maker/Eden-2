@@ -347,7 +347,7 @@ export const CompetitionsTab = ({
       {competitions.length === 0 ? (
         <EmptyState canCreate={canCreate} onCreateClick={() => setShowCreateModal(true)} />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {competitions.map((comp) => (
             <CompetitionCard
               key={comp.id}

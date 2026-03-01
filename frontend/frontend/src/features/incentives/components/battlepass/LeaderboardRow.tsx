@@ -63,7 +63,7 @@ const LeaderboardRow: React.FC<Props> = ({ entry }) => {
           </p>
         </div>
       </div>
-      <div className="mt-2 grid gap-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500 md:grid-cols-4">
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500 md:grid-cols-4">
         <span>Missions {entry.missionsCompleted}</span>
         <span>Rewards {entry.rewardsClaimed}</span>
         <span>Daily streak {entry.streakDaily}</span>

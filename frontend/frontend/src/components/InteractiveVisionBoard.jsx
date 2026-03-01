@@ -366,7 +366,7 @@ const InteractiveVisionBoard = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
         {/* Daily Journal Tab */}
         {activeTab === 'journal' && (
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Journal Form */}
             <div className="lg:col-span-2 space-y-6">
               <div className="card-tactical p-5">
@@ -505,7 +505,7 @@ const InteractiveVisionBoard = () => {
                   </div>
 
                                     {/* Mood & Energy */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2 text-gray-700">Mood</label>
                       <div

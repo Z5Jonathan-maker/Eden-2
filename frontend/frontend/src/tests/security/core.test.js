@@ -1,6 +1,7 @@
 /**
  * Tests for core utilities: storage, logout cleanup, constants
  */
+import { vi } from 'vitest';
 import {
   getStorageItem,
   setStorageItem,
@@ -37,8 +38,24 @@ describe('Storage Utilities', () => {
 });
 
 describe('clearAllEdenStorage', () => {
+  let store;
+  let mockStorage;
+
   beforeEach(() => {
-    localStorage.clear();
+    store = {};
+    mockStorage = {
+      getItem: (k) => store[k] ?? null,
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+      key: (i) => Object.keys(store)[i] ?? null,
+      get length() { return Object.keys(store).length; },
+      clear: () => { for (const k of Object.keys(store)) delete store[k]; },
+    };
+    vi.stubGlobal('localStorage', mockStorage);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   test('removes all eden_ prefixed keys', () => {

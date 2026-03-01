@@ -3,6 +3,7 @@
  * Note: api.js uses import.meta.env which Jest can't handle directly,
  * so we test the security patterns and token management via localStorage.
  */
+import { vi } from 'vitest';
 
 describe('Auth Token Storage Security', () => {
   const TOKEN_KEY = 'eden_token';
@@ -84,7 +85,7 @@ describe('Request Timeout Configuration', () => {
 
 describe('401 Auth Expiration Pattern', () => {
   test('eden:auth-expired custom event can be dispatched', () => {
-    const handler = jest.fn();
+    const handler = vi.fn();
     window.addEventListener('eden:auth-expired', handler);
     window.dispatchEvent(new CustomEvent('eden:auth-expired'));
     expect(handler).toHaveBeenCalledTimes(1);

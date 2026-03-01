@@ -266,7 +266,7 @@ const BattlePassPage: React.FC = () => {
               Tactical progression, missions, and operator rankings
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
             <div className="rounded-md border border-zinc-700/70 bg-zinc-950/70 px-3 py-2">
               <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Level</p>
               <p className="text-sm font-semibold text-cyan-300">{state.currentLevel}</p>

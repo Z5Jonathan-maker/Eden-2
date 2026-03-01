@@ -39,7 +39,7 @@ function ArticleDetail() {
 
   if (loading) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
@@ -47,7 +47,7 @@ function ArticleDetail() {
 
   if (!article) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -67,7 +67,7 @@ function ArticleDetail() {
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <Button
           variant="ghost"
@@ -87,7 +87,7 @@ function ArticleDetail() {
                 {article.category === 'training' ? 'Training' : 'Industry'}
               </Badge>
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{article.title}</h1>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-4">{article.title}</h1>
               <p className="text-lg text-gray-600 mb-4">{article.description}</p>
 
               <div className="flex items-center space-x-6 text-sm text-gray-500">
