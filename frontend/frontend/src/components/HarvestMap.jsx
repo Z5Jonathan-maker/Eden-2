@@ -24,7 +24,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = import.meta.env?.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 const DEFAULT_CENTER = { lat: 27.9506, lng: -82.4572 };
 const DEFAULT_ZOOM = 17;
 

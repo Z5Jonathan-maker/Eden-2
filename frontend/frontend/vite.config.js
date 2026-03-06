@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// NOTE: This file is ONLY used for vitest configuration. The app builds with CRA + Craco.
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -11,6 +11,27 @@ export default defineConfig({
       fastRefresh: true,
       // Automatic JSX runtime
       jsxRuntime: 'automatic',
+    }),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts' },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
     }),
   ],
 
@@ -29,8 +50,21 @@ export default defineConfig({
     },
   },
 
-  // Environment variable prefix (Vite uses VITE_ by default)
+  // Environment variable prefix (expose REACT_APP_ vars for backward compat)
   envPrefix: ['REACT_APP_', 'VITE_'],
+
+  // Build configuration
+  build: {
+    outDir: 'build',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 
   // Dev server configuration
   server: {

@@ -35,7 +35,7 @@ import {
   Locate,
 } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = import.meta.env?.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 
 // SVG icon generators — works without Cloud Map ID
 const makePinSvg = (color) => {

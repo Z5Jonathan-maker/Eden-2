@@ -7,7 +7,7 @@ import {
 } from '../types/types';
 import { apiGet, apiPost } from '@/lib/api';
 
-const PA_TEMPLATE_ID = process.env.REACT_APP_PA_TEMPLATE_ID || 'care-claims-pa-agreement';
+const PA_TEMPLATE_ID = import.meta.env?.REACT_APP_PA_TEMPLATE_ID || 'care-claims-pa-agreement';
 const DFS_TEMPLATE_ID = 'dfs-h1-1982-disclosure';
 
 function normalizeStatus(raw: string): ContractStatus {
