@@ -654,7 +654,7 @@ async def award_disposition_points(user_id: str, user_name: str, old_disp: str, 
     }
     
     await db.harvest_score_events.insert_one(score_event)
-    
+
     # Update user totals
     await db.harvest_user_stats.update_one(
         {"user_id": user_id},
@@ -664,7 +664,14 @@ async def award_disposition_points(user_id: str, user_name: str, old_disp: str, 
         },
         upsert=True
     )
-    
+
+    # Fire-and-forget: Award Battle Pass XP for this action
+    try:
+        from routes.battle_pass import award_xp_internal
+        await award_xp_internal(user_id, event_type, count=1)
+    except Exception:
+        pass  # Battle Pass XP is non-critical
+
     return final_points
 
 

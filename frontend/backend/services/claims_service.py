@@ -45,7 +45,14 @@ class ClaimsService:
             
             # --- 4. Domain Events (Enforcement Rule #4) ---
             await self._dispatch_domain_event("ClaimCreated", claim_obj, current_user)
-            
+
+            # Award Battle Pass XP for claim creation
+            try:
+                from routes.battle_pass import award_xp_internal
+                await award_xp_internal(current_user["id"], "claim_created")
+            except Exception:
+                pass  # Non-critical
+
             return claim_obj
             
         except Exception as e:

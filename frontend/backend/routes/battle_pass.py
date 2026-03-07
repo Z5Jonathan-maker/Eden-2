@@ -156,6 +156,77 @@ def calculate_tier_from_xp(xp: int) -> int:
     return 1
 
 
+async def award_xp_internal(user_id: str, action_type: str, count: int = 1) -> dict:
+    """
+    Award XP internally — called from other routes (Harvest, Claims, etc.)
+    No auth dependency, just needs user_id.
+    Returns dict with xp_awarded, total_xp, current_tier, tier_up.
+    Errors are logged and never raised (fire-and-forget safe).
+    """
+    import logging
+    _logger = logging.getLogger("eden.battle_pass")
+    try:
+        xp_amount = XP_AWARDS.get(action_type, 0) * count
+        if xp_amount == 0:
+            return {"xp_awarded": 0}
+
+        season_id = CURRENT_SEASON["id"]
+        progress = await db.battle_pass_progress.find_one(
+            {"user_id": user_id, "season_id": season_id}
+        )
+
+        if not progress:
+            progress = {
+                "user_id": user_id,
+                "season_id": season_id,
+                "current_xp": 0,
+                "current_tier": 1,
+                "is_premium": False,
+                "claimed_rewards": [],
+                "daily_missions_completed": [],
+                "weekly_missions_completed": [],
+                "streak_days": 0,
+                "last_activity_date": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.battle_pass_progress.insert_one(progress)
+
+        new_xp = progress.get("current_xp", 0) + xp_amount
+        new_tier = calculate_tier_from_xp(new_xp)
+        old_tier = progress.get("current_tier", 1)
+
+        await db.battle_pass_progress.update_one(
+            {"user_id": user_id, "season_id": season_id},
+            {"$set": {
+                "current_xp": new_xp,
+                "current_tier": new_tier,
+                "last_activity_date": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
+
+        await db.battle_pass_activities.insert_one({
+            "user_id": user_id,
+            "action_type": action_type,
+            "count": count,
+            "xp_awarded": xp_amount,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+        result = {
+            "xp_awarded": xp_amount,
+            "total_xp": new_xp,
+            "current_tier": new_tier,
+            "tier_up": new_tier > old_tier,
+        }
+        if new_tier > old_tier:
+            _logger.info(f"User {user_id} tier up! {old_tier} -> {new_tier} (+{xp_amount} XP from {action_type})")
+        return result
+
+    except Exception as e:
+        _logger.warning(f"Battle Pass XP award failed (non-fatal): {e}")
+        return {"xp_awarded": 0, "error": str(e)}
+
+
 def get_tier_info(tier: int) -> dict:
     """Get tier information"""
     for t in DEFAULT_TIERS:

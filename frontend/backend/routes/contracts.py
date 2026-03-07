@@ -640,6 +640,13 @@ async def get_contract_signature_status(
             if update_result.modified_count > 0:
                 updated_contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0}) or contract
                 await _send_signed_copy_email(updated_contract, contract_id)
+                # Award Battle Pass XP for contract signing
+                try:
+                    from routes.battle_pass import award_xp_internal
+                    user_id = contract.get("created_by") or current_user.get("id", "")
+                    await award_xp_internal(user_id, "contract_signed")
+                except Exception:
+                    pass
 
         return result
         

@@ -193,6 +193,13 @@ async def upload_file(
             category=content_type or "general",
         ))
 
+    # Award Battle Pass XP for document upload
+    try:
+        from routes.battle_pass import award_xp_internal
+        await award_xp_internal(current_user.get("id", ""), "document_uploaded")
+    except Exception:
+        pass  # Non-critical
+
     return {
         "id": file_id,
         "filename": safe_filename,
