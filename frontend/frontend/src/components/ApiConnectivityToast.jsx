@@ -36,10 +36,10 @@ export default function ApiConnectivityToast() {
         // If we got here, backend is reachable.
       } catch (e) {
         // If backend unreachable, most actions appear "dead" (buttons feel broken).
-        toast.error('Backend not reachable. Most buttons/saves will fail until API is connected.', {
+        toast.error('Unable to connect to server. Some features may be temporarily unavailable.', {
           duration: 10000,
           description:
-            'Fix: serve backend on same origin (/api) or set BACKEND_URL in eden-config.js.',
+            'Please check your internet connection and try refreshing the page.',
         });
       }
     };

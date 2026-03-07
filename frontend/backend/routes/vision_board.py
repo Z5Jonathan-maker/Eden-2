@@ -14,6 +14,41 @@ router = APIRouter(prefix="/api/vision-board", tags=["vision-board"])
 
 import pathlib
 
+
+# ============ REQUEST MODELS ============
+
+class CreateJournalEntryRequest(BaseModel):
+    thoughts: Optional[str] = None
+    gratitude: List[str] = []
+    beliefs: List[str] = []
+    wins: List[str] = []
+    goals_today: List[str] = []
+    mood: Optional[str] = None
+    energy_level: Optional[int] = None
+    is_shared: bool = False
+
+
+class CreateVisionItemRequest(BaseModel):
+    category: str
+    title: str
+    description: Optional[str] = None
+    affirmation: Optional[str] = None
+    target_date: Optional[str] = None
+    color: Optional[str] = None
+
+
+class CreateMilestoneRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: str = "personal"
+    achieved_date: Optional[str] = None
+    is_shared: bool = True
+
+
+class CreateTeamPostRequest(BaseModel):
+    content: str
+    post_type: str = "encouragement"
+
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/eden_uploads")
 pathlib.Path(UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -103,58 +138,51 @@ class TeamPost(BaseModel):
 
 @router.post("/journal")
 async def create_journal_entry(
-    thoughts: Optional[str] = None,
-    gratitude: List[str] = [],
-    beliefs: List[str] = [],
-    wins: List[str] = [],
-    goals_today: List[str] = [],
-    mood: Optional[str] = None,
-    energy_level: Optional[int] = None,
-    is_shared: bool = False,
+    body: CreateJournalEntryRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create or update today's journal entry"""
     user_id = current_user.get("id") or current_user.get("sub")
     user_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "")
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
+
     # Check if entry exists for today
     existing = await db.vision_journal.find_one({
         "user_id": user_id,
         "date": today
     })
-    
+
     if existing:
         # Update existing entry
         await db.vision_journal.update_one(
             {"id": existing["id"]},
             {"$set": {
-                "thoughts": thoughts,
-                "gratitude": gratitude,
-                "beliefs": beliefs,
-                "wins": wins,
-                "goals_today": goals_today,
-                "mood": mood,
-                "energy_level": energy_level,
-                "is_shared": is_shared,
+                "thoughts": body.thoughts,
+                "gratitude": body.gratitude,
+                "beliefs": body.beliefs,
+                "wins": body.wins,
+                "goals_today": body.goals_today,
+                "mood": body.mood,
+                "energy_level": body.energy_level,
+                "is_shared": body.is_shared,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
         return {"id": existing["id"], "message": "Journal entry updated"}
-    
+
     # Create new entry
     entry = JournalEntry(
         user_id=user_id,
         user_name=user_name,
         date=today,
-        thoughts=thoughts,
-        gratitude=gratitude,
-        beliefs=beliefs,
-        wins=wins,
-        goals_today=goals_today,
-        mood=mood,
-        energy_level=energy_level,
-        is_shared=is_shared
+        thoughts=body.thoughts,
+        gratitude=body.gratitude,
+        beliefs=body.beliefs,
+        wins=body.wins,
+        goals_today=body.goals_today,
+        mood=body.mood,
+        energy_level=body.energy_level,
+        is_shared=body.is_shared
     )
     
     await db.vision_journal.insert_one(entry.model_dump())
@@ -215,25 +243,20 @@ async def get_journal_history(
 
 @router.post("/items")
 async def create_vision_item(
-    category: str,
-    title: str,
-    description: Optional[str] = None,
-    affirmation: Optional[str] = None,
-    target_date: Optional[str] = None,
-    color: Optional[str] = None,
+    body: CreateVisionItemRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a vision board item"""
     user_id = current_user.get("id") or current_user.get("sub")
-    
+
     item = VisionItem(
         user_id=user_id,
-        category=category,
-        title=title,
-        description=description,
-        affirmation=affirmation,
-        target_date=target_date,
-        color=color
+        category=body.category,
+        title=body.title,
+        description=body.description,
+        affirmation=body.affirmation,
+        target_date=body.target_date,
+        color=body.color
     )
     
     await db.vision_items.insert_one(item.model_dump())
@@ -383,25 +406,21 @@ async def delete_vision_item(
 
 @router.post("/milestones")
 async def create_milestone(
-    title: str,
-    description: Optional[str] = None,
-    category: str = "personal",
-    achieved_date: Optional[str] = None,
-    is_shared: bool = True,
+    body: CreateMilestoneRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a milestone/achievement"""
     user_id = current_user.get("id") or current_user.get("sub")
     user_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "")
-    
+
     milestone = Milestone(
         user_id=user_id,
         user_name=user_name,
-        title=title,
-        description=description,
-        category=category,
-        achieved_date=achieved_date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        is_shared=is_shared
+        title=body.title,
+        description=body.description,
+        category=body.category,
+        achieved_date=body.achieved_date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        is_shared=body.is_shared
     )
     
     await db.vision_milestones.insert_one(milestone.model_dump())
@@ -427,19 +446,18 @@ async def get_milestones(
 
 @router.post("/team/post")
 async def create_team_post(
-    content: str,
-    post_type: str = "encouragement",
+    body: CreateTeamPostRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a team inspiration post"""
     user_id = current_user.get("id") or current_user.get("sub")
     user_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "")
-    
+
     post = TeamPost(
         user_id=user_id,
         user_name=user_name,
-        content=content,
-        post_type=post_type
+        content=body.content,
+        post_type=body.post_type
     )
     
     await db.vision_team_posts.insert_one(post.model_dump())

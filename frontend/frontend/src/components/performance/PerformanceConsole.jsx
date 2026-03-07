@@ -39,7 +39,7 @@ const PerformanceConsole = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <div className="min-h-screen bg-gray-50" data-testid="performance-console">
+    <div className="min-h-screen bg-zinc-950" data-testid="performance-console">
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
         <div className="container mx-auto px-4 py-6">
@@ -553,7 +553,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <button
                   onClick={exportAiMetricsCsv}
                   disabled={!aiMetrics || loadingAiMetrics}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                   title="Export AI metrics CSV"
                 >
                   <Download className="w-3 h-3" />
@@ -565,8 +565,8 @@ const PerformanceOverview = ({ onNavigate }) => {
                     onClick={() => setAiMetricsDays(days)}
                     className={`px-2 py-1 rounded text-xs border ${
                       aiMetricsDays === days
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-600 border-slate-200'
+                        ? 'bg-orange-500 text-zinc-900 border-orange-500'
+                        : 'bg-zinc-800 text-zinc-300 border-zinc-600'
                     }`}
                   >
                     {days === 1 ? '24h' : `${days}d`}
@@ -617,9 +617,9 @@ const PerformanceOverview = ({ onNavigate }) => {
                 {Array.isArray(aiMetrics.alerts) && aiMetrics.alerts.length > 0 && (
                   <div className="space-y-2">
                     {aiMetrics.alerts.map((alert, idx) => (
-                      <div key={`alert-${idx}`} className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
+                      <div key={`alert-${idx}`} className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
                         <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
-                        <div className="text-amber-900">{alert.message}</div>
+                        <div className="text-amber-400">{alert.message}</div>
                       </div>
                     ))}
                   </div>
@@ -694,7 +694,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <button
                   onClick={exportSmsAuditCsv}
                   disabled={!Array.isArray(smsAudit?.events) || smsAudit.events.length === 0 || loadingSmsAudit}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                   title="Export SMS risk audit CSV"
                 >
                   <Download className="w-3 h-3" />
@@ -702,7 +702,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 </button>
                 <button
                   onClick={saveCurrentSmsAuditPreset}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600"
                   title="Save current filters as preset"
                 >
                   Save Preset
@@ -710,7 +710,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <select
                   value={smsAuditDays}
                   onChange={(e) => setSmsAuditDays(Number(e.target.value) || 7)}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600"
                 >
                   <option value={1}>24h</option>
                   <option value={7}>7d</option>
@@ -719,7 +719,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <select
                   value={smsAuditRiskLevel}
                   onChange={(e) => setSmsAuditRiskLevel(e.target.value)}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600"
                 >
                   <option value="all">All Risks</option>
                   <option value="high">High</option>
@@ -729,7 +729,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <select
                   value={smsAuditAck}
                   onChange={(e) => setSmsAuditAck(e.target.value)}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600"
                 >
                   <option value="all">All Ack</option>
                   <option value="ack">Acknowledged</option>
@@ -738,7 +738,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <select
                   value={smsAuditIntent}
                   onChange={(e) => setSmsAuditIntent(e.target.value)}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600"
                 >
                   <option value="all">All Intents</option>
                   <option value="status_update">Status</option>
@@ -751,19 +751,19 @@ const PerformanceOverview = ({ onNavigate }) => {
             <CardDescription>Outbound AI SMS risk events with acknowledgment lineage.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-3 rounded-lg border bg-slate-50 p-3">
+            <div className="mb-3 rounded-lg border bg-zinc-800/50 p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-[11px] uppercase text-muted-foreground">Alert Thresholds</p>
                 <button
                   onClick={saveSmsThresholds}
                   disabled={savingSmsThresholds || loadingSmsThresholds}
-                  className="px-2 py-1 rounded text-xs border bg-white text-slate-600 border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 rounded text-xs border bg-zinc-800 text-zinc-300 border-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingSmsThresholds ? 'Saving...' : 'Save Thresholds'}
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <label className="text-xs text-slate-600 flex items-center gap-2">
+                <label className="text-xs text-zinc-400 flex items-center gap-2">
                   Min events
                   <input
                     type="number"
@@ -771,10 +771,10 @@ const PerformanceOverview = ({ onNavigate }) => {
                     step={1}
                     value={smsAuditThresholds.minEvents}
                     onChange={(e) => updateSmsThreshold('minEvents', e.target.value)}
-                    className="w-20 px-2 py-1 rounded border bg-white text-slate-700 border-slate-200"
+                    className="w-20 px-2 py-1 rounded border bg-zinc-800 text-zinc-300 border-zinc-600"
                   />
                 </label>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
+                <label className="text-xs text-zinc-400 flex items-center gap-2">
                   High risk %
                   <input
                     type="number"
@@ -782,10 +782,10 @@ const PerformanceOverview = ({ onNavigate }) => {
                     step={1}
                     value={smsAuditThresholds.highRiskRatePct}
                     onChange={(e) => updateSmsThreshold('highRiskRatePct', e.target.value)}
-                    className="w-20 px-2 py-1 rounded border bg-white text-slate-700 border-slate-200"
+                    className="w-20 px-2 py-1 rounded border bg-zinc-800 text-zinc-300 border-zinc-600"
                   />
                 </label>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
+                <label className="text-xs text-zinc-400 flex items-center gap-2">
                   Ack missing %
                   <input
                     type="number"
@@ -793,7 +793,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                     step={1}
                     value={smsAuditThresholds.ackMissingRatePct}
                     onChange={(e) => updateSmsThreshold('ackMissingRatePct', e.target.value)}
-                    className="w-20 px-2 py-1 rounded border bg-white text-slate-700 border-slate-200"
+                    className="w-20 px-2 py-1 rounded border bg-zinc-800 text-zinc-300 border-zinc-600"
                   />
                 </label>
               </div>
@@ -812,10 +812,10 @@ const PerformanceOverview = ({ onNavigate }) => {
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
               {smsAuditPresets.map((preset) => (
-                <div key={preset.id} className="flex items-center gap-1 rounded border bg-slate-50 px-2 py-1">
+                <div key={preset.id} className="flex items-center gap-1 rounded border bg-zinc-800/50 px-2 py-1">
                   <button
                     onClick={() => applySmsAuditPreset(preset)}
-                    className="text-xs text-slate-700 hover:text-slate-900"
+                    className="text-xs text-zinc-300 hover:text-zinc-100"
                     title="Apply preset"
                   >
                     {preset.name}
@@ -823,7 +823,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                   {String(preset.id).startsWith('custom_') && (
                     <button
                       onClick={() => removeSmsAuditPreset(preset.id)}
-                      className="text-[10px] text-slate-500 hover:text-red-600"
+                      className="text-[10px] text-zinc-500 hover:text-red-600"
                       title="Remove preset"
                     >
                       x
@@ -852,8 +852,8 @@ const PerformanceOverview = ({ onNavigate }) => {
                         key={alert.id}
                         className={`rounded-md border p-2 text-sm ${
                           alert.level === 'error'
-                            ? 'bg-red-50 border-red-200 text-red-700'
-                            : 'bg-amber-50 border-amber-200 text-amber-700'
+                            ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                         }`}
                       >
                         {alert.message}
@@ -867,7 +867,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                   <MetricPill label="Ack Missing" value={smsAudit?.summary?.ack_missing ?? 0} />
                 </div>
                 <div className="rounded-lg border overflow-hidden">
-                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-slate-50 text-[11px] uppercase text-muted-foreground">
+                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-zinc-800/50 text-[11px] uppercase text-muted-foreground">
                     <div className="col-span-2">When</div>
                     <div className="col-span-2">Claim</div>
                     <div className="col-span-2">Intent</div>
@@ -958,7 +958,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 );
 
 const MetricPill = ({ label, value }) => (
-  <div className="rounded-lg border bg-slate-50 px-3 py-2">
+  <div className="rounded-lg border bg-zinc-800/50 px-3 py-2">
     <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
     <p className="text-lg font-semibold">{value}</p>
   </div>
@@ -967,7 +967,7 @@ const MetricPill = ({ label, value }) => (
 
 const ActivityItem = ({ icon: Icon, iconColor, title, description, time }) => (
   <div className="flex items-start gap-3 p-4">
-    <div className={`p-2 rounded-full bg-slate-100 ${iconColor}`}>
+    <div className={`p-2 rounded-full bg-zinc-800/50 ${iconColor}`}>
       <Icon className="w-4 h-4" />
     </div>
     <div className="flex-1 min-w-0">

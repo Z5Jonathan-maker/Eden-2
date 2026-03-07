@@ -204,7 +204,7 @@ export const TemplateFormDialog = ({
             {formData.default_rules.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-6">
-                  <AlertCircle className="w-8 h-8 text-gray-300 mb-2" />
+                  <AlertCircle className="w-8 h-8 text-zinc-600 mb-2" />
                   <p className="text-sm text-muted-foreground">No rules configured</p>
                   <p className="text-xs text-muted-foreground">Click a rule type above to add</p>
                 </CardContent>

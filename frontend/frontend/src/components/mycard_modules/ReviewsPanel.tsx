@@ -32,7 +32,7 @@ const ReviewsPanel: React.FC = () => {
       setError("");
       try {
         if (API_URL == null) {
-          throw new Error("Missing backend URL. Configure REACT_APP_BACKEND_URL and redeploy.");
+          throw new Error("Unable to connect to server. Please try again later.");
         }
         const res = await apiGet(`/api/mycard/google-reviews?sort=${sort}`, {
           signal: controller.signal,

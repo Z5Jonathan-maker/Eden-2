@@ -244,7 +244,7 @@ const DolDiscovery = ({ embedded = false, onDataChange } = {}) => {
   const findDefensibleDates = async () => {
     const apiUrl = getApiUrl();
     if (apiUrl == null) {
-      toast.error('Missing backend URL. Set REACT_APP_BACKEND_URL in Vercel/local env.');
+      toast.error('Unable to connect to server. Please try again later or contact support.');
       return;
     }
     if (!canSubmit) {

@@ -32,7 +32,7 @@ const PermitsPanel = ({ onDataChange } = {}) => {
 
   const searchPermits = async () => {
     const apiUrl = getApiUrl();
-    if (apiUrl == null) { toast.error('Backend URL not configured'); return; }
+    if (apiUrl == null) { toast.error('Unable to connect to server. Please try again later.'); return; }
     if (!canSubmit) { toast.error('Enter address, city/ZIP, and state'); return; }
 
     setLoading(true);

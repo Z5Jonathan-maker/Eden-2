@@ -137,12 +137,12 @@ const LeaderboardTab = ({ leaderboard, leaderboardPeriod, setLeaderboardPeriod, 
 
 // Podium position (2nd/3rd place)
 const PodiumPosition = ({ entry, position, getInitials }) => {
-  const borderColor = position === 2 ? 'border-gray-400' : 'border-amber-700';
+  const borderColor = position === 2 ? 'border-zinc-400' : 'border-amber-700';
   const bgGradient =
     position === 2
-      ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700'
+      ? 'bg-gradient-to-br from-zinc-300 to-zinc-400 text-zinc-700'
       : 'bg-gradient-to-br from-amber-600 to-amber-800 text-white';
-  const positionBg = position === 2 ? 'bg-gray-400' : 'bg-amber-700';
+  const positionBg = position === 2 ? 'bg-zinc-400' : 'bg-amber-700';
 
   return (
     <div className="text-center harvest-bp-card harvest-grid-overlay">
@@ -191,7 +191,7 @@ const LeaderboardRow = ({ entry, rank, getInitials }) => (
     <span className="text-zinc-500 font-bold w-6">{entry.rank || rank}</span>
     <Avatar className="w-10 h-10">
       <AvatarFallback
-        className={`${entry.is_current_user ? 'bg-orange-500' : 'bg-gray-700'} text-white font-medium`}
+        className={`${entry.is_current_user ? 'bg-orange-500' : 'bg-zinc-700'} text-white font-medium`}
       >
         {getInitials(entry.user_name)}
       </AvatarFallback>

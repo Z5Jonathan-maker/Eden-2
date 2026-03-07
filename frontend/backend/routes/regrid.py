@@ -581,11 +581,15 @@ async def proxy_regrid_tile(
         )
 
 
+class EnrichPinRequest(BaseModel):
+    pin_id: str
+    lat: float
+    lon: float
+
+
 @router.post("/pin/enrich")
 async def enrich_pin_with_parcel(
-    pin_id: str,
-    lat: float,
-    lon: float,
+    body: EnrichPinRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -593,12 +597,12 @@ async def enrich_pin_with_parcel(
     Called after pin creation for background enrichment.
     """
     # Look up parcel
-    parcel_response = await lookup_parcel_by_point(lat, lon, 50, current_user)
+    parcel_response = await lookup_parcel_by_point(body.lat, body.lon, 50, current_user)
     
     if not parcel_response.get("success") or not parcel_response.get("parcel"):
         return {
             "success": False,
-            "pin_id": pin_id,
+            "pin_id": body.pin_id,
             "message": "Could not enrich pin with parcel data"
         }
     
@@ -623,13 +627,13 @@ async def enrich_pin_with_parcel(
     }
     
     result = await db.canvassing_pins.update_one(
-        {"id": pin_id},
+        {"id": body.pin_id},
         {"$set": update_data}
     )
     
     return {
         "success": True,
-        "pin_id": pin_id,
+        "pin_id": body.pin_id,
         "ll_uuid": parcel.get("ll_uuid"),
         "parcel_address": update_data["parcel_address"],
         "enriched": True

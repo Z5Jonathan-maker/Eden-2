@@ -126,6 +126,13 @@ class UpdateCardRequest(BaseModel):
     accent_color: Optional[str] = None
 
 
+class AddReviewRequest(BaseModel):
+    reviewer_name: str
+    rating: int
+    comment: str
+    reviewer_email: Optional[str] = None
+
+
 # ============================================
 # Helper Functions
 # ============================================
@@ -566,20 +573,24 @@ async def get_public_card(slug: str):
     }
 
 
+class TrackClickRequest(BaseModel):
+    click_type: str
+
+
 @router.post("/track-click/{slug}")
-async def track_link_click(slug: str, click_type: str):
+async def track_link_click(slug: str, body: TrackClickRequest):
     """Track when someone clicks a link on the card"""
     card = await db.mycards.find_one({"slug": slug})
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
-    
+
     # Increment the specific click counter
     await db.mycard_analytics.update_one(
         {"card_id": card["user_id"]},
-        {"$inc": {f"link_clicks.{click_type}": 1}},
+        {"$inc": {f"link_clicks.{body.click_type}": 1}},
         upsert=True
     )
-    
+
     return {"success": True}
 
 
@@ -602,33 +613,30 @@ async def track_share(slug: str):
 @router.post("/reviews/{slug}")
 async def add_review(
     slug: str,
-    reviewer_name: str,
-    rating: int,
-    comment: str,
-    reviewer_email: Optional[str] = None
+    body: AddReviewRequest,
 ):
     """Add a review to a business card"""
-    if rating < 1 or rating > 5:
+    if body.rating < 1 or body.rating > 5:
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
-    
+
     card = await db.mycards.find_one({"slug": slug})
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
-    
+
     review = {
         "id": str(uuid.uuid4()),
         "card_id": card["user_id"],
-        "reviewer_name": reviewer_name,
-        "reviewer_email": reviewer_email,
-        "rating": rating,
-        "comment": comment,
+        "reviewer_name": body.reviewer_name,
+        "reviewer_email": body.reviewer_email,
+        "rating": body.rating,
+        "comment": body.comment,
         "is_verified": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
-    
+
     await db.mycard_reviews.insert_one(review)
     review.pop("_id", None)
-    
+
     return {"success": True, "review": review}
 
 

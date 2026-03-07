@@ -418,10 +418,10 @@ export const HarvestMap = ({
       <div className={`relative h-full w-full flex items-center justify-center bg-zinc-900 ${className}`}>
         <div className="text-center p-8">
           <MapPin className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-white text-lg font-bold mb-2">Google Maps API Key Required</h3>
+          <h3 className="text-white text-lg font-bold mb-2">Map Unavailable</h3>
           <p className="text-zinc-400 text-sm max-w-sm">
-            Set <code className="text-orange-400">REACT_APP_GOOGLE_MAPS_API_KEY</code> in your .env file
-            to enable the map.
+            The map service is currently unavailable. Please contact your administrator
+            to enable mapping features.
           </p>
         </div>
       </div>

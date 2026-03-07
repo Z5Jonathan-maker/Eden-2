@@ -37,14 +37,14 @@ export function LoadingState({
   className = ''
 }) {
   const containerClass = fullScreen 
-    ? 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50' 
+    ? 'fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-50'
     : 'w-full py-12';
   
   return (
     <div className={`flex flex-col items-center justify-center ${containerClass} ${className}`}>
       <Spinner size={size} />
       {message && (
-        <p className="mt-4 text-gray-600 text-sm">{message}</p>
+        <p className="mt-4 text-zinc-400 text-sm">{message}</p>
       )}
     </div>
   );
@@ -63,15 +63,15 @@ export function ErrorState({
 }) {
   return (
     <div className={`flex flex-col items-center justify-center py-12 px-4 ${className}`}>
-      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-        <AlertCircle className="w-8 h-8 text-red-600" />
+      <div className="w-16 h-16 bg-red-500/15 rounded-full flex items-center justify-center mb-4">
+        <AlertCircle className="w-8 h-8 text-red-400" />
       </div>
-      
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+
+      <h3 className="text-lg font-semibold text-zinc-100 mb-2 text-center">
         {title}
       </h3>
-      
-      <p className="text-gray-600 text-sm text-center max-w-md mb-6">
+
+      <p className="text-zinc-400 text-sm text-center max-w-md mb-6">
         {message}
       </p>
       
@@ -107,15 +107,15 @@ export function EmptyState({
 }) {
   return (
     <div className={`flex flex-col items-center justify-center py-12 px-4 ${className}`}>
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-gray-400" />
+      <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-4">
+        <Icon className="w-8 h-8 text-zinc-500" />
       </div>
-      
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+
+      <h3 className="text-lg font-semibold text-zinc-100 mb-2 text-center">
         {title}
       </h3>
-      
-      <p className="text-gray-600 text-sm text-center max-w-md mb-6">
+
+      <p className="text-zinc-400 text-sm text-center max-w-md mb-6">
         {message}
       </p>
       
@@ -138,7 +138,7 @@ export function StatusPill({
   className = '' 
 }) {
   const label = labels[status] || status;
-  const colorClass = colors[status] || 'bg-gray-100 text-gray-800';
+  const colorClass = colors[status] || 'bg-zinc-700/40 text-zinc-300';
   
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass} ${className}`}>
@@ -163,9 +163,9 @@ export function PageHeader({
         <div className="flex items-center gap-4">
           {backButton}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-100">{title}</h1>
             {subtitle && (
-              <p className="text-gray-600 text-sm md:text-base mt-1">{subtitle}</p>
+              <p className="text-zinc-400 text-sm md:text-base mt-1">{subtitle}</p>
             )}
           </div>
         </div>
@@ -192,12 +192,12 @@ export function SectionCard({
   noPadding = false
 }) {
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+    <div className={`bg-zinc-800/50 rounded-lg border border-zinc-700/50 shadow-sm ${className}`}>
       {(title || headerActions) && (
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-zinc-700/30 flex items-center justify-between">
           <div>
-            {title && <h3 className="font-semibold text-gray-900">{title}</h3>}
-            {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+            {title && <h3 className="font-semibold text-zinc-100">{title}</h3>}
+            {subtitle && <p className="text-sm text-zinc-500 mt-0.5">{subtitle}</p>}
           </div>
           {headerActions}
         </div>
@@ -233,9 +233,9 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 text-sm mb-6">{message}</p>
+      <div className="relative bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-zinc-100 mb-2">{title}</h3>
+        <p className="text-zinc-400 text-sm mb-6">{message}</p>
         
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>
@@ -264,10 +264,10 @@ export function InfoBanner({
   className = ''
 }) {
   const styles = {
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
-    warning: 'bg-amber-50 border-amber-200 text-amber-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    success: 'bg-green-50 border-green-200 text-green-800'
+    info: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+    warning: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    error: 'bg-red-500/10 border-red-500/30 text-red-400',
+    success: 'bg-green-500/10 border-green-500/30 text-green-400'
   };
   
   const icons = {

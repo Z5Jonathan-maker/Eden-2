@@ -46,9 +46,9 @@ const VarianceIndicator = ({ value, showPercent = false, baseValue = 0 }) => {
 // Impact badge component
 const ImpactBadge = ({ impact }) => {
   const colors = {
-    high: 'bg-red-100 text-red-700 border-red-200',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200',
-    low: 'bg-gray-100 text-zinc-400 border-zinc-700/30'
+    high: 'bg-red-500/15 text-red-400 border-red-500/30',
+    medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    low: 'bg-zinc-700/40 text-zinc-400 border-zinc-700/30'
   };
   
   return (

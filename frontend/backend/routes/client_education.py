@@ -27,6 +27,13 @@ class EducationArticle(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
+class SubmitQuestionRequest(BaseModel):
+    """Request body for submitting a client question"""
+    question: str
+    category: str = "general"
+    claim_id: Optional[str] = None
+
+
 class ClientQuestion(BaseModel):
     """Question from client to their adjuster"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -358,21 +365,19 @@ async def get_categories():
 
 @router.post("/questions")
 async def submit_question(
-    question: str,
-    category: str = "general",
-    claim_id: Optional[str] = None,
+    body: SubmitQuestionRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Submit a question (client only)"""
     user_id = current_user.get("id") or current_user.get("sub")
-    
+
     q = ClientQuestion(
         client_id=user_id,
         client_name=current_user.get("full_name") or current_user.get("name", ""),
         client_email=current_user.get("email", ""),
-        claim_id=claim_id,
-        question=question,
-        category=category
+        claim_id=body.claim_id,
+        question=body.question,
+        category=body.category
     )
     
     await db.client_questions.insert_one(q.model_dump())

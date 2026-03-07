@@ -37,10 +37,10 @@ const ScanResultsCard = ({ sentinelScan }) => {
   };
 
   return (
-    <Card className="bg-white border-purple-500/30 border">
+    <Card className="bg-zinc-900 border-purple-500/30 border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
             <Radar className="w-5 h-5 text-purple-400" />
             API Scan: {sentinelScan.scan_id}
           </CardTitle>
@@ -64,7 +64,7 @@ const ScanResultsCard = ({ sentinelScan }) => {
               value={(sentinelScan.routes_checked / (sentinelScan.total_routes || 1)) * 100}
               className="h-2"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               Checking {sentinelScan.routes_checked} of {sentinelScan.total_routes} endpoints...
             </p>
           </div>
@@ -72,29 +72,29 @@ const ScanResultsCard = ({ sentinelScan }) => {
 
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>
-            <p className="text-2xl font-bold text-gray-900">{sentinelScan.total_routes}</p>
-            <p className="text-xs text-gray-500">Total</p>
+            <p className="text-2xl font-bold text-zinc-100">{sentinelScan.total_routes}</p>
+            <p className="text-xs text-zinc-500">Total</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-green-400">{sentinelScan.passed}</p>
-            <p className="text-xs text-gray-500">Passed</p>
+            <p className="text-xs text-zinc-500">Passed</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-red-400">{sentinelScan.failed}</p>
-            <p className="text-xs text-gray-500">Failed</p>
+            <p className="text-xs text-zinc-500">Failed</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-yellow-400">
               {sentinelScan.break_reports_generated}
             </p>
-            <p className="text-xs text-gray-500">Break Reports</p>
+            <p className="text-xs text-zinc-500">Break Reports</p>
           </div>
         </div>
 
         {/* Route Results */}
         {sentinelScan.route_results?.length > 0 && (
           <div className="mt-4 max-h-64 overflow-y-auto">
-            <p className="text-sm font-medium text-gray-600 mb-2">Endpoint Results</p>
+            <p className="text-sm font-medium text-zinc-400 mb-2">Endpoint Results</p>
             <div className="space-y-1">
               {sentinelScan.route_results.map((result, idx) => (
                 <div
@@ -104,7 +104,7 @@ const ScanResultsCard = ({ sentinelScan }) => {
                       ? 'bg-green-500/10'
                       : result.status === 'fail'
                         ? 'bg-red-500/10'
-                        : 'bg-gray-800'
+                        : 'bg-zinc-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -113,9 +113,9 @@ const ScanResultsCard = ({ sentinelScan }) => {
                     ) : result.status === 'fail' ? (
                       <XCircle className="w-4 h-4 text-red-400" />
                     ) : (
-                      <Clock className="w-4 h-4 text-gray-600" />
+                      <Clock className="w-4 h-4 text-zinc-400" />
                     )}
-                    <span className="text-gray-300">
+                    <span className="text-zinc-300">
                       {result.method} {result.path}
                     </span>
                   </div>
@@ -126,7 +126,7 @@ const ScanResultsCard = ({ sentinelScan }) => {
                       </Badge>
                     )}
                     {formatLatency(result.latency_ms) && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-zinc-500">
                         {formatLatency(result.latency_ms)}
                       </span>
                     )}
@@ -146,10 +146,10 @@ const BrowserCrawlCard = ({ browserCrawl }) => {
   if (!browserCrawl?.result) return null;
 
   return (
-    <Card className="bg-white border-blue-500/30 border">
+    <Card className="bg-zinc-900 border-blue-500/30 border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
             <Eye className="w-5 h-5 text-blue-400" />
             Browser UI Crawl: {browserCrawl.crawl_id}
           </CardTitle>
@@ -176,34 +176,34 @@ const BrowserCrawlCard = ({ browserCrawl }) => {
 
         <div className="grid grid-cols-5 gap-4 text-center mb-4">
           <div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-zinc-100">
               {browserCrawl.result.routes_checked || 0}
             </p>
-            <p className="text-xs text-gray-500">Routes</p>
+            <p className="text-xs text-zinc-500">Routes</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-green-400">
               {browserCrawl.result.routes_passed || 0}
             </p>
-            <p className="text-xs text-gray-500">Passed</p>
+            <p className="text-xs text-zinc-500">Passed</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-red-400">
               {browserCrawl.result.routes_failed || 0}
             </p>
-            <p className="text-xs text-gray-500">Failed</p>
+            <p className="text-xs text-zinc-500">Failed</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-blue-400">
               {browserCrawl.result.total_elements_found || 0}
             </p>
-            <p className="text-xs text-gray-500">Elements Found</p>
+            <p className="text-xs text-zinc-500">Elements Found</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-orange-400">
               {browserCrawl.result.total_elements_missing || 0}
             </p>
-            <p className="text-xs text-gray-500">Missing</p>
+            <p className="text-xs text-zinc-500">Missing</p>
           </div>
         </div>
 
@@ -217,7 +217,7 @@ const BrowserCrawlCard = ({ browserCrawl }) => {
             <div className="space-y-1">
               {browserCrawl.result.critical_failures.map((failure, idx) => (
                 <div key={idx} className="text-sm text-red-300">
-                  <span className="text-gray-500">{failure.route}</span> → {failure.element}
+                  <span className="text-zinc-500">{failure.route}</span> → {failure.element}
                 </div>
               ))}
             </div>
@@ -250,10 +250,10 @@ const AutoFixesCard = ({ autoFixes, isGenerating, onGenerateFixes }) => {
   if (!autoFixes) return null;
 
   return (
-    <Card className="bg-white border-orange-500/30 border">
+    <Card className="bg-zinc-900 border-orange-500/30 border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
             <Wrench className="w-5 h-5 text-orange-400" />
             Auto-Generated Fixes
           </CardTitle>
@@ -266,26 +266,26 @@ const AutoFixesCard = ({ autoFixes, isGenerating, onGenerateFixes }) => {
         {autoFixes.fixes?.length > 0 ? (
           <div className="space-y-3">
             {autoFixes.fixes.map((fix, idx) => (
-              <div key={idx} className="p-3 bg-gray-800 rounded-lg">
+              <div key={idx} className="p-3 bg-zinc-800 rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       {fix.severity || 'P2'}
                     </Badge>
-                    <span className="text-gray-900 font-medium">{fix.issue}</span>
+                    <span className="text-zinc-100 font-medium">{fix.issue}</span>
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-gray-600 hover:text-gray-900"
+                    className="text-zinc-400 hover:text-zinc-100"
                     onClick={() => navigator.clipboard.writeText(fix.code || fix.suggestion)}
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{fix.suggestion}</p>
+                <p className="text-sm text-zinc-400 mb-2">{fix.suggestion}</p>
                 {fix.code && (
-                  <div className="bg-gray-50 p-2 rounded text-xs font-mono text-green-400 overflow-x-auto">
+                  <div className="bg-zinc-800/50 p-2 rounded text-xs font-mono text-green-400 overflow-x-auto">
                     <pre>{fix.code}</pre>
                   </div>
                 )}
@@ -293,7 +293,7 @@ const AutoFixesCard = ({ autoFixes, isGenerating, onGenerateFixes }) => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-600">
+          <div className="text-center py-6 text-zinc-400">
             <Code className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No fixes generated yet</p>
           </div>
@@ -306,9 +306,9 @@ const AutoFixesCard = ({ autoFixes, isGenerating, onGenerateFixes }) => {
 // Route Registry Component
 const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-zinc-900 border-zinc-700/50">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2 text-gray-900">
+        <CardTitle className="text-lg flex items-center gap-2 text-zinc-100">
           <Route className="w-5 h-5 text-blue-400" />
           Frontend Routes
         </CardTitle>
@@ -316,13 +316,13 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
       <CardContent>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {sentinelRoutes.map((route, idx) => (
-            <div key={idx} className="flex items-center justify-between p-2 bg-gray-800 rounded">
+            <div key={idx} className="flex items-center justify-between p-2 bg-zinc-800 rounded">
               <div>
-                <p className="text-gray-900 text-sm">{route.name}</p>
-                <p className="text-gray-500 text-xs">{route.path}</p>
+                <p className="text-zinc-100 text-sm">{route.name}</p>
+                <p className="text-zinc-500 text-xs">{route.path}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs text-gray-600">
+                <Badge variant="outline" className="text-xs text-zinc-400">
                   {route.module}
                 </Badge>
                 {route.auth_required && <Lock className="w-3 h-3 text-yellow-400" />}
@@ -333,9 +333,9 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
       </CardContent>
     </Card>
 
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-zinc-900 border-zinc-700/50">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2 text-gray-900">
+        <CardTitle className="text-lg flex items-center gap-2 text-zinc-100">
           <Globe className="w-5 h-5 text-green-400" />
           API Endpoints
         </CardTitle>
@@ -343,10 +343,10 @@ const RouteRegistry = ({ sentinelRoutes, sentinelEndpoints }) => (
       <CardContent>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {sentinelEndpoints.map((endpoint, idx) => (
-            <div key={idx} className="flex items-center justify-between p-2 bg-gray-800 rounded">
+            <div key={idx} className="flex items-center justify-between p-2 bg-zinc-800 rounded">
               <div>
-                <p className="text-gray-900 text-sm">{endpoint.name}</p>
-                <p className="text-gray-500 text-xs">
+                <p className="text-zinc-100 text-sm">{endpoint.name}</p>
+                <p className="text-zinc-500 text-xs">
                   {endpoint.method} {endpoint.path}
                 </p>
               </div>
@@ -372,10 +372,10 @@ const MobileRegressionCard = ({
   };
 
   return (
-    <Card className="bg-white border-cyan-500/30 border">
+    <Card className="bg-zinc-900 border-cyan-500/30 border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
             <Smartphone className="w-5 h-5 text-cyan-400" />
             Mobile Regression Testing
           </CardTitle>
@@ -407,16 +407,16 @@ const MobileRegressionCard = ({
               {Object.entries(mobileRegression.results).map(([viewport, result]) => {
                 const Icon = viewportIcons[viewport] || Monitor;
                 return (
-                  <div key={viewport} className="bg-gray-800 rounded-lg p-4 text-center">
-                    <Icon className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-                    <p className="text-sm font-medium text-gray-900 capitalize">{viewport}</p>
+                  <div key={viewport} className="bg-zinc-800 rounded-lg p-4 text-center">
+                    <Icon className="w-8 h-8 mx-auto mb-2 text-zinc-400" />
+                    <p className="text-sm font-medium text-zinc-100 capitalize">{viewport}</p>
                     <div className="mt-2 space-y-1">
                       <p className="text-xs">
                         <span className="text-green-400">{result.routes_passed || 0}</span>
-                        <span className="text-gray-500"> / </span>
+                        <span className="text-zinc-500"> / </span>
                         <span className="text-red-400">{result.routes_failed || 0}</span>
                       </p>
-                      <p className="text-xs text-gray-500">passed/failed</p>
+                      <p className="text-xs text-zinc-500">passed/failed</p>
                     </div>
                   </div>
                 );
@@ -433,7 +433,7 @@ const MobileRegressionCard = ({
                 <div className="space-y-2">
                   {mobileRegression.mobile_issues.slice(0, 5).map((issue, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-300">
+                      <span className="text-zinc-300">
                         {issue.route}: {issue.issue}
                       </span>
                       <Badge
@@ -442,7 +442,7 @@ const MobileRegressionCard = ({
                             ? 'bg-red-500/20 text-red-400'
                             : issue.severity === 'P1'
                               ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-gray-500/20 text-gray-600'
+                              : 'bg-zinc-800/500/20 text-zinc-400'
                         }
                       >
                         {issue.severity}
@@ -454,14 +454,14 @@ const MobileRegressionCard = ({
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-600">
+          <div className="text-center py-8 text-zinc-400">
             <div className="flex justify-center gap-4 mb-4">
               <Monitor className="w-8 h-8 opacity-50" />
               <Tablet className="w-8 h-8 opacity-50" />
               <Smartphone className="w-8 h-8 opacity-50" />
             </div>
             <p>Test your app across Desktop, Tablet, and Mobile viewports</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-zinc-500 mt-2">
               Identifies responsive design issues automatically
             </p>
           </div>
@@ -497,11 +497,11 @@ export const CenturionTab = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center">
-                <Radar className="w-8 h-8 text-gray-900" />
+                <Radar className="w-8 h-8 text-zinc-100" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">The Centurion</h2>
-                <p className="text-gray-600">
+                <h2 className="text-2xl font-bold text-zinc-100">The Centurion</h2>
+                <p className="text-zinc-400">
                   Button/Link/Route Verifier — Detects dead ends & broken handlers
                 </p>
               </div>
@@ -568,34 +568,34 @@ export const CenturionTab = ({
       {/* Summary Stats */}
       {sentinelSummary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-zinc-900 border-zinc-700/50">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-gray-900">{sentinelSummary.total_scans || 0}</p>
-              <p className="text-xs text-gray-500">Total Scans</p>
+              <p className="text-3xl font-bold text-zinc-100">{sentinelSummary.total_scans || 0}</p>
+              <p className="text-xs text-zinc-500">Total Scans</p>
             </CardContent>
           </Card>
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-zinc-900 border-zinc-700/50">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-green-400">
                 {sentinelSummary.routes_verified || 0}
               </p>
-              <p className="text-xs text-gray-500">Routes Verified</p>
+              <p className="text-xs text-zinc-500">Routes Verified</p>
             </CardContent>
           </Card>
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-zinc-900 border-zinc-700/50">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-red-400">
                 {sentinelSummary.dead_ends_found || 0}
               </p>
-              <p className="text-xs text-gray-500">Dead Ends Found</p>
+              <p className="text-xs text-zinc-500">Dead Ends Found</p>
             </CardContent>
           </Card>
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-zinc-900 border-zinc-700/50">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-blue-400">
                 {sentinelSummary.issues_auto_fixed || 0}
               </p>
-              <p className="text-xs text-gray-500">Auto-Fixed</p>
+              <p className="text-xs text-zinc-500">Auto-Fixed</p>
             </CardContent>
           </Card>
         </div>

@@ -17,6 +17,11 @@ router = APIRouter(prefix="/api/battle-pass", tags=["Battle Pass"])
 # Models
 # ============================================
 
+class AwardXpRequest(BaseModel):
+    action_type: str
+    count: int = 1
+
+
 class BattlePassTier(BaseModel):
     tier: int
     xp_required: int
@@ -375,14 +380,13 @@ async def get_missions(current_user: dict = Depends(get_current_user)):
 
 @router.post("/xp/award")
 async def award_xp(
-    action_type: str,
-    count: int = 1,
+    body: AwardXpRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Award XP for an action (internal use - called by other routes)"""
     user_id = current_user.get("id") or current_user.get("email")
-    
-    xp_amount = XP_AWARDS.get(action_type, 0) * count
+
+    xp_amount = XP_AWARDS.get(body.action_type, 0) * body.count
     if xp_amount == 0:
         return {"xp_awarded": 0, "message": "Unknown action type"}
     
@@ -428,8 +432,8 @@ async def award_xp(
     # Track activity for mission progress
     await db.battle_pass_activities.insert_one({
         "user_id": user_id,
-        "action_type": action_type,
-        "count": count,
+        "action_type": body.action_type,
+        "count": body.count,
         "xp_awarded": xp_amount,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
@@ -449,7 +453,7 @@ async def award_xp(
         "current_tier": new_tier,
         "tier_up": tier_up,
         "new_rewards": new_rewards,
-        "action_type": action_type,
+        "action_type": body.action_type,
     }
 
 

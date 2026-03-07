@@ -156,34 +156,34 @@ const PreCaptureGate = ({
             )}
             
             {/* Claim Info Card */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div className="bg-zinc-800/80 rounded-xl p-6 border border-zinc-700/50 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
                   <Check className="w-6 h-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="text-gray-900 font-bold">Claim Selected</h3>
-                  <p className="text-gray-600 text-sm">Ready to capture</p>
+                  <h3 className="text-zinc-100 font-bold">Claim Selected</h3>
+                  <p className="text-zinc-400 text-sm">Ready to capture</p>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <Home className="w-5 h-5 text-orange-500 mt-0.5" />
                   <div>
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-zinc-100 font-medium">
                       {claimData?.client_name || claimData?.insured_name || 'Client'}
                     </p>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-zinc-400 text-sm">
                       {claimData?.property_address || claimData?.loss_location || 'Property Address'}
                     </p>
                   </div>
                 </div>
-                
+
                 {claimData?.claim_number && (
                   <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-blue-500" />
-                    <span className="text-gray-500 text-sm">Claim #{claimData.claim_number}</span>
+                    <span className="text-zinc-500 text-sm">Claim #{claimData.claim_number}</span>
                   </div>
                 )}
               </div>
@@ -908,7 +908,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
             value={currentPhoto.annotation}
             onChange={(e) => updateAnnotation(currentPhoto.id, e.target.value)}
             placeholder="Describe what this photo shows..."
-            className="bg-white border-gray-300 text-gray-900 min-h-[100px]"
+            className="bg-zinc-800 border-zinc-600 text-zinc-100 min-h-[100px]"
           />
           
           {currentPhoto.aiAnnotation && (

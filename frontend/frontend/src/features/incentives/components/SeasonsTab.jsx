@@ -175,7 +175,7 @@ export const SeasonsTab = () => {
       ) : seasons.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-8">
-            <Calendar className="w-12 h-12 text-gray-300 mb-4" />
+            <Calendar className="w-12 h-12 text-zinc-600 mb-4" />
             <p className="text-muted-foreground mb-4">No seasons yet</p>
             <Button
               onClick={() => setShowCreateDialog(true)}

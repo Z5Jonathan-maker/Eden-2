@@ -427,7 +427,7 @@ const Settings = () => {
               role={roleLabel}
               email={user?.email || ''}
               phone={profilePhone}
-              onEditProfile={() => toast.info('Edit profile flow ready for wiring.')}
+              onEditProfile={() => toast.info('Profile editing will be available in a future update.')}
             />
 
             <article className="settings-card settings-fade-in">
@@ -709,7 +709,7 @@ const Settings = () => {
               <Button
                 variant="outline"
                 className="mt-3 w-full border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500"
-                onClick={() => toast.info('Password reset flow can be linked here.')}
+                onClick={() => toast.info('Password reset will be available in a future update.')}
               >
                 Reset Password
               </Button>
@@ -724,7 +724,7 @@ const Settings = () => {
               <Button
                 variant="outline"
                 className="mt-3 w-full border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500"
-                onClick={() => toast.info('2FA setup endpoint can be connected here.')}
+                onClick={() => toast.info('Two-factor authentication will be available in a future update.')}
               >
                 Configure 2FA
               </Button>

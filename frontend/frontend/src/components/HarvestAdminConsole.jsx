@@ -60,15 +60,15 @@ const ADMIN_TABS = [
 // Status badge component
 const StatusBadge = ({ status }) => {
   const config = {
-    active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Active' },
-    scheduled: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Scheduled' },
-    draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft' },
-    completed: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Completed' },
-    cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled' },
-    pending: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Pending' },
-    approved: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Approved' },
-    fulfilled: { bg: 'bg-green-100', text: 'text-green-700', label: 'Fulfilled' },
-    denied: { bg: 'bg-red-100', text: 'text-red-700', label: 'Denied' },
+    active: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Active' },
+    scheduled: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'Scheduled' },
+    draft: { bg: 'bg-zinc-700/40', text: 'text-zinc-400', label: 'Draft' },
+    completed: { bg: 'bg-purple-500/15', text: 'text-purple-400', label: 'Completed' },
+    cancelled: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Cancelled' },
+    pending: { bg: 'bg-amber-500/15', text: 'text-amber-400', label: 'Pending' },
+    approved: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'Approved' },
+    fulfilled: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'Fulfilled' },
+    denied: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Denied' },
   };
 
   const c = config[status] || config.draft;
@@ -127,7 +127,7 @@ const CampaignsTab = ({ onRefresh }) => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Campaign Management</h3>
-          <p className="text-sm text-gray-500">{campaigns.length} campaigns</p>
+          <p className="text-sm text-zinc-500">{campaigns.length} campaigns</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -147,11 +147,11 @@ const CampaignsTab = ({ onRefresh }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{campaign.name}</h4>
+                      <h4 className="font-semibold text-zinc-100">{campaign.name}</h4>
                       <StatusBadge status={campaign.status} />
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <p className="text-sm text-zinc-500 mt-1">{campaign.description}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(campaign.start_date).toLocaleDateString()} -{' '}
@@ -186,7 +186,7 @@ const CampaignsTab = ({ onRefresh }) => {
               {campaign.leader && (
                 <div className="mt-3 pt-3 border-t">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Leader: {campaign.leader.name}</span>
+                    <span className="text-zinc-500">Leader: {campaign.leader.name}</span>
                     <span className="font-medium text-orange-600">
                       {campaign.leader.value} {campaign.goal_type}
                     </span>
@@ -200,9 +200,9 @@ const CampaignsTab = ({ onRefresh }) => {
         {campaigns.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-700">No Campaigns</h3>
-              <p className="text-sm text-gray-500">
+              <Target className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
+              <h3 className="text-lg font-semibold text-zinc-300">No Campaigns</h3>
+              <p className="text-sm text-zinc-500">
                 Create your first campaign to motivate your team!
               </p>
             </CardContent>
@@ -265,19 +265,19 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-lg w-full p-6"
+        className="bg-zinc-900 border border-zinc-700/50 rounded-2xl max-w-lg w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Create Campaign</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Campaign Name</label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -287,7 +287,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Description</label>
             <Input
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -297,7 +297,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Goal Type</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Goal Type</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.goal_type}
@@ -310,7 +310,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Target</label>
               <Input
                 type="number"
                 value={formData.target_value}
@@ -324,7 +324,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Start Date</label>
               <Input
                 type="date"
                 value={formData.start_date}
@@ -332,7 +332,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">End Date</label>
               <Input
                 type="date"
                 value={formData.end_date}
@@ -343,7 +343,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bonus Points</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Bonus Points</label>
               <Input
                 type="number"
                 value={formData.points_bonus}
@@ -354,7 +354,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Icon</label>
               <Input
                 value={formData.icon}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
@@ -434,7 +434,7 @@ const TemplatesTab = () => {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">Campaign Templates</h3>
-        <p className="text-sm text-gray-500">Quick-start campaigns with pre-configured settings</p>
+        <p className="text-sm text-zinc-500">Quick-start campaigns with pre-configured settings</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -444,10 +444,10 @@ const TemplatesTab = () => {
               <div className="text-center mb-3">
                 <span className="text-4xl">{template.icon || '🎯'}</span>
               </div>
-              <h4 className="font-semibold text-gray-900 text-center">{template.name}</h4>
-              <p className="text-sm text-gray-500 text-center mt-1">{template.description}</p>
+              <h4 className="font-semibold text-zinc-100 text-center">{template.name}</h4>
+              <p className="text-sm text-zinc-500 text-center mt-1">{template.description}</p>
 
-              <div className="flex justify-center gap-4 mt-4 text-xs text-gray-500">
+              <div className="flex justify-center gap-4 mt-4 text-xs text-zinc-500">
                 <span>{template.duration_days} days</span>
                 <span>
                   {template.default_target} {template.goal_type}
@@ -520,7 +520,7 @@ const RewardsTab = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Rewards Catalog</h3>
-          <p className="text-sm text-gray-500">{rewards.length} rewards available</p>
+          <p className="text-sm text-zinc-500">{rewards.length} rewards available</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -549,16 +549,16 @@ const RewardsTab = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{reward.name}</h4>
+                      <h4 className="font-semibold text-zinc-100">{reward.name}</h4>
                       {reward.is_featured && (
                         <Badge className="bg-amber-100 text-amber-700">Featured</Badge>
                       )}
                       {!reward.is_active && (
-                        <Badge className="bg-gray-100 text-gray-500">Archived</Badge>
+                        <Badge className="bg-zinc-700/40 text-zinc-500">Archived</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">{reward.description}</p>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <p className="text-sm text-zinc-500">{reward.description}</p>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
                       <span className="font-medium text-purple-600">
                         {reward.points_required} pts
                       </span>
@@ -586,9 +586,9 @@ const RewardsTab = () => {
         {rewards.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <Gift className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-700">No Rewards</h3>
-              <p className="text-sm text-gray-500">Add rewards for your team to redeem!</p>
+              <Gift className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
+              <h3 className="text-lg font-semibold text-zinc-300">No Rewards</h3>
+              <p className="text-sm text-zinc-500">Add rewards for your team to redeem!</p>
             </CardContent>
           </Card>
         )}
@@ -643,19 +643,19 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-lg w-full p-6"
+        className="bg-zinc-900 border border-zinc-700/50 rounded-2xl max-w-lg w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Add Reward</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reward Name</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Reward Name</label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -665,7 +665,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Description</label>
             <Input
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -675,7 +675,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Category</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.category}
@@ -689,7 +689,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Points Required
               </label>
               <Input
@@ -705,7 +705,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Stock (leave empty for unlimited)
               </label>
               <Input
@@ -729,7 +729,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
                   onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium text-gray-700">Featured Reward</span>
+                <span className="text-sm font-medium text-zinc-300">Featured Reward</span>
               </label>
             </div>
           </div>
@@ -805,7 +805,7 @@ const RedemptionsTab = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Redemption Requests</h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-500">
             {counts.pending} pending · {counts.approved} approved · {counts.fulfilled} fulfilled
           </p>
         </div>
@@ -834,18 +834,18 @@ const RedemptionsTab = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Users className="w-6 h-6 text-gray-500" />
+                  <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-zinc-500" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{redemption.user_name}</h4>
+                      <h4 className="font-semibold text-zinc-100">{redemption.user_name}</h4>
                       <StatusBadge status={redemption.status} />
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-zinc-400">
                       {redemption.reward_name} · {redemption.points_spent} pts
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-zinc-400">
                       Requested {new Date(redemption.requested_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -898,9 +898,9 @@ const RedemptionsTab = () => {
         {redemptions.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-700">No Redemptions</h3>
-              <p className="text-sm text-gray-500">No {filter} redemption requests</p>
+              <Package className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
+              <h3 className="text-lg font-semibold text-zinc-300">No Redemptions</h3>
+              <p className="text-sm text-zinc-500">No {filter} redemption requests</p>
             </CardContent>
           </Card>
         )}
@@ -1000,7 +1000,7 @@ const TerritoriesTab = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Territory Management</h3>
-          <p className="text-sm text-gray-500">{territories.length} territories defined</p>
+          <p className="text-sm text-zinc-500">{territories.length} territories defined</p>
         </div>
         <Button onClick={() => setShowCreate(true)} data-testid="create-territory-btn">
           <Plus className="w-4 h-4 mr-2" />
@@ -1019,15 +1019,15 @@ const TerritoriesTab = () => {
                     style={{ backgroundColor: territory.color || '#3B82F6' }}
                   />
                   <div>
-                    <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <h4 className="font-semibold text-zinc-100 flex items-center gap-2">
                       {territory.name}
                       {!territory.is_active && (
-                        <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">
+                        <Badge className="bg-zinc-700/40 text-zinc-400 border-0 text-xs">
                           Inactive
                         </Badge>
                       )}
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-zinc-500">
                       {territory.description || 'No description'}
                     </p>
                   </div>
@@ -1057,21 +1057,21 @@ const TerritoriesTab = () => {
               {/* Stats */}
               <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Pins</span>
+                  <span className="text-zinc-500">Pins</span>
                   <p className="font-semibold">{territory.stats?.total_pins || 0}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Visited</span>
+                  <span className="text-zinc-500">Visited</span>
                   <p className="font-semibold">{territory.stats?.visited_pins || 0}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Coverage</span>
+                  <span className="text-zinc-500">Coverage</span>
                   <p className="font-semibold text-blue-600">
                     {territory.stats?.coverage_percent || 0}%
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Contracts</span>
+                  <span className="text-zinc-500">Contracts</span>
                   <p className="font-semibold text-green-600">{territory.stats?.contracts || 0}</p>
                 </div>
               </div>
@@ -1079,7 +1079,7 @@ const TerritoriesTab = () => {
               {/* Assigned Users */}
               {territory.assigned_users && territory.assigned_users.length > 0 && (
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-gray-500 mb-2">Assigned Reps:</p>
+                  <p className="text-xs text-zinc-500 mb-2">Assigned Reps:</p>
                   <div className="flex flex-wrap gap-2">
                     {territory.assigned_users.map((assignment) => (
                       <Badge
@@ -1106,9 +1106,9 @@ const TerritoriesTab = () => {
         {territories.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-700">No Territories</h3>
-              <p className="text-sm text-gray-500">
+              <MapPin className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
+              <h3 className="text-lg font-semibold text-zinc-300">No Territories</h3>
+              <p className="text-sm text-zinc-500">
                 Create territories to organize your canvassing areas
               </p>
             </CardContent>
@@ -1190,14 +1190,14 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">New Territory</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Name</label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -1207,7 +1207,7 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Description</label>
             <Input
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1217,7 +1217,7 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Color</label>
               <input
                 type="color"
                 value={formData.color}
@@ -1226,7 +1226,7 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Priority</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.priority}
@@ -1239,7 +1239,7 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
             </div>
           </div>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-500">
             Note: Territory boundaries can be drawn on the map after creation.
           </p>
 
@@ -1279,7 +1279,7 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Assign Reps to {territory.name}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1287,7 +1287,7 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
         {/* Currently Assigned */}
         {assignedIds.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Currently Assigned</p>
+            <p className="text-sm font-medium text-zinc-300 mb-2">Currently Assigned</p>
             <div className="space-y-2">
               {(territory.assignments || territory.assigned_users || []).map((assignment) => {
                 const user = users.find((u) => u.id === assignment.user_id);
@@ -1314,17 +1314,17 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
 
         {/* Available Users */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Available Reps</p>
+          <p className="text-sm font-medium text-zinc-300 mb-2">Available Reps</p>
           {availableUsers.length > 0 ? (
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {availableUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100"
+                  className="flex items-center justify-between p-2 bg-zinc-800/40 rounded-lg hover:bg-zinc-800/60"
                 >
                   <div>
                     <span className="text-sm font-medium">{user.full_name}</span>
-                    <span className="text-xs text-gray-500 ml-2">{user.role}</span>
+                    <span className="text-xs text-zinc-500 ml-2">{user.role}</span>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => onAssign(user.id)}>
                     <Plus className="w-4 h-4" />
@@ -1333,7 +1333,7 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 py-4 text-center">All reps are already assigned</p>
+            <p className="text-sm text-zinc-500 py-4 text-center">All reps are already assigned</p>
           )}
         </div>
 
@@ -1421,13 +1421,13 @@ const SettingsTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-500">
             Set daily targets that reps need to hit to maintain their streak and earn bonuses.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Doors Knocked</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Doors Knocked</label>
               <Input
                 type="number"
                 value={dailyGoals.doors_knocked}
@@ -1438,7 +1438,7 @@ const SettingsTab = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Appointments Set
               </label>
               <Input
@@ -1451,7 +1451,7 @@ const SettingsTab = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Contracts Signed
               </label>
               <Input
@@ -1481,13 +1481,13 @@ const SettingsTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-zinc-500 mb-4">
             These are the status options available when logging a door visit.
           </p>
 
           <div className="space-y-2">
             {dispositions.map((disp, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div key={idx} className="flex items-center gap-3 p-3 bg-zinc-800/40 rounded-lg">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
                   style={{ backgroundColor: disp.color }}
@@ -1496,7 +1496,7 @@ const SettingsTab = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">{disp.label}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-zinc-500">
                     Code: {disp.code} • Points: {disp.points}
                   </p>
                 </div>
@@ -1504,7 +1504,7 @@ const SettingsTab = () => {
             ))}
           </div>
 
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-sm text-zinc-400 mt-4">
             Disposition configuration is managed at the system level. Contact support to modify.
           </p>
         </CardContent>
@@ -1525,7 +1525,7 @@ const HarvestAdminConsole = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-zinc-950">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
@@ -1563,7 +1563,7 @@ const HarvestAdminConsole = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                    isActive ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:bg-gray-100'
+                    isActive ? 'bg-orange-500/15 text-orange-400' : 'text-zinc-400 hover:bg-zinc-800/60'
                   }`}
                   data-testid={`admin-${tab.id}-tab`}
                 >

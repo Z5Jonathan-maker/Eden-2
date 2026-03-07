@@ -75,7 +75,7 @@ const GammaIntegration = () => {
   }
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-8 bg-zinc-950 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-2">
@@ -97,7 +97,7 @@ const GammaIntegration = () => {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="dark:text-gray-900">Connection Status</CardTitle>
+            <CardTitle className="text-zinc-100">Connection Status</CardTitle>
             <Button variant="outline" size="sm" onClick={fetchStatus}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -106,12 +106,12 @@ const GammaIntegration = () => {
         </CardHeader>
         <CardContent>
           {status?.connected ? (
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/30">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-800">Connected to Gamma</span>
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span className="font-medium text-green-400">Connected to Gamma</span>
               </div>
-              <div className="text-sm text-green-700 space-y-1">
+              <div className="text-sm text-green-300 space-y-1">
                 <p><strong>API:</strong> Gamma v1.0 (public-api.gamma.app)</p>
                 {status.theme_count > 0 && (
                   <p><strong>Themes Available:</strong> {status.theme_count}</p>
@@ -119,16 +119,16 @@ const GammaIntegration = () => {
               </div>
             </div>
           ) : (
-            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+            <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/30">
               <div className="flex items-center gap-2 mb-2">
-                <XCircle className="w-5 h-5 text-red-600" />
-                <span className="font-medium text-red-800">Not Connected</span>
+                <XCircle className="w-5 h-5 text-red-400" />
+                <span className="font-medium text-red-400">Not Connected</span>
               </div>
-              <p className="text-sm text-red-700 mb-3">
+              <p className="text-sm text-red-300 mb-3">
                 {status?.message || 'Gamma API key not configured'}
               </p>
               {!status?.configured && (
-                <div className="mt-2 p-3 bg-red-100 rounded text-sm text-red-800">
+                <div className="mt-2 p-3 bg-red-500/15 rounded text-sm text-red-300">
                   <strong>Setup:</strong> Get your API key from{' '}
                   <a
                     href="https://gamma.app/settings/api"
@@ -138,7 +138,7 @@ const GammaIntegration = () => {
                   >
                     gamma.app/settings/api
                   </a>{' '}
-                  (requires Pro plan), then set <code className="bg-red-200 px-1 rounded">GAMMA_API_KEY</code> in your .env file.
+                  (requires Pro plan), then set <code className="bg-red-500/20 px-1 rounded">GAMMA_API_KEY</code> in your .env file.
                 </div>
               )}
             </div>
@@ -149,30 +149,30 @@ const GammaIntegration = () => {
       {/* How It Works */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="dark:text-gray-900 flex items-center gap-2">
+          <CardTitle className="text-zinc-100 flex items-center gap-2">
             <Presentation className="w-5 h-5 text-orange-600" />
             How Gamma Works in Eden
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className="space-y-3 text-sm text-zinc-300">
             <p>
               Gamma generates professional presentation decks from your claim data.
               You can create decks from any claim&apos;s detail page using the
               <strong> Generate Deck</strong> button.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-blue-800 mb-1">Client Decks</h4>
-                <ul className="text-blue-700 text-xs space-y-1">
+              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                <h4 className="font-semibold text-blue-400 mb-1">Client Decks</h4>
+                <ul className="text-blue-300 text-xs space-y-1">
                   <li>Client Update — Status overview for homeowner</li>
                   <li>Settlement Review — For client approval</li>
                   <li>Final Settlement — Celebratory closing deck</li>
                 </ul>
               </div>
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="font-semibold text-purple-800 mb-1">Internal Decks</h4>
-                <ul className="text-purple-700 text-xs space-y-1">
+              <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                <h4 className="font-semibold text-purple-400 mb-1">Internal Decks</h4>
+                <ul className="text-purple-300 text-xs space-y-1">
                   <li>Rep Performance — Sales/adjuster review</li>
                   <li>Ministry Report — Kingdom impact report</li>
                 </ul>
@@ -187,11 +187,11 @@ const GammaIntegration = () => {
           {/* Bulk Sync */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="dark:text-gray-900 flex items-center gap-2">
+              <CardTitle className="text-zinc-100 flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-orange-600" />
                 Bulk Generate
               </CardTitle>
-              <CardDescription className="dark:text-gray-600">
+              <CardDescription className="text-zinc-400">
                 Generate Client Update decks for all claims at once
               </CardDescription>
             </CardHeader>
@@ -220,11 +220,11 @@ const GammaIntegration = () => {
           {syncs.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="dark:text-gray-900 flex items-center gap-2">
+                <CardTitle className="text-zinc-100 flex items-center gap-2">
                   <Presentation className="w-5 h-5 text-orange-600" />
                   Recent Presentations
                 </CardTitle>
-                <CardDescription className="dark:text-gray-600">
+                <CardDescription className="text-zinc-400">
                   Presentations generated from claims
                 </CardDescription>
               </CardHeader>
@@ -233,18 +233,18 @@ const GammaIntegration = () => {
                   {syncs.map((sync, i) => (
                     <div
                       key={sync.claim_id || i}
-                      className="p-3 rounded-lg border border-gray-200 hover:border-orange-300 transition-colors flex items-center justify-between"
+                      className="p-3 rounded-lg border border-zinc-700/50 hover:border-orange-500/50 transition-colors flex items-center justify-between"
                     >
                       <div>
-                        <h4 className="font-medium text-gray-900 text-sm">
+                        <h4 className="font-medium text-zinc-100 text-sm">
                           {sync.claim_id}
                         </h4>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-zinc-500">
                           Synced: {sync.last_synced ? new Date(sync.last_synced).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                        <Badge className="bg-green-500/15 text-green-400 border-green-500/30">
                           Generated
                         </Badge>
                         {(sync.gamma_url || sync.edit_url) && (
@@ -270,19 +270,19 @@ const GammaIntegration = () => {
 
       {/* Setup Info */}
       {!status?.connected && (
-        <Card className="border-yellow-200 bg-yellow-50">
+        <Card className="border-yellow-500/30 bg-yellow-500/10">
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-yellow-800 mb-2">
+                <h4 className="font-semibold text-yellow-400 mb-2">
                   Setup Instructions
                 </h4>
-                <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1.5">
+                <ol className="text-sm text-yellow-300 list-decimal list-inside space-y-1.5">
                   <li>Go to <strong>gamma.app</strong> and sign in (Pro plan required)</li>
                   <li>Navigate to <strong>Settings &gt; API</strong></li>
                   <li>Generate an API key</li>
-                  <li>Add <code className="bg-yellow-200 px-1 rounded">GAMMA_API_KEY=your_key_here</code> to your backend .env file</li>
+                  <li>Add <code className="bg-yellow-500/20 px-1 rounded">GAMMA_API_KEY=your_key_here</code> to your backend .env file</li>
                   <li>Restart the backend server</li>
                   <li>Click <strong>Refresh</strong> above to verify the connection</li>
                 </ol>

@@ -1420,25 +1420,29 @@ async def get_stations_near_address(
     }
 
 
+class QuickWeatherCheckRequest(BaseModel):
+    address: str
+    city: str
+    state: str
+    zip_code: str
+    date: str
+
+
 @router.post("/quick-check")
 async def quick_weather_check(
-    address: str,
-    city: str,
-    state: str,
-    zip_code: str,
-    date: str,
+    body: QuickWeatherCheckRequest,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Quick check for weather events on a specific date"""
     # Single day check
     return await verify_date_of_loss(
         WeatherSearchRequest(
-            address=address,
-            city=city,
-            state=state,
-            zip_code=zip_code,
-            start_date=date,
-            end_date=date
+            address=body.address,
+            city=body.city,
+            state=body.state,
+            zip_code=body.zip_code,
+            start_date=body.date,
+            end_date=body.date
         ),
         current_user
     )

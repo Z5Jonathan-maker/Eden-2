@@ -607,7 +607,7 @@ function DataManagement() {
         if (preview && preview.__legacyFallback) {
           setLastImportPreview(null);
           setImportColumnMapping({});
-          toast.info('Preview endpoint unavailable. Falling back to direct import mode.');
+          toast.info('Importing data directly. Preview will be available in a future update.');
           runLegacyDirectImport(file);
           return null;
         }
@@ -1061,8 +1061,7 @@ function DataManagement() {
         </div>
         {backendSupportsDuplicateStrategy === false ? (
           <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-mono text-amber-200">
-            Backend import endpoint is on older version. Duplicate strategy controls are queued but
-            not active until backend is redeployed.
+            Duplicate handling options will be available after the next system update.
           </div>
         ) : null}
         {lastImportPreview ? (

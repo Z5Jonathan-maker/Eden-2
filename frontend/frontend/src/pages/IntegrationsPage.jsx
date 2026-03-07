@@ -79,7 +79,7 @@ const IntegrationCard = ({
           <div className="flex flex-col items-end gap-2">
             {/* Status Badge */}
             <Badge 
-              className={connected ? "bg-green-500" : "bg-gray-400"}
+              className={connected ? "bg-green-500" : "bg-zinc-600"}
             >
               {connected ? (
                 <><Check className="w-3 h-3 mr-1" /> Connected</>

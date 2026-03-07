@@ -8,6 +8,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
 from dependencies import db, get_current_active_user as get_current_user
 from voice_models import (
     AssistantConfig, ScriptSet, GuardrailConfig, CallLog,
@@ -95,15 +96,19 @@ async def update_assistant_config(
     return {"message": "Configuration updated", "version": new_version}
 
 
+class ToggleAssistantRequest(BaseModel):
+    enabled: bool
+
+
 @router.post("/config/toggle")
 async def toggle_assistant(
-    enabled: bool,
+    body: ToggleAssistantRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Quick toggle for assistant enabled/disabled"""
     result = await db.voice_assistant_config.update_one(
         {"is_active": True},
-        {"$set": {"enabled": enabled, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"enabled": body.enabled, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     
     if result.modified_count == 0:
@@ -111,13 +116,13 @@ async def toggle_assistant(
         new_config = AssistantConfig(
             id=str(uuid.uuid4()),
             version=1,
-            enabled=enabled,
+            enabled=body.enabled,
             created_at=datetime.now(timezone.utc).isoformat()
         ).dict()
         new_config["is_active"] = True
         await db.voice_assistant_config.insert_one(new_config)
-    
-    status = "enabled" if enabled else "disabled"
+
+    status = "enabled" if body.enabled else "disabled"
     logger.info("Voice assistant %s by %s", status, current_user.get('email'))
     return {"message": f"Voice assistant {status}", "enabled": enabled}
 

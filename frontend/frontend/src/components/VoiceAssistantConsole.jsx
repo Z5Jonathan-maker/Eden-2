@@ -98,7 +98,7 @@ const VoiceAssistantConsole = () => {
       'complaint': { color: 'bg-red-100 text-red-700', label: 'Complaint' },
       'urgent': { color: 'bg-orange-100 text-orange-700', label: 'Urgent' }
     };
-    const v = variants[intent] || { color: 'bg-gray-100 text-gray-700', label: intent || 'Unknown' };
+    const v = variants[intent] || { color: 'bg-zinc-800/40 text-zinc-300', label: intent || 'Unknown' };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${v.color}`}>{v.label}</span>;
   };
 
@@ -150,13 +150,13 @@ const VoiceAssistantConsole = () => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Assistant</span>
+            <span className="text-sm text-zinc-400">Assistant</span>
             <Switch 
               checked={config?.enabled || false}
               onCheckedChange={toggleAssistant}
               data-testid="assistant-toggle"
             />
-            <span className={`text-sm font-medium ${config?.enabled ? 'text-green-600' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium ${config?.enabled ? 'text-green-400' : 'text-zinc-400'}`}>
               {config?.enabled ? 'ON' : 'OFF'}
             </span>
           </div>
@@ -197,8 +197,8 @@ const VoiceAssistantConsole = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Today's Calls</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.today_calls || 0}</p>
+                    <p className="text-sm text-zinc-500">Today's Calls</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-zinc-100">{stats?.today_calls || 0}</p>
                   </div>
                   <PhoneCall className="w-10 h-10 text-orange-500 opacity-50" />
                 </div>
@@ -209,8 +209,8 @@ const VoiceAssistantConsole = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Matched to Claims</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats?.today_matched || 0}</p>
+                    <p className="text-sm text-zinc-500">Matched to Claims</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400">{stats?.today_matched || 0}</p>
                   </div>
                   <CheckCircle className="w-10 h-10 text-green-500 opacity-50" />
                 </div>
@@ -221,7 +221,7 @@ const VoiceAssistantConsole = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Flagged for Review</p>
+                    <p className="text-sm text-zinc-500">Flagged for Review</p>
                     <p className="text-2xl sm:text-3xl font-bold text-amber-600">{stats?.today_flagged || 0}</p>
                   </div>
                   <AlertTriangle className="w-10 h-10 text-amber-500 opacity-50" />
@@ -233,12 +233,12 @@ const VoiceAssistantConsole = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Mode</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-sm text-zinc-500">Mode</p>
+                    <p className="text-lg font-semibold text-zinc-100">
                       {config?.mode === 'message_plus_confirm' ? 'Message + Confirm' : config?.mode?.replace(/_/g, ' ')}
                     </p>
                   </div>
-                  <Settings className="w-10 h-10 text-gray-400 opacity-50" />
+                  <Settings className="w-10 h-10 text-zinc-400 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -254,29 +254,29 @@ const VoiceAssistantConsole = () => {
               {stats?.recent_calls?.length > 0 ? (
                 <div className="space-y-3">
                   {stats.recent_calls.map((call, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800/40 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-orange-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-zinc-100">
                             {call.matched_client_name || call.from_number}
                           </p>
-                          <p className="text-sm text-gray-500 line-clamp-1">
+                          <p className="text-sm text-zinc-500 line-clamp-1">
                             {call.ai_summary || 'Processing...'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {getIntentBadge(call.intent)}
-                        <span className="text-sm text-gray-400">{formatTime(call.start_time)}</span>
+                        <span className="text-sm text-zinc-400">{formatTime(call.start_time)}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-zinc-500">
                   <Phone className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>No calls yet today</p>
                   <p className="text-sm">Calls will appear here when received</p>
@@ -301,7 +301,7 @@ const VoiceAssistantConsole = () => {
             <CardContent className="space-y-6">
               <div>
                 <Label className="text-sm font-medium">Greeting Script</Label>
-                <p className="text-xs text-gray-500 mb-2">Variables: {'{company_name}'}, {'{caller_name}'}</p>
+                <p className="text-xs text-zinc-500 mb-2">Variables: {'{company_name}'}, {'{caller_name}'}</p>
                 <Textarea 
                   value={scripts?.greeting_script || ''} 
                   onChange={(e) => setScripts({...scripts, greeting_script: e.target.value})}
@@ -311,7 +311,7 @@ const VoiceAssistantConsole = () => {
               
               <div>
                 <Label className="text-sm font-medium">Voicemail Script</Label>
-                <p className="text-xs text-gray-500 mb-2">Variables: {'{callback_window}'}</p>
+                <p className="text-xs text-zinc-500 mb-2">Variables: {'{callback_window}'}</p>
                 <Textarea 
                   value={scripts?.voicemail_script || ''} 
                   onChange={(e) => setScripts({...scripts, voicemail_script: e.target.value})}
@@ -321,7 +321,7 @@ const VoiceAssistantConsole = () => {
               
               <div>
                 <Label className="text-sm font-medium">After-Hours Script</Label>
-                <p className="text-xs text-gray-500 mb-2">Variables: {'{company_name}'}, {'{business_hours}'}</p>
+                <p className="text-xs text-zinc-500 mb-2">Variables: {'{company_name}'}, {'{business_hours}'}</p>
                 <Textarea 
                   value={scripts?.after_hours_script || ''} 
                   onChange={(e) => setScripts({...scripts, after_hours_script: e.target.value})}
@@ -331,7 +331,7 @@ const VoiceAssistantConsole = () => {
               
               <div>
                 <Label className="text-sm font-medium">Appointment Confirmation Script</Label>
-                <p className="text-xs text-gray-500 mb-2">Variables: {'{caller_name}'}, {'{appointment_time}'}, {'{address}'}, {'{adjuster_name}'}</p>
+                <p className="text-xs text-zinc-500 mb-2">Variables: {'{caller_name}'}, {'{appointment_time}'}, {'{address}'}, {'{adjuster_name}'}</p>
                 <Textarea 
                   value={scripts?.appointment_confirm_script || ''} 
                   onChange={(e) => setScripts({...scripts, appointment_confirm_script: e.target.value})}
@@ -363,7 +363,7 @@ const VoiceAssistantConsole = () => {
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Operating Mode</Label>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-zinc-800/50">
                       <input 
                         type="radio" 
                         name="mode" 
@@ -373,10 +373,10 @@ const VoiceAssistantConsole = () => {
                       />
                       <div>
                         <p className="font-medium">Message Only (Level 1)</p>
-                        <p className="text-sm text-gray-500">Take messages, transcribe, summarize</p>
+                        <p className="text-sm text-zinc-500">Take messages, transcribe, summarize</p>
                       </div>
                     </label>
-                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-zinc-800/50">
                       <input 
                         type="radio" 
                         name="mode" 
@@ -386,7 +386,7 @@ const VoiceAssistantConsole = () => {
                       />
                       <div>
                         <p className="font-medium">Message + Appointment Confirm (Level 2)</p>
-                        <p className="text-sm text-gray-500">Also confirm upcoming appointments</p>
+                        <p className="text-sm text-zinc-500">Also confirm upcoming appointments</p>
                       </div>
                     </label>
                   </div>
@@ -396,7 +396,7 @@ const VoiceAssistantConsole = () => {
                   <Label className="text-sm font-medium mb-2 block">
                     LLM Aggressiveness: {llmAggressivenessPct}%
                   </Label>
-                  <p className="text-xs text-gray-500 mb-3">Lower = strictly follow scripts, Higher = more conversational</p>
+                  <p className="text-xs text-zinc-500 mb-3">Lower = strictly follow scripts, Higher = more conversational</p>
                   <Slider
                     value={[config?.llm_aggressiveness * 100 || 20]}
                     onValueChange={([val]) => setConfig({...config, llm_aggressiveness: val / 100})}
@@ -435,8 +435,8 @@ const VoiceAssistantConsole = () => {
               <CardContent className="space-y-6">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Forbidden Topics</Label>
-                  <p className="text-xs text-gray-500 mb-2">AI will not discuss these topics</p>
-                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg min-h-[60px]">
+                  <p className="text-xs text-zinc-500 mb-2">AI will not discuss these topics</p>
+                  <div className="flex flex-wrap gap-2 p-3 bg-zinc-800/50 rounded-lg min-h-[60px]">
                     {guardrails?.forbidden_topics?.map((topic, idx) => (
                       <Badge key={idx} variant="secondary" className="bg-red-100 text-red-700">
                         {topic}
@@ -447,8 +447,8 @@ const VoiceAssistantConsole = () => {
 
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Escalation Keywords</Label>
-                  <p className="text-xs text-gray-500 mb-2">Immediately take message if caller says these</p>
-                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg min-h-[60px]">
+                  <p className="text-xs text-zinc-500 mb-2">Immediately take message if caller says these</p>
+                  <div className="flex flex-wrap gap-2 p-3 bg-zinc-800/50 rounded-lg min-h-[60px]">
                     {guardrails?.escalation_triggers?.keywords?.map((kw, idx) => (
                       <Badge key={idx} variant="secondary" className="bg-amber-100 text-amber-700">
                         {kw}
@@ -467,7 +467,7 @@ const VoiceAssistantConsole = () => {
                         className="w-20"
                         readOnly
                       />
-                      <span className="text-sm text-gray-500">seconds</span>
+                      <span className="text-sm text-zinc-500">seconds</span>
                     </div>
                   </div>
                   <div>
@@ -479,7 +479,7 @@ const VoiceAssistantConsole = () => {
                         className="w-20"
                         readOnly
                       />
-                      <span className="text-sm text-gray-500">turns</span>
+                      <span className="text-sm text-zinc-500">turns</span>
                     </div>
                   </div>
                 </div>
@@ -501,26 +501,26 @@ const VoiceAssistantConsole = () => {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b text-left">
-                        <th className="pb-3 font-medium text-gray-500">Time</th>
-                        <th className="pb-3 font-medium text-gray-500">Caller</th>
-                        <th className="pb-3 font-medium text-gray-500">Claim</th>
-                        <th className="pb-3 font-medium text-gray-500">Intent</th>
-                        <th className="pb-3 font-medium text-gray-500">Duration</th>
-                        <th className="pb-3 font-medium text-gray-500"></th>
+                        <th className="pb-3 font-medium text-zinc-500">Time</th>
+                        <th className="pb-3 font-medium text-zinc-500">Caller</th>
+                        <th className="pb-3 font-medium text-zinc-500">Claim</th>
+                        <th className="pb-3 font-medium text-zinc-500">Intent</th>
+                        <th className="pb-3 font-medium text-zinc-500">Duration</th>
+                        <th className="pb-3 font-medium text-zinc-500"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {calls.map((call, idx) => (
-                        <tr key={idx} className="border-b hover:bg-gray-50">
+                        <tr key={idx} className="border-b hover:bg-zinc-800/50">
                           <td className="py-3">
                             <div>
                               <p className="font-medium">{formatTime(call.start_time)}</p>
-                              <p className="text-xs text-gray-500">{formatDate(call.start_time)}</p>
+                              <p className="text-xs text-zinc-500">{formatDate(call.start_time)}</p>
                             </div>
                           </td>
                           <td className="py-3">
                             <p className="font-medium">{call.matched_client_name || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{call.from_number}</p>
+                            <p className="text-xs text-zinc-500">{call.from_number}</p>
                           </td>
                           <td className="py-3">
                             {call.matched_claim_id ? (
@@ -532,7 +532,7 @@ const VoiceAssistantConsole = () => {
                                 View Claim
                               </button>
                             ) : (
-                              <span className="text-gray-400 text-sm">—</span>
+                              <span className="text-zinc-400 text-sm">—</span>
                             )}
                           </td>
                           <td className="py-3">{getIntentBadge(call.intent)}</td>
@@ -554,7 +554,7 @@ const VoiceAssistantConsole = () => {
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-zinc-500">
                   <Phone className="w-16 h-16 mx-auto mb-4 opacity-30" />
                   <p className="text-lg font-medium">No calls recorded yet</p>
                   <p className="text-sm">Calls will appear here once the assistant starts handling them</p>
@@ -573,7 +573,7 @@ const VoiceAssistantConsole = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold">Call Details</h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-zinc-500">
                     {selectedCall.matched_client_name || selectedCall.from_number} • {formatTime(selectedCall.start_time)}
                   </p>
                 </div>
@@ -585,11 +585,11 @@ const VoiceAssistantConsole = () => {
               {selectedCall.recording_url && (
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Recording</Label>
-                  <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-zinc-800/40 rounded-lg">
                     <Button variant="outline" size="sm" onClick={() => openCallRecording(selectedCall)}>
                       <Play className="w-4 h-4 mr-1" /> Play
                     </Button>
-                    <span className="text-sm text-gray-500">{selectedCall.recording_duration_seconds}s</span>
+                    <span className="text-sm text-zinc-500">{selectedCall.recording_duration_seconds}s</span>
                   </div>
                 </div>
               )}
@@ -604,7 +604,7 @@ const VoiceAssistantConsole = () => {
               {selectedCall.raw_transcript && (
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Full Transcript</Label>
-                  <div className="p-3 bg-gray-50 rounded-lg text-sm max-h-40 overflow-y-auto">
+                  <div className="p-3 bg-zinc-800/50 rounded-lg text-sm max-h-40 overflow-y-auto">
                     {selectedCall.raw_transcript}
                   </div>
                 </div>
@@ -622,7 +622,7 @@ const VoiceAssistantConsole = () => {
               </div>
             </div>
             
-            <div className="p-6 border-t bg-gray-50 flex gap-3">
+            <div className="p-6 border-t bg-zinc-800/50 flex gap-3">
               <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => markCallComplete(selectedCall)}>Mark Complete</Button>
               <Button variant="outline" onClick={() => createFollowupTask(selectedCall)}>Create Task</Button>
             </div>

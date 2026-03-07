@@ -25,6 +25,16 @@ API_BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8001')
 # MODELS
 # ============================================
 
+class CheckEndpointRequest(BaseModel):
+    path: str
+    method: str = "GET"
+
+
+class ApplyResponsiveFixRequest(BaseModel):
+    route: str
+    fix_key: str
+
+
 class RouteCheck(BaseModel):
     path: str
     method: str
@@ -325,8 +335,7 @@ async def get_ui_elements(current_user: dict = Depends(get_current_user)):
 
 @router.post("/check-endpoint")
 async def check_single_endpoint(
-    path: str,
-    method: str = "GET",
+    body: CheckEndpointRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Check a single API endpoint"""
@@ -337,7 +346,7 @@ async def check_single_endpoint(
     except Exception as e:
         logger.warning(f"Could not create auth token for endpoint check: {e}")
 
-    endpoint = {"path": path, "method": method, "auth_required": True, "name": path}
+    endpoint = {"path": body.path, "method": body.method, "auth_required": True, "name": body.path}
     result = await check_api_endpoint(endpoint, token)
     return result
 
@@ -1105,33 +1114,32 @@ async def apply_auto_fix(
 
 @router.post("/apply-responsive-fix")
 async def apply_responsive_fix(
-    route: str,
-    fix_key: str,
+    body: ApplyResponsiveFixRequest,
     current_user: dict = Depends(require_role(["admin"]))
 ):
     """
     Apply a predefined responsive fix to a component.
     Uses Tailwind class replacements for common mobile issues.
     """
-    if fix_key not in RESPONSIVE_FIXES:
-        raise HTTPException(status_code=400, detail=f"Unknown fix: {fix_key}")
-    
+    if body.fix_key not in RESPONSIVE_FIXES:
+        raise HTTPException(status_code=400, detail=f"Unknown fix: {body.fix_key}")
+
     # Get component file path
-    component_name = route_to_component(route)
+    component_name = route_to_component(body.route)
     file_path = f"/app/frontend/src/components/{component_name}.jsx"
-    
+
     if not os.path.exists(file_path):
         return {
             "success": False,
             "message": f"Component file not found: {file_path}",
-            "suggestion": RESPONSIVE_FIXES[fix_key]["tailwind_fix"]
+            "suggestion": RESPONSIVE_FIXES[body.fix_key]["tailwind_fix"]
         }
-    
-    fix_info = RESPONSIVE_FIXES[fix_key]
-    
+
+    fix_info = RESPONSIVE_FIXES[body.fix_key]
+
     return {
         "success": True,
-        "fix_key": fix_key,
+        "fix_key": body.fix_key,
         "description": fix_info["description"],
         "file": file_path,
         "suggested_change": fix_info["tailwind_fix"],

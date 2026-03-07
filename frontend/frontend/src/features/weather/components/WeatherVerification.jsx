@@ -16,7 +16,7 @@ import { apiGet, API_URL } from '@/lib/api';
 const EVENT_CONFIG = {
   W: { label: 'Wind', color: 'bg-orange-500', icon: Wind, description: 'High Wind Event' },
   H: { label: 'Hail', color: 'bg-cyan-500', icon: CloudRain, description: 'Hail Event' },
-  T: { label: 'Tornado', color: 'bg-gray-700', icon: CloudLightning, description: 'Tornado' },
+  T: { label: 'Tornado', color: 'bg-zinc-700', icon: CloudLightning, description: 'Tornado' },
   R: { label: 'Rain', color: 'bg-blue-500', icon: Droplets, description: 'Heavy Rain' },
   S: { label: 'Storm', color: 'bg-purple-500', icon: Cloud, description: 'Severe Storm' },
 };
@@ -414,7 +414,7 @@ const WeatherVerification = ({ embedded = false }) => {
               variant="outline"
               size="sm"
               onClick={() => setShowHistory(!showHistory)}
-              className="border-gray-300 text-gray-300"
+              className="border-zinc-600 text-zinc-300"
             >
               <History className="w-4 h-4 mr-2" />
               History ({history.length})
@@ -434,57 +434,57 @@ const WeatherVerification = ({ embedded = false }) => {
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-500 mb-1 block">Property Address *</label>
+                <label className="text-xs text-zinc-500 mb-1 block">Property Address *</label>
                 <Input
                   data-testid="address-input"
                   placeholder="123 Main St"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
+                  className="bg-zinc-800 border-zinc-600 text-zinc-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">City *</label>
+                <label className="text-xs text-zinc-500 mb-1 block">City *</label>
                 <Input
                   placeholder="Tampa"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
+                  className="bg-zinc-800 border-zinc-600 text-zinc-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">State *</label>
+                <label className="text-xs text-zinc-500 mb-1 block">State *</label>
                 <Input
                   placeholder="FL"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
+                  className="bg-zinc-800 border-zinc-600 text-zinc-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Date of Loss *</label>
+                <label className="text-xs text-zinc-500 mb-1 block">Date of Loss *</label>
                 <Input
                   type="date"
                   value={dolDate}
                   onChange={(e) => setDolDate(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
+                  className="bg-zinc-800 border-zinc-600 text-zinc-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">End Date (optional)</label>
+                <label className="text-xs text-zinc-500 mb-1 block">End Date (optional)</label>
                 <Input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-gray-800 border-gray-300 text-gray-900"
+                  className="bg-zinc-800 border-zinc-600 text-zinc-100"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Peril Type</label>
+                <label className="text-xs text-zinc-500 mb-1 block">Peril Type</label>
                 <select
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value)}
-                  className="w-full h-10 rounded-md bg-gray-800 border border-gray-300 px-3 text-gray-900"
+                  className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-600 px-3 text-zinc-100"
                 >
                   <option value="wind">Wind</option>
                   <option value="hail">Hail</option>
@@ -527,7 +527,7 @@ const WeatherVerification = ({ embedded = false }) => {
                 {history.slice(0, 10).map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 bg-gray-800 rounded-lg hover:bg-gray-750 cursor-pointer"
+                    className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 cursor-pointer"
                     onClick={() => {
                       setAddress(item.address || '');
                       setCity(item.city || '');
@@ -537,8 +537,8 @@ const WeatherVerification = ({ embedded = false }) => {
                     }}
                   >
                     <div>
-                      <p className="text-gray-900 font-medium text-sm">{item.address}, {item.city}</p>
-                      <p className="text-gray-500 text-xs">Window start: {formatDate(item.analysis_start_date)}</p>
+                      <p className="text-zinc-100 font-medium text-sm">{item.address}, {item.city}</p>
+                      <p className="text-zinc-500 text-xs">Window start: {formatDate(item.analysis_start_date)}</p>
                     </div>
                     <Badge className={`${
                       item.dol_confidence === 'confirmed' || item.dol_confidence === 'high' ? 'bg-green-500/20 text-green-400' :
@@ -560,7 +560,7 @@ const WeatherVerification = ({ embedded = false }) => {
             {/* Left Column - Verification Summary */}
             <div className="space-y-4">
               {/* Status Card */}
-              <Card className="bg-white border-gray-200">
+              <Card className="bg-white border-zinc-700/50">
                 <CardContent className="p-4">
                   <div className="text-center">
                     {result.verification_status === 'verified' ? (
@@ -572,16 +572,16 @@ const WeatherVerification = ({ embedded = false }) => {
                         <AlertTriangle className="w-8 h-8 text-yellow-400" />
                       </div>
                     )}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+                    <h3 className="text-lg font-bold text-zinc-100 mb-1">
                       {result.verification_status === 'verified' ? 'DOL VERIFIED' : 'REVIEW NEEDED'}
                     </h3>
-                    <p className="text-gray-600 text-sm">{result.summary}</p>
+                    <p className="text-zinc-400 text-sm">{result.summary}</p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Confidence Level */}
-              <Card className={`border-gray-200 ${getConfidenceStyle(result.confidence).bg}`}>
+              <Card className={`border-zinc-700/50 ${getConfidenceStyle(result.confidence).bg}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Zap className={`w-6 h-6 ${getConfidenceStyle(result.confidence).color}`} />
@@ -589,7 +589,7 @@ const WeatherVerification = ({ embedded = false }) => {
                       <p className={`font-bold ${getConfidenceStyle(result.confidence).color}`}>
                         {getConfidenceStyle(result.confidence).label}
                       </p>
-                      <p className="text-gray-600 text-xs">
+                      <p className="text-zinc-400 text-xs">
                         {getConfidenceStyle(result.confidence).description}
                       </p>
                     </div>
@@ -598,21 +598,21 @@ const WeatherVerification = ({ embedded = false }) => {
               </Card>
 
               {/* Station Info */}
-              <Card className="bg-white border-gray-200">
+              <Card className="bg-white border-zinc-700/50">
                 <CardContent className="p-4">
-                  <h4 className="text-sm font-medium text-gray-600 mb-3">Data Source</h4>
+                  <h4 className="text-sm font-medium text-zinc-400 mb-3">Data Source</h4>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-sm">Nearest Station</span>
-                      <span className="text-gray-900 text-sm font-medium">{result.nearest_station || 'N/A'}</span>
+                      <span className="text-zinc-500 text-sm">Nearest Station</span>
+                      <span className="text-zinc-100 text-sm font-medium">{result.nearest_station || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-sm">Distance</span>
-                      <span className="text-gray-900 text-sm font-medium">{result.station_distance || 'N/A'}</span>
+                      <span className="text-zinc-500 text-sm">Distance</span>
+                      <span className="text-zinc-100 text-sm font-medium">{result.station_distance || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-sm">Events Found</span>
-                      <span className="text-gray-900 text-sm font-medium">{events.length}</span>
+                      <span className="text-zinc-500 text-sm">Events Found</span>
+                      <span className="text-zinc-100 text-sm font-medium">{events.length}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -622,13 +622,13 @@ const WeatherVerification = ({ embedded = false }) => {
               <div className="flex gap-2">
                 <Button 
                   onClick={copyReport}
-                  className="flex-1 bg-gray-800 hover:bg-gray-700"
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700"
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   Copy Report
                 </Button>
                 <Button 
-                  className="flex-1 bg-gray-800 hover:bg-gray-700"
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   PDF
@@ -638,7 +638,7 @@ const WeatherVerification = ({ embedded = false }) => {
 
             {/* Right Column - Events Table (Drodat Style) */}
             <div className="lg:col-span-2">
-              <Card className="bg-white border-gray-200 mb-4">
+              <Card className="bg-white border-zinc-700/50 mb-4">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -652,20 +652,20 @@ const WeatherVerification = ({ embedded = false }) => {
                 </CardHeader>
                 <CardContent>
                   {candidatesLoading ? (
-                    <div className="py-6 text-center text-gray-500 text-sm">
+                    <div className="py-6 text-center text-zinc-500 text-sm">
                       <Loader2 className="w-4 h-4 inline mr-2 animate-spin" />
                       Ranking candidate dates...
                     </div>
                   ) : candidates.length === 0 ? (
-                    <div className="py-6 text-center text-gray-500 text-sm">
+                    <div className="py-6 text-center text-zinc-500 text-sm">
                       No claim-grade candidate dates found in this window.
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {candidates.slice(0, 5).map((candidate, index) => (
-                        <div key={`${candidate.candidate_date}-${index}`} className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                        <div key={`${candidate.candidate_date}-${index}`} className="p-3 rounded-lg border border-zinc-700/50 bg-zinc-800/30">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-zinc-100">
                               #{index + 1} {formatDate(candidate.candidate_date)}
                             </p>
                             <Badge className={`${
@@ -678,12 +678,12 @@ const WeatherVerification = ({ embedded = false }) => {
                               {(candidate.confidence || 'low').toUpperCase()}
                             </Badge>
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">
+                          <p className="text-xs text-zinc-400 mt-1">
                             {eventType === 'wind'
                               ? `Peak wind ${candidate.peak_wind_mph || 0} mph | ${candidate.station_count || 0} station(s)`
                               : `Max hail ${candidate.max_hail_inches || 0} in | ${candidate.report_count || 0} report(s)`}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-zinc-500 mt-1">
                             Window: {candidate.peak_window_start || 'n/a'} &rarr; {candidate.peak_window_end || 'n/a'}
                           </p>
                         </div>
@@ -692,7 +692,7 @@ const WeatherVerification = ({ embedded = false }) => {
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-white border-gray-200">
+              <Card className="bg-white border-zinc-700/50">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -706,7 +706,7 @@ const WeatherVerification = ({ embedded = false }) => {
                 </CardHeader>
                 <CardContent className="p-0">
                   {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-100 text-xs font-medium text-gray-500 border-b border-gray-200">
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-zinc-800/40 text-xs font-medium text-zinc-500 border-b border-zinc-700/50">
                     <div className="col-span-3">Date & Time</div>
                     <div className="col-span-2">Type</div>
                     <div className="col-span-2">Magnitude</div>
@@ -718,27 +718,27 @@ const WeatherVerification = ({ embedded = false }) => {
                   <div className="max-h-[500px] overflow-y-auto">
                     {events.length === 0 ? (
                       <div className="text-center py-12">
-                        <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-500">No weather events found</p>
-                        <p className="text-gray-400 text-sm">Enter a date of loss to search</p>
+                        <Cloud className="w-12 h-12 text-zinc-400 mx-auto mb-3" />
+                        <p className="text-zinc-500">No weather events found</p>
+                        <p className="text-zinc-400 text-sm">Enter a date of loss to search</p>
                       </div>
                     ) : (
                       events.map((event, idx) => (
                         <div key={idx}>
                           <div 
-                            className={`grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                            className={`grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors ${
                               expandedEvent === idx ? 'bg-orange-50' : ''
                             }`}
                             onClick={() => setExpandedEvent(expandedEvent === idx ? null : idx)}
                           >
                             {/* Date & Time */}
                             <div className="col-span-3 min-w-0">
-                              <p className="text-gray-900 font-medium text-sm truncate">{formatDate(event.date)}</p>
-                              <p className="text-gray-500 text-xs">{event.time}</p>
+                              <p className="text-zinc-100 font-medium text-sm truncate">{formatDate(event.date)}</p>
+                              <p className="text-zinc-500 text-xs">{event.time}</p>
                             </div>
                             
                             {/* Type */}
-                            <div className="col-span-2 text-gray-600 flex items-center text-sm truncate">
+                            <div className="col-span-2 text-zinc-400 flex items-center text-sm truncate">
                               {event.type}
                             </div>
                             
@@ -747,14 +747,14 @@ const WeatherVerification = ({ embedded = false }) => {
                               (event.unit === 'MPH' && parseFloat(event.magnitude) > 50) ? 'text-red-600' :
                               (event.unit === 'MPH' && parseFloat(event.magnitude) > 30) ? 'text-orange-600' :
                               (event.unit === 'IN' && parseFloat(event.magnitude) > 1) ? 'text-cyan-600' :
-                              'text-gray-700'
+                              'text-zinc-300'
                             }`}>
                               {event.magnitude} {event.unit}
                             </div>
                             
                             {/* Source */}
                             <div className="col-span-2">
-                              <Badge variant="outline" className="text-gray-600 border-gray-300 text-xs">
+                              <Badge variant="outline" className="text-zinc-400 border-zinc-600 text-xs">
                                 {event.source}
                               </Badge>
                             </div>
@@ -764,7 +764,7 @@ const WeatherVerification = ({ embedded = false }) => {
                               {event.eventBadges?.map((badge, i) => (
                                 <span
                                   key={i}
-                                  className={`${EVENT_CONFIG[badge]?.color || 'bg-gray-200'} text-gray-900 text-xs font-bold px-2 py-0.5 rounded`}
+                                  className={`${EVENT_CONFIG[badge]?.color || 'bg-zinc-700'} text-zinc-100 text-xs font-bold px-2 py-0.5 rounded`}
                                   title={EVENT_CONFIG[badge]?.description}
                                 >
                                   {badge}
@@ -775,22 +775,22 @@ const WeatherVerification = ({ embedded = false }) => {
                             {/* Expand Icon */}
                             <div className="col-span-1 flex justify-end">
                               {expandedEvent === idx ? (
-                                <ChevronUp className="w-4 h-4 text-gray-500" />
+                                <ChevronUp className="w-4 h-4 text-zinc-500" />
                               ) : (
-                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                                <ChevronDown className="w-4 h-4 text-zinc-500" />
                               )}
                             </div>
                           </div>
                           
                           {/* Expanded Details */}
                           {expandedEvent === idx && event.remarks && (
-                            <div className="px-4 py-3 bg-gray-800/30 border-b border-gray-200">
-                              <p className="text-gray-600 text-sm">
-                                <span className="text-gray-500 font-medium">Details: </span>
+                            <div className="px-4 py-3 bg-zinc-800/30 border-b border-zinc-700/50">
+                              <p className="text-zinc-400 text-sm">
+                                <span className="text-zinc-500 font-medium">Details: </span>
                                 {event.remarks}
                               </p>
                               {event.location && (
-                                <p className="text-gray-500 text-xs mt-1">
+                                <p className="text-zinc-500 text-xs mt-1">
                                   <MapPin className="w-3 h-3 inline mr-1" />
                                   {event.location}
                                 </p>
@@ -810,9 +810,9 @@ const WeatherVerification = ({ embedded = false }) => {
         {/* Empty State */}
         {!result && !loading && (
           <div className="text-center py-16">
-            <CloudLightning className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-600 mb-2">Verify Date of Loss</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
+            <CloudLightning className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-zinc-400 mb-2">Verify Date of Loss</h3>
+            <p className="text-zinc-400 max-w-md mx-auto">
               Enter the property address and claimed date of loss to retrieve weather event data from NWS, NOAA, and local storm reports.
             </p>
           </div>
@@ -820,19 +820,19 @@ const WeatherVerification = ({ embedded = false }) => {
 
         {/* Data Sources Footer */}
         {result && (
-          <div className="mt-6 p-4 bg-gray-900/50 rounded-lg border border-gray-200">
+          <div className="mt-6 p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/50">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="w-4 h-4 text-green-500" />
-              <span className="text-sm font-medium text-gray-300">Verified Data Sources</span>
+              <span className="text-sm font-medium text-zinc-300">Verified Data Sources</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {['NWS', 'NOAA', 'LSRs', 'NEXRAD Radar', 'METAR', 'ASOS'].map(source => (
-                <Badge key={source} variant="outline" className="text-gray-600 border-gray-300">
+                <Badge key={source} variant="outline" className="text-zinc-400 border-zinc-600">
                   {source}
                 </Badge>
               ))}
             </div>
-            <p className="text-xs text-gray-600 mt-2">
+            <p className="text-xs text-zinc-400 mt-2">
               Reports are carrier-defensible and immutable once attached to a claim.
             </p>
           </div>
