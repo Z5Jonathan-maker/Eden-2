@@ -131,7 +131,7 @@ function CourseDetail() {
             setFlashcards(res.data.flashcards);
           }
         })
-        .catch(() => {});
+        .catch(() => { /* Flashcard API optional — local cards used as fallback */ });
     }
   }, [course, courseId]);
 

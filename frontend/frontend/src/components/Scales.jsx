@@ -97,6 +97,7 @@ export default function Scales() {
       if (res.ok) setEstimates(res.data);
     } catch (error) {
       console.error('Error fetching estimates:', error);
+      toast.error('Failed to load estimates');
     }
   }, []);
 
@@ -106,6 +107,7 @@ export default function Scales() {
       if (res.ok) setComparisons(res.data);
     } catch (error) {
       console.error('Error fetching comparisons:', error);
+      toast.error('Failed to load comparisons');
     }
   }, []);
 
