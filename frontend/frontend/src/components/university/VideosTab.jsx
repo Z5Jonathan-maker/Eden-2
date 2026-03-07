@@ -10,7 +10,12 @@ const VideoCard = ({ video }) => (
   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
     {video.thumbnail && (
       <div className="relative h-40 bg-gray-200">
-        <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+        <img
+          src={video.thumbnail}
+          alt={video.title}
+          className="w-full h-full object-cover"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <PlayCircle className="w-12 h-12 text-gray-900" />
         </div>

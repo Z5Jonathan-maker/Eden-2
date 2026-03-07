@@ -150,6 +150,13 @@ const LibraryTab = ({ books = [], loading, onAddClick, canEdit, onRefresh }) => 
                       src={book.cover_url}
                       alt={book.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'flex flex-col items-center justify-center w-full h-full gap-2 text-zinc-700';
+                        fallback.innerHTML = '<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.331 0 4.472.89 6.042 2.25M12 6.042a8.967 8.967 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.331 0-4.472.89-6.042 2.25M12 6.042V20.25" /></svg>';
+                        e.target.parentElement.appendChild(fallback);
+                      }}
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-zinc-700 group-hover:text-zinc-500 transition-colors">
