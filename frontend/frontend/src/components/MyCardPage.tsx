@@ -61,17 +61,12 @@ const MyCardPage = () => {
   const {
     metrics,
     summary,
-    trackCardView,
     trackCardOpen,
     trackCardSend,
     trackCardShare,
     trackCardFeedback,
     setMetrics,
   } = useAnalyticsHooks();
-
-  const trackCardViewEvent = useCallback((cardId) => {
-    trackCardView(cardId);
-  }, [trackCardView]);
 
   const trackCardOpenEvent = useCallback((cardId) => {
     trackCardOpen(cardId);
@@ -255,11 +250,9 @@ const MyCardPage = () => {
     fetchCard();
   }, [fetchCard]);
 
-  useEffect(() => {
-    const id = card?.user_id || 'draft';
-    trackCardViewEvent(id);
-    trackCardOpenEvent(id);
-  }, [card?.user_id, trackCardOpenEvent, trackCardViewEvent]);
+  // Note: View/open tracking removed from mount effect.
+  // The backend tracks real views via /public/{slug} when external visitors open the card.
+  // Auto-incrementing on the owner's page load inflated metrics artificially.
 
   const submitCard = async (method) => {
     const nextErrors = validateAll(formData);

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react";
 import { FeedbackPayload, MetricsState } from "./types";
 
 export const calculateEngagementScore = (openRate: number, feedbackScore: number): number => {
@@ -28,27 +28,27 @@ export const useAnalyticsHooks = (initialMetrics: InitialMetrics = {}) => {
     feedbackCount: initialMetrics.feedback_count || 0,
   });
 
-  const trackCardView = (cardId: string) => {
+  const trackCardView = useCallback((cardId: string) => {
     setMetrics((prev) => ({ ...prev, views: prev.views + 1 }));
     return updateLeaderboardWithCardEvent("view", { cardId });
-  };
+  }, []);
 
-  const trackCardOpen = (cardId: string) => {
+  const trackCardOpen = useCallback((cardId: string) => {
     setMetrics((prev) => ({ ...prev, opens: prev.opens + 1 }));
     return updateLeaderboardWithCardEvent("open", { cardId });
-  };
+  }, []);
 
-  const trackCardSend = (cardId: string) => {
+  const trackCardSend = useCallback((cardId: string) => {
     setMetrics((prev) => ({ ...prev, sends: prev.sends + 1 }));
     return updateLeaderboardWithCardEvent("send", { cardId });
-  };
+  }, []);
 
-  const trackCardShare = (cardId: string) => {
+  const trackCardShare = useCallback((cardId: string) => {
     setMetrics((prev) => ({ ...prev, sends: prev.sends + 1 }));
     return updateLeaderboardWithCardEvent("share", { cardId });
-  };
+  }, []);
 
-  const trackCardFeedback = (cardId: string, feedback: FeedbackPayload) => {
+  const trackCardFeedback = useCallback((cardId: string, feedback: FeedbackPayload) => {
     const rating = Number(feedback?.rating || 0);
     setMetrics((prev) => {
       const nextCount = prev.feedbackCount + 1;
@@ -60,7 +60,7 @@ export const useAnalyticsHooks = (initialMetrics: InitialMetrics = {}) => {
       };
     });
     return updateLeaderboardWithCardEvent("feedback", { cardId, feedback });
-  };
+  }, []);
 
   const summary = useMemo(() => {
     const openRate = metrics.views > 0 ? (metrics.opens / metrics.views) * 100 : 0;
