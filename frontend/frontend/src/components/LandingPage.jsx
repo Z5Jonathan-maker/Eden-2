@@ -97,7 +97,7 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.scales,
       title: 'Scales',
       subtitle: 'Estimate Warfare',
-      description: 'AI-powered Xactimate comparison. Upload carrier vs contractor estimates—instantly identify underpayments worth $5K-$15K.',
+      description: 'AI-powered Xactimate comparison. Upload carrier vs contractor estimates—instantly identify underpayments and win more at negotiation.',
       tag: 'SIGNATURE WEAPON',
       tagColor: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
     },
@@ -105,7 +105,7 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.agent_eve,
       title: 'Agent Eve',
       subtitle: 'AI Intelligence Officer',
-      description: 'Your GPT-4o powered analyst. Dispute letters, policy analysis, claim strategies, and instant expert guidance.',
+      description: 'Your AI analyst. Policy coverage analysis, dispute letter generation, claim strategy recommendations, and document intelligence—all in one workspace.',
       tag: 'AI POWERED',
       tagColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10'
     },
@@ -113,7 +113,7 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.garden,
       title: 'The Garden',
       subtitle: 'Claims Command Center',
-      description: 'Full lifecycle tracking with Excel import, client management, status pipelines, and team collaboration.',
+      description: 'Full lifecycle claim tracking with Excel/CSV import, client management, status pipelines, team assignments, and real-time collaboration.',
       tag: 'CORE SYSTEM',
       tagColor: 'text-green-400 border-green-500/30 bg-green-500/10'
     },
@@ -121,15 +121,15 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.harvest,
       title: 'Harvest',
       subtitle: 'Territory Conquest',
-      description: 'FREE satellite maps with GPS tracking, door-to-door canvassing, leaderboards, and team competitions.',
-      tag: 'FREE MAPS',
+      description: 'Satellite maps with GPS tracking, door-to-door canvassing pins, team leaderboards, gamification, and territory management.',
+      tag: 'CANVASSING',
       tagColor: 'text-orange-400 border-orange-500/30 bg-orange-500/10'
     },
     {
       icon: FEATURE_ICONS.recon,
       title: 'Recon',
       subtitle: 'Field Intelligence',
-      description: 'Voice-annotated photo capture with AI transcription. Narrate while shooting—AI matches notes to images.',
+      description: 'Voice-annotated photo capture with AI transcription. Narrate while shooting—AI organizes notes by room and damage type.',
       tag: 'VOICE + AI',
       tagColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10'
     },
@@ -137,7 +137,7 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.contracts,
       title: 'Contracts',
       subtitle: 'Mission Documents',
-      description: 'Digital contracts with fillable templates, one-click e-signatures via SignNow, auto-fill from claim data.',
+      description: 'Digital contracts with fillable templates, one-click e-signatures via SignNow, auto-fill from claim data, and live tracking.',
       tag: 'E-SIGN READY',
       tagColor: 'text-red-400 border-red-500/30 bg-red-500/10'
     },
@@ -145,9 +145,25 @@ const LandingPage = () => {
       icon: FEATURE_ICONS.doctrine,
       title: 'Doctrine',
       subtitle: 'Training Academy',
-      description: 'Internal knowledge hub with courses, quizzes, certificates, and custom content for your team.',
+      description: 'Onboard and level up your team with courses, quizzes, certificates, and custom training content built for adjusters.',
       tag: 'TRAINING',
       tagColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
+    },
+    {
+      icon: FEATURE_ICONS.garden,
+      title: 'Client Portal',
+      subtitle: 'Policyholder Access',
+      description: 'Give your clients real-time claim status visibility. Fewer phone calls, faster communication, and a professional edge competitors lack.',
+      tag: 'CLIENT FACING',
+      tagColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+    },
+    {
+      icon: FEATURE_ICONS.recon,
+      title: 'Weather Intel',
+      subtitle: 'Storm Validation',
+      description: 'Forensic weather data tied to claim addresses. Verify storm events, wind speeds, and hail reports to strengthen every claim.',
+      tag: 'DATA DRIVEN',
+      tagColor: 'text-sky-400 border-sky-500/30 bg-sky-500/10'
     },
   ];
 
@@ -330,15 +346,15 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-zinc-500 font-mono animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
             <div className="flex items-center justify-center gap-2">
               <Shield className="w-4 h-4 text-green-500" />
-              <span>256-bit Encryption</span>
+              <span>End-to-End Encryption</span>
             </div>
             <div className="flex items-center justify-center gap-2">
               <Check className="w-4 h-4 text-green-500" />
-              <span>SOC 2 Compliant</span>
+              <span>Built for Florida PAs</span>
             </div>
             <div className="flex items-center justify-center gap-2">
               <Users className="w-4 h-4 text-green-500" />
-              <span>1,000+ Operators</span>
+              <span>Install as App on Any Device</span>
             </div>
           </div>
         </div>
@@ -441,10 +457,11 @@ const LandingPage = () => {
               </p>
               <ul className="space-y-3 text-zinc-300 text-sm sm:text-base text-left max-w-md mx-auto lg:mx-0">
                 {[
-                  'Instant dispute letter generation',
-                  'Policy coverage analysis',
-                  'Claim strategy recommendations',
-                  'Document upload & analysis'
+                  'Upload policies — AI finds coverage gaps instantly',
+                  'Generate dispute letters in seconds',
+                  'Claim strategy & negotiation recommendations',
+                  'Florida statute research built in',
+                  'Document analysis & summarization'
                 ].map((item, idx) => (
                   <li key={idx} className={`flex items-center gap-3 transition-all duration-500 ${eveInView ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-5'}`} style={{ transitionDelay: `${400 + idx * 100}ms` }}>
                     <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0" />
@@ -466,8 +483,37 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Why Eden Section */}
       <section className="relative z-10 py-12 sm:py-20 px-3 sm:px-4 bg-zinc-900/50 border-y border-zinc-800/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-2xl sm:text-4xl font-tactical font-bold text-white mb-3 sm:mb-4 tracking-wide">
+              WHY EDEN WINS
+            </h2>
+            <p className="text-zinc-500 font-mono uppercase tracking-wider text-xs sm:text-sm px-4">
+              Purpose-built for public adjusters — not a generic tool
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              { title: 'PA-Specific', desc: 'Every feature designed for public adjusters. Not a generic tool stretched across 5 industries.' },
+              { title: 'Transparent Pricing', desc: 'No hidden fees, no sales calls required. See exactly what you pay and what you get.' },
+              { title: 'All-in-One Platform', desc: '9 integrated tools — claims, AI, canvassing, contracts, training, weather, photos, and client portal.' },
+              { title: 'Florida Statute Library', desc: 'Built-in searchable Florida insurance law database. Reference statutes mid-negotiation.' },
+              { title: 'Team Gamification', desc: 'Leaderboards, competitions, and rewards that keep your canvassing team motivated and accountable.' },
+              { title: 'Works Offline', desc: 'Progressive Web App installs on any device. Capture photos and data even without cell service.' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-4 sm:p-5 rounded-lg border border-zinc-800/50 bg-zinc-900/50">
+                <h3 className="text-sm sm:text-base font-tactical font-bold text-orange-400 mb-2 uppercase tracking-wider">{item.title}</h3>
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="relative z-10 py-12 sm:py-20 px-3 sm:px-4 bg-zinc-950/50 border-y border-zinc-800/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-2xl sm:text-4xl font-tactical font-bold text-white mb-3 sm:mb-4 tracking-wide">
