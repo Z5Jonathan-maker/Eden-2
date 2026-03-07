@@ -419,7 +419,7 @@ const SalesEnablement = () => {
                   <Icon className={`w-8 h-8 mx-auto mb-2 ${
                     isSelected ? `text-${flow.color}-400` : 'text-gray-600'
                   }`} />
-                  <p className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-300'}`}>
+                  <p className={`font-medium ${isSelected ? 'text-zinc-100' : 'text-zinc-400'}`}>
                     {flow.name}
                   </p>
                 </button>

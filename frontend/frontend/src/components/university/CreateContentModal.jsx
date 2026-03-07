@@ -56,10 +56,10 @@ export const CreateContentModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold">Create New Content</h2>
+        <div className="flex items-center justify-between p-6 border-b border-zinc-700">
+          <h2 className="text-xl font-bold text-zinc-100">Create New Content</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -107,14 +107,14 @@ export const CreateContentModal = ({
                     onClick={() => setNewContent(prev => ({ ...prev, doc_type: value }))}
                     className={`p-3 rounded-lg border text-left transition-all ${
                       newContent.doc_type === value
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200'
+                        ? 'border-orange-500 bg-orange-500/10'
+                        : 'border-zinc-600'
                     }`}
                   >
-                    <p className={`font-medium ${newContent.doc_type === value ? 'text-orange-600' : 'dark:text-gray-900'}`}>
+                    <p className={`font-medium ${newContent.doc_type === value ? 'text-orange-500' : 'text-zinc-200'}`}>
                       {label}
                     </p>
-                    <p className="text-xs text-gray-500">{desc}</p>
+                    <p className="text-xs text-zinc-400">{desc}</p>
                   </button>
                 ))}
               </div>

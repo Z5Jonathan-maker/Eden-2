@@ -7,27 +7,27 @@ import { Card, CardContent } from '../../shared/ui/card';
 import { Award, Trophy, Download } from 'lucide-react';
 
 const CertificateCard = ({ certificate }) => (
-  <Card className="overflow-hidden">
+  <Card className="overflow-hidden bg-zinc-800/50 border-zinc-700">
     <div className="h-3 bg-gradient-to-r from-orange-500 to-orange-600" />
     <CardContent className="p-5 text-center">
-      <div className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
-        <Trophy className="w-8 h-8 text-orange-600" />
+      <div className="w-16 h-16 mx-auto mb-4 bg-orange-500/10 rounded-full flex items-center justify-center">
+        <Trophy className="w-8 h-8 text-orange-500" />
       </div>
-      <p className="text-gray-500 text-sm mb-1">Awarded to</p>
-      <p className="font-semibold text-lg text-gray-900 mb-2">
+      <p className="text-zinc-400 text-sm mb-1">Awarded to</p>
+      <p className="font-semibold text-lg text-zinc-100 mb-2">
         {certificate.user_name}
       </p>
-      <p className="text-gray-500 text-sm mb-1">for completing</p>
-      <p className="font-medium text-gray-800 mb-3">
+      <p className="text-zinc-400 text-sm mb-1">for completing</p>
+      <p className="font-medium text-zinc-200 mb-3">
         {certificate.course_title}
       </p>
-      <p className="text-gray-600 text-xs">
+      <p className="text-zinc-500 text-xs">
         {new Date(certificate.issued_at).toLocaleDateString()}
       </p>
       {certificate.download_url && (
-        <a 
+        <a
           href={certificate.download_url}
-          className="mt-4 inline-flex items-center text-orange-600 text-sm hover:underline"
+          className="mt-4 inline-flex items-center text-orange-500 text-sm hover:underline"
         >
           <Download className="w-4 h-4 mr-1" /> Download
         </a>
@@ -39,13 +39,13 @@ const CertificateCard = ({ certificate }) => (
 export const CertificatesTab = ({ certificates }) => {
   if (!certificates || certificates.length === 0) {
     return (
-      <Card className="dark:bg-white">
+      <Card className="bg-zinc-800/50 border-zinc-700">
         <CardContent className="p-12 text-center">
-          <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <Award className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-zinc-100 mb-2">
             No Certificates Yet
           </h3>
-          <p className="text-gray-600">
+          <p className="text-zinc-400">
             Complete courses and pass quizzes to earn certificates!
           </p>
         </CardContent>
@@ -56,8 +56,8 @@ export const CertificatesTab = ({ certificates }) => {
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
-        <Award className="w-6 h-6 text-orange-600" />
-        <h2 className="text-xl font-semibold text-gray-900">
+        <Award className="w-6 h-6 text-orange-500" />
+        <h2 className="text-xl font-semibold text-zinc-100">
           Your Certificates ({certificates.length})
         </h2>
       </div>

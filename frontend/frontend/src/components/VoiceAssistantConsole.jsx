@@ -568,11 +568,11 @@ const VoiceAssistantConsole = () => {
       {/* Call Detail Modal */}
       {selectedCall && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6 border-b">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-zinc-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold">Call Details</h3>
+                  <h3 className="text-lg font-bold text-zinc-100">Call Details</h3>
                   <p className="text-sm text-zinc-500">
                     {selectedCall.matched_client_name || selectedCall.from_number} • {formatTime(selectedCall.start_time)}
                   </p>

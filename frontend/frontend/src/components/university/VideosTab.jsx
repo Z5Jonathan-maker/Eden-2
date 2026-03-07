@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { PlayCircle, ExternalLink } from 'lucide-react';
 
 const VideoCard = ({ video }) => (
-  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer bg-zinc-800/50 border-zinc-700">
     {video.thumbnail && (
-      <div className="relative h-40 bg-gray-200">
+      <div className="relative h-40 bg-zinc-700">
         <img
           src={video.thumbnail}
           alt={video.title}
@@ -17,34 +17,34 @@ const VideoCard = ({ video }) => (
           onError={(e) => { e.target.style.display = 'none'; }}
         />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <PlayCircle className="w-12 h-12 text-gray-900" />
+          <PlayCircle className="w-12 h-12 text-white" />
         </div>
       </div>
     )}
     <CardContent className="p-4">
-      <h3 className="font-semibold text-gray-900 mb-1">{video.title}</h3>
+      <h3 className="font-semibold text-zinc-100 mb-1">{video.title}</h3>
       {video.duration && (
-        <p className="text-sm text-gray-500">{video.duration}</p>
+        <p className="text-sm text-zinc-400">{video.duration}</p>
       )}
     </CardContent>
   </Card>
 );
 
 const PlaylistCard = ({ playlist }) => (
-  <Card className="dark:bg-white">
+  <Card className="bg-zinc-800/50 border-zinc-700">
     <CardHeader>
-      <CardTitle className="text-lg">{playlist.name}</CardTitle>
-      <CardDescription className="dark:text-gray-600">
+      <CardTitle className="text-lg text-zinc-100">{playlist.name}</CardTitle>
+      <CardDescription className="text-zinc-400">
         {playlist.video_count || 0} videos
       </CardDescription>
     </CardHeader>
     <CardContent>
       {playlist.url && (
-        <a 
+        <a
           href={playlist.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center text-orange-600 text-sm hover:underline"
+          className="flex items-center text-orange-500 text-sm hover:underline"
         >
           View Playlist <ExternalLink className="w-4 h-4 ml-1" />
         </a>
@@ -58,13 +58,13 @@ export const VideosTab = ({ videoSources }) => {
 
   if (sources.length === 0 && playlists.length === 0) {
     return (
-      <Card className="dark:bg-white">
+      <Card className="bg-zinc-800/50 border-zinc-700">
         <CardContent className="p-12 text-center">
-          <PlayCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <PlayCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-zinc-100 mb-2">
             No Videos Yet
           </h3>
-          <p className="text-gray-600">
+          <p className="text-zinc-400">
             Video content will appear here once configured by your administrator.
           </p>
         </CardContent>
@@ -77,7 +77,7 @@ export const VideosTab = ({ videoSources }) => {
       {/* Playlists Section */}
       {playlists.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-zinc-100 mb-4">
             Video Playlists
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -91,7 +91,7 @@ export const VideosTab = ({ videoSources }) => {
       {/* Individual Videos Section */}
       {sources.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-zinc-100 mb-4">
             Training Videos
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -33,22 +33,22 @@ const ContentCard = ({ item, type, onTogglePublish, onDelete }) => (
               </Badge>
             )}
           </div>
-          <h4 className="font-semibold text-gray-900">{item.title}</h4>
-          <p className="text-sm text-gray-600 line-clamp-2">
+          <h4 className="font-semibold text-zinc-100">{item.title}</h4>
+          <p className="text-sm text-zinc-400 line-clamp-2">
             {item.description}
           </p>
         </div>
         <div className="flex space-x-1 ml-2">
           <button 
             onClick={() => onTogglePublish(type, item)}
-            className="p-1 text-gray-600 hover:text-gray-600:text-gray-300 rounded"
+            className="p-1 text-zinc-400 hover:text-zinc-400:text-zinc-600 rounded"
             title={item.is_published ? 'Unpublish' : 'Publish'}
           >
             {item.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => onDelete(type, item.id)}
-            className="p-1 text-gray-600 hover:text-red-600 rounded"
+            className="p-1 text-zinc-400 hover:text-red-600 rounded"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
@@ -64,7 +64,7 @@ const ContentSection = ({ title, icon: Icon, items, type, onTogglePublish, onDel
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+      <h3 className="text-lg font-semibold text-zinc-100 mb-3 flex items-center gap-2">
         <Icon className={`w-5 h-5 ${iconColor}`} />
         {title}
       </h3>
@@ -99,10 +99,10 @@ export const FirmContentTab = ({
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-zinc-100">
             Firm-Specific Content
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-zinc-400 text-sm">
             Upload and manage your internal training, SOPs, and strategies
           </p>
         </div>
@@ -117,13 +117,13 @@ export const FirmContentTab = ({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="dark:bg-white">
+        <Card className="bg-zinc-800/50 border-zinc-700">
           <CardHeader className="pb-3">
             <div className="flex items-center space-x-2">
               <BookOpen className="w-5 h-5 text-blue-600" />
               <CardTitle className="text-lg">Custom Courses</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-600">
+            <CardDescription className="text-zinc-400">
               Internal training programs
             </CardDescription>
           </CardHeader>
@@ -134,13 +134,13 @@ export const FirmContentTab = ({
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-white">
+        <Card className="bg-zinc-800/50 border-zinc-700">
           <CardHeader className="pb-3">
             <div className="flex items-center space-x-2">
               <FileText className="w-5 h-5 text-green-600" />
               <CardTitle className="text-lg">Custom Articles</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-600">
+            <CardDescription className="text-zinc-400">
               Firm-specific guides
             </CardDescription>
           </CardHeader>
@@ -151,13 +151,13 @@ export const FirmContentTab = ({
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-white">
+        <Card className="bg-zinc-800/50 border-zinc-700">
           <CardHeader className="pb-3">
             <div className="flex items-center space-x-2">
               <FileCode className="w-5 h-5 text-purple-600" />
               <CardTitle className="text-lg">Documents</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-600">
+            <CardDescription className="text-zinc-400">
               SOPs, templates, strategies
             </CardDescription>
           </CardHeader>
@@ -201,13 +201,13 @@ export const FirmContentTab = ({
           />
         </div>
       ) : (
-        <Card className="dark:bg-white">
+        <Card className="bg-zinc-800/50 border-zinc-700">
           <CardContent className="p-12 text-center">
-            <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <FolderOpen className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-zinc-100 mb-2">
               No Custom Content Yet
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-zinc-400 mb-4">
               Add your firm-specific training, SOPs, and strategies
             </p>
             <Button 

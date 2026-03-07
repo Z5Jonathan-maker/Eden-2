@@ -62,7 +62,7 @@ const BookCard = ({ book, onUpdateProgress, onMarkComplete, onGenerateWorkbook, 
                 </Badge>
               )}
             </div>
-            <CardTitle className="text-lg text-gray-900">{book.title}</CardTitle>
+            <CardTitle className="text-lg text-zinc-100">{book.title}</CardTitle>
             <p className="text-sm text-gray-600 mt-1">{book.description}</p>
           </div>
         </div>
@@ -185,7 +185,7 @@ export const BooksTab = ({
       {canEdit && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+            <CardTitle className="text-lg text-zinc-100 flex items-center gap-2">
               <Upload className="w-5 h-5 text-orange-600" />
               Upload Book
             </CardTitle>

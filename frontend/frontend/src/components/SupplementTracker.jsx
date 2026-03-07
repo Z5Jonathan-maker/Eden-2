@@ -389,7 +389,7 @@ function SupplementTracker() {
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Supplements Yet</h3>
+              <h3 className="text-xl font-semibold text-zinc-100 mb-2">No Supplements Yet</h3>
               <p className="text-gray-600 mb-4">Create your first supplement to start tracking additional claim amounts.</p>
               <Button className="bg-orange-600 hover:bg-orange-700" onClick={function() { setShowNewForm(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -464,7 +464,7 @@ function SupplementTracker() {
                                 </tr>
                               );
                             })}
-                            <tr className="bg-white font-bold">
+                            <tr className="bg-zinc-700/50 font-bold text-zinc-100">
                               <td colSpan="4" className="p-2 text-right">Totals:</td>
                               <td className="p-2 text-right">{formatCurrency(supp.total_requested)}</td>
                               <td className="p-2 text-right text-green-600">{formatCurrency(supp.carrier_approved_amount)}</td>
@@ -479,7 +479,7 @@ function SupplementTracker() {
                       {aiJustifications[supp.id] && (
                         <div className="mb-4 rounded-lg border border-cyan-300/40 bg-cyan-50 p-3">
                           <p className="text-xs uppercase tracking-wide text-cyan-700 mb-1">AI Justification</p>
-                          <p className="text-sm text-gray-900 mb-2">{aiJustifications[supp.id].executive_summary}</p>
+                          <p className="text-sm text-zinc-100 mb-2">{aiJustifications[supp.id].executive_summary}</p>
                           {aiJustifications[supp.id].rebuttal_points && aiJustifications[supp.id].rebuttal_points.length > 0 && (
                             <ul className="text-xs text-gray-700 space-y-1 mb-2">
                               {aiJustifications[supp.id].rebuttal_points.slice(0, 3).map(function(point, idx) {

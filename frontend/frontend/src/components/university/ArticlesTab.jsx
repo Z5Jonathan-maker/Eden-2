@@ -25,7 +25,7 @@ const ArticleCardItem = ({ article, onClick }) => {
             {article.category || 'General'}
           </Badge>
         </div>
-        <h3 className="font-semibold text-lg text-gray-900 mb-2">
+        <h3 className="font-semibold text-lg text-zinc-100 mb-2">
           {article.title}
         </h3>
         <p className="text-gray-600 text-sm mb-4 line-clamp-3">

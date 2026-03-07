@@ -1185,11 +1185,11 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-md w-full p-6"
+        className="bg-zinc-800 border border-zinc-700 rounded-2xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">New Territory</h3>
+          <h3 className="text-lg font-semibold text-zinc-100">New Territory</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
@@ -1274,11 +1274,11 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-md w-full p-6"
+        className="bg-zinc-800 border border-zinc-700 rounded-2xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Assign Reps to {territory.name}</h3>
+          <h3 className="text-lg font-semibold text-zinc-100">Assign Reps to {territory.name}</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
@@ -1527,7 +1527,7 @@ const HarvestAdminConsole = () => {
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-zinc-900 border-b border-zinc-700 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

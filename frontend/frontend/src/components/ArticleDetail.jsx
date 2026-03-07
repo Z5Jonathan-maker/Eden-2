@@ -98,7 +98,7 @@ function ArticleDetail() {
                 {article.category === 'training' ? 'Training' : 'Industry'}
               </Badge>
 
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-4">{article.title}</h1>
+              <h1 className="text-xl sm:text-3xl font-bold text-zinc-100 mb-4">{article.title}</h1>
               <p className="text-lg text-gray-600 mb-4">{article.description}</p>
 
               <div className="flex items-center space-x-6 text-sm text-gray-500">
