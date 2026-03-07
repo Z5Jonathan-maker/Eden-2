@@ -21,7 +21,7 @@ fs = AsyncIOMotorGridFSBucket(db)
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_EXTENSIONS = {
-    "image": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
+    "image": [".jpg", ".jpeg", ".png", ".gif", ".webp"],
     "document": [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md", ".epub"],
     "video": [".mp4", ".webm", ".mov", ".avi"],
     "audio": [".mp3", ".wav", ".ogg", ".m4a"]
@@ -45,7 +45,6 @@ def get_mime_type(extension: str) -> str:
         ".png": "image/png",
         ".gif": "image/gif",
         ".webp": "image/webp",
-        ".svg": "image/svg+xml",
         ".pdf": "application/pdf",
         ".doc": "application/msword",
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

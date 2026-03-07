@@ -244,7 +244,7 @@ rate_limiter = RateLimiter()
 
 # Rate limit configurations by endpoint type
 RATE_LIMITS = {
-    "auth": {"limit": 5, "window": 60, "block": 300},       # 5/min, block 5min
+    "auth": {"limit": 20, "window": 60, "block": 60},        # 20/min, block 1min
     "ai": {"limit": 30, "window": 60, "block": 60},         # 30/min, block 1min
     "upload": {"limit": 50, "window": 60, "block": 120},    # 50/min, block 2min
     "api": {"limit": 100, "window": 60, "block": 60},       # 100/min, block 1min

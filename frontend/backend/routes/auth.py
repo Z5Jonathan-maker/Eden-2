@@ -88,9 +88,11 @@ async def login(credentials: UserLogin, request: Request, response: Response):
         client_ip = request.client.host if request.client else "unknown"
         check_rate_limit(f"auth:{client_ip}", "auth")
 
-        # Find user
+        # Find user — constant-time rejection to prevent timing oracle
         user = await db.users.find_one({"email": credentials.email})
         if not user:
+            # Perform a dummy hash check so response time is indistinguishable
+            verify_password(credentials.password, get_password_hash("dummy"))
             logger.warning("Login failed – unknown email: %s from IP %s", credentials.email, client_ip)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
