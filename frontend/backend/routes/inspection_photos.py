@@ -48,8 +48,8 @@ async def get_user_from_bearer_token(credentials: Optional[HTTPAuthorizationCred
             user_id = payload.get("sub")
             if user_id:
                 return await db.users.find_one({"id": user_id}, {"_id": 0})
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Photo auth: failed to decode token or fetch user: %s", e)
     return None
 
 
@@ -489,8 +489,8 @@ async def get_photo_image(
                 user_id = payload.get("sub")
                 if user_id:
                     user = await db.users.find_one({"id": user_id}, {"_id": 0})
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Photo view auth: token decode/user fetch failed: %s", e)
 
     # 2. Try signed URL (no user lookup needed -- access was verified at signing time)
     if not user and sig and exp is not None:

@@ -106,7 +106,8 @@ async def _get_signnow_token():
     try:
         from integrations.signnow_client import get_signnow_access_token
         return await get_signnow_access_token()
-    except Exception:
+    except Exception as e:
+        logger.warning("SignNow token fetch failed: %s", e)
         return None
 
 

@@ -37,8 +37,12 @@ async def register(user_data: UserCreate, request: Request):
             raw_body = await request.body()
             try:
                 raw = json.loads(raw_body)
-            except Exception:
-                raw = {}
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning("Registration: malformed JSON body from IP %s: %s", client_ip, e)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request body"
+                )
             invite_code = raw.get("invite_code", "")
             if invite_code != REGISTRATION_SECRET:
                 raise HTTPException(

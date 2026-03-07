@@ -508,8 +508,8 @@ def _decrypt_token_field(token_doc: dict, field: str) -> str:
         try:
             return encryption.decrypt_token(raw)
         except Exception:
-            logger.warning("Failed to decrypt %s for user=%s — may be legacy plaintext", field, token_doc.get("user_id"))
-            return raw  # Fall back to raw value (legacy unencrypted)
+            logger.error("Failed to decrypt %s for user=%s — token unusable, returning empty", field, token_doc.get("user_id"))
+            return ""  # Do NOT fall back to raw — could be garbled or a security risk
     return raw
 
 

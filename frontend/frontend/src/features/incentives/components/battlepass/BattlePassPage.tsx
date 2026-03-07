@@ -7,7 +7,7 @@ import LeaderboardTab from './LeaderboardTab';
 import { leaderboardSeed, missionsSeed, tiers } from './mockData';
 import { BattlePassState, LeaderboardEntry, Mission } from './types';
 import './AnimationStyles.css';
-import { apiGet, API_URL } from '@/lib/api';
+import { apiGet, apiPost, API_URL } from '@/lib/api';
 
 type TabKey = 'progress' | 'missions' | 'leaderboard';
 const STORAGE_KEY = 'eden_battle_pass_state_v3';
@@ -211,7 +211,7 @@ const BattlePassPage: React.FC = () => {
     );
   };
 
-  const claimMission = (missionId: string) => {
+  const claimMission = async (missionId: string) => {
     const mission = missions.find((m) => m.id === missionId);
     if (!mission) return;
     if (state.completedMissionIds.includes(missionId)) return;
@@ -220,6 +220,31 @@ const BattlePassPage: React.FC = () => {
       return;
     }
 
+    // Call backend to complete mission and award XP
+    if (API_URL != null) {
+      try {
+        const res = await apiPost(`/api/battle-pass/missions/${missionId}/complete`, {});
+        if (res.ok && res.data) {
+          // Use server-authoritative XP if available
+          if (res.data.total_xp != null) {
+            setState((prev) => ({
+              ...prev,
+              currentXp: res.data.total_xp,
+              currentLevel: res.data.current_tier ?? prev.currentLevel,
+              completedMissionIds: [...prev.completedMissionIds, missionId],
+            }));
+            setClaimFxMissionId(missionId);
+            setTimeout(() => setClaimFxMissionId(null), 900);
+            toast.success(`Mission complete: +${res.data.xp_awarded ?? mission.xp} XP`);
+            return;
+          }
+        }
+      } catch {
+        // Fall through to local-only if backend fails
+      }
+    }
+
+    // Fallback: local state update
     setState((prev) => ({
       ...prev,
       completedMissionIds: [...prev.completedMissionIds, missionId],
