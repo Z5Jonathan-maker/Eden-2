@@ -1,13 +1,13 @@
-﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '../shared/ui/button';
 import { Badge } from '../shared/ui/badge';
 import { Textarea } from '../shared/ui/textarea';
 import { apiGet, apiPost, apiPut, apiDelete, API_URL } from '../lib/api';
 import { PAGE_ICONS } from '../assets/badges';
-import { 
-  Compass, 
-  Heart, 
-  Target, 
+import {
+  Compass,
+  Heart,
+  Target,
   Feather,
   Plus,
   Star,
@@ -25,8 +25,210 @@ import {
   Sparkles,
   TrendingUp,
   Award,
-  BookOpen
+  BookOpen,
+  X,
+  Flame,
+  Zap,
+  Quote,
+  Trophy,
+  Eye,
+  ChevronRight
 } from 'lucide-react';
+
+// ============ CONSTANTS ============
+
+const CATEGORIES = [
+  { id: 'faith', name: 'Faith & Spirituality', icon: Heart, color: '#a855f7', gradient: 'from-purple-500/20 to-violet-500/10' },
+  { id: 'family', name: 'Family & Relationships', icon: Users, color: '#ec4899', gradient: 'from-pink-500/20 to-rose-500/10' },
+  { id: 'finances', name: 'Finances & Wealth', icon: DollarSign, color: '#10b981', gradient: 'from-emerald-500/20 to-green-500/10' },
+  { id: 'fitness', name: 'Health & Fitness', icon: Activity, color: '#f59e0b', gradient: 'from-amber-500/20 to-yellow-500/10' },
+  { id: 'career', name: 'Career & Business', icon: Briefcase, color: '#3b82f6', gradient: 'from-blue-500/20 to-indigo-500/10' },
+  { id: 'personal', name: 'Personal Growth', icon: Target, color: '#6366f1', gradient: 'from-indigo-500/20 to-purple-500/10' },
+  { id: 'other', name: 'Other Dreams', icon: Star, color: '#6b7280', gradient: 'from-zinc-500/20 to-slate-500/10' },
+];
+
+const MOOD_CONFIG = {
+  order: ['tough', 'challenging', 'okay', 'good', 'great'],
+  byValue: { 1: 'tough', 2: 'challenging', 3: 'okay', 4: 'good', 5: 'great' },
+  colors: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'],
+  labels: ['Tough', 'Challenging', 'Okay', 'Good', 'Great'],
+  icons: [Zap, TrendingUp, Target, Sparkles, Flame],
+};
+
+const POST_TYPE_CONFIG = {
+  encouragement: { label: 'Encouragement', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  gratitude: { label: 'Gratitude', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  win: { label: 'Win', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  quote: { label: 'Quote', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+  milestone: { label: 'Milestone', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+};
+
+// ============ SUB-COMPONENTS ============
+
+const GlassCard = ({ children, className = '', glow = '', ...props }) => (
+  <div
+    className={`relative rounded-xl border border-zinc-700/50 bg-zinc-800/50 backdrop-blur-sm overflow-hidden ${className}`}
+    style={glow ? { boxShadow: glow } : undefined}
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+const StatBlock = ({ icon: Icon, label, value, color = 'text-orange-400' }) => (
+  <div className="flex items-center justify-between py-2">
+    <span className="text-zinc-400 flex items-center gap-2 text-sm">
+      <Icon className="w-4 h-4" style={{ color }} />
+      {label}
+    </span>
+    <span className="font-mono font-bold text-white">{value}</span>
+  </div>
+);
+
+const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
+  <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="w-20 h-20 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center mb-6">
+      <Icon className="w-10 h-10 text-zinc-600" />
+    </div>
+    <h3 className="text-lg font-mono font-bold text-zinc-300 uppercase tracking-wider mb-2">{title}</h3>
+    <p className="text-zinc-500 text-sm text-center max-w-sm mb-6">{description}</p>
+    {action && (
+      <Button onClick={onAction} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+        <Plus className="w-4 h-4" />
+        {action}
+      </Button>
+    )}
+  </div>
+);
+
+const ModalOverlay = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+    <div className="relative z-10 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+      {children}
+    </div>
+  </div>
+);
+
+const InputField = ({ label, children, hint }) => (
+  <div>
+    <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">{label}</label>
+    {children}
+    {hint && <p className="text-xs text-zinc-600 mt-1">{hint}</p>}
+  </div>
+);
+
+const DarkInput = ({ className = '', ...props }) => (
+  <input
+    className={`w-full px-3 py-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-colors text-sm ${className}`}
+    {...props}
+  />
+);
+
+const DarkSelect = ({ className = '', children, ...props }) => (
+  <select
+    className={`w-full px-3 py-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-white focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-colors text-sm ${className}`}
+    {...props}
+  >
+    {children}
+  </select>
+);
+
+const DarkTextarea = ({ className = '', ...props }) => (
+  <textarea
+    className={`w-full px-3 py-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-colors text-sm resize-none ${className}`}
+    {...props}
+  />
+);
+
+// ============ VISION CARD (Masonry-ready) ============
+
+const VisionCard = ({ item, categories, onToggleAchieved, onDelete }) => {
+  const categoryMeta = categories?.find((cat) => cat.id === item.category);
+  const catConfig = CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[6];
+  const CatIcon = catConfig.icon;
+
+  return (
+    <div className={`group relative rounded-xl border bg-zinc-800/60 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:translate-y-[-3px] hover:shadow-[0_8px_32px_rgba(249,115,22,0.12)] ${item.is_achieved ? 'border-emerald-500/40' : 'border-zinc-700/50 hover:border-orange-500/30'}`}>
+      {/* Category accent bar */}
+      <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${catConfig.color}, transparent)` }} />
+
+      {/* Image area */}
+      {item.image_url ? (
+        <div className="relative">
+          <img
+            src={`${API_URL}${item.image_url}`}
+            alt={item.title}
+            className="w-full h-44 object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent" />
+        </div>
+      ) : (
+        <div className={`h-32 w-full bg-gradient-to-br ${catConfig.gradient} flex items-center justify-center`}>
+          <CatIcon className="w-10 h-10 opacity-30" style={{ color: catConfig.color }} />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: `${catConfig.color}20` }}>
+              <CatIcon className="w-3.5 h-3.5" style={{ color: catConfig.color }} />
+            </div>
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
+              {categoryMeta?.name || item.category}
+            </span>
+          </div>
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onToggleAchieved(item.id, item.is_achieved)}
+              className={`p-1.5 rounded-md transition-colors ${item.is_achieved ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10'}`}
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <h4 className="text-white font-semibold text-sm leading-snug mb-1">{item.title}</h4>
+
+        {item.description && (
+          <p className="text-zinc-400 text-xs leading-relaxed mb-2 line-clamp-2">{item.description}</p>
+        )}
+
+        {item.affirmation && (
+          <div className="flex items-start gap-2 mt-2 p-2 rounded-lg bg-zinc-900/50 border border-zinc-700/30">
+            <Quote className="w-3 h-3 text-orange-400 mt-0.5 flex-shrink-0" />
+            <p className="text-orange-300/80 text-xs italic leading-relaxed">{item.affirmation}</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-3">
+          {item.target_date && (
+            <span className="text-xs text-zinc-500 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {item.target_date}
+            </span>
+          )}
+          {item.is_achieved && (
+            <Badge className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] px-2 py-0.5">
+              <Trophy className="w-3 h-3 mr-1" />
+              Achieved
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ MAIN COMPONENT ============
 
 const InteractiveVisionBoard = () => {
   const [activeTab, setActiveTab] = useState('journal');
@@ -41,9 +243,10 @@ const InteractiveVisionBoard = () => {
   const [saveState, setSaveState] = useState('idle');
   const [savePulse, setSavePulse] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all');
   const initialJournalSync = useRef(false);
   const autoSaveTimerRef = useRef(null);
-  
+
   // Journal form
   const [journalForm, setJournalForm] = useState({
     thoughts: '',
@@ -55,7 +258,7 @@ const InteractiveVisionBoard = () => {
     energy_level: 5,
     is_shared: false
   });
-  
+
   // Vision item form
   const [visionForm, setVisionForm] = useState({
     category: 'personal',
@@ -65,18 +268,14 @@ const InteractiveVisionBoard = () => {
     target_date: '',
     color: '#6366F1'
   });
-  
+
   // Team post form
   const [teamPostForm, setTeamPostForm] = useState({
     content: '',
     post_type: 'encouragement'
   });
 
-  const moodOrder = ['tough', 'challenging', 'okay', 'good', 'great'];
-  const moodByValue = { 1: 'tough', 2: 'challenging', 3: 'okay', 4: 'good', 5: 'great' };
-  const moodValue = moodOrder.indexOf(journalForm.mood) + 1 || 3;
-  const moodColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'];
-  const moodEmojis = ['[LOW]', '[CHALLENGE]', '[OK]', '[GOOD]', '[GREAT]'];
+  const moodValue = MOOD_CONFIG.order.indexOf(journalForm.mood) + 1 || 3;
   const energyGlow = Math.min(0.95, 0.2 + (journalForm.energy_level / 10) * 0.75);
   const monthProgress = useMemo(() => {
     const current = journalHistory?.stats?.days_this_month || 0;
@@ -89,10 +288,32 @@ const InteractiveVisionBoard = () => {
   const winEntries = journalForm.wins.filter((item) => item.trim());
   const isStreakHot = (journalHistory?.stats?.current_streak || 0) > 7;
 
+  // Filter vision items by active category
+  const filteredVisionItems = useMemo(() => {
+    if (!visionItems?.items) return [];
+    if (activeCategory === 'all') return visionItems.items;
+    return visionItems.items.filter((item) => item.category === activeCategory);
+  }, [visionItems, activeCategory]);
+
+  // Count items by category
+  const categoryCounts = useMemo(() => {
+    const counts = { all: visionItems?.items?.length || 0 };
+    visionItems?.items?.forEach((item) => {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+    });
+    return counts;
+  }, [visionItems]);
+
   const fetchData = useCallback(async () => {
     try {
-      // Get today's journal
-      const journalRes = await apiGet('/api/vision-board/journal/today', { cache: false });
+      const [journalRes, historyRes, visionRes, feedRes, statsRes] = await Promise.all([
+        apiGet('/api/vision-board/journal/today', { cache: false }),
+        apiGet('/api/vision-board/journal/history?days=30', { cache: false }),
+        apiGet('/api/vision-board/items', { cache: false }),
+        apiGet('/api/vision-board/team/feed?days=7', { cache: false }),
+        apiGet('/api/vision-board/stats', { cache: false }),
+      ]);
+
       if (journalRes.ok && journalRes.data.entry) {
         setTodayEntry(journalRes.data.entry);
         setJournalForm({
@@ -107,22 +328,10 @@ const InteractiveVisionBoard = () => {
         });
       }
 
-      // Get journal history
-      const historyRes = await apiGet('/api/vision-board/journal/history?days=30', { cache: false });
       if (historyRes.ok) setJournalHistory(historyRes.data);
-
-      // Get vision items
-      const visionRes = await apiGet('/api/vision-board/items', { cache: false });
       if (visionRes.ok) setVisionItems(visionRes.data);
-
-      // Get team feed
-      const feedRes = await apiGet('/api/vision-board/team/feed?days=7', { cache: false });
       if (feedRes.ok) setTeamFeed(feedRes.data);
-
-      // Get stats
-      const statsRes = await apiGet('/api/vision-board/stats', { cache: false });
       if (statsRes.ok) setStats(statsRes.data);
-
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -236,7 +445,7 @@ const InteractiveVisionBoard = () => {
 
   const handleDeleteVisionItem = async (itemId) => {
     if (!window.confirm('Delete this vision item?')) return;
-    
+
     try {
       await apiDelete(`/api/vision-board/items/${itemId}`);
       fetchData();
@@ -272,266 +481,262 @@ const InteractiveVisionBoard = () => {
     }
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      faith: <Heart className="w-5 h-5" />,
-      family: <Users className="w-5 h-5" />,
-      finances: <DollarSign className="w-5 h-5" />,
-      fitness: <Activity className="w-5 h-5" />,
-      career: <Briefcase className="w-5 h-5" />,
-      personal: <Target className="w-5 h-5" />,
-      other: <Star className="w-5 h-5" />
-    };
-    return icons[category] || icons.other;
-  };
-
-  const getMoodEmoji = (mood) => {
-    const moods = {
-      great: '[GREAT]',
-      good: '[GOOD]',
-      okay: '[OK]',
-      challenging: '[CHALLENGE]',
-      tough: '[LOW]'
-    };
-    return moods[mood] || '';
-  };
+  // ============ LOADING STATE ============
 
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px] bg-tactical-animated">
         <div className="text-center">
-          <div className="spinner-tactical w-12 h-12 mx-auto mb-4"></div>
+          <div className="w-12 h-12 mx-auto mb-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
           <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Loading Vision Board...</p>
         </div>
       </div>
     );
   }
 
+  // ============ RENDER ============
+
   return (
     <div className="min-h-screen bg-tactical-animated page-enter" data-testid="interactive-vision-board">
-      {/* Header */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-6">
+      {/* ========== HEADER ========== */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-4">
-            <img
-              src={PAGE_ICONS.vision_board}
-              alt="Vision Board"
-              width={56}
-              height={56}
-              className="w-14 h-14 sm:w-16 sm:h-16 object-contain animate-glow-breathe"
-              style={{ filter: 'drop-shadow(0 0 15px rgba(147, 51, 234, 0.5))' }}
-            />
+            <div className="relative">
+              <img
+                src={PAGE_ICONS.vision_board}
+                alt="Vision Board"
+                width={56}
+                height={56}
+                className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
+                style={{ filter: 'drop-shadow(0 0 18px rgba(249, 115, 22, 0.5))' }}
+              />
+              <div className="absolute -inset-1 rounded-full bg-orange-500/10 blur-lg -z-10" />
+            </div>
             <div>
-              <h1 className="text-2xl font-tactical font-bold text-white uppercase tracking-wide text-glow-purple">Vision Board</h1>
-              <p className="text-zinc-500 font-mono">Dream it. Believe it. Achieve it.</p>
+              <h1 className="text-2xl font-mono font-bold text-white uppercase tracking-wider">
+                Vision Board
+              </h1>
+              <p className="text-zinc-500 font-mono text-sm">Dream it. Believe it. Achieve it.</p>
             </div>
           </div>
-          
+
           {stats && (
-            <div className="flex gap-4 text-sm">
-              <div className="card-tactical p-3 text-center">
-                <p className="text-2xl font-tactical font-bold text-purple-400">{stats.journal?.current_streak || 0}</p>
-                <p className="text-zinc-500 text-xs font-mono uppercase">Day Streak</p>
-              </div>
-              <div className="card-tactical p-3 text-center">
-                <p className="text-2xl font-tactical font-bold text-blue-400">{stats.vision_items?.achieved || 0}</p>
-                <p className="text-zinc-500 text-xs font-mono uppercase">Achieved</p>
-              </div>
+            <div className="flex gap-3">
+              <GlassCard className="p-3 text-center min-w-[80px]" glow={isStreakHot ? '0 0 20px rgba(249, 115, 22, 0.2)' : ''}>
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  {isStreakHot && <Flame className="w-4 h-4 text-orange-400" />}
+                  <p className="text-2xl font-mono font-bold text-orange-400">{stats.journal?.current_streak || 0}</p>
+                </div>
+                <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider">Day Streak</p>
+              </GlassCard>
+              <GlassCard className="p-3 text-center min-w-[80px]">
+                <p className="text-2xl font-mono font-bold text-emerald-400 mb-1">{stats.vision_items?.achieved || 0}</p>
+                <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider">Achieved</p>
+              </GlassCard>
+              <GlassCard className="p-3 text-center min-w-[80px]">
+                <p className="text-2xl font-mono font-bold text-amber-400 mb-1">{stats.vision_items?.total || 0}</p>
+                <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider">Visions</p>
+              </GlassCard>
             </div>
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mt-6 overflow-x-auto pb-2">
+        {/* ========== TABS ========== */}
+        <div className="flex gap-2 mt-6 overflow-x-auto pb-2 scrollbar-thin">
           {[
-            { id: 'journal', label: 'Daily Journal', icon: <BookOpen className="w-4 h-4" /> },
-            { id: 'vision', label: 'My Vision', icon: <Target className="w-4 h-4" /> },
-            { id: 'team', label: 'Team Feed', icon: <Users className="w-4 h-4" /> },
-            { id: 'anchors', label: 'Vision Anchors', icon: <Compass className="w-4 h-4" /> }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-mono uppercase tracking-wider transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]' 
-                  : 'bg-zinc-800/50 text-zinc-400 hover:text-white border border-zinc-700/30 hover:border-zinc-600'
-              }`}
-            >
-              {tab.icon}
-              <span className="ml-1">{tab.label}</span>
-            </button>
-          ))}
+            { id: 'journal', label: 'Daily Journal', icon: BookOpen },
+            { id: 'vision', label: 'My Vision', icon: Eye },
+            { id: 'team', label: 'Team Feed', icon: Users },
+            { id: 'anchors', label: 'Vision Anchors', icon: Compass }
+          ].map(tab => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:text-white border border-zinc-700/50 hover:border-zinc-600'
+                }`}
+              >
+                <TabIcon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
-        {/* Daily Journal Tab */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+
+        {/* ========== DAILY JOURNAL TAB ========== */}
         {activeTab === 'journal' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Journal Form */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="card-tactical p-5">
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Feather className="w-5 h-5 text-purple-400" />
-                    <h3 className="font-tactical font-bold text-white uppercase">Today&apos;s Journal</h3>
+              <GlassCard className="p-5 sm:p-6">
+                <div className="flex items-center justify-between gap-2 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <Feather className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm">Today&apos;s Journal</h3>
                   </div>
-                  <div className={`vision-fade-in text-xs font-mono uppercase tracking-wider ${saveState === 'saved' ? 'text-emerald-400' : 'text-cyan-300'}`}>
+                  <div className={`text-xs font-mono uppercase tracking-wider transition-all ${saveState === 'saved' ? 'text-emerald-400' : saveState === 'saving' ? 'text-amber-400' : 'text-transparent'}`}>
                     {saveState === 'saving' && 'Saving...'}
                     {saveState === 'saved' && (
-                      <span className={`inline-flex items-center gap-1 ${savePulse ? 'vision-save-checkmark' : ''}`}>
+                      <span className={`inline-flex items-center gap-1 ${savePulse ? 'animate-pulse' : ''}`}>
                         <Check className="w-3 h-3" /> Saved
                       </span>
                     )}
                   </div>
                 </div>
+
                 <div className="space-y-6">
-                                    {/* Gratitude */}
+                  {/* Gratitude */}
                   <div>
-                    <label className="block text-sm font-mono text-zinc-300 mb-2 uppercase tracking-wider">
-                      What I&apos;m Grateful For
-                      {journalForm.is_shared && <span className="ml-2 rounded-full bg-cyan-500/20 text-cyan-300 px-2 py-0.5 text-[10px]">Shared with team</span>}
-                    </label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Heart className="w-4 h-4 text-amber-400" />
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
+                        What I&apos;m Grateful For
+                      </label>
+                      {journalForm.is_shared && (
+                        <span className="ml-auto rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20 px-2 py-0.5 text-[10px] font-mono uppercase">Shared</span>
+                      )}
+                    </div>
                     {journalForm.gratitude.map((item, i) => (
-                      <input
+                      <DarkInput
                         key={i}
-                        type="text"
                         value={item}
                         onChange={(e) => {
                           const newGratitude = [...journalForm.gratitude];
                           newGratitude[i] = e.target.value;
                           setJournalForm({...journalForm, gratitude: newGratitude});
                         }}
-                        className="input-tactical w-full mb-2 vision-fade-in"
+                        className="mb-2"
                         placeholder={`Gratitude ${i + 1}...`}
                       />
                     ))}
-                    {gratitudeEntries.length === 0 && (
-                      <div className="text-slate-500 text-sm italic">
-                        Nothing here yet - start writing to build your journey.
-                      </div>
-                    )}
                   </div>
 
                   {/* Beliefs */}
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      What I&apos;m Believing For
-                    </label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
+                        What I&apos;m Believing For
+                      </label>
+                    </div>
                     {journalForm.beliefs.map((item, i) => (
-                      <div key={i} className="flex gap-2 mb-2 vision-slide-up">
-                        <input
-                          type="text"
+                      <div key={i} className="flex gap-2 mb-2">
+                        <DarkInput
                           value={item}
                           onChange={(e) => {
                             const newBeliefs = [...journalForm.beliefs];
                             newBeliefs[i] = e.target.value;
                             setJournalForm({...journalForm, beliefs: newBeliefs});
                           }}
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="I believe..."
                         />
                         {i === journalForm.beliefs.length - 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => setJournalForm({...journalForm, beliefs: [...journalForm.beliefs, '']})}
+                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors"
                           >
                             <Plus className="w-4 h-4" />
-                          </Button>
+                          </button>
                         )}
                       </div>
                     ))}
-                    {beliefEntries.length === 0 && (
-                      <div className="text-slate-500 text-sm italic">
-                        Nothing here yet - start writing to build your journey.
-                      </div>
-                    )}
                   </div>
 
                   {/* Wins */}
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      Today&apos;s Wins
-                      {journalForm.is_shared && <span className="ml-2 rounded-full bg-cyan-500/20 text-cyan-300 px-2 py-0.5 text-[10px]">Shared with team</span>}
-                    </label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="w-4 h-4 text-emerald-400" />
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
+                        Today&apos;s Wins
+                      </label>
+                      {journalForm.is_shared && (
+                        <span className="ml-auto rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20 px-2 py-0.5 text-[10px] font-mono uppercase">Shared</span>
+                      )}
+                    </div>
                     {journalForm.wins.map((item, i) => (
-                      <div key={i} className="flex gap-2 mb-2 vision-slide-up">
-                        <input
-                          type="text"
+                      <div key={i} className="flex gap-2 mb-2">
+                        <DarkInput
                           value={item}
                           onChange={(e) => {
                             const newWins = [...journalForm.wins];
                             newWins[i] = e.target.value;
                             setJournalForm({...journalForm, wins: newWins});
                           }}
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           placeholder="A win today..."
                         />
                         {i === journalForm.wins.length - 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => setJournalForm({...journalForm, wins: [...journalForm.wins, '']})}
+                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors"
                           >
                             <Plus className="w-4 h-4" />
-                          </Button>
+                          </button>
                         )}
                       </div>
                     ))}
-                    {winEntries.length === 0 && (
-                      <div className="text-slate-500 text-sm italic">
-                        Nothing here yet - start writing to build your journey.
-                      </div>
-                    )}
                   </div>
 
                   {/* Thoughts */}
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
-                      My Thoughts (Private)
-                    </label>
-                    <Textarea
+                    <div className="flex items-center gap-2 mb-3">
+                      <Feather className="w-4 h-4 text-zinc-400" />
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
+                        My Thoughts
+                      </label>
+                      <span className="text-[10px] font-mono text-zinc-600 uppercase">(Private)</span>
+                    </div>
+                    <DarkTextarea
                       value={journalForm.thoughts}
                       onChange={(e) => setJournalForm({...journalForm, thoughts: e.target.value})}
                       placeholder="What's on your mind today..."
                       rows={4}
-                      className="focus:ring-2 focus:ring-purple-500 vision-fade-in"
                     />
-                    {!journalForm.thoughts.trim() && (
-                      <div className="text-slate-500 text-sm italic mt-2">
-                        Nothing here yet - start writing to build your journey.
-                      </div>
-                    )}
                   </div>
 
-                                    {/* Mood & Energy */}
+                  {/* Mood & Energy */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700">Mood</label>
-                      <div
-                        className="rounded-lg border border-slate-700 p-3 vision-mood-shift"
-                        style={{ background: `linear-gradient(90deg, ${moodColors[0]}, ${moodColors[moodValue - 1]})` }}
-                      >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Activity className="w-4 h-4 text-amber-400" />
+                        <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">Mood</label>
+                      </div>
+                      <GlassCard className="p-3">
                         <input
                           type="range"
                           min="1"
                           max="5"
                           value={moodValue}
-                          onChange={(e) => setJournalForm({...journalForm, mood: moodByValue[parseInt(e.target.value, 10)]})}
-                          className="w-full"
+                          onChange={(e) => setJournalForm({...journalForm, mood: MOOD_CONFIG.byValue[parseInt(e.target.value, 10)]})}
+                          className="w-full accent-orange-500"
                         />
-                        <p className="text-center text-sm text-white mt-1">
-                          {moodEmojis[moodValue - 1]} {journalForm.mood || 'okay'}
-                        </p>
-                      </div>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          {(() => {
+                            const MoodIcon = MOOD_CONFIG.icons[moodValue - 1];
+                            return <MoodIcon className="w-4 h-4" style={{ color: MOOD_CONFIG.colors[moodValue - 1] }} />;
+                          })()}
+                          <span className="text-sm font-mono text-white capitalize">{journalForm.mood || 'okay'}</span>
+                        </div>
+                      </GlassCard>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700">Energy (1-10)</label>
-                      <div
-                        className={`rounded-lg border border-cyan-500/30 p-3 ${journalForm.energy_level >= 8 ? 'vision-pulse-glow' : ''}`}
-                        style={{ boxShadow: `0 0 18px rgba(34, 211, 238, ${energyGlow})` }}
+                      <div className="flex items-center gap-2 mb-3">
+                        <Zap className="w-4 h-4 text-cyan-400" />
+                        <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">Energy</label>
+                        <span className="text-xs font-mono text-zinc-600">{journalForm.energy_level}/10</span>
+                      </div>
+                      <GlassCard
+                        className="p-3"
+                        glow={journalForm.energy_level >= 8 ? `0 0 18px rgba(34, 211, 238, ${energyGlow * 0.4})` : ''}
                       >
                         <input
                           type="range"
@@ -539,465 +744,526 @@ const InteractiveVisionBoard = () => {
                           max="10"
                           value={journalForm.energy_level}
                           onChange={(e) => setJournalForm({...journalForm, energy_level: parseInt(e.target.value, 10)})}
-                          className="w-full"
+                          className="w-full accent-cyan-500"
                         />
-                        <p className="text-center text-sm text-gray-200">{journalForm.energy_level}/10</p>
-                      </div>
+                        <div className="flex justify-between mt-1">
+                          {[...Array(10)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1.5 h-1.5 rounded-full transition-colors ${i < journalForm.energy_level ? 'bg-cyan-400' : 'bg-zinc-700'}`}
+                            />
+                          ))}
+                        </div>
+                      </GlassCard>
                     </div>
                   </div>
 
                   {/* Share Toggle */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="share-journal"
-                      checked={journalForm.is_shared}
-                      onChange={(e) => setJournalForm({...journalForm, is_shared: e.target.checked})}
-                      className="w-4 h-4 text-purple-600 rounded"
-                    />
-                    <label htmlFor="share-journal" className="text-sm text-gray-600">
-                      Share gratitude & wins with team (thoughts stay private)
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-700/30">
+                    <button
+                      onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${journalForm.is_shared ? 'bg-orange-500' : 'bg-zinc-700'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${journalForm.is_shared ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                    <label className="text-sm text-zinc-400 cursor-pointer" onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}>
+                      Share gratitude & wins with team
+                      <span className="text-zinc-600 text-xs ml-1">(thoughts stay private)</span>
                     </label>
                   </div>
 
-                  {journalForm.is_shared && (
-                    <div className="rounded-xl border border-cyan-500/30 bg-slate-900/50 p-3 vision-fade-in">
-                      <p className="text-xs uppercase tracking-wider text-cyan-300 mb-2">Team Preview</p>
-                      <div className="text-sm text-slate-300">
-                        <p className="mb-1 font-medium">Gratitude:</p>
-                        {gratitudeEntries.length > 0 ? (
-                          <ul className="list-disc list-inside text-slate-400">
-                            {gratitudeEntries.slice(0, 3).map((item, index) => (
-                              <li key={`g-${index}`}>{item}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="italic text-slate-500">Add gratitude entries to share.</p>
+                  {/* Team Preview */}
+                  {journalForm.is_shared && (gratitudeEntries.length > 0 || winEntries.length > 0) && (
+                    <GlassCard className="p-4 border-orange-500/20">
+                      <p className="text-[10px] uppercase tracking-wider text-orange-400 font-mono mb-3">Team Preview</p>
+                      <div className="text-sm space-y-3">
+                        {gratitudeEntries.length > 0 && (
+                          <div>
+                            <p className="text-zinc-400 text-xs font-mono uppercase mb-1">Gratitude</p>
+                            <ul className="space-y-1">
+                              {gratitudeEntries.slice(0, 3).map((item, index) => (
+                                <li key={`g-${index}`} className="text-zinc-300 text-sm flex items-start gap-2">
+                                  <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                        <p className="mt-3 mb-1 font-medium">Wins:</p>
-                        {winEntries.length > 0 ? (
-                          <ul className="list-disc list-inside text-slate-400">
-                            {winEntries.slice(0, 3).map((item, index) => (
-                              <li key={`w-${index}`}>{item}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="italic text-slate-500">Add wins to share.</p>
+                        {winEntries.length > 0 && (
+                          <div>
+                            <p className="text-zinc-400 text-xs font-mono uppercase mb-1">Wins</p>
+                            <ul className="space-y-1">
+                              {winEntries.slice(0, 3).map((item, index) => (
+                                <li key={`w-${index}`} className="text-zinc-300 text-sm flex items-start gap-2">
+                                  <ChevronRight className="w-3 h-3 text-emerald-400 mt-1 flex-shrink-0" />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
                       </div>
-                    </div>
+                    </GlassCard>
                   )}
 
-                  <Button onClick={handleSaveJournal} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  <Button
+                    onClick={handleSaveJournal}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 font-mono uppercase tracking-wider py-3"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
                     Save Journal Entry
                   </Button>
                 </div>
-              </div>
+              </GlassCard>
             </div>
 
             {/* Sidebar Stats */}
             <div className="space-y-6">
-              <div className="card-tactical p-5">
-                <h3 className="font-tactical font-bold text-white uppercase mb-4">Your Journey</h3>
-                <div className="space-y-4">
-                  <div className={`flex items-center justify-between rounded-lg border px-3 py-2 ${isStreakHot ? 'border-purple-500/40 vision-pulse-glow' : 'border-zinc-700/40'}`}>
-                    <span className="text-zinc-300 flex items-center gap-2"><Award className="w-4 h-4 text-purple-400" />Current Streak</span>
-                    <span className="text-2xl font-bold text-purple-400">
-                      {journalHistory?.stats?.current_streak || 0} days
+              <GlassCard className="p-5" glow={isStreakHot ? '0 0 24px rgba(249, 115, 22, 0.15)' : ''}>
+                <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm mb-4">Your Journey</h3>
+                <div className="space-y-3">
+                  <div className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${isStreakHot ? 'border-orange-500/40 bg-orange-500/5' : 'border-zinc-700/40'}`}>
+                    <span className="text-zinc-300 flex items-center gap-2 text-sm">
+                      {isStreakHot ? <Flame className="w-4 h-4 text-orange-400" /> : <Award className="w-4 h-4 text-orange-400" />}
+                      Streak
+                    </span>
+                    <span className="text-2xl font-mono font-bold text-orange-400">
+                      {journalHistory?.stats?.current_streak || 0}
+                      <span className="text-xs text-zinc-500 ml-1">days</span>
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400 flex items-center gap-2"><BookOpen className="w-4 h-4 text-cyan-400" />Total Entries</span>
-                    <span className="font-medium text-white">{journalHistory?.stats?.total_entries || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400 flex items-center gap-2"><Calendar className="w-4 h-4 text-amber-400" />This Month</span>
-                    <span className="font-medium text-white">{journalHistory?.stats?.days_this_month || 0} days</span>
-                  </div>
+                  <StatBlock icon={BookOpen} label="Total Entries" value={journalHistory?.stats?.total_entries || 0} color="#f59e0b" />
+                  <StatBlock icon={Calendar} label="This Month" value={`${journalHistory?.stats?.days_this_month || 0} days`} color="#22d3ee" />
                   <div className="pt-1">
-                    <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 vision-fade-in" style={{ width: `${monthProgress}%` }} />
+                    <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-700/50">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500"
+                        style={{ width: `${monthProgress}%` }}
+                      />
                     </div>
-                    <p className="text-[11px] text-zinc-500 mt-1">{monthProgress}% of month logged</p>
+                    <p className="text-[10px] text-zinc-500 font-mono mt-1">{monthProgress}% of month logged</p>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Recent Entries */}
               {journalHistory?.entries?.length > 0 && (
-                <div className="card-tactical p-5">
-                  <h3 className="font-tactical font-bold text-white uppercase mb-4">Recent Days</h3>
+                <GlassCard className="p-5">
+                  <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm mb-4">Recent Days</h3>
                   <div className="space-y-2">
-                    {journalHistory.entries.slice(0, 5).map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-2 bg-zinc-800/30 rounded border border-zinc-700/30">
-                        <span className="text-sm text-zinc-300">{entry.date}</span>
-                        <span>{getMoodEmoji(entry.mood)}</span>
-                      </div>
-                    ))}
+                    {journalHistory.entries.slice(0, 7).map((entry) => {
+                      const entryMoodIdx = MOOD_CONFIG.order.indexOf(entry.mood);
+                      return (
+                        <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/50 border border-zinc-700/30 hover:border-zinc-600/50 transition-colors">
+                          <span className="text-sm text-zinc-400 font-mono">{entry.date}</span>
+                          <div className="flex items-center gap-2">
+                            {entry.mood && (
+                              <span
+                                className="text-xs font-mono uppercase px-2 py-0.5 rounded-full"
+                                style={{
+                                  color: MOOD_CONFIG.colors[entryMoodIdx] || '#71717a',
+                                  background: `${MOOD_CONFIG.colors[entryMoodIdx] || '#71717a'}15`,
+                                }}
+                              >
+                                {entry.mood}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                </GlassCard>
               )}
             </div>
           </div>
         )}
 
-        {/* Vision Board Tab */}
+        {/* ========== VISION BOARD TAB ========== */}
         {activeTab === 'vision' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">My Vision Board</h2>
-              <Button onClick={() => setShowAddVision(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-2" /> Add Vision Item
+            {/* Header bar */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-mono font-bold text-white uppercase tracking-wider">My Vision Board</h2>
+                <p className="text-zinc-500 text-sm mt-1">
+                  {visionItems?.items?.length || 0} visions &middot; {visionItems?.items?.filter(i => i.is_achieved).length || 0} achieved
+                </p>
+              </div>
+              <Button onClick={() => setShowAddVision(true)} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+                <Plus className="w-4 h-4" /> Add Vision
               </Button>
             </div>
 
-                        {/* Categories */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visionItems?.items?.map((item) => {
-                const itemType = item.affirmation ? 'Quote' : item.target_date ? 'Milestone' : item.image_url ? 'Image Goal' : 'Goal';
-                const categoryMeta = visionItems?.categories?.find((cat) => cat.id === item.category);
+            {/* Category Filter Pills */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin">
+              <button
+                onClick={() => setActiveCategory('all')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+                  activeCategory === 'all'
+                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
+                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300'
+                }`}
+              >
+                All
+                <span className="text-[10px] opacity-60">{categoryCounts.all || 0}</span>
+              </button>
+              {CATEGORIES.map((cat) => {
+                const CatIcon = cat.icon;
+                const count = categoryCounts[cat.id] || 0;
+                if (count === 0 && activeCategory !== cat.id) return null;
                 return (
-                  <div
-                    key={item.id}
-                    className={`bg-slate-900/60 border border-slate-700 rounded-xl p-4 transition-all duration-300 vision-card-hover relative overflow-hidden ${item.is_achieved ? 'border-emerald-400/40' : ''}`}
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+                      activeCategory === cat.id
+                        ? 'text-white border'
+                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300'
+                    }`}
+                    style={activeCategory === cat.id ? {
+                      background: `${cat.color}15`,
+                      borderColor: `${cat.color}40`,
+                      color: cat.color,
+                    } : undefined}
                   >
-                    <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,rgba(15,23,42,0.35)_1px,transparent_1px),linear-gradient(180deg,rgba(15,23,42,0.35)_1px,transparent_1px)] bg-[size:24px_24px] opacity-30" />
-                    {item.image_url ? (
-                      <img src={`${API_URL}${item.image_url}`} alt={item.title} className="rounded-lg mb-3 h-36 w-full object-cover" />
-                    ) : (
-                      <div className="rounded-lg mb-3 h-36 w-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500">
-                        <Image className="w-6 h-6" />
-                      </div>
-                    )}
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge className="bg-slate-800 border border-slate-600 text-slate-300">{itemType}</Badge>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleToggleAchieved(item.id, item.is_achieved)}>
-                            <Check className={`w-4 h-4 ${item.is_achieved ? 'text-emerald-400' : 'text-slate-400'}`} />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteVisionItem(item.id)}>
-                            <Trash2 className="w-4 h-4 text-slate-500" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="text-slate-200 font-semibold">{item.title}</div>
-                      <div className="text-slate-400 text-sm mt-1">{item.description || item.affirmation || 'Define this vision in one line.'}</div>
-                      <div className="mt-3 text-xs text-slate-500 flex items-center gap-2">
-                        {categoryMeta ? <span>{categoryMeta.name}</span> : <span>{item.category}</span>}
-                        {item.target_date && (
-                          <>
-                            <span>•</span>
-                            <span>{item.target_date}</span>
-                          </>
-                        )}
-                      </div>
-                      {item.is_achieved && (
-                        <Badge className="mt-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">Achieved</Badge>
-                      )}
-                    </div>
-                  </div>
+                    <CatIcon className="w-3.5 h-3.5" />
+                    {cat.name.split(' ')[0]}
+                    <span className="text-[10px] opacity-60">{count}</span>
+                  </button>
                 );
               })}
             </div>
 
-            {(!visionItems?.items || visionItems.items.length === 0) && (
-              <div className="text-center py-12">
-                <Target className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-200 mb-2">Start Your Vision Board</h3>
-                <p className="text-slate-400 mb-4">Build your board with goals, quotes, milestones, and image anchors.</p>
-                <Button onClick={() => setShowAddVision(true)} className="bg-purple-600 hover:bg-purple-700">
-                  <Plus className="w-4 h-4 mr-2" /> Add Vision Item
-                </Button>
+            {/* Masonry Grid */}
+            {filteredVisionItems.length > 0 ? (
+              <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+                {filteredVisionItems.map((item) => (
+                  <div key={item.id} className="break-inside-avoid">
+                    <VisionCard
+                      item={item}
+                      categories={visionItems?.categories}
+                      onToggleAchieved={handleToggleAchieved}
+                      onDelete={handleDeleteVisionItem}
+                    />
+                  </div>
+                ))}
               </div>
+            ) : (
+              <EmptyState
+                icon={Target}
+                title="Start Your Vision Board"
+                description="Pin your dreams, goals, affirmations, and milestones. Build a visual map of where you're headed."
+                action="Add Your First Vision"
+                onAction={() => setShowAddVision(true)}
+              />
             )}
           </div>
         )}
 
-        {/* Team Feed Tab */}
+        {/* ========== TEAM FEED TAB ========== */}
         {activeTab === 'team' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Team Inspiration Feed</h2>
-              <Button onClick={() => setShowTeamPost(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Send className="w-4 h-4 mr-2" /> Share with Team
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-mono font-bold text-white uppercase tracking-wider">Team Inspiration</h2>
+                <p className="text-zinc-500 text-sm mt-1">Share wins, gratitude, and encouragement with the team</p>
+              </div>
+              <Button onClick={() => setShowTeamPost(true)} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+                <Send className="w-4 h-4" /> Share with Team
               </Button>
             </div>
 
-            <div className="space-y-4 max-w-2xl">
-              {teamFeed?.posts?.map((post) => (
-                <div key={post.id}>
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-medium">
-                        {post.user_name?.charAt(0) || '?'}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{post.user_name}</span>
-                          <Badge variant="outline" className="text-xs">{post.post_type}</Badge>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Feed */}
+              <div className="lg:col-span-2 space-y-4">
+                {teamFeed?.posts?.map((post) => {
+                  const typeConfig = POST_TYPE_CONFIG[post.post_type] || POST_TYPE_CONFIG.encouragement;
+                  return (
+                    <GlassCard key={post.id} className="p-5 hover:border-zinc-600/50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-mono font-bold text-sm flex-shrink-0">
+                          {post.user_name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
-                        <p className="text-gray-700">{post.content}</p>
-                        <div className="flex items-center gap-4 mt-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleLikePost(post.id)}
-                            className="text-gray-500 hover:text-purple-600"
-                          >
-                            <ThumbsUp className="w-4 h-4 mr-1" />
-                            {post.likes?.length || 0}
-                          </Button>
-                          <span className="text-xs text-gray-600">
-                            {new Date(post.created_at).toLocaleDateString()}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-mono font-semibold text-white text-sm">{post.user_name}</span>
+                            <Badge className={`text-[10px] px-2 py-0.5 border ${typeConfig.color}`}>
+                              {typeConfig.label}
+                            </Badge>
+                          </div>
+                          <p className="text-zinc-300 text-sm leading-relaxed">{post.content}</p>
+                          <div className="flex items-center gap-4 mt-3">
+                            <button
+                              onClick={() => handleLikePost(post.id)}
+                              className="flex items-center gap-1.5 text-zinc-500 hover:text-orange-400 transition-colors text-sm"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                              <span className="font-mono">{post.likes?.length || 0}</span>
+                            </button>
+                            <span className="text-xs text-zinc-600 font-mono">
+                              {new Date(post.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </GlassCard>
+                  );
+                })}
 
-              {/* Shared Gratitude */}
-              {teamFeed?.shared_gratitude?.map((entry) => (
-                <div key={entry.id} className="bg-yellow-50 border-yellow-200">
-                  <div className="p-4">
+                {/* Shared Gratitude */}
+                {teamFeed?.shared_gratitude?.map((entry) => (
+                  <GlassCard key={entry.id} className="p-5 border-amber-500/20">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                        GR
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                        <Heart className="w-4 h-4 text-amber-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-yellow-800">{entry.user_name}&apos;s Gratitude</p>
-                        <ul className="text-sm text-yellow-700 mt-1">
+                        <p className="font-mono font-semibold text-amber-300 text-sm mb-2">{entry.user_name}&apos;s Gratitude</p>
+                        <ul className="space-y-1">
                           {entry.gratitude?.map((g, i) => (
-                            <li key={i}>- {g}</li>
+                            <li key={i} className="text-zinc-300 text-sm flex items-start gap-2">
+                              <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />
+                              {g}
+                            </li>
                           ))}
                         </ul>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </GlassCard>
+                ))}
 
-              {(!teamFeed?.posts?.length && !teamFeed?.shared_gratitude?.length) && (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Team Posts Yet</h3>
-                  <p className="text-gray-500">Be the first to share something inspiring!</p>
-                </div>
-              )}
+                {(!teamFeed?.posts?.length && !teamFeed?.shared_gratitude?.length) && (
+                  <EmptyState
+                    icon={Users}
+                    title="No Team Posts Yet"
+                    description="Be the first to share something inspiring with the team. A word of encouragement goes a long way."
+                    action="Share Something"
+                    onAction={() => setShowTeamPost(true)}
+                  />
+                )}
+              </div>
+
+              {/* Milestones Sidebar */}
+              <div>
+                <GlassCard className="p-5">
+                  <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm mb-4 flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    Team Milestones
+                  </h3>
+                  {teamFeed?.milestones?.length > 0 ? (
+                    <div className="space-y-3">
+                      {teamFeed.milestones.map((m) => (
+                        <div key={m.id} className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-700/30">
+                          <p className="text-white text-sm font-semibold">{m.title}</p>
+                          {m.description && <p className="text-zinc-400 text-xs mt-1">{m.description}</p>}
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-zinc-500 font-mono">{m.user_name}</span>
+                            <span className="text-zinc-700">&middot;</span>
+                            <span className="text-xs text-zinc-600 font-mono">{m.achieved_date}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-600 text-sm text-center py-4">No milestones shared yet</p>
+                  )}
+                </GlassCard>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Vision Anchors Tab */}
+        {/* ========== VISION ANCHORS TAB ========== */}
         {activeTab === 'anchors' && (
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-2xl font-light text-gray-800 mb-2">Our Vision Anchors</h2>
-              <p className="text-gray-500">The principles that guide everything we build</p>
-            </div>
-
-            <div className="space-y-6">
-              {[
-                { principle: "Excellence over convenience", meaning: "We choose the harder right over the easier wrong." },
-                { principle: "Stewardship over scale", meaning: "We serve the people in front of us before chasing growth." },
-                { principle: "Clarity creates leverage", meaning: "Simple, clear systems outperform complex ones." },
-                { principle: "Tools should serve people", meaning: "Technology exists to reduce chaos, not create it." }
-              ].map((anchor, i) => (
-                <div key={i} className="border-l-4 border-purple-400 pl-6 py-3">
-                  <p className="text-xl text-gray-800 font-medium mb-1">{anchor.principle}</p>
-                  <p className="text-gray-500">{anchor.meaning}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-12 bg-stone-50 border-stone-200">
-              <div className="p-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Feather className="w-5 h-5 text-stone-400" />
-                  <h3 className="font-medium text-stone-600">Founder&apos;s Note</h3>
-                </div>
-                <p className="text-stone-600 leading-relaxed">
-                  Eden was born from frustration - piecing together a dozen apps that were each &ldquo;good enough&rdquo; but none truly excellent. 
-                  But more than frustration, Eden was born from conviction: that the people we serve deserve better. 
-                  They deserve advocates who aren&apos;t drowning in administrative chaos. They deserve systems built with 
-                  the same excellence we&apos;d want for our own families.
-                </p>
-                <p className="text-stone-600 leading-relaxed mt-4">
-                  This is why we build. This is why we refine. This is why &ldquo;good enough&rdquo; will never be good enough.
-                </p>
+              <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-4">
+                <Compass className="w-8 h-8 text-orange-400" />
               </div>
+              <h2 className="text-2xl font-mono font-bold text-white uppercase tracking-wider mb-2">Our Vision Anchors</h2>
+              <p className="text-zinc-500 text-sm">The principles that guide everything we build</p>
             </div>
+
+            <div className="space-y-4">
+              {[
+                { principle: "Excellence over convenience", meaning: "We choose the harder right over the easier wrong.", icon: Award },
+                { principle: "Stewardship over scale", meaning: "We serve the people in front of us before chasing growth.", icon: Heart },
+                { principle: "Clarity creates leverage", meaning: "Simple, clear systems outperform complex ones.", icon: Target },
+                { principle: "Tools should serve people", meaning: "Technology exists to reduce chaos, not create it.", icon: Users }
+              ].map((anchor, i) => {
+                const AnchorIcon = anchor.icon;
+                return (
+                  <GlassCard key={i} className="p-5 hover:border-orange-500/30 transition-colors group">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-500/20 transition-colors">
+                        <AnchorIcon className="w-5 h-5 text-orange-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-mono font-bold uppercase tracking-wider text-sm mb-1">{anchor.principle}</p>
+                        <p className="text-zinc-400 text-sm leading-relaxed">{anchor.meaning}</p>
+                      </div>
+                    </div>
+                  </GlassCard>
+                );
+              })}
+            </div>
+
+            <GlassCard className="mt-10 p-6 sm:p-8 border-orange-500/10">
+              <div className="flex items-center gap-2 mb-4">
+                <Feather className="w-5 h-5 text-orange-400" />
+                <h3 className="font-mono font-bold text-zinc-300 uppercase tracking-wider text-sm">Founder&apos;s Note</h3>
+              </div>
+              <p className="text-zinc-400 leading-relaxed text-sm">
+                Eden was born from frustration &mdash; piecing together a dozen apps that were each &ldquo;good enough&rdquo; but none truly excellent.
+                But more than frustration, Eden was born from conviction: that the people we serve deserve better.
+                They deserve advocates who aren&apos;t drowning in administrative chaos. They deserve systems built with
+                the same excellence we&apos;d want for our own families.
+              </p>
+              <p className="text-zinc-400 leading-relaxed text-sm mt-4">
+                This is why we build. This is why we refine. This is why &ldquo;good enough&rdquo; will never be good enough.
+              </p>
+            </GlassCard>
           </div>
         )}
       </div>
 
-      <style>{`
-        @keyframes visionFadeIn {
-          from { opacity: 0.25; }
-          to { opacity: 1; }
-        }
-        @keyframes visionSlideUp {
-          from { opacity: 0; transform: translateY(8px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes visionPulseGlow {
-          0%, 100% { box-shadow: 0 0 0 rgba(147, 51, 234, 0.25); }
-          50% { box-shadow: 0 0 18px rgba(147, 51, 234, 0.55); }
-        }
-        @keyframes visionMoodShift {
-          from { filter: saturate(0.9); }
-          to { filter: saturate(1.1); }
-        }
-        @keyframes visionSaveCheck {
-          0% { transform: scale(0.85); opacity: 0.7; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .vision-fade-in { animation: visionFadeIn 240ms ease-in-out; }
-        .vision-slide-up { animation: visionSlideUp 280ms ease-out; }
-        .vision-pulse-glow { animation: visionPulseGlow 1.8s ease-in-out infinite; }
-        .vision-mood-shift { animation: visionMoodShift 260ms ease-in-out; }
-        .vision-save-checkmark { animation: visionSaveCheck 220ms ease-out; }
-        .vision-card-hover:hover {
-          border-color: rgba(56, 189, 248, 0.45);
-          box-shadow: 0 0 22px rgba(56, 189, 248, 0.18);
-          transform: translateY(-2px);
-        }
-      `}</style>
-
-      {/* Add Vision Modal */}
+      {/* ========== ADD VISION MODAL ========== */}
       {showAddVision && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4">Add to Vision Board</h3>
-            
+        <ModalOverlay onClose={() => setShowAddVision(false)}>
+          <GlassCard className="p-6 border-zinc-600/50">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm">Add to Vision Board</h3>
+              <button onClick={() => setShowAddVision(false)} className="p-1 text-zinc-500 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <select
+              <InputField label="Category">
+                <DarkSelect
                   value={visionForm.category}
                   onChange={(e) => setVisionForm({...visionForm, category: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                 >
-                  <option value="faith">Faith & Spirituality</option>
-                  <option value="family">Family & Relationships</option>
-                  <option value="finances">Finances & Wealth</option>
-                  <option value="fitness">Health & Fitness</option>
-                  <option value="career">Career & Business</option>
-                  <option value="personal">Personal Growth</option>
-                  <option value="other">Other Dreams</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Title *</label>
-                <input
-                  type="text"
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </DarkSelect>
+              </InputField>
+
+              <InputField label="Title *">
+                <DarkInput
                   value={visionForm.title}
                   onChange={(e) => setVisionForm({...visionForm, title: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                   placeholder="My dream..."
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <textarea
+              </InputField>
+
+              <InputField label="Description">
+                <DarkTextarea
                   value={visionForm.description}
                   onChange={(e) => setVisionForm({...visionForm, description: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                   rows={2}
                   placeholder="Describe your vision..."
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Affirmation</label>
-                <input
-                  type="text"
+              </InputField>
+
+              <InputField label="Affirmation" hint="A declaration in present tense">
+                <DarkInput
                   value={visionForm.affirmation}
                   onChange={(e) => setVisionForm({...visionForm, affirmation: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                   placeholder="I am..."
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Target Date</label>
-                <input
+              </InputField>
+
+              <InputField label="Target Date">
+                <DarkInput
                   type="date"
                   value={visionForm.target_date}
                   onChange={(e) => setVisionForm({...visionForm, target_date: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                 />
-              </div>
+              </InputField>
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowAddVision(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddVision(false)}
+                className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleAddVisionItem} className="flex-1 bg-purple-600 hover:bg-purple-700" disabled={!visionForm.title}>
+              <Button
+                onClick={handleAddVisionItem}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
+                disabled={!visionForm.title}
+              >
+                <Plus className="w-4 h-4 mr-2" />
                 Add Vision
               </Button>
             </div>
-          </div>
-        </div>
+          </GlassCard>
+        </ModalOverlay>
       )}
 
-      {/* Team Post Modal */}
+      {/* ========== TEAM POST MODAL ========== */}
       {showTeamPost && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4">Share with Team</h3>
-            
+        <ModalOverlay onClose={() => setShowTeamPost(false)}>
+          <GlassCard className="p-6 border-zinc-600/50">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm">Share with Team</h3>
+              <button onClick={() => setShowTeamPost(false)} className="p-1 text-zinc-500 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
-                <select
+              <InputField label="Type">
+                <DarkSelect
                   value={teamPostForm.post_type}
                   onChange={(e) => setTeamPostForm({...teamPostForm, post_type: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="encouragement">Encouragement</option>
                   <option value="gratitude">Gratitude</option>
-                  <option value="win">Win/Celebration</option>
-                  <option value="quote">Quote/Inspiration</option>
+                  <option value="win">Win / Celebration</option>
+                  <option value="quote">Quote / Inspiration</option>
                   <option value="milestone">Milestone</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Message</label>
-                <textarea
+                </DarkSelect>
+              </InputField>
+
+              <InputField label="Message">
+                <DarkTextarea
                   value={teamPostForm.content}
                   onChange={(e) => setTeamPostForm({...teamPostForm, content: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
                   rows={4}
                   placeholder="Share something inspiring with the team..."
                 />
-              </div>
+              </InputField>
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowTeamPost(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setShowTeamPost(false)}
+                className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleShareTeamPost} className="flex-1 bg-purple-600 hover:bg-purple-700" disabled={!teamPostForm.content}>
+              <Button
+                onClick={handleShareTeamPost}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
+                disabled={!teamPostForm.content}
+              >
+                <Send className="w-4 h-4 mr-2" />
                 Share
               </Button>
             </div>
-          </div>
-        </div>
+          </GlassCard>
+        </ModalOverlay>
       )}
     </div>
   );
 };
 
 export default InteractiveVisionBoard;
-
-
-
-
-
