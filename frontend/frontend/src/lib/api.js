@@ -220,13 +220,25 @@ async function _apiFetch(endpoint, options = {}) {
       return { ok: false, error: errorData.detail || `Error ${res.status}`, status: res.status };
     }
 
+    const contentType = res.headers.get('content-type') || '';
+    const isJsonResponse = contentType.includes('application/json');
+
+    // For non-JSON content types (file downloads, XML, plain text), return raw text
     const text = await res.text();
     let data = null;
     if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch (_parseErr) {
-        return { ok: false, error: 'Invalid response from server (malformed JSON)' };
+      if (isJsonResponse) {
+        try {
+          data = JSON.parse(text);
+        } catch (_parseErr) {
+          // Server declared JSON but sent malformed body — log but treat as success
+          // with raw text so callers can still inspect what arrived.
+          console.warn('API: response Content-Type is JSON but body failed to parse', endpoint);
+          data = text;
+        }
+      } else {
+        // Non-JSON 200 (e.g. plain text, HTML, XML) — return raw text as data
+        data = text;
       }
     }
 
