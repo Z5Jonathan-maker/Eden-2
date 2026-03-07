@@ -73,13 +73,23 @@ def _resolve_photo_path(photo_dir: str, claim_id: str, filename: str) -> Optiona
     if not filename:
         return None
 
+    # Sanitize to prevent path traversal
+    safe_filename = os.path.basename(filename)
+    safe_claim_id = os.path.basename(claim_id) if claim_id else ""
+    if not safe_filename or safe_filename in (".", ".."):
+        return None
+
     candidates = [
-        os.path.join(photo_dir, claim_id, filename),
-        os.path.join(photo_dir, filename),
+        os.path.join(photo_dir, safe_claim_id, safe_filename),
+        os.path.join(photo_dir, safe_filename),
     ]
     for path in candidates:
-        if os.path.exists(path):
-            return path
+        # Verify resolved path stays within photo_dir
+        real_path = os.path.realpath(path)
+        if not real_path.startswith(os.path.realpath(photo_dir)):
+            continue
+        if os.path.exists(real_path):
+            return real_path
 
     logger.warning(
         "Photo file not found on disk",

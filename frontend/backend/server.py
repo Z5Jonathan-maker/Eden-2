@@ -2,19 +2,25 @@ from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, Request,
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
 from typing import List
 import asyncio
 import os
 import logging
+import time
 import uuid
 import traceback
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Configure logging early — before any getLogger() calls
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Import routes after loading env
 from integrations import integrations_router
@@ -79,13 +85,9 @@ from auth import decode_access_token, get_password_hash
 # ============================================
 # ENVIRONMENT VALIDATION
 # ============================================
-mongo_url = os.environ.get('MONGO_URL')
-if not mongo_url:
-    raise RuntimeError(
-        "❌ MONGO_URL environment variable is required.\n"
-        "   See .env.example for configuration.\n"
-        "   Quick start: MONGO_URL=mongodb://localhost:27017"
-    )
+# MongoDB and JWT validation happens in dependencies.py
+# Import single shared Motor client (avoids dual connection pool)
+from dependencies import client, db
 
 jwt_secret = os.environ.get('JWT_SECRET_KEY')
 if not jwt_secret:
@@ -94,17 +96,92 @@ if not jwt_secret:
         "   See .env.example for configuration."
     )
 
-# MongoDB connection with validation
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'eden_claims')]
-
 from middleware import StructuredLoggingMiddleware
+from contextlib import asynccontextmanager
 
-# Create the main app without a prefix
-app = FastAPI(title="Eden Claims Management API")
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    """Startup: seed data, ensure admin, init gamification, create indexes, start scheduler."""
+    await log_startup_config()
+    await seed_university_data()
+    await ensure_admin_user()
+    await ensure_workbooks_exist()
+    await initialize_harvest_gamification()
+    await initialize_background_scheduler()
+    await ensure_database_indexes()
+    yield
+    # Shutdown: close DB client and stop scheduler
+    logging.info("Eden server shutting down")
+    client.close()
+    try:
+        from workers.scheduler import stop_scheduler
+        stop_scheduler()
+    except Exception as e:
+        logging.error(f"Failed to stop scheduler: {e}")
+
+
+async def ensure_database_indexes():
+    """Create all database indexes at startup (idempotent)."""
+    try:
+        await db.inspection_photos.create_index(
+            [("claim_id", 1), ("sha256_hash", 1)],
+            background=True, sparse=True
+        )
+        await db.notifications.create_index(
+            [("user_id", 1), ("is_read", 1), ("created_at", -1)],
+            background=True
+        )
+        await db.notifications.create_index(
+            [("user_id", 1), ("created_at", -1)],
+            background=True
+        )
+        await db.contracts.create_index(
+            [("claim_id", 1), ("status", 1)],
+            background=True
+        )
+        await db.florida_statutes.create_index(
+            [("body_text", "text"), ("heading", "text"), ("section_number", "text")],
+            background=True
+        )
+        await db.claims.create_index(
+            [("assigned_to_id", 1), ("status", 1)],
+            background=True
+        )
+        await db.claims.create_index(
+            [("client_email", 1)],
+            background=True
+        )
+        logging.info("Database indexes ensured successfully")
+    except Exception as e:
+        logging.warning(f"Could not create database indexes: {e}")
+
+
+# Create the main app with lifespan handler (replaces deprecated on_event)
+app = FastAPI(title="Eden Claims Management API", lifespan=lifespan)
 
 # Add Structured Logging Middleware
 app.add_middleware(StructuredLoggingMiddleware)
+
+# CORS — registered immediately after app creation, before route registration
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+cors_origin_regex = os.environ.get("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
+
+cors_options = {
+    "allow_credentials": True,
+    "allow_origins": cors_origins,
+    "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    "allow_headers": ["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    "expose_headers": ["X-RateLimit-Remaining", "Retry-After"],
+}
+if cors_origin_regex:
+    cors_options["allow_origin_regex"] = cors_origin_regex
+
+app.add_middleware(CORSMiddleware, **cors_options)
 
 # Startup logging
 logger = logging.getLogger("eden.startup")
@@ -117,6 +194,7 @@ async def log_startup_config():
     logger.info(f"Environment: {os.environ.get('ENVIRONMENT', 'unknown')}")
 
     # Mask sensitive parts of MongoDB URL
+    mongo_url = os.environ.get("MONGO_URL", "")
     masked_mongo = mongo_url[:50] + "..." if len(mongo_url) > 50 else mongo_url
     logger.info(f"Database: {masked_mongo}")
     logger.info(f"Database Name: {os.environ.get('DB_NAME', 'eden_claims')}")
@@ -188,12 +266,17 @@ async def rate_limit_middleware(request: Request, call_next):
     if path in ["/health", "/api/"] or ("/image" in path and "token=" in str(request.url.query)):
         return await call_next(request)
     
-    # Get client IP
-    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.headers.get("x-real-ip", "")
-    if not client_ip:
-        client_ip = request.client.host if request.client else "unknown"
+    # Get client IP — only trust proxy headers behind known reverse proxies
+    # In production (Render), the direct client is the Render proxy
+    trusted_proxies = os.environ.get("TRUSTED_PROXIES", "").split(",")
+    direct_ip = request.client.host if request.client else "unknown"
+
+    if direct_ip in trusted_proxies or os.environ.get("BEHIND_PROXY", "").lower() == "true":
+        client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        if not client_ip:
+            client_ip = request.headers.get("x-real-ip", direct_ip)
+    else:
+        client_ip = direct_ip
     
     # Check rate limit (120 requests/minute with 300s block after exceeding)
     is_limited, remaining, reset_time = rate_limiter.is_rate_limited(
@@ -209,9 +292,9 @@ async def rate_limit_middleware(request: Request, call_next):
             content={
                 "error": "Too Many Requests",
                 "message": "Rate limit exceeded. Please slow down.",
-                "retry_after": int(reset_time - __import__('time').time()) if reset_time else 60
+                "retry_after": int(reset_time - time.time()) if reset_time else 60
             },
-            headers={"Retry-After": str(int(reset_time - __import__('time').time()) if reset_time else 60)}
+            headers={"Retry-After": str(int(reset_time - time.time()) if reset_time else 60)}
         )
     
     # Process request
@@ -439,45 +522,10 @@ app.include_router(tasks_router)
 app.include_router(garden_dashboard_router)
 app.include_router(email_intelligence_router)
 
-# Startup event to seed data
-@app.on_event("startup")
-async def startup_event():
-    """Log config, seed data, ensure admin, initialize gamification, start scheduler"""
-    await log_startup_config()
-    await seed_university_data()
-    await ensure_admin_user()
-    await ensure_workbooks_exist()
-    await initialize_harvest_gamification()
-    await initialize_background_scheduler()
-    # Ensure database indexes for performance
-    try:
-        from dependencies import db as startup_db
-        await startup_db.inspection_photos.create_index(
-            [("claim_id", 1), ("sha256_hash", 1)],
-            background=True, sparse=True
-        )
-        # Notification indexes — queried on every poll (every 15s per user)
-        await startup_db.notifications.create_index(
-            [("user_id", 1), ("is_read", 1), ("created_at", -1)],
-            background=True
-        )
-        await startup_db.notifications.create_index(
-            [("user_id", 1), ("created_at", -1)],
-            background=True
-        )
-        # Contract indexes
-        await startup_db.contracts.create_index(
-            [("claim_id", 1), ("status", 1)],
-            background=True
-        )
-    except Exception as e:
-        logging.warning(f"Could not create database indexes: {e}")
-
 
 async def ensure_workbooks_exist():
     """Ensure workbooks collection has data — seed if empty"""
     try:
-        from dependencies import db
         count = await db.workbooks.count_documents({})
         if count == 0:
             logging.info("No workbooks found — seeding sample workbooks...")
@@ -636,38 +684,7 @@ async def websocket_notifications(websocket: WebSocket, token: str = None):
         if user_id:
             manager.disconnect(websocket, user_id)
 
-cors_origins = [
-    origin.strip()
-    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
-    if origin.strip()
-]
-cors_origin_regex = os.environ.get("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
-
-cors_options = {
-    "allow_credentials": True,
-    "allow_origins": cors_origins,
-    "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    "allow_headers": ["Authorization", "Content-Type", "X-Requested-With", "Accept"],
-    "expose_headers": ["X-RateLimit-Remaining", "Retry-After"],
-}
-if cors_origin_regex:
-    cors_options["allow_origin_regex"] = cors_origin_regex
-
-app.add_middleware(CORSMiddleware, **cors_options)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
-    # Stop background scheduler
-    try:
-        from workers.scheduler import stop_scheduler
-        stop_scheduler()
-    except Exception as e:
-        logger.error(f"Failed to stop scheduler: {e}")
+
+

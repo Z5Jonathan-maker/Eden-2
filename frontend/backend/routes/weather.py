@@ -1602,18 +1602,21 @@ async def _query_county_permits(county: str, address: str, city: str) -> List[Di
         return []
 
     # Build address search query — Socrata uses $where with LIKE
-    clean_addr = address.strip().upper().replace("'", "''")
+    # Sanitize: strip to alphanumeric + spaces only to prevent SoQL injection
+    import re as _re
+    clean_addr = _re.sub(r"[^A-Za-z0-9 ]", "", address.strip().upper())
     # Extract just the street number + name for fuzzy matching
     addr_parts = clean_addr.split()
     if len(addr_parts) >= 2:
-        # Search for street number + first word of street name
         search_term = f"{addr_parts[0]} {addr_parts[1]}"
     else:
         search_term = clean_addr
 
+    # Escape single quotes for SoQL LIKE clause
+    search_term_escaped = search_term.replace("'", "''")
     addr_field = source["address_field"]
     params = {
-        "$where": f"upper({addr_field}) like '%{search_term}%'",
+        "$where": f"upper({addr_field}) like '%{search_term_escaped}%'",
         "$limit": 50,
         "$order": f"{source['date_field']} DESC",
     }

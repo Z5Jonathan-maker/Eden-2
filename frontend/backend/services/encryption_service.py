@@ -8,8 +8,10 @@ class EncryptionService:
     def __init__(self):
         encryption_key = os.getenv('ENCRYPTION_KEY')
         if not encryption_key:
-            logger.warning('ENCRYPTION_KEY not set, generating temporary key')
-            encryption_key = Fernet.generate_key().decode()
+            raise RuntimeError(
+                'ENCRYPTION_KEY environment variable is required. '
+                'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+            )
         self.cipher_suite = Fernet(encryption_key.encode())
     
     def encrypt_token(self, token: str) -> str:

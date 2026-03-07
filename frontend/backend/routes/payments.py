@@ -60,10 +60,11 @@ async def create_checkout_session(
 @router.get("/status/{session_id}", response_model=PaymentStatusResponse)
 async def get_payment_status(
     session_id: str,
+    current_user: dict = Depends(get_current_user),
     service: PaymentsService = Depends(get_payments_service)
 ):
-    """Get payment status for a checkout session"""
-    return await service.get_payment_status(session_id)
+    """Get payment status for a checkout session (authenticated)"""
+    return await service.get_payment_status(session_id, current_user)
 
 
 @router.post("/webhook/stripe")

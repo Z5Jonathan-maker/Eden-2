@@ -34,14 +34,19 @@ from incentives_engine.events import emit_harvest_visit
 router = APIRouter(prefix="/api/harvest/v2", tags=["Harvest v2"])
 logger = logging.getLogger(__name__)
 
-# Initialize scoring engine with db on first request
+# Initialize scoring engine with db on first request (thread-safe)
+import asyncio
 _scoring_engine_initialized = False
+_scoring_engine_lock = asyncio.Lock()
 
 async def ensure_scoring_engine():
     global _scoring_engine_initialized
-    if not _scoring_engine_initialized:
-        init_scoring_engine(db)
-        _scoring_engine_initialized = True
+    if _scoring_engine_initialized:
+        return
+    async with _scoring_engine_lock:
+        if not _scoring_engine_initialized:
+            init_scoring_engine(db)
+            _scoring_engine_initialized = True
 
 # ============================================
 # MODELS - Spotio + Enzy Patterns
@@ -496,9 +501,9 @@ async def get_pins_with_history(
                 sw_lat, sw_lng, ne_lat, ne_lng = coords
                 query["latitude"] = {"$gte": sw_lat, "$lte": ne_lat}
                 query["longitude"] = {"$gte": sw_lng, "$lte": ne_lng}
-        except:
-            pass
-    
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid bounds format: {bounds}")
+
     pins = await db.canvassing_pins.find(
         query,
         {

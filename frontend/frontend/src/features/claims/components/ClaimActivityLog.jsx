@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { apiGet } from '@/lib/api';
+import React, { useState } from 'react';
 import {
   Activity, Loader2, Edit, ArrowRightLeft, UserPlus, Archive,
   RotateCcw, FileText, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { useClaimActivity } from '../hooks/useClaimDetails';
 
 const EVENT_ICONS = {
   ClaimCreated: FileText,
@@ -49,23 +49,8 @@ const formatEventDescription = (event) => {
 };
 
 const ClaimActivityLog = ({ claimId }) => {
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: activities = [], isLoading: loading } = useClaimActivity(claimId);
   const [expanded, setExpanded] = useState(true);
-
-  const fetchActivity = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiGet(`/api/claims/${claimId}/activity?limit=50`);
-      if (res.ok) setActivities(res.data || []);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [claimId]);
-
-  useEffect(() => { fetchActivity(); }, [fetchActivity]);
 
   const formatTime = (ts) => {
     if (!ts) return '';

@@ -135,8 +135,8 @@ class CrawlResult:
 
 async def run_browser_crawl(
     base_url: str,
-    email: str = "test@eden.com",
-    password: str = "password",
+    email: str,
+    password: str,
     routes_to_check: Optional[List[str]] = None,
     viewport: str = "desktop"
 ) -> CrawlResult:
@@ -286,8 +286,8 @@ async def run_browser_crawl(
 
 async def run_mobile_regression(
     base_url: str,
-    email: str = "test@eden.com",
-    password: str = "password"
+    email: str,
+    password: str
 ) -> Dict[str, CrawlResult]:
     """
     Run regression tests at multiple viewport sizes.

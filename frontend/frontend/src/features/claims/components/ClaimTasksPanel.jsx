@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import React, { useState } from 'react';
 import {
   Plus, CheckCircle2, Circle, Clock, Trash2, Loader2,
   AlertTriangle, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  useClaimTasks,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+} from '../hooks/useClaimDetails';
 
 const TASK_TYPES = [
   { value: 'follow_up', label: 'Follow-Up' },
@@ -24,73 +29,45 @@ const PRIORITY_COLORS = {
 };
 
 const ClaimTasksPanel = ({ claimId }) => {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: tasks = [], isLoading: loading } = useClaimTasks(claimId);
+  const createTaskMutation = useCreateTask(claimId);
+  const updateTaskMutation = useUpdateTask(claimId);
+  const deleteTaskMutation = useDeleteTask(claimId);
+
   const [showForm, setShowForm] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     title: '', description: '', due_date: '', priority: 'Medium', task_type: 'follow_up',
   });
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiGet(`/api/tasks/claim/${claimId}`, { cache: false });
-      if (res.ok) setTasks(res.data || []);
-    } catch {
-      toast.error('Failed to load tasks');
-    } finally {
-      setLoading(false);
-    }
-  }, [claimId]);
-
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  const creating = createTaskMutation.isPending;
 
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
-    setCreating(true);
     try {
-      const res = await apiPost('/api/tasks/', { ...form, claim_id: claimId });
-      if (res.ok) {
-        setTasks(prev => [...prev, res.data]);
-        setForm({ title: '', description: '', due_date: '', priority: 'Medium', task_type: 'follow_up' });
-        setShowForm(false);
-        toast.success('Task created');
-      } else {
-        toast.error(res.error || 'Failed to create task');
-      }
-    } catch {
-      toast.error('Network error creating task');
-    } finally {
-      setCreating(false);
+      await createTaskMutation.mutateAsync(form);
+      setForm({ title: '', description: '', due_date: '', priority: 'Medium', task_type: 'follow_up' });
+      setShowForm(false);
+      toast.success('Task created');
+    } catch (err) {
+      toast.error(err.message || 'Failed to create task');
     }
   };
 
   const toggleStatus = async (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
     try {
-      const res = await apiPut(`/api/tasks/${task.id}`, { status: newStatus });
-      if (res.ok) {
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
-      } else {
-        toast.error(res.error || 'Failed to update task');
-      }
-    } catch {
-      toast.error('Failed to update task');
+      await updateTaskMutation.mutateAsync({ taskId: task.id, data: { status: newStatus } });
+    } catch (err) {
+      toast.error(err.message || 'Failed to update task');
     }
   };
 
   const deleteTask = async (taskId) => {
     try {
-      const res = await apiDelete(`/api/tasks/${taskId}`);
-      if (res.ok) {
-        setTasks(prev => prev.filter(t => t.id !== taskId));
-        toast.success('Task deleted');
-      } else {
-        toast.error(res.error || 'Failed to delete task');
-      }
-    } catch {
-      toast.error('Failed to delete task');
+      await deleteTaskMutation.mutateAsync(taskId);
+      toast.success('Task deleted');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete task');
     }
   };
 

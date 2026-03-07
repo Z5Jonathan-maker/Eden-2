@@ -463,9 +463,9 @@ async def get_door_pins(
                         "lng": {"$gte": sw_lng, "$lte": ne_lng},
                     },
                 ]
-        except:
+        except (ValueError, TypeError, IndexError):
             pass
-    
+
     pins = await db.canvassing_pins.find(
         query,
         {"_id": 0}

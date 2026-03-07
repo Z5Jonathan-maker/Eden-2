@@ -8,6 +8,7 @@ import logging
 import uuid
 import re
 import json
+from utils.claim_access import can_access_claim as _user_can_access_claim
 
 logger = logging.getLogger(__name__)
 
@@ -201,14 +202,8 @@ async def get_florida_statute_context(query: str) -> str:
     
     relevant_context = []
     
-    # Search the statute database
+    # Search the statute database (text index created at startup in server.py)
     try:
-        # Create text index if needed
-        try:
-            await db.florida_statutes.create_index([("body_text", "text"), ("heading", "text")])
-        except Exception:
-            pass
-        
         # Search for relevant statutes
         statutes = await db.florida_statutes.find(
             {"$text": {"$search": query}},
@@ -340,24 +335,6 @@ async def extract_claim_reference(message: str) -> Optional[str]:
     
     return None
 
-
-def _user_can_access_claim(current_user: dict, claim: dict) -> bool:
-    role = current_user.get("role", "client")
-    user_id = current_user.get("id")
-    if role in {"admin", "manager"}:
-        return True
-    if role == "client":
-        user_email = (current_user.get("email") or "").strip().lower()
-        claim_email = (claim.get("client_email") or "").strip().lower()
-        return bool(user_email) and user_email == claim_email
-    assigned_to = claim.get("assigned_to")
-    assigned_to_id = claim.get("assigned_to_id")
-    full_name = current_user.get("full_name")
-    return (
-        claim.get("created_by") == user_id
-        or assigned_to_id == user_id
-        or (full_name and assigned_to == full_name)
-    )
 
 
 def _claim_visibility_filter(current_user: dict) -> dict:

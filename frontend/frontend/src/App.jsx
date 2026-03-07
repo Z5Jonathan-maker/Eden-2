@@ -1,7 +1,9 @@
 import './App.css';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster as SonnerToaster } from 'sonner';
+import { queryClient } from './lib/queryClient';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -308,27 +310,29 @@ function AppRoutes() {
 function App() {
   return (
     <div className="App">
-      <ThemeProvider>
-        <AuthProvider>
-          <ErrorBoundary>
-            <InstallPrompt />
-            <ApiConnectivityToast />
-            <BrowserRouter>
-              <Suspense fallback={<PageLoader />}>
-                <AppRoutes />
-              </Suspense>
-            </BrowserRouter>
-            <SonnerToaster
-              position="top-right"
-              richColors
-              closeButton
-              toastOptions={{
-                duration: 4000,
-              }}
-            />
-          </ErrorBoundary>
-        </AuthProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <ErrorBoundary>
+              <InstallPrompt />
+              <ApiConnectivityToast />
+              <BrowserRouter>
+                <Suspense fallback={<PageLoader />}>
+                  <AppRoutes />
+                </Suspense>
+              </BrowserRouter>
+              <SonnerToaster
+                position="top-right"
+                richColors
+                closeButton
+                toastOptions={{
+                  duration: 4000,
+                }}
+              />
+            </ErrorBoundary>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </div>
   );
 }

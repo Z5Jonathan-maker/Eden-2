@@ -11,6 +11,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
+from utils.claim_access import can_access_claim as _can_access_claim
 
 # Structured logging setup
 logger = logging.getLogger(__name__)
@@ -43,25 +44,6 @@ def _parse_date(value: Optional[str]) -> Optional[datetime]:
             continue
     return None
 
-
-def _can_access_claim(current_user: dict, claim: dict) -> bool:
-    role = current_user.get("role", "client")
-    user_id = current_user.get("id")
-    if role in {"admin", "manager"}:
-        return True
-    if role == "client":
-        user_email = (current_user.get("email") or "").strip().lower()
-        claim_email = (claim.get("client_email") or "").strip().lower()
-        return bool(user_email) and user_email == claim_email
-
-    assigned_to = claim.get("assigned_to")
-    assigned_to_id = claim.get("assigned_to_id")
-    full_name = current_user.get("full_name")
-    return (
-        claim.get("created_by") == user_id
-        or assigned_to_id == user_id
-        or (full_name and assigned_to == full_name)
-    )
 
 
 async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
@@ -433,7 +415,7 @@ async def add_note(
     """Add a note to a claim"""
     try:
         await _get_claim_for_user_or_403(claim_id, current_user)
-        note_dict = note_data.dict()
+        note_dict = note_data.model_dump()
         # Path parameter is source of truth; prevent cross-claim note injection.
         note_dict["claim_id"] = claim_id
         note_dict["author_id"] = current_user["id"]

@@ -16,6 +16,7 @@ import re
 from dependencies import db, get_current_active_user as get_current_user
 from services.signnow_service import SignNowService
 from services.contracts_pdf import PA_AGREEMENT_FIELD_POSITIONS
+from utils.claim_access import can_access_claim as _can_access_claim
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 logger = logging.getLogger(__name__)
@@ -29,25 +30,6 @@ def _combine_query_filters(*filters: Dict[str, Any]) -> Dict[str, Any]:
     if len(valid) == 1:
         return valid[0]
     return {"$and": valid}
-
-
-def _can_access_claim(current_user: dict, claim: dict) -> bool:
-    role = current_user.get("role", "client")
-    user_id = current_user.get("id")
-    if role in {"admin", "manager"}:
-        return True
-    if role == "client":
-        user_email = (current_user.get("email") or "").strip().lower()
-        claim_email = (claim.get("client_email") or "").strip().lower()
-        return bool(user_email) and user_email == claim_email
-    assigned_to = claim.get("assigned_to")
-    assigned_to_id = claim.get("assigned_to_id")
-    full_name = current_user.get("full_name")
-    return (
-        claim.get("created_by") == user_id
-        or assigned_to_id == user_id
-        or (full_name and assigned_to == full_name)
-    )
 
 
 async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
@@ -183,14 +165,14 @@ CARE_CLAIMS_TEMPLATE = {
     "template_type": "public_adjuster_agreement",
     "version": "1.0",
     "adjuster_info": {
-        "name": "Jonathan Cimadevilla",
-        "license_number": "W786531",
-        "firm_name": "Care Claims",
-        "firm_license": "G114979",
-        "address": "9920 Spanish Lime Ct, Riverview, Florida 33578",
-        "phone": "352-782-2617",
-        "email": "Jonathan@careclaimsadjusting.com",
-        "website": "www.careclaimsadjusting.com"
+        "name": os.environ.get("ADJUSTER_NAME", ""),
+        "license_number": os.environ.get("ADJUSTER_LICENSE", ""),
+        "firm_name": os.environ.get("FIRM_NAME", ""),
+        "firm_license": os.environ.get("FIRM_LICENSE", ""),
+        "address": os.environ.get("FIRM_ADDRESS", ""),
+        "phone": os.environ.get("FIRM_PHONE", ""),
+        "email": os.environ.get("FIRM_EMAIL", ""),
+        "website": os.environ.get("FIRM_WEBSITE", "")
     },
     "fields": [
         # Policyholder Section

@@ -263,18 +263,15 @@ async def start_sentinel_scan(
     """
     if config is None:
         config = SentinelConfig()
-    
-    # Get auth token for authenticated requests
+
+    # Get auth token from the current authenticated user
     token = None
-    # For internal testing, we'll use a test token
     try:
-        test_login = await db.users.find_one({"email": "test@eden.com"})
-        if test_login:
-            from auth import create_access_token
-            token = create_access_token({"sub": test_login.get("id", "test")})
-    except:
-        pass
-    
+        from auth import create_access_token
+        token = create_access_token({"sub": current_user.get("id", current_user.get("_id", ""))})
+    except Exception as e:
+        logger.warning(f"Could not create auth token for sentinel scan: {e}")
+
     scan = SentinelScanResult()
     active_scans[scan.scan_id] = scan
     
@@ -335,13 +332,11 @@ async def check_single_endpoint(
     """Check a single API endpoint"""
     token = None
     try:
-        test_login = await db.users.find_one({"email": "test@eden.com"})
-        if test_login:
-            from auth import create_access_token
-            token = create_access_token({"sub": test_login.get("id", "test")})
-    except:
-        pass
-    
+        from auth import create_access_token
+        token = create_access_token({"sub": current_user.get("id", current_user.get("_id", ""))})
+    except Exception as e:
+        logger.warning(f"Could not create auth token for endpoint check: {e}")
+
     endpoint = {"path": path, "method": method, "auth_required": True, "name": path}
     result = await check_api_endpoint(endpoint, token)
     return result
@@ -392,13 +387,13 @@ active_browser_crawls: Dict[str, Any] = {}
 
 class BrowserCrawlConfig(BaseModel):
     routes_to_check: Optional[List[str]] = None
-    email: str = "test@eden.com"
-    password: str = "password"
+    email: str
+    password: str
 
 @router.post("/browser-crawl")
 async def start_browser_crawl(
     background_tasks: BackgroundTasks,
-    config: Optional[BrowserCrawlConfig] = None,
+    config: BrowserCrawlConfig,
     current_user: dict = Depends(require_role(["admin"]))
 ):
     """
@@ -410,9 +405,6 @@ async def start_browser_crawl(
     - Console errors
     Admin-only endpoint.
     """
-    if config is None:
-        config = BrowserCrawlConfig()
-    
     crawl_id = str(uuid.uuid4())[:8]
     
     # Initialize crawl status
@@ -820,8 +812,8 @@ async def get_fix_templates(current_user: dict = Depends(get_current_user)):
 
 class MobileRegressionConfig(BaseModel):
     viewports: List[str] = ["desktop", "mobile", "tablet"]
-    email: str = "test@eden.com"
-    password: str = "password"
+    email: str
+    password: str
 
 @router.post("/mobile-regression")
 async def start_mobile_regression(

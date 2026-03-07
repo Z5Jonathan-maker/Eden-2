@@ -13,11 +13,14 @@ from .models import Course, Lesson, Article, QuizQuestion, Flashcard, MatchingPa
 logger = logging.getLogger(__name__)
 
 async def seed_university_data():
-    """Seed Care Claims University courses - homeowner-focused, leverage-based claims education"""
-    
-    # Clear existing data to refresh with new content
-    await db.courses.delete_many({})
-    await db.articles.delete_many({})
+    """Seed Care Claims University courses - homeowner-focused, leverage-based claims education.
+    Only seeds if collections are empty to prevent data loss on restart."""
+
+    course_count = await db.courses.count_documents({})
+    article_count = await db.articles.count_documents({})
+    if course_count > 0 or article_count > 0:
+        logger.info(f"University data exists ({course_count} courses, {article_count} articles) — skipping seed")
+        return
     
     # ========== FOUNDATION COURSES ==========
 

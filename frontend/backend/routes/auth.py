@@ -18,10 +18,18 @@ REGISTRATION_SECRET = os.environ.get("REGISTRATION_SECRET", "").strip()
 @router.post("/register", response_model=User)
 async def register(user_data: UserCreate, request: Request):
     """Register a new user. In production, requires a valid invite code."""
+    # Rate limit registration attempts (raises HTTPException if exceeded)
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit(f"register:{client_ip}", "auth")
     try:
-        # In production, require an invite/registration secret
+        # In production, always require an invite/registration secret
         is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
-        if is_production and REGISTRATION_SECRET:
+        if is_production:
+            if not REGISTRATION_SECRET:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Registration is not configured. Contact administrator."
+                )
             body = await request.json() if hasattr(request, '_body') else {}
             # Accept invite_code from the original Pydantic-parsed body won't have it,
             # so re-parse the raw body to check for extra fields
@@ -55,11 +63,11 @@ async def register(user_data: UserCreate, request: Request):
             )
 
         # Create user
-        user_dict = user_data.dict()
+        user_dict = user_data.model_dump()
         user_dict["password"] = get_password_hash(user_dict["password"])
 
         user_obj = User(**{k: v for k, v in user_dict.items() if k != "password"})
-        user_dict_with_id = {**user_obj.dict(), "password": user_dict["password"]}
+        user_dict_with_id = {**user_obj.model_dump(), "password": user_dict["password"]}
 
         await db.users.insert_one(user_dict_with_id)
 

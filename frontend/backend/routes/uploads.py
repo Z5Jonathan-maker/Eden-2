@@ -200,7 +200,8 @@ async def get_file(file_id: str, current_user: dict = Depends(get_current_active
     # Access control: admin/manager can access all; others only their own uploads
     role = current_user.get("role", "client")
     if role not in ("admin", "manager"):
-        if file_meta.get("uploaded_by") != current_user.get("id"):
+        # uploaded_by stores email, so compare against email (not id)
+        if file_meta.get("uploaded_by") != current_user.get("email"):
             raise HTTPException(status_code=403, detail="Access denied")
 
     mime_type = file_meta.get("mime_type", "application/octet-stream")
@@ -210,13 +211,15 @@ async def get_file(file_id: str, current_user: dict = Depends(get_current_active
     try:
         grid_stream = await fs.open_download_stream_by_name(file_meta["filename"])
         file_bytes = await grid_stream.read()
+        # Sanitize filename for Content-Disposition header
+        safe_name = original_name.replace('"', '_').replace('\n', '_').replace('\r', '_')
         return StreamingResponse(
             io.BytesIO(file_bytes),
             media_type=mime_type,
-            headers={"Content-Disposition": f'inline; filename="{original_name}"'}
+            headers={"Content-Disposition": f'inline; filename="{safe_name}"'}
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"GridFS retrieval failed for {file_id}, falling back to filesystem: {e}")
 
     # Fallback: try legacy filesystem storage
     from pathlib import Path

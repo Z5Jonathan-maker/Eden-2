@@ -6,10 +6,11 @@ from fastapi import HTTPException
 
 from dependencies import db
 from services.stripe_checkout import (
-    StripeCheckout, 
-    CheckoutSessionResponse, 
-    CheckoutStatusResponse, 
-    CheckoutSessionRequest
+    StripeCheckout,
+    CheckoutSessionResponse,
+    CheckoutStatusResponse,
+    CheckoutSessionRequest,
+    WebhookResponse,
 )
 
 # Structured logging setup
@@ -68,7 +69,7 @@ SUBSCRIPTION_PACKAGES = {
 class PaymentsService:
     def __init__(self, database=db):
         self.db = database
-        self.stripe_api_key = os.environ.get("STRIPE_API_KEY")
+        self.stripe_api_key = os.environ.get("STRIPE_SECRET_KEY") or os.environ.get("STRIPE_API_KEY")
 
     def get_packages(self) -> List[Dict[str, Any]]:
         """Get all available subscription packages"""
@@ -97,15 +98,21 @@ class PaymentsService:
             
             package = SUBSCRIPTION_PACKAGES[pkg_id_lower]
             
-            # 2. Prepare URLs
+            # 2. Prepare URLs (validate origin against allowed list)
             base_origin = origin_url.rstrip('/')
+            allowed_origins = [
+                o.rstrip('/') for o in
+                os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+            ]
+            if base_origin not in allowed_origins:
+                raise HTTPException(status_code=400, detail="Invalid origin URL")
             success_url = f"{base_origin}/dashboard?session_id={{CHECKOUT_SESSION_ID}}&payment=success"
             cancel_url = f"{base_origin}/?payment=cancelled"
             webhook_url = f"{host_url.rstrip('/')}/api/payments/webhook/stripe"
             
             # 3. Initialize Stripe
-            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key, webhook_url=webhook_url)
-            
+            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key)
+
             # 4. Prepare Metadata
             user_id = str(current_user.get("_id", current_user.get("id", "")))
             metadata = {
@@ -156,19 +163,26 @@ class PaymentsService:
             logger.error(f"Create checkout error: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
 
-    async def get_payment_status(self, session_id: str) -> Dict[str, Any]:
-        """Get payment status and sync with Stripe"""
+    async def get_payment_status(self, session_id: str, current_user: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get payment status and sync with Stripe. Validates user owns the transaction."""
         try:
             if not self.stripe_api_key:
                 raise HTTPException(status_code=500, detail="Stripe API key not configured")
-                
-            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key, webhook_url="")
-            
+
+            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key)
+
             # 1. Fetch from Stripe
             status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
-            
+
             # 2. Sync Local DB
             transaction = await self.db.payment_transactions.find_one({"session_id": session_id})
+
+            # 2a. Verify ownership (prevent IDOR)
+            if current_user and transaction:
+                user_email = current_user.get("email", "")
+                user_role = current_user.get("role", "client")
+                if user_role not in ("admin", "manager") and transaction.get("user_email") != user_email:
+                    raise HTTPException(status_code=403, detail="Access denied")
             
             if transaction:
                 # Update if changed
@@ -191,6 +205,8 @@ class PaymentsService:
                 "message": message
             }
             
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Get payment status error: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -201,8 +217,7 @@ class PaymentsService:
             if not self.stripe_api_key:
                 raise HTTPException(status_code=500, detail="Stripe API key not configured")
                 
-            webhook_url = f"{host_url.rstrip('/')}/api/payments/webhook/stripe"
-            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key, webhook_url=webhook_url)
+            stripe_checkout = StripeCheckout(api_key=self.stripe_api_key)
             
             # 1. Verify & Parse
             webhook_response = await stripe_checkout.handle_webhook(body, signature)
@@ -231,6 +246,8 @@ class PaymentsService:
             
             return {"status": "success", "event_type": webhook_response.event_type}
             
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Webhook error: {e}")
             raise HTTPException(status_code=400, detail="Internal server error")
@@ -285,12 +302,13 @@ class PaymentsService:
     async def _activate_subscription(self, transaction: Dict[str, Any]):
         """Enable the subscription features for the user"""
         user_id = transaction.get("user_id")
-        
-        # Handle both ObjectId string and email lookup for safety
-        if user_id and len(user_id) == 24:
-            query = {"_id": user_id}
-        else:
-            query = {"email": transaction.get("user_email")}
+
+        if not user_id:
+            logger.error(f"Cannot activate subscription: missing user_id in transaction {transaction.get('session_id')}")
+            return
+
+        # Use application-layer 'id' field (UUID string), consistent with all other user lookups
+        query = {"id": user_id}
         
         await self.db.users.update_one(
             query,

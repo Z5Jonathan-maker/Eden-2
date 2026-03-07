@@ -274,8 +274,8 @@ class ClaimsService:
             await self._email_claim_created(claim)
             try:
                 await self._sms_claim_created(claim.model_dump())
-            except Exception:
-                pass # Non-blocking
+            except Exception as sms_err:
+                logger.warning(f"SMS notification failed for claim {claim.id}: {sms_err}")
             await self._emit_gamification_event(user["id"], "claims.created", claim)
 
         elif event_type == "ClaimUpdated":

@@ -248,7 +248,8 @@ async def list_statutes(chapter: Optional[str] = None, year: int = 2025, skip: i
     """List all stored statutes with optional filtering"""
     query = {"year": year}
     if chapter:
-        query["chapter"] = {"$regex": f"Chapter {chapter}", "$options": "i"}
+        import re
+        query["chapter"] = {"$regex": f"Chapter {re.escape(chapter)}", "$options": "i"}
     
     statutes = await db.florida_statutes.find(query, {"_id": 1, "section_number": 1, "heading": 1, "year": 1, "source_url": 1, "last_verified": 1, "status": 1, "body_length": 1}).sort("section_number", 1).skip(skip).limit(limit).to_list(limit)
 
@@ -336,7 +337,7 @@ async def search_statutes(q: str, year: int = 2025, limit: int = 10):
             ("heading", "text"),
             ("section_number", "text")
         ])
-    except:
+    except Exception:
         pass  # Index may already exist
     
     # Text search
@@ -385,8 +386,8 @@ async def get_statutes_for_eve(query: str, limit: int = 5):
             ("body_text", "text"),
             ("heading", "text")
         ])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
     
     results = await db.florida_statutes.find(
         {"$text": {"$search": query}},

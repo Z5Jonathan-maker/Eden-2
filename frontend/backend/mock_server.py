@@ -20,8 +20,10 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# Configuration — use env vars, never hardcode secrets
-JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "dev-only-change-me")
+# Configuration — env var required, no fallback
+JWT_SECRET = os.environ.get("JWT_SECRET_KEY")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET_KEY environment variable is required for mock_server")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
@@ -101,7 +103,7 @@ def verify_token(token: str):
         email = payload.get("sub")
         if email and email in USERS:
             return USERS[email]
-    except:
+    except (jwt.PyJWTError, KeyError, ValueError):
         raise HTTPException(status_code=401, detail="Invalid token")
     raise HTTPException(status_code=401, detail="Invalid token")
 

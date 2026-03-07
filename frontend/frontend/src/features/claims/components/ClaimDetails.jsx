@@ -1,11 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
 import { Badge } from '../../../shared/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../shared/ui/dialog';
 import { apiGet, apiPost, apiPut } from '@/lib/api';
+import {
+  useClaimDetails as useClaimDetailQuery,
+  useClaimNotes,
+  useClaimDocuments,
+  useClaimPhotos,
+  useFloridaReadiness,
+  useClaimGammaPage,
+  useUpdateClaim,
+  useAddNote,
+  claimKeys,
+} from '../hooks/useClaimDetails';
 import {
   ArrowLeft,
   Edit,
@@ -53,25 +65,35 @@ import ClientStatusPanel from '../../../components/ClientStatusPanel';
 import { FEATURE_ICONS } from '../../../assets/badges';
 import ComplianceDeadlineTracker from './ComplianceDeadlineTracker';
 
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL;
-
 const ClaimDetails = () => {
   const { claimId } = useParams();
   const navigate = useNavigate();
-  const [claim, setClaim] = useState(null);
-  const [notes, setNotes] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [photos, setPhotos] = useState([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+
+  // ── React Query: data fetching ─────────────────────────────────
+  const {
+    data: claim = null,
+    isLoading: loading,
+    error: claimError,
+    refetch: refetchClaim,
+  } = useClaimDetailQuery(claimId);
+  const { data: notes = [], refetch: refetchNotes } = useClaimNotes(claimId);
+  const { data: documents = [], refetch: refetchDocs } = useClaimDocuments(claimId);
+  const { data: photos = [], isLoading: loadingPhotos } = useClaimPhotos(claimId);
+  const { data: floridaReadiness = null } = useFloridaReadiness(claimId);
+  const { data: gammaPage = null } = useClaimGammaPage(claimId);
+
+  // ── React Query: mutations ─────────────────────────────────────
+  const updateClaimMutation = useUpdateClaim(claimId);
+  const addNoteMutation = useAddNote(claimId);
+
+  const error = claimError?.message || '';
+
+  // ── Local UI state (non-data) ──────────────────────────────────
   const [newNote, setNewNote] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
-  const [saving, setSaving] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
-  const [gammaPage, setGammaPage] = useState(null);
   const [creatingGammaPage, setCreatingGammaPage] = useState(false);
   const [showDeckMenu, setShowDeckMenu] = useState(false);
   const [generatingDeck, setGeneratingDeck] = useState(null);
@@ -87,7 +109,6 @@ const ClaimDetails = () => {
   const [copilotEvidenceGaps, setCopilotEvidenceGaps] = useState([]);
   const [copilotMeta, setCopilotMeta] = useState(null);
   const [loadingCopilotActions, setLoadingCopilotActions] = useState(false);
-  const [floridaReadiness, setFloridaReadiness] = useState(null);
   const [demandManifest, setDemandManifest] = useState(null);
   const [loadingDemandManifest, setLoadingDemandManifest] = useState(false);
   const [submittingDemand, setSubmittingDemand] = useState(false);
@@ -111,32 +132,10 @@ const ClaimDetails = () => {
     description: '',
   });
 
-  const fetchClaimPhotos = useCallback(async () => {
-    setLoadingPhotos(true);
-    try {
-      const res = await apiGet(`/api/inspections/claim/${claimId}/photos`);
-      if (res.ok) {
-        setPhotos(res.data.photos || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch claim photos:', err);
-    } finally {
-      setLoadingPhotos(false);
-    }
-  }, [claimId]);
-
-  const fetchGammaPage = useCallback(async () => {
-    try {
-      const res = await apiGet(`/api/gamma/claim-page/${claimId}`);
-      if (res.ok) {
-        if (res.data.exists) {
-          setGammaPage(res.data);
-        }
-      }
-    } catch (err) {
-      // console.log('Gamma page not found');
-    }
-  }, [claimId]);
+  // Legacy-compatible refetch helper for retry button
+  const fetchClaimData = useCallback(() => {
+    refetchClaim();
+  }, [refetchClaim]);
 
   const createGammaStrategyPage = async () => {
     setCreatingGammaPage(true);
@@ -144,9 +143,8 @@ const ClaimDetails = () => {
       const res = await apiPost('/api/gamma/claim-page/create', { claim_id: claimId });
 
       if (res.ok && (res.data.success || res.data.exists)) {
-        setGammaPage({ exists: true, url: res.data.url, page_id: res.data.page_id });
+        queryClient.invalidateQueries({ queryKey: claimKeys.gammaPage(claimId) });
         toast.success('Strategy page created in Gamma!');
-        // Open the page
         if (res.data.url) {
           window.open(res.data.url, '_blank');
         }
@@ -159,39 +157,6 @@ const ClaimDetails = () => {
       setCreatingGammaPage(false);
     }
   };
-
-  const fetchClaimData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [claimRes, notesRes, docsRes, readinessRes] = await Promise.all([
-        apiGet(`/api/claims/${claimId}`),
-        apiGet(`/api/claims/${claimId}/notes`).catch(() => ({ ok: false, data: [] })),
-        apiGet(`/api/claims/${claimId}/documents`).catch(() => ({ ok: false, data: [] })),
-        apiGet(`/api/claims/${claimId}/florida-readiness`).catch(() => ({ ok: false, data: null })),
-      ]);
-
-      if (!claimRes.ok) {
-        throw new Error(claimRes.error || 'Failed to fetch claim');
-      }
-
-      setClaim(claimRes.data);
-      setEditForm(claimRes.data);
-      setNotes(notesRes.ok ? notesRes.data : []);
-      setDocuments(docsRes.ok ? docsRes.data : []);
-      setFloridaReadiness(readinessRes.ok ? readinessRes.data : null);
-      setError('');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [claimId]);
-
-  useEffect(() => {
-    fetchClaimData();
-    fetchClaimPhotos();
-    fetchGammaPage();
-  }, [fetchClaimData, fetchClaimPhotos, fetchGammaPage]);
 
   // Open schedule modal with pre-filled data
   const openScheduleModal = () => {
@@ -245,16 +210,9 @@ const ClaimDetails = () => {
         setShowScheduleModal(false);
 
         // Add note about the scheduled appointment
-        const appointmentNote = `📅 Appointment scheduled: ${appointmentForm.title} on ${new Date(appointmentForm.date).toLocaleDateString()} at ${appointmentForm.time}`;
+        const appointmentNote = `Appointment scheduled: ${appointmentForm.title} on ${new Date(appointmentForm.date).toLocaleDateString()} at ${appointmentForm.time}`;
         try {
-          const noteRes = await apiPost(`/api/claims/${claimId}/notes`, {
-            claim_id: claimId,
-            content: appointmentNote,
-            tags: [],
-          });
-          if (noteRes.ok) {
-            setNotes(prev => [noteRes.data, ...prev]);
-          }
+          await addNoteMutation.mutateAsync(appointmentNote);
         } catch (e) {
           // Note failed, but appointment was created
         }
@@ -279,27 +237,14 @@ const ClaimDetails = () => {
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
-
     try {
-      setAddingNote(true);
-      const res = await apiPost(`/api/claims/${claimId}/notes`, {
-        claim_id: claimId,
-        content: newNote.trim(),
-        tags: [],
-      });
-
-      if (!res.ok) {
-        throw new Error(res.error || 'Failed to add note');
-      }
-
-      setNotes(prev => [res.data, ...prev]);
+      await addNoteMutation.mutateAsync(newNote.trim());
       setNewNote('');
     } catch (err) {
       toast.error('Failed to add note: ' + err.message);
-    } finally {
-      setAddingNote(false);
     }
   };
+  const addingNote = addNoteMutation.isPending;
 
   const handleEditClaim = () => {
     setIsEditing(true);
@@ -313,15 +258,8 @@ const ClaimDetails = () => {
 
   const handleSaveEdit = async () => {
     try {
-      setSaving(true);
       const previousStatus = claim?.status;
-      const res = await apiPut(`/api/claims/${claimId}`, editForm);
-
-      if (!res.ok) {
-        throw new Error(res.error || 'Failed to update claim');
-      }
-
-      setClaim(res.data);
+      const updatedClaim = await updateClaimMutation.mutateAsync(editForm);
       setIsEditing(false);
       toast.success('Claim updated successfully');
 
@@ -330,16 +268,15 @@ const ClaimDetails = () => {
         try {
           const prefs = JSON.parse(localStorage.getItem('eden_backup_prefs') || '{}');
           if (prefs.autoBackup) {
-            backupClaim(claimId, res.data?.claim_number || claim?.claim_number);
+            backupClaim(claimId, updatedClaim?.claim_number || claim?.claim_number);
           }
         } catch { /* ignore backup errors */ }
       }
     } catch (err) {
       toast.error('Failed to update claim: ' + err.message);
-    } finally {
-      setSaving(false);
     }
   };
+  const saving = updateClaimMutation.isPending;
 
   const handleGenerateReport = async () => {
     setGeneratingReport(true);
@@ -1011,9 +948,9 @@ const ClaimDetails = () => {
         handleCommsDraftConsumed={handleCommsDraftConsumed}
         navigate={navigate}
         onDocumentsChange={(newDoc) => {
-          if (newDoc) setDocuments(prev => [newDoc, ...prev]);
+          if (newDoc) queryClient.invalidateQueries({ queryKey: claimKeys.documents(claimId) });
         }}
-        onNotesChange={(updatedNotes) => setNotes(updatedNotes)}
+        onNotesChange={() => queryClient.invalidateQueries({ queryKey: claimKeys.notes(claimId) })}
       />
 
       {/* Schedule Appointment Modal */}

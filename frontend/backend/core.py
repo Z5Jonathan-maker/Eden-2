@@ -379,24 +379,7 @@ def has_min_role(user_role: str, required_role: str) -> bool:
     return get_role_level(user_role) >= get_role_level(required_role)
 
 
-def can_access_claim(user: dict, claim: dict) -> bool:
-    """Check if user can access a specific claim"""
-    user_role = user.get("role", "client")
-    user_id = user.get("id")
-    
-    # Admin and Manager can access all
-    if user_role in [UserRole.ADMIN.value, UserRole.MANAGER.value]:
-        return True
-    
-    # Adjuster can access their assigned claims
-    if user_role == UserRole.ADJUSTER.value:
-        return claim.get("assigned_to") == user_id
-    
-    # Client can access their own claims
-    if user_role == UserRole.CLIENT.value:
-        return claim.get("client_id") == user_id
-    
-    return False
+# can_access_claim moved to utils/claim_access.py (single source of truth)
 
 
 # ============================================
@@ -466,7 +449,6 @@ __all__ = [
     'ROLE_HIERARCHY',
     'get_role_level',
     'has_min_role',
-    'can_access_claim',
     
     # Query
     'build_pagination',

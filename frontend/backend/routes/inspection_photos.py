@@ -5,9 +5,12 @@ Competitive with CompanyCam features
 import os
 import uuid
 import json
+import hmac
+import hashlib
 import asyncio
 import logging
 import base64
+import time
 from datetime import datetime, timezone
 from typing import Optional, List
 from pathlib import Path
@@ -18,7 +21,8 @@ from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dependencies import db, get_current_active_user, get_user_from_token_param
-from auth import decode_access_token
+from auth import decode_access_token, SECRET_KEY as JWT_SECRET_KEY
+from utils.claim_access import can_access_claim
 
 router = APIRouter(prefix="/api/inspections", tags=["inspections"])
 security = HTTPBearer(auto_error=False)  # Don't auto-fail, we'll handle it
@@ -47,6 +51,36 @@ async def get_user_from_bearer_token(credentials: Optional[HTTPAuthorizationCred
     except Exception:
         pass
     return None
+
+
+SIGNED_URL_EXPIRY_SECONDS = 300  # 5 minutes
+
+
+def _generate_photo_signature(photo_id: str, expiry_ts: int) -> str:
+    """Create HMAC-SHA256 signature for a photo signed URL."""
+    message = f"{photo_id}:{expiry_ts}".encode()
+    return hmac.new(JWT_SECRET_KEY.encode(), message, hashlib.sha256).hexdigest()
+
+
+def _verify_photo_signature(photo_id: str, sig: str, exp: int) -> bool:
+    """Verify HMAC signature and check expiry."""
+    if int(time.time()) > exp:
+        return False
+    expected = _generate_photo_signature(photo_id, exp)
+    return hmac.compare_digest(sig, expected)
+
+
+async def _check_photo_claim_access(user: dict, photo: dict) -> None:
+    """Verify user has access to the claim that owns this photo. Raises 403 if denied."""
+    claim_id = photo.get("claim_id")
+    if not claim_id:
+        # Photos without a claim_id are accessible to any authenticated user
+        return
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Associated claim not found")
+    if not can_access_claim(user, claim):
+        raise HTTPException(status_code=403, detail="Access denied - you do not have access to this claim")
 
 
 class PhotoMetadata(BaseModel):
@@ -398,17 +432,56 @@ async def upload_inspection_photo(
     }
 
 
+@router.post("/photos/{photo_id}/signed-url")
+async def create_signed_url(
+    photo_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Generate a short-lived signed URL for accessing a photo image.
+
+    The signed URL is photo-specific and expires after 5 minutes.
+    Use this instead of passing JWTs in query parameters.
+    """
+    photo = await db.inspection_photos.find_one({"id": photo_id})
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    await _check_photo_claim_access(current_user, photo)
+
+    expiry_ts = int(time.time()) + SIGNED_URL_EXPIRY_SECONDS
+    signature = _generate_photo_signature(photo_id, expiry_ts)
+
+    base_url = os.environ.get("BASE_URL", "")
+    image_url = f"{base_url}/api/inspections/photos/{photo_id}/image?sig={signature}&exp={expiry_ts}"
+    thumbnail_url = f"{base_url}/api/inspections/photos/{photo_id}/thumbnail?sig={signature}&exp={expiry_ts}"
+
+    return {
+        "image_url": image_url,
+        "thumbnail_url": thumbnail_url,
+        "expires_at": expiry_ts,
+        "expires_in_seconds": SIGNED_URL_EXPIRY_SECONDS,
+    }
+
+
 @router.get("/photos/{photo_id}/image")
 async def get_photo_image(
     photo_id: str,
     token: Optional[str] = Query(None, description="Auth token for backward-compat img src access"),
+    sig: Optional[str] = Query(None, description="HMAC signature for signed URL access"),
+    exp: Optional[int] = Query(None, description="Expiry timestamp for signed URL access"),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    """Get the actual photo image. Accepts Bearer token via Authorization header or ?token= query param."""
-    
-    user = None
+    """Get the actual photo image.
 
-    # Try Bearer token first
+    Auth methods (checked in order):
+    1. Bearer token (Authorization header)
+    2. Signed URL (sig + exp query params) -- photo-specific, short-lived
+    3. Legacy query-param token (?token=) -- backward compat, deprecated
+    """
+    user = None
+    signed_url_auth = False
+
+    # 1. Try Bearer token
     if credentials:
         try:
             payload = decode_access_token(credentials.credentials)
@@ -419,16 +492,26 @@ async def get_photo_image(
         except Exception:
             pass
 
-    # Fall back to query param token
-    if not user and token:
+    # 2. Try signed URL (no user lookup needed -- access was verified at signing time)
+    if not user and sig and exp is not None:
+        if not _verify_photo_signature(photo_id, sig, exp):
+            raise HTTPException(status_code=401, detail="Invalid or expired signed URL")
+        signed_url_auth = True
+
+    # 3. Fall back to legacy query param token
+    if not user and not signed_url_auth and token:
         user = await get_user_from_token_param(token)
 
-    if not user:
+    if not user and not signed_url_auth:
         raise HTTPException(status_code=401, detail="Unauthorized - valid token required")
 
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Claim-level authorization (skip for signed URLs -- already verified at signing)
+    if not signed_url_auth:
+        await _check_photo_claim_access(user, photo)
 
     # Build file path
     if photo.get("claim_id"):
@@ -452,10 +535,14 @@ async def get_photo_image(
 async def get_photo_thumbnail(
     photo_id: str,
     token: Optional[str] = Query(None),
+    sig: Optional[str] = Query(None, description="HMAC signature for signed URL access"),
+    exp: Optional[int] = Query(None, description="Expiry timestamp for signed URL access"),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """Get photo thumbnail (300px max dimension, generated on-demand with Pillow)."""
     user = None
+    signed_url_auth = False
+
     if credentials:
         try:
             payload = decode_access_token(credentials.credentials)
@@ -465,14 +552,25 @@ async def get_photo_thumbnail(
                     user = await db.users.find_one({"id": user_id}, {"_id": 0})
         except Exception:
             pass
-    if not user and token:
+
+    if not user and sig and exp is not None:
+        if not _verify_photo_signature(photo_id, sig, exp):
+            raise HTTPException(status_code=401, detail="Invalid or expired signed URL")
+        signed_url_auth = True
+
+    if not user and not signed_url_auth and token:
         user = await get_user_from_token_param(token)
-    if not user:
+
+    if not user and not signed_url_auth:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     photo = await db.inspection_photos.find_one({"id": photo_id})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Claim-level authorization (skip for signed URLs -- already verified at signing)
+    if not signed_url_auth:
+        await _check_photo_claim_access(user, photo)
 
     # Build file paths
     if photo.get("claim_id"):
@@ -800,7 +898,7 @@ async def export_claim_photos_pdf(
                 uid = payload.get("sub")
                 if uid:
                     user = await db.users.find_one({"id": uid})
-        except:
+        except Exception:
             pass
     if not user and token:
         user = await get_user_from_token_param(token)

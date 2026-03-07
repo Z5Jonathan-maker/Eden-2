@@ -15,7 +15,9 @@ API Endpoints:
 import os
 import asyncio
 import aiohttp
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
@@ -505,12 +507,78 @@ async def get_tiles_config(
     return {
         "enabled": True,
         "tiles": {
-            "raster": f"{REGRID_TILES_URL}/{{z}}/{{x}}/{{y}}.png?token={REGRID_TOKEN}&styles=line-color:#F97316,line-width:2,fill-opacity:0.1,fill-color:#F97316",
+            "raster": "/api/regrid/tiles/{z}/{x}/{y}.png",
             "attribution": "© Regrid"
         },
         "minZoom": 14,
         "maxZoom": 20
     }
+
+
+@router.get("/tiles/{z}/{x}/{y}.png")
+async def proxy_regrid_tile(
+    z: int,
+    x: int,
+    y: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Proxy Regrid map tiles so the API token never reaches the frontend.
+    Streams the PNG response from Regrid back to the authenticated client.
+    """
+    if not REGRID_TOKEN:
+        raise HTTPException(status_code=503, detail="Regrid API not configured")
+
+    tile_url = (
+        f"{REGRID_TILES_URL}/{z}/{x}/{y}.png"
+        f"?token={REGRID_TOKEN}"
+        f"&styles=line-color:#F97316,line-width:2,fill-opacity:0.1,fill-color:#F97316"
+    )
+
+    try:
+        client = httpx.AsyncClient(timeout=15.0)
+        response = await client.send(
+            client.build_request("GET", tile_url),
+            stream=True
+        )
+
+        if response.status_code == 404:
+            await response.aclose()
+            await client.aclose()
+            raise HTTPException(status_code=404, detail="Tile not found")
+
+        if response.status_code != 200:
+            await response.aclose()
+            await client.aclose()
+            raise HTTPException(
+                status_code=502,
+                detail=f"Regrid upstream error: {response.status_code}"
+            )
+
+        content_type = response.headers.get("content-type", "image/png")
+
+        async def stream_and_close():
+            try:
+                async for chunk in response.aiter_bytes(chunk_size=8192):
+                    yield chunk
+            finally:
+                await response.aclose()
+                await client.aclose()
+
+        return StreamingResponse(
+            stream_and_close(),
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "X-Content-Type-Options": "nosniff",
+            }
+        )
+
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach Regrid tile server: {str(exc)}"
+        )
 
 
 @router.post("/pin/enrich")
