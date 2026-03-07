@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       // Redirect to login. Uses window.location so it works regardless of
       // which component tree we're in (no dependency on useNavigate).
       const currentPath = window.location.pathname;
-      const publicPaths = ['/', '/login', '/register', '/install'];
+      const publicPaths = ['/', '/login', '/register', '/install', '/compare'];
       if (!publicPaths.includes(currentPath) && !currentPath.startsWith('/status/')) {
         window.location.replace('/login');
       }

@@ -268,6 +268,12 @@ const LandingPage = () => {
               ) : (
                 <>
                   <button
+                    onClick={() => navigate('/compare')}
+                    className="hidden sm:block px-4 py-2 text-zinc-400 hover:text-white font-tactical text-sm uppercase tracking-wider transition-colors"
+                  >
+                    Compare
+                  </button>
+                  <button
                     onClick={() => navigate('/login')}
                     className="hidden sm:block px-4 py-2 text-zinc-400 hover:text-white font-tactical text-sm uppercase tracking-wider transition-colors"
                   >
