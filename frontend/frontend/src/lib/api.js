@@ -207,7 +207,7 @@ async function _apiFetch(endpoint, options = {}) {
       const errorData = await res.json().catch(() => ({}));
 
       // On 401, try refreshing the token before giving up
-      const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh');
+      const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh') || endpoint.includes('/auth/me');
       if (res.status === 401 && !isAuthEndpoint && !options._retried) {
         const refreshed = await _tryRefreshToken();
         if (refreshed) {

@@ -38,7 +38,8 @@ export const AuthProvider = ({ children }) => {
       // Redirect to login. Uses window.location so it works regardless of
       // which component tree we're in (no dependency on useNavigate).
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/register') {
+      const publicPaths = ['/', '/login', '/register', '/install'];
+      if (!publicPaths.includes(currentPath) && !currentPath.startsWith('/status/')) {
         window.location.replace('/login');
       }
       // Reset flag after short delay so future expirations (re-login then expire) still work
