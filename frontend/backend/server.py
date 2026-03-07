@@ -152,6 +152,13 @@ async def ensure_database_indexes():
             [("client_email", 1)],
             background=True
         )
+        # Token blacklist: TTL index auto-deletes expired entries after 24h buffer
+        await db.token_blacklist.create_index(
+            "blacklisted_at",
+            expireAfterSeconds=60 * 60 * 24 * 8,  # 8 days (refresh token lifetime + 1 day buffer)
+            background=True
+        )
+        await db.token_blacklist.create_index("jti", unique=True, background=True)
         logging.info("Database indexes ensured successfully")
     except Exception as e:
         logging.warning(f"Could not create database indexes: {e}")

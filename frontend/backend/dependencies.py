@@ -21,7 +21,14 @@ security = HTTPBearer(auto_error=False)
 mongo_url = os.environ.get('MONGO_URL')
 if not mongo_url:
     raise RuntimeError("MONGO_URL environment variable is required")
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(
+    mongo_url,
+    maxPoolSize=50,
+    minPoolSize=5,
+    maxIdleTimeMS=30000,
+    serverSelectionTimeoutMS=10000,
+    connectTimeoutMS=10000,
+)
 db = client[os.environ.get('DB_NAME', 'eden_claims')]
 
 async def get_db():
@@ -71,6 +78,18 @@ async def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Check JWT blacklist (tokens invalidated on logout)
+    jti = payload.get("jti")
+    if jti:
+        blacklisted = await db.token_blacklist.find_one({"jti": jti})
+        if blacklisted:
+            logger.warning("Auth failed: blacklisted token jti=%s", jti)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     user_id = payload.get("sub")
     if user_id is None:

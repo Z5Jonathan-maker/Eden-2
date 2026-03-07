@@ -215,9 +215,28 @@ async def refresh_token(request: Request, response: Response):
     return {"access_token": new_access, "token_type": "bearer"}
 
 @router.post("/logout")
-async def logout(response: Response, current_user: dict = Depends(get_current_active_user)):
-    """Logout user and clear httpOnly cookies"""
+async def logout(request: Request, response: Response, current_user: dict = Depends(get_current_active_user)):
+    """Logout user, blacklist tokens, and clear httpOnly cookies"""
     is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
+    # Blacklist current access token so it can't be reused
+    try:
+        token = request.cookies.get("eden_token")
+        if not token:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                token = auth_header.split(" ", 1)[1].strip()
+        if token:
+            payload = decode_access_token(token)
+            if payload and payload.get("jti"):
+                await db.token_blacklist.insert_one({
+                    "jti": payload["jti"],
+                    "user_id": payload.get("sub"),
+                    "exp": payload.get("exp"),
+                    "blacklisted_at": datetime.now(timezone.utc).isoformat(),
+                })
+    except Exception as e:
+        logger.warning(f"Token blacklist on logout failed (non-fatal): {e}")
 
     # Clear both cookies
     response.delete_cookie(

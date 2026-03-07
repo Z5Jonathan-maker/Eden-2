@@ -13,6 +13,9 @@ from fastapi.responses import StreamingResponse
 from dependencies import db, get_current_active_user
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
@@ -35,6 +38,37 @@ def get_file_type(extension: str) -> Optional[str]:
         if ext_lower in extensions:
             return file_type
     return None
+
+
+# Magic byte signatures for file type validation
+MAGIC_BYTES = {
+    ".jpg":  [b"\xff\xd8\xff"],
+    ".jpeg": [b"\xff\xd8\xff"],
+    ".png":  [b"\x89PNG\r\n\x1a\n"],
+    ".gif":  [b"GIF87a", b"GIF89a"],
+    ".webp": [b"RIFF"],  # RIFF....WEBP
+    ".pdf":  [b"%PDF"],
+    ".mp4":  [b"\x00\x00\x00\x18ftyp", b"\x00\x00\x00\x1cftyp", b"\x00\x00\x00\x20ftyp", b"ftyp"],
+    ".mp3":  [b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"ID3"],
+    ".wav":  [b"RIFF"],
+    ".ogg":  [b"OggS"],
+    ".epub": [b"PK\x03\x04"],
+    ".docx": [b"PK\x03\x04"],
+    ".xlsx": [b"PK\x03\x04"],
+    ".pptx": [b"PK\x03\x04"],
+    ".doc":  [b"\xd0\xcf\x11\xe0"],
+    ".xls":  [b"\xd0\xcf\x11\xe0"],
+    ".ppt":  [b"\xd0\xcf\x11\xe0"],
+}
+
+
+def validate_magic_bytes(content: bytes, extension: str) -> bool:
+    """Validate file content matches expected magic bytes for the extension."""
+    signatures = MAGIC_BYTES.get(extension.lower())
+    if not signatures:
+        return True  # No signature check for this type (txt, md, m4a, etc.)
+    header = content[:16]
+    return any(header.startswith(sig) or sig in header[:16] for sig in signatures)
 
 
 def get_mime_type(extension: str) -> str:
@@ -103,6 +137,13 @@ async def upload_file(
     # Check file size
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB")
+
+    # Validate magic bytes — reject files that don't match their extension
+    if not validate_magic_bytes(content, ext):
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content does not match extension '{ext}'. Possible file type mismatch."
+        )
 
     # Generate unique ID
     file_id = str(uuid.uuid4())
@@ -215,7 +256,11 @@ async def get_file(file_id: str, current_user: dict = Depends(get_current_active
         return StreamingResponse(
             io.BytesIO(file_bytes),
             media_type=mime_type,
-            headers={"Content-Disposition": f'inline; filename="{safe_name}"'}
+            headers={
+                "Content-Disposition": f'inline; filename="{safe_name}"',
+                "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+                "X-Content-Type-Options": "nosniff",
+            }
         )
     except Exception as e:
         logger.warning(f"GridFS retrieval failed for {file_id}, falling back to filesystem: {e}")
