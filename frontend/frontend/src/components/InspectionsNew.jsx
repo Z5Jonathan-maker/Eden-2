@@ -58,7 +58,7 @@ const InspectionsNew = () => {
     try {
       const { ok, data } = await api('/api/claims/');
       if (ok && data) {
-        setClaims(Array.isArray(data) ? data : data?.claims || []);
+        setClaims(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Failed to fetch claims:', err);

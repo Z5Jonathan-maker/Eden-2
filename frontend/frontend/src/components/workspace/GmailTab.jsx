@@ -309,15 +309,6 @@ const GmailTab = () => {
         setAuthError(false);
       } else if (res.status === 401) {
         setMessages([]);
-        // Attempt silent re-fetch once before showing auth error
-        if (!query && !authError) {
-          const retryRes = await apiGet(`/api/integrations/google/gmail/messages${qs}`, { cache: false });
-          if (retryRes.ok) {
-            setMessages(Array.isArray(retryRes.data?.messages) ? retryRes.data.messages : []);
-            setAuthError(false);
-            return;
-          }
-        }
         setAuthError(true);
         toast.error('Google session expired. Please reconnect your Google account.', {
           action: {

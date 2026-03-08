@@ -208,15 +208,14 @@ async function _apiFetch(endpoint, options = {}) {
 
       // On 401, try refreshing the token before giving up
       const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh') || endpoint.includes('/auth/me');
-      const isGoogleOAuthError = typeof errorData.detail === 'string' && (
-        errorData.detail.includes('Google') || errorData.detail.includes('google')
-      );
+      const isGoogleIntegration = endpoint.startsWith('/api/integrations/google/') || endpoint.startsWith('/api/oauth/google/');
       if (res.status === 401 && !isAuthEndpoint && !options._retried) {
-        // Don't attempt Eden JWT refresh for Google OAuth failures — the Eden session is fine
-        if (!isGoogleOAuthError) {
+        if (isGoogleIntegration) {
+          // Google OAuth 401 — Eden session is fine, skip JWT refresh
+          // Return the error directly so callers (GmailTab, DriveTab) can handle reconnect UI
+        } else {
           const refreshed = await _tryRefreshToken();
           if (refreshed) {
-            // Retry the original request with the new token
             return _apiFetch(endpoint, { ...options, _retried: true });
           }
           window.dispatchEvent(new CustomEvent('eden:auth-expired'));
