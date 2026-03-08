@@ -139,7 +139,7 @@ const Settings = () => {
         return;
       }
 
-      setGammaEnabled(Boolean(res.data.enabled));
+      setGammaEnabled(Boolean(res.data.enabled || res.data.connected));
     } catch (error) {
       setGammaEnabled(false);
       console.error('Failed to fetch Gamma status:', error);
@@ -866,26 +866,33 @@ const Settings = () => {
                       return null;
                     })()}
                     <div className="flex flex-wrap gap-2">
-                      {Object.entries(aiRouting.providers_available || {}).map(([provider, enabled]) => {
-                        const health = aiProviderHealth?.providers?.[provider];
-                        const healthy = health?.healthy;
-                        const detail = health?.detail;
-                        return (
-                        <span
-                          key={`provider-availability-${provider}`}
-                          className={`rounded border px-2 py-1 text-[10px] uppercase ${
-                            enabled && healthy
-                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                              : enabled
-                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                              : 'border-slate-700/60 bg-slate-900/40 text-slate-400'
-                          }`}
-                        >
-                          {provider}: {enabled ? (healthy ? 'healthy' : 'degraded') : 'off'}
-                          {detail ? ` (${String(detail).slice(0, 40)})` : ''}
+                      {Object.keys(aiRouting.providers_available || {}).length === 0 ? (
+                        <span className="rounded border border-slate-700/60 bg-slate-900/40 px-2 py-1 text-[10px] text-slate-400">
+                          No providers configured
                         </span>
-                        );
-                      })}
+                      ) : (
+                        Object.entries(aiRouting.providers_available || {}).map(([provider, enabled]) => {
+                          const health = aiProviderHealth?.providers?.[provider];
+                          const healthy = health?.healthy;
+                          const isMissingKey = health?.detail && String(health.detail).toLowerCase().includes('api key');
+                          const detail = health?.detail;
+                          return (
+                          <span
+                            key={`provider-availability-${provider}`}
+                            className={`rounded border px-2 py-1 text-[10px] uppercase ${
+                              enabled && healthy
+                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                                : enabled && !isMissingKey
+                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                                : 'border-slate-700/60 bg-slate-900/40 text-slate-400'
+                            }`}
+                          >
+                            {provider}: {enabled ? (healthy ? 'healthy' : (isMissingKey ? 'no api key' : 'degraded')) : 'off'}
+                            {detail && !isMissingKey ? ` (${String(detail).slice(0, 40)})` : ''}
+                          </span>
+                          );
+                        })
+                      )}
                     </div>
                     {loadingAiProviderHealth && (
                       <div className="flex items-center gap-2 text-[10px] text-slate-500">

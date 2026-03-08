@@ -63,18 +63,24 @@ class ErrorBoundary extends React.Component {
             </div>
             <h2 className="text-lg font-tactical font-bold text-white mb-2">SYSTEM ERROR</h2>
             <p className="text-zinc-400 text-sm font-mono mb-4">
-              {this.state.error?.message || 'Something went wrong'}
+              {import.meta.env.PROD
+                ? 'Something went wrong. Please refresh the page or contact support.'
+                : (this.state.error?.message || 'Something went wrong')}
             </p>
-            <p className="text-zinc-500 text-xs font-mono mb-4">
-              Error ID: {this.state.errorId || 'unknown'}
-            </p>
-            <button
-              onClick={this.copyErrorDetails}
-              className="w-full mb-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-mono uppercase tracking-wide text-zinc-300 hover:bg-zinc-700"
-              data-testid="error-boundary-copy"
-            >
-              Copy Error Details
-            </button>
+            {!import.meta.env.PROD && (
+              <p className="text-zinc-500 text-xs font-mono mb-4">
+                Error ID: {this.state.errorId || 'unknown'}
+              </p>
+            )}
+            {!import.meta.env.PROD && (
+              <button
+                onClick={this.copyErrorDetails}
+                className="w-full mb-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-mono uppercase tracking-wide text-zinc-300 hover:bg-zinc-700"
+                data-testid="error-boundary-copy"
+              >
+                Copy Error Details
+              </button>
+            )}
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null, errorId: null });

@@ -19,7 +19,7 @@
       "destination": "https://eden-2.onrender.com/ws/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.).*)",
       "destination": "/index.html"
     }
   ],

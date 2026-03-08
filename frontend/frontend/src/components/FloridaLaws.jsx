@@ -203,7 +203,7 @@ const FloridaLaws = () => {
   const fetchDbStatutes = useCallback(async () => {
     try {
       const res = await apiGet('/api/statutes/?limit=100');
-      if (res.ok) setDbStatutes(res.data.statutes || []);
+      if (res.ok) setDbStatutes(Array.isArray(res.data?.statutes) ? res.data.statutes : Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch DB statutes:', err);
     }
@@ -605,28 +605,30 @@ const FloridaLaws = () => {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="toolkits" data-testid="tab-toolkits">
-              <Wrench className="w-4 h-4 mr-2" />
-              Toolkits
-            </TabsTrigger>
-            <TabsTrigger value="database" data-testid="tab-database">
-              <Database className="w-4 h-4 mr-2" />
-              All Statutes ({dbStatutes.length})
-            </TabsTrigger>
-            <TabsTrigger value="overview" data-testid="tab-overview">
-              <Hash className="w-4 h-4 mr-2" />
-              Key Numbers
-            </TabsTrigger>
-            <TabsTrigger value="builder" data-testid="tab-builder">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Argument Builder
-            </TabsTrigger>
-            <TabsTrigger value="updates" data-testid="tab-updates">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              2026 Updates ({updates.length})
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="toolkits" data-testid="tab-toolkits" className="flex-shrink-0">
+                <Wrench className="w-4 h-4 mr-2" />
+                Toolkits
+              </TabsTrigger>
+              <TabsTrigger value="database" data-testid="tab-database" className="flex-shrink-0">
+                <Database className="w-4 h-4 mr-2" />
+                All Statutes ({dbStatutes.length})
+              </TabsTrigger>
+              <TabsTrigger value="overview" data-testid="tab-overview" className="flex-shrink-0">
+                <Hash className="w-4 h-4 mr-2" />
+                Key Numbers
+              </TabsTrigger>
+              <TabsTrigger value="builder" data-testid="tab-builder" className="flex-shrink-0">
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Argument Builder
+              </TabsTrigger>
+              <TabsTrigger value="updates" data-testid="tab-updates" className="flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                2026 Updates ({updates.length})
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Toolkits Tab - Scenario-Based Entry */}
           <TabsContent value="toolkits" className="mt-6">

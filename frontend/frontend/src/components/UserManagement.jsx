@@ -41,7 +41,7 @@ function UserManagement() {
         apiGet('/api/users/me')
       ]);
 
-      if (usersRes.ok) setUsers(usersRes.data || []);
+      if (usersRes.ok) setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       if (meRes.ok) setCurrentUserInfo(meRes.data);
     } catch (err) {
       setError('Failed to load users. You may not have permission.');
