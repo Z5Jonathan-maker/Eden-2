@@ -305,12 +305,26 @@ const GmailTab = () => {
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await apiGet(`/api/integrations/google/gmail/messages${qs}`, { cache: false });
       if (res.ok) {
-        setMessages(res.data.messages || []);
+        setMessages(Array.isArray(res.data?.messages) ? res.data.messages : []);
         setAuthError(false);
       } else if (res.status === 401) {
         setMessages([]);
+        // Attempt silent re-fetch once before showing auth error
+        if (!query && !authError) {
+          const retryRes = await apiGet(`/api/integrations/google/gmail/messages${qs}`, { cache: false });
+          if (retryRes.ok) {
+            setMessages(Array.isArray(retryRes.data?.messages) ? retryRes.data.messages : []);
+            setAuthError(false);
+            return;
+          }
+        }
         setAuthError(true);
-        toast.error('Google session expired. Please reconnect your Google account.');
+        toast.error('Google session expired. Please reconnect your Google account.', {
+          action: {
+            label: 'Reconnect',
+            onClick: () => window.location.href = '/settings?reconnect=google',
+          },
+        });
       } else {
         setMessages([]);
         const detail = res.error || 'Failed to load emails';

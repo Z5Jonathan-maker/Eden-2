@@ -208,13 +208,19 @@ async function _apiFetch(endpoint, options = {}) {
 
       // On 401, try refreshing the token before giving up
       const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh') || endpoint.includes('/auth/me');
+      const isGoogleOAuthError = typeof errorData.detail === 'string' && (
+        errorData.detail.includes('Google') || errorData.detail.includes('google')
+      );
       if (res.status === 401 && !isAuthEndpoint && !options._retried) {
-        const refreshed = await _tryRefreshToken();
-        if (refreshed) {
-          // Retry the original request with the new token
-          return _apiFetch(endpoint, { ...options, _retried: true });
+        // Don't attempt Eden JWT refresh for Google OAuth failures — the Eden session is fine
+        if (!isGoogleOAuthError) {
+          const refreshed = await _tryRefreshToken();
+          if (refreshed) {
+            // Retry the original request with the new token
+            return _apiFetch(endpoint, { ...options, _retried: true });
+          }
+          window.dispatchEvent(new CustomEvent('eden:auth-expired'));
         }
-        window.dispatchEvent(new CustomEvent('eden:auth-expired'));
       }
 
       return { ok: false, error: errorData.detail || `Error ${res.status}`, status: res.status };

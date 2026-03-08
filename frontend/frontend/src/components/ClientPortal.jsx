@@ -42,7 +42,7 @@ const ClientPortal = () => {
         throw new Error(res.error || 'Failed to fetch claims');
       }
 
-      setClaims(res.data || []);
+      setClaims(Array.isArray(res.data) ? res.data : []);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -83,10 +83,11 @@ const ClientPortal = () => {
     });
   };
 
+  const safeClaims = Array.isArray(claims) ? claims : [];
   const stats = {
-    total: claims.length,
-    active: claims.filter((c) => !['Completed', 'Closed'].includes(c.status)).length,
-    completed: claims.filter((c) => c.status === 'Completed').length,
+    total: safeClaims.length,
+    active: safeClaims.filter((c) => !['Completed', 'Closed'].includes(c.status)).length,
+    completed: safeClaims.filter((c) => c.status === 'Completed').length,
   };
 
   if (loading) {

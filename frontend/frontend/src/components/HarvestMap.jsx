@@ -24,7 +24,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env?.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = import.meta.env?.REACT_APP_GOOGLE_MAPS_API_KEY || import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || '';
 const DEFAULT_CENTER = { lat: 27.9506, lng: -82.4572 };
 const DEFAULT_ZOOM = 17;
 
@@ -93,8 +93,9 @@ const PinPopup = ({ pin, onLogVisit, onClose, dispositions = DEFAULT_PIN_STATUSE
 };
 
 // Map legend
-const MapLegend = ({ dispositions, pins, expanded, onToggle }) => {
-  const getCount = (code) => pins.filter((p) => p.status === code).length;
+const MapLegend = ({ dispositions, pins = [], expanded, onToggle }) => {
+  const safePins = Array.isArray(pins) ? pins : [];
+  const getCount = (code) => safePins.filter((p) => p.status === code).length;
 
   return (
     <div className="absolute top-14 right-2 z-10 bg-white/95 backdrop-blur rounded-lg shadow-lg overflow-hidden max-w-[180px]">
@@ -123,7 +124,7 @@ const MapLegend = ({ dispositions, pins, expanded, onToggle }) => {
           ))}
           <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
             <span className="text-gray-500">Total</span>
-            <span className="font-bold text-gray-900">{pins.length}</span>
+            <span className="font-bold text-gray-900">{safePins.length}</span>
           </div>
         </div>
       )}
@@ -409,9 +410,10 @@ export const HarvestMap = ({
     unsyncedCount,
   } = useHarvestPins({ territoryId });
 
+  const safePins = Array.isArray(pins) ? pins : [];
   const filteredPins = activeFilters
-    ? pins.filter((pin) => !pin.status || activeFilters.includes(pin.status))
-    : pins;
+    ? safePins.filter((pin) => !pin.status || activeFilters.includes(pin.status))
+    : safePins;
 
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -430,13 +432,13 @@ export const HarvestMap = ({
 
   return (
     <div className={`relative h-full w-full ${className}`} data-testid="harvest-map">
-      <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <APIProvider apiKey={GOOGLE_MAPS_API_KEY} onLoadError={(err) => console.error('Google Maps API load error:', err)}>
         <HarvestMapInner
           position={position}
           hasLocation={hasLocation}
           gpsError={gpsError}
           refreshPosition={refreshPosition}
-          pins={pins}
+          pins={safePins}
           filteredPins={filteredPins}
           loading={loading}
           createPin={createPin}

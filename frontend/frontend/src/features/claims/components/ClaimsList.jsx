@@ -72,7 +72,7 @@ const ClaimsList = () => {
         throw new Error(res.error || 'Failed to fetch claims');
       }
 
-      setClaims(res.data || []);
+      setClaims(Array.isArray(res.data) ? res.data : []);
       setError('');
     } catch (err) {
       setError(err.message);

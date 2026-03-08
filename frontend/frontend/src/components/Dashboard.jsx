@@ -107,7 +107,7 @@ const Dashboard = () => {
         throw new Error(res.error || 'Failed to fetch claims');
       }
 
-      const claims = res.data || [];
+      const claims = Array.isArray(res.data) ? res.data : [];
       const now = new Date();
       const thisMonth = now.getMonth();
       const thisYear = now.getFullYear();

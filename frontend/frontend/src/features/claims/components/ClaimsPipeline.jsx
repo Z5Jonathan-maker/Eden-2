@@ -38,7 +38,8 @@ const getAvatarColor = (name) => {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 };
 
-const ClaimsPipeline = ({ claims, loading, onRefresh }) => {
+const ClaimsPipeline = ({ claims: rawClaims, loading, onRefresh }) => {
+  const claims = Array.isArray(rawClaims) ? rawClaims : [];
   const navigate = useNavigate();
   const [draggedClaim, setDraggedClaim] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
