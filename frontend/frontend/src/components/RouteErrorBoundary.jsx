@@ -37,7 +37,9 @@ class RouteErrorBoundary extends React.Component {
               {this.props.label || 'Module'} Error
             </h2>
             <p className="text-zinc-500 text-sm font-mono mb-5">
-              {this.state.error?.message || 'Something went wrong loading this module.'}
+              {import.meta.env.PROD
+                ? 'Something went wrong loading this module. Please try again.'
+                : (this.state.error?.message || 'Something went wrong loading this module.')}
             </p>
             <div className="flex gap-2 justify-center">
               <button

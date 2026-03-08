@@ -332,7 +332,7 @@ const FloridaLaws = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 page-enter" data-testid="florida-laws-page">
+    <div className="p-4 sm:p-6 space-y-6 page-enter overflow-x-hidden" data-testid="florida-laws-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
