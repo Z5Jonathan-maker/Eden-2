@@ -94,9 +94,9 @@ const ChatSidebar = ({
     }
   };
 
-  const filteredDMUsers = allUsers.filter((u) =>
+  const filteredDMUsers = Array.isArray(allUsers) ? allUsers.filter((u) =>
     (u.full_name || u.email || '').toLowerCase().includes(dmSearch.toLowerCase())
-  );
+  ) : [];
 
   return (
     <div className={`flex flex-col h-full bg-zinc-900/60 ${className}`}>
