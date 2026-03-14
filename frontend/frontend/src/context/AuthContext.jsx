@@ -149,7 +149,10 @@ export const AuthProvider = ({ children }) => {
         await fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
         });
       }
     } catch (error) {

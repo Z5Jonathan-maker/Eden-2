@@ -1,1 +1,2 @@
 from .logging_middleware import StructuredLoggingMiddleware
+from .csrf import CSRFProtectionMiddleware

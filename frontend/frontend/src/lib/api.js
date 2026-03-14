@@ -20,6 +20,7 @@ export const assertApiUrl = () => {
 
 const defaultHeaders = () => ({
   'Content-Type': 'application/json',
+  'X-Requested-With': 'XMLHttpRequest',
 });
 
 // Simple in-memory cache with TTL
@@ -59,7 +60,7 @@ export async function api(endpoint, options = {}) {
   const config = {
     method,
     credentials: 'include',
-    headers: options.formData ? {} : defaultHeaders(),
+    headers: options.formData ? { 'X-Requested-With': 'XMLHttpRequest' } : defaultHeaders(),
     ...options,
   };
   

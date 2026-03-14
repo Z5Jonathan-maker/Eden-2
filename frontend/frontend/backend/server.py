@@ -97,7 +97,7 @@ if not jwt_secret:
         "   See .env.example for configuration."
     )
 
-from middleware import StructuredLoggingMiddleware
+from middleware import StructuredLoggingMiddleware, CSRFProtectionMiddleware
 from contextlib import asynccontextmanager
 
 
@@ -195,6 +195,10 @@ if cors_origin_regex:
     cors_options["allow_origin_regex"] = cors_origin_regex
 
 app.add_middleware(CORSMiddleware, **cors_options)
+
+# CSRF — reject state-changing requests without X-Requested-With header
+# (registered after CORS so preflight OPTIONS pass through first)
+app.add_middleware(CSRFProtectionMiddleware)
 
 
 # ============================================
