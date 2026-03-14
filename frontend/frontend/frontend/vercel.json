@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "cd frontend && npm run build && ls -la build/ && cp -r build/. ../build/ && ls -la ../build/",
   "outputDirectory": "build",
-  "installCommand": "npm install --legacy-peer-deps",
+  "framework": null,
+  "installCommand": "cd frontend && npm install --legacy-peer-deps",
   "rewrites": [
     {
       "source": "/api/:path*",
