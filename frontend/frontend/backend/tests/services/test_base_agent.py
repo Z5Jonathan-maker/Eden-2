@@ -173,3 +173,84 @@ class TestAuditLogger:
         assert doc["status"] == "error"
         assert doc["error_message"] == "API timeout after 30s"
         assert doc["user_id"] is None
+
+
+# ------------------------------------------------------------------
+# BaseAgent
+# ------------------------------------------------------------------
+
+from services.claimpilot.agent_context import AgentContext
+from services.claimpilot.base_agent import BaseAgent
+
+
+def _make_context(*, is_frozen: bool = False, claim_id: str = "claim-500") -> AgentContext:
+    """Helper to build a minimal AgentContext for tests."""
+    return AgentContext(
+        claim={"id": claim_id, "status": "Open"},
+        is_frozen=is_frozen,
+    )
+
+
+class ConcreteTestAgent(BaseAgent):
+    """Minimal concrete agent for testing BaseAgent."""
+
+    agent_name = "test_agent"
+
+    def __init__(self, db, *, summary: str = "All looks good", confidence: float = 0.9):
+        super().__init__(db)
+        self._summary = summary
+        self._confidence = confidence
+
+    async def execute(self, context: AgentContext) -> AgentResult:
+        return AgentResult(
+            agent_name=self.agent_name,
+            claim_id=context.claim["id"],
+            insight_type="test_insight",
+            summary=self._summary,
+            confidence=self._confidence,
+        )
+
+    async def validate_output(self, result: AgentResult) -> bool:
+        return True
+
+
+class TestBaseAgent:
+    @pytest.mark.asyncio
+    async def test_base_agent_runs_and_audits(self, mock_db):
+        agent = ConcreteTestAgent(mock_db)
+        ctx = _make_context()
+
+        result = await agent.run(ctx)
+
+        assert result is not None
+        assert result.summary == "All looks good"
+        assert result.confidence == 0.9
+
+        # Verify audit was written
+        audit_doc = await mock_db.claimpilot_audit.find_one({"agent_name": "test_agent"})
+        assert audit_doc is not None
+        assert audit_doc["status"] == "success"
+        assert audit_doc["claim_id"] == "claim-500"
+
+    @pytest.mark.asyncio
+    async def test_base_agent_blocks_frozen_claims(self, mock_db):
+        agent = ConcreteTestAgent(mock_db)
+        ctx = _make_context(is_frozen=True)
+
+        result = await agent.run(ctx)
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_base_agent_strips_legal_promises(self, mock_db):
+        agent = ConcreteTestAgent(
+            mock_db,
+            summary="We guarantee you will receive full payment",
+        )
+        ctx = _make_context()
+
+        result = await agent.run(ctx)
+
+        assert result is not None
+        assert "guarantee" not in result.summary.lower()
+        assert "[REMOVED]" in result.summary
