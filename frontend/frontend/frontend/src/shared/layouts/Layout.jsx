@@ -8,6 +8,7 @@ import NotificationBell from '../../components/NotificationBell';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
 import { APP_LOGO, NAV_ICONS } from '../../assets/badges';
 import useUnreadCount from '../../hooks/useUnreadCount';
+import OnboardingTour from '../../components/OnboardingTour';
 
 
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
@@ -93,6 +94,7 @@ const Layout = () => {
     { icon: NAV_ICONS.intel_hub, label: 'Intel Hub', path: '/property' },
     { icon: NAV_ICONS.scales, label: 'Scales', path: '/scales' },
     { icon: NAV_ICONS.eve, label: 'Email DNA', path: '/email-intelligence' },
+    { icon: NAV_ICONS.adam_qa, label: 'AI Approvals', path: '/claimpilot' },
   ];
 
   const growthItems = [
@@ -354,6 +356,9 @@ const Layout = () => {
           <AnimatedOutlet />
         </div>
       </main>
+
+      {/* First-login onboarding tour — only shows if user hasn't completed it */}
+      {user && <OnboardingTour />}
     </div>
   );
 };
