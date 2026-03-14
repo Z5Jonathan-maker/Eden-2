@@ -18,10 +18,7 @@ export const assertApiUrl = () => {
   return API_URL;
 };
 
-const getToken = () => localStorage.getItem('eden_token');
-
 const defaultHeaders = () => ({
-  'Authorization': `Bearer ${getToken()}`,
   'Content-Type': 'application/json',
 });
 
@@ -61,7 +58,8 @@ export async function api(endpoint, options = {}) {
   
   const config = {
     method,
-    headers: options.formData ? { 'Authorization': `Bearer ${getToken()}` } : defaultHeaders(),
+    credentials: 'include',
+    headers: options.formData ? {} : defaultHeaders(),
     ...options,
   };
   
@@ -119,4 +117,4 @@ export const clearCache = (pattern) => {
   }
 };
 
-export { API_URL, getToken };
+export { API_URL };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
 
@@ -16,20 +16,47 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('eden_token'));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const storedToken = localStorage.getItem('eden_token');
-    const storedUser = localStorage.getItem('eden_user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+  /**
+   * Fetch current user from /api/auth/me using the httpOnly cookie.
+   * This is the only way to determine auth state — no localStorage tokens.
+   */
+  const fetchCurrentUser = useCallback(async () => {
+    if (!API_URL) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('[Auth] Failed to fetch current user:', error.message);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    // Clean up any legacy localStorage tokens (security: XSS-vulnerable)
+    localStorage.removeItem('eden_token');
+    localStorage.removeItem('eden_user');
+
+    // Determine auth state from httpOnly cookie via /api/auth/me
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
   const login = async (email, password) => {
     try {
@@ -37,6 +64,7 @@ export const AuthProvider = ({ children }) => {
 
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -58,24 +86,15 @@ export const AuthProvider = ({ children }) => {
         const errorMessage = data.detail || data.message || 'Login failed';
         throw new Error(errorMessage);
       }
-      
-      // Validate required fields
-      if (!data.access_token) {
-        console.error('[Auth] Missing access_token in response:', data);
-        throw new Error('Server returned invalid token format');
-      }
-      
+
       if (!data.user) {
         console.error('[Auth] Missing user in response:', data);
         throw new Error('Server returned invalid user format');
       }
-      
-      localStorage.setItem('eden_token', data.access_token);
-      localStorage.setItem('eden_user', JSON.stringify(data.user));
-      
-      setToken(data.access_token);
+
+      // Token is set as httpOnly cookie by the server — just store user in state
       setUser(data.user);
-      
+
       return { success: true };
     } catch (error) {
       console.error('[Auth] Login failed:', error.message);
@@ -89,6 +108,7 @@ export const AuthProvider = ({ children }) => {
 
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -123,26 +143,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('eden_token');
-    localStorage.removeItem('eden_user');
-    setToken(null);
+  const logout = async () => {
+    try {
+      if (API_URL) {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (error) {
+      console.error('[Auth] Logout request failed:', error.message);
+    }
     setUser(null);
-  };
-
-  const getAuthHeaders = () => {
-    return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
   const value = {
     user,
-    token,
     loading,
-    isAuthenticated: !!token,
+    isAuthenticated: !!user,
     login,
     register,
     logout,
-    getAuthHeaders,
+    fetchCurrentUser,
   };
 
   return (
