@@ -19,6 +19,8 @@ import RouteErrorBoundary from './components/RouteErrorBoundary';
 // Lazy-loaded (non-critical path)
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ComparePage = lazy(() => import('./components/ComparePage'));
+const TermsOfService = lazy(() => import('./components/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const InstallGuide = lazy(() => import('./components/InstallGuide'));
 const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
@@ -169,6 +171,8 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/install" element={<InstallGuide />} />
         <Route path="/compare" element={<ComparePage />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* Public Status Portal - No auth required */}
         <Route path="/status/:claimId" element={<ClaimStatusPortal />} />

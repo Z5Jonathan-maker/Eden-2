@@ -633,6 +633,10 @@ const LandingPage = () => {
           <p className="text-zinc-600 text-sm font-mono">
             © 2026 Operation Eden. All rights reserved. // Tactical Claims Platform v2.0
           </p>
+          <div className="mt-3 flex justify-center gap-4">
+            <a href="/terms" className="text-zinc-500 hover:text-orange-400 text-xs transition-colors">Terms</a>
+            <a href="/privacy" className="text-zinc-500 hover:text-orange-400 text-xs transition-colors">Privacy</a>
+          </div>
         </div>
       </footer>
 
