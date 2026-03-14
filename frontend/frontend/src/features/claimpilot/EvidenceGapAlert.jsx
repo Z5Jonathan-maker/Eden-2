@@ -1,37 +1,42 @@
 import { useState } from 'react';
 import { useClaimInsights } from './hooks/useClaimpilot';
+import { EVIDENCE_READINESS, getSeverityLevel, SEVERITY_STYLES } from './config';
+import SeverityBadge from './SeverityBadge';
 
-const SCORE_GOOD_THRESHOLD = 80;
-const SCORE_AMBER_THRESHOLD = 50;
-
-const PRIORITY_COLORS = {
-  high: 'text-red-400',
-  medium: 'text-amber-400',
-  low: 'text-zinc-400',
+const PRIORITY_LABELS = {
+  high: 'High Priority',
+  medium: 'Medium Priority',
+  low: 'Low Priority',
 };
 
 const READINESS_LEVELS = {
-  ready: { label: 'Ready for Negotiation', bg: 'bg-green-500/20', text: 'text-green-400', ring: 'ring-green-500/40' },
-  needs_work: { label: 'Needs Work', bg: 'bg-amber-500/20', text: 'text-amber-400', ring: 'ring-amber-500/40' },
-  insufficient: { label: 'Insufficient', bg: 'bg-red-500/20', text: 'text-red-400', ring: 'ring-red-500/40' },
+  ready: { label: 'Ready for Negotiation' },
+  needs_work: { label: 'Needs Work' },
+  insufficient: { label: 'Insufficient' },
 };
 
 function getScoreColor(score) {
-  if (score >= SCORE_GOOD_THRESHOLD) return 'text-green-400';
-  if (score >= SCORE_AMBER_THRESHOLD) return 'text-amber-400';
+  if (score >= EVIDENCE_READINESS.READY) return 'text-green-400';
+  if (score >= EVIDENCE_READINESS.NEEDS_WORK) return 'text-amber-400';
   return 'text-red-400';
 }
 
 function getBarColor(score) {
-  if (score >= SCORE_GOOD_THRESHOLD) return 'bg-green-500';
-  if (score >= SCORE_AMBER_THRESHOLD) return 'bg-amber-500';
+  if (score >= EVIDENCE_READINESS.READY) return 'bg-green-500';
+  if (score >= EVIDENCE_READINESS.NEEDS_WORK) return 'bg-amber-500';
   return 'bg-red-500';
 }
 
-function getReadiness(score) {
-  if (score >= SCORE_GOOD_THRESHOLD) return READINESS_LEVELS.ready;
-  if (score >= SCORE_AMBER_THRESHOLD) return READINESS_LEVELS.needs_work;
-  return READINESS_LEVELS.insufficient;
+function getReadinessKey(score) {
+  if (score >= EVIDENCE_READINESS.READY) return 'ready';
+  if (score >= EVIDENCE_READINESS.NEEDS_WORK) return 'needs_work';
+  return 'insufficient';
+}
+
+function getReadinessSeverity(key) {
+  if (key === 'ready') return 'low';
+  if (key === 'needs_work') return 'medium';
+  return 'high';
 }
 
 function CategoryBar({ name, score, gaps }) {
@@ -43,15 +48,22 @@ function CategoryBar({ name, score, gaps }) {
       <button
         type="button"
         onClick={() => hasGaps && setExpanded((prev) => !prev)}
-        className={`w-full text-left ${hasGaps ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`w-full text-left ${hasGaps ? 'cursor-pointer' : 'cursor-default'} focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none rounded`}
       >
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs font-medium text-zinc-300">{name}</span>
           <span className={`text-xs font-semibold ${getScoreColor(score)}`}>
-            {score}%
+            {score}% Complete
           </span>
         </div>
-        <div className="h-2 w-full rounded-full bg-zinc-700">
+        <div
+          className="h-2 w-full rounded-full bg-zinc-700"
+          role="progressbar"
+          aria-valuenow={score}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${name}: ${score}% complete`}
+        >
           <div
             className={`h-full rounded-full transition-all ${getBarColor(score)}`}
             style={{ width: `${Math.min(score, 100)}%` }}
@@ -69,12 +81,17 @@ function CategoryBar({ name, score, gaps }) {
         <div className="mt-1.5 space-y-1 pl-2">
           {gaps.map((gap, idx) => {
             const priority = gap.priority ?? 'medium';
-            const priorityColor = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.medium;
+            const severityLevel = getSeverityLevel(
+              priority === 'high' ? 1 : priority === 'medium' ? 0.7 : 0.3,
+              0.9,
+              0.6
+            );
+            const style = SEVERITY_STYLES[severityLevel === 'low' ? 'low' : severityLevel === 'medium' ? 'medium' : 'high'];
             return (
               <p key={idx} className="text-xs text-zinc-400">
-                <span className={`font-medium ${priorityColor}`}>Missing:</span>{' '}
+                <span className={`font-medium ${style.text}`}>Missing:</span>{' '}
                 {gap.item ?? gap}{' '}
-                <span className={`${priorityColor}`}>({priority} priority)</span>
+                <span className={`${style.text}`}>({PRIORITY_LABELS[priority] || 'Medium Priority'})</span>
               </p>
             );
           })}
@@ -96,7 +113,7 @@ export default function EvidenceGapAlert({ claimId }) {
     return (
       <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
         <div className="flex items-center gap-2 text-zinc-400">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="text-sm">Loading evidence analysis...</span>
         </div>
       </div>
@@ -124,7 +141,9 @@ export default function EvidenceGapAlert({ claimId }) {
   const details = scoring.details ?? {};
   const overallScore = details.overall_score ?? 0;
   const categories = details.categories ?? {};
-  const readiness = getReadiness(overallScore);
+  const readinessKey = getReadinessKey(overallScore);
+  const readinessLabel = READINESS_LEVELS[readinessKey].label;
+  const readinessSeverity = getReadinessSeverity(readinessKey);
 
   const categoryEntries = [
     { name: 'Property Documentation', key: 'property_documentation' },
@@ -143,11 +162,7 @@ export default function EvidenceGapAlert({ claimId }) {
             {overallScore}%
           </span>
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${readiness.bg} ${readiness.text} ${readiness.ring}`}
-        >
-          {readiness.label}
-        </span>
+        <SeverityBadge level={readinessSeverity} label={readinessLabel} />
       </div>
 
       {/* Category bars */}

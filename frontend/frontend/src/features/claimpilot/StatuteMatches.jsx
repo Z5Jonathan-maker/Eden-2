@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useClaimInsights } from './hooks/useClaimpilot';
-
-const COMPLIANT_THRESHOLD_DAYS = 14;
+import { DEADLINE_COMPLIANCE_DAYS } from './config';
+import SeverityBadge from './SeverityBadge';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -24,34 +24,18 @@ function computeDaysRemaining(deadlineStr) {
 
 function DeadlineBadge({ daysRemaining }) {
   if (daysRemaining === null) {
-    return (
-      <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-xs text-zinc-400">
-        Unknown
-      </span>
-    );
+    return <SeverityBadge level="medium" label="Unknown" />;
   }
 
   if (daysRemaining <= 0) {
-    return (
-      <span className="rounded-full bg-red-900/60 px-2 py-0.5 text-xs font-semibold text-red-300">
-        OVERDUE
-      </span>
-    );
+    return <SeverityBadge level="high" label="OVERDUE" />;
   }
 
-  if (daysRemaining <= COMPLIANT_THRESHOLD_DAYS) {
-    return (
-      <span className="rounded-full bg-amber-900/60 px-2 py-0.5 text-xs font-semibold text-amber-300">
-        Approaching
-      </span>
-    );
+  if (daysRemaining <= DEADLINE_COMPLIANCE_DAYS) {
+    return <SeverityBadge level="medium" label="Approaching" />;
   }
 
-  return (
-    <span className="rounded-full bg-green-900/60 px-2 py-0.5 text-xs font-semibold text-green-300">
-      Compliant
-    </span>
-  );
+  return <SeverityBadge level="low" label="Compliant" />;
 }
 
 function DaysRemainingText({ daysRemaining }) {
@@ -77,7 +61,7 @@ function StatuteCard({ statute }) {
   const daysRemaining = computeDaysRemaining(statute.deadline);
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-sm font-bold text-zinc-100">
           {statute.statute_number}
@@ -101,15 +85,16 @@ function StatuteCard({ statute }) {
 
 function ViolationCard({ violation }) {
   return (
-    <div className="rounded border-2 border-red-700/60 bg-red-950/30 p-3">
+    <div className="rounded border-2 border-red-700/30 bg-red-500/10 p-4">
       <div className="mb-1 flex items-center gap-1.5">
         <span className="text-sm font-semibold text-red-300">
           {violation.statute_number || 'Violation'}
         </span>
         {violation.severity && (
-          <span className="rounded-full bg-red-900/60 px-2 py-0.5 text-xs text-red-300">
-            {violation.severity}
-          </span>
+          <SeverityBadge
+            level={violation.severity === 'high' || violation.severity === 'critical' ? 'high' : violation.severity === 'medium' ? 'medium' : 'low'}
+            label={violation.severity}
+          />
         )}
       </div>
       {violation.description && (
@@ -143,7 +128,7 @@ function ComplianceActions({ actions }) {
               type="checkbox"
               checked={!!checkedItems[idx]}
               onChange={() => toggleItem(idx)}
-              className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+              className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500"
             />
             <span
               className={`text-sm ${
@@ -203,7 +188,7 @@ export default function StatuteMatches({ claimId }) {
       </div>
 
       {/* Legal disclaimer */}
-      <div className="mb-4 rounded border border-amber-700/50 bg-amber-950/30 px-3 py-2">
+      <div className="mb-4 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2">
         <p className="text-xs text-amber-300">
           Automated statute matching for reference only. Not legal advice.
         </p>
@@ -212,7 +197,7 @@ export default function StatuteMatches({ claimId }) {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center gap-2 py-6 text-zinc-400">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="text-sm">Loading statute analysis...</span>
         </div>
       )}

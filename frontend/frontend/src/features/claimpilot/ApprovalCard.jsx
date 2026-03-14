@@ -1,24 +1,7 @@
 import { useState } from 'react';
 import { useApproveAction, useRejectAction } from './hooks/useClaimpilot';
-
-const CONFIDENCE_THRESHOLDS = {
-  HIGH: 85,
-  MEDIUM: 60,
-};
-
-function getConfidenceColor(confidence) {
-  const pct = confidence * 100;
-  if (pct >= CONFIDENCE_THRESHOLDS.HIGH) return 'text-green-400';
-  if (pct >= CONFIDENCE_THRESHOLDS.MEDIUM) return 'text-yellow-400';
-  return 'text-red-400';
-}
-
-function getConfidenceBg(confidence) {
-  const pct = confidence * 100;
-  if (pct >= CONFIDENCE_THRESHOLDS.HIGH) return 'bg-green-900/30';
-  if (pct >= CONFIDENCE_THRESHOLDS.MEDIUM) return 'bg-yellow-900/30';
-  return 'bg-red-900/30';
-}
+import { CONFIDENCE_TIERS, getSeverityLevel, SEVERITY_STYLES } from './config';
+import SeverityBadge from './SeverityBadge';
 
 export default function ApprovalCard({ action }) {
   const [rejecting, setRejecting] = useState(false);
@@ -29,6 +12,14 @@ export default function ApprovalCard({ action }) {
 
   const confidencePct = Math.round(action.confidence * 100);
   const isProcessing = approveAction.isPending || rejectAction.isPending;
+
+  const confidenceLevel = getSeverityLevel(
+    action.confidence,
+    CONFIDENCE_TIERS.HIGH,
+    CONFIDENCE_TIERS.MEDIUM
+  );
+  // Map: high confidence = low severity (green), low confidence = high severity (red)
+  const displayLevel = confidenceLevel === 'high' ? 'low' : confidenceLevel === 'low' ? 'high' : 'medium';
 
   function handleApprove() {
     approveAction.mutate(action.id);
@@ -48,7 +39,7 @@ export default function ApprovalCard({ action }) {
   }
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-5 shadow-md">
+    <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 shadow-md">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -59,11 +50,7 @@ export default function ApprovalCard({ action }) {
             Claim #{action.claim_id}
           </span>
         </div>
-        <span
-          className={`rounded px-2 py-0.5 text-sm font-semibold ${getConfidenceBg(action.confidence)} ${getConfidenceColor(action.confidence)}`}
-        >
-          {confidencePct}%
-        </span>
+        <SeverityBadge level={displayLevel} label={`${confidencePct}% Confidence`} />
       </div>
 
       {/* Action type */}
@@ -123,14 +110,14 @@ export default function ApprovalCard({ action }) {
           <button
             onClick={handleReject}
             disabled={isProcessing || !rejectReason.trim()}
-            className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+            className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
           >
             {rejectAction.isPending ? 'Rejecting...' : 'Confirm Reject'}
           </button>
           <button
             onClick={handleCancelReject}
             disabled={isProcessing}
-            className="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+            className="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
           >
             Cancel
           </button>
@@ -140,14 +127,14 @@ export default function ApprovalCard({ action }) {
           <button
             onClick={handleApprove}
             disabled={isProcessing}
-            className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+            className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
           >
             {approveAction.isPending ? 'Approving...' : 'Approve'}
           </button>
           <button
             onClick={() => setRejecting(true)}
             disabled={isProcessing}
-            className="rounded border border-zinc-600 px-4 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+            className="rounded border border-zinc-600 px-4 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
           >
             Reject
           </button>

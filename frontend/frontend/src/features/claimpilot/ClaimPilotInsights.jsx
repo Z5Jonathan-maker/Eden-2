@@ -1,5 +1,16 @@
 import { useClaimInsights } from './hooks/useClaimpilot';
 
+const AGENT_LABELS = {
+  claim_monitor: 'Claim Monitor',
+  vision_analyzer: 'Vision Analyzer',
+  intake_parser: 'Intake Parser',
+  evidence_scorer: 'Evidence Scorer',
+  statute_matcher: 'Statute Matcher',
+  negotiation_copilot: 'Negotiation Copilot',
+  estimate_engine: 'Estimate Engine',
+  predictive_analytics: 'Predictive Analytics',
+};
+
 const AGENT_ICONS = {
   claim_monitor: '\uD83D\uDD0D',
   vision_analyzer: '\uD83D\uDCF8',
@@ -41,7 +52,7 @@ export default function ClaimPilotInsights({ claimId }) {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center gap-2 py-6 text-zinc-400">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="text-sm">Loading insights...</span>
         </div>
       )}
@@ -65,6 +76,7 @@ export default function ClaimPilotInsights({ claimId }) {
         <div className="flex flex-col gap-3">
           {insights.map((insight, idx) => {
             const icon = AGENT_ICONS[insight.agent_name] || DEFAULT_ICON;
+            const ariaLabel = AGENT_LABELS[insight.agent_name] || insight.agent_name;
             const isLowConfidence =
               insight.confidence != null &&
               insight.confidence < LOW_CONFIDENCE_THRESHOLD;
@@ -72,12 +84,12 @@ export default function ClaimPilotInsights({ claimId }) {
             return (
               <div
                 key={insight.id ?? idx}
-                className="rounded border border-zinc-700 bg-zinc-900/50 p-3"
+                className="rounded border border-zinc-700 bg-zinc-900/50 p-4"
               >
                 {/* Agent header */}
                 <div className="mb-1 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-base" role="img" aria-label={insight.agent_name}>
+                    <span className="text-base" role="img" aria-label={ariaLabel}>
                       {icon}
                     </span>
                     <span className="text-sm font-medium text-zinc-200">
@@ -96,7 +108,10 @@ export default function ClaimPilotInsights({ claimId }) {
 
                 {/* Low confidence warning */}
                 {isLowConfidence && (
-                  <p className="mt-1.5 text-xs font-medium text-yellow-400">
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-yellow-400">
+                    <svg className="h-3.5 w-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
                     Low confidence ({Math.round(insight.confidence * 100)}%)
                     &mdash; review carefully
                   </p>

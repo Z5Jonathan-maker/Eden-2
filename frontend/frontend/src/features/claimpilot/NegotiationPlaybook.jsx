@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useClaimInsights } from './hooks/useClaimpilot';
+import SeverityBadge from './SeverityBadge';
 
 function formatCurrency(value) {
   if (value == null) return '$0';
@@ -11,24 +12,12 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-const RISK_STYLES = {
-  low: 'bg-green-900/60 text-green-300',
-  medium: 'bg-amber-900/60 text-amber-300',
-  high: 'bg-orange-900/60 text-orange-300',
-  critical: 'bg-red-900/60 text-red-300',
+const RISK_TO_SEVERITY = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'high',
 };
-
-function RiskBadge({ level }) {
-  if (!level) return null;
-  const normalized = level.toLowerCase();
-  const styles = RISK_STYLES[normalized] ?? 'bg-zinc-700 text-zinc-300';
-
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${styles}`}>
-      {level.charAt(0).toUpperCase() + level.slice(1)} Risk
-    </span>
-  );
-}
 
 function SettlementBar({ low, mid, high }) {
   if (low == null || high == null) return null;
@@ -72,7 +61,7 @@ function CarrierPositionSection({ position }) {
   if (!position) return null;
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
       <h4 className="mb-2 text-sm font-semibold text-zinc-200">
         Carrier Position Analysis
       </h4>
@@ -108,10 +97,19 @@ function CarrierPositionSection({ position }) {
 }
 
 function LeveragePointsSection({ points }) {
-  if (!points || points.length === 0) return null;
+  if (!points || points.length === 0) {
+    return (
+      <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
+        <h4 className="mb-2 text-sm font-semibold text-zinc-200">
+          Leverage Points
+        </h4>
+        <p className="text-sm text-zinc-500">No leverage points identified yet.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
       <h4 className="mb-2 text-sm font-semibold text-zinc-200">
         Leverage Points
       </h4>
@@ -135,7 +133,7 @@ function CounterArgumentsSection({ args }) {
   if (!args || args.length === 0) return null;
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
       <h4 className="mb-2 text-sm font-semibold text-zinc-200">
         Counter-Arguments
       </h4>
@@ -157,7 +155,7 @@ function DraftResponseSection({ draftText }) {
   if (!draftText && !text) return null;
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+    <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-sm font-semibold text-zinc-200">
           Draft Response
@@ -165,7 +163,7 @@ function DraftResponseSection({ draftText }) {
         <button
           type="button"
           onClick={() => setIsEditing((prev) => !prev)}
-          className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600"
+          className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
         >
           {isEditing ? 'Lock' : 'Edit'}
         </button>
@@ -175,9 +173,9 @@ function DraftResponseSection({ draftText }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={8}
-        className={`w-full resize-y rounded border bg-zinc-950 p-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+        className={`w-full resize-y rounded border bg-zinc-950 p-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-orange-500 ${
           isEditing
-            ? 'border-blue-600'
+            ? 'border-orange-600'
             : 'cursor-default border-zinc-700'
         }`}
       />
@@ -209,6 +207,10 @@ export default function NegotiationPlaybook({ claimId }) {
       ? riskAssessment
       : riskAssessment?.level ?? null;
 
+  const severityLevel = riskLevel
+    ? RISK_TO_SEVERITY[riskLevel.toLowerCase()] ?? 'medium'
+    : null;
+
   return (
     <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
       {/* Header */}
@@ -216,13 +218,18 @@ export default function NegotiationPlaybook({ claimId }) {
         <h2 className="text-lg font-semibold text-zinc-100">
           Negotiation Playbook
         </h2>
-        {riskLevel && <RiskBadge level={riskLevel} />}
+        {severityLevel && (
+          <SeverityBadge
+            level={severityLevel}
+            label={`${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} Risk`}
+          />
+        )}
       </div>
 
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center gap-2 py-6 text-zinc-400">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="text-sm">Loading negotiation analysis...</span>
         </div>
       )}
@@ -249,7 +256,7 @@ export default function NegotiationPlaybook({ claimId }) {
 
           {/* Settlement Range */}
           {(settlementRange.low != null || settlementRange.high != null) && (
-            <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+            <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
               <h4 className="mb-1 text-sm font-semibold text-zinc-200">
                 Settlement Range
               </h4>
@@ -285,7 +292,7 @@ export default function NegotiationPlaybook({ claimId }) {
 
           {/* Recommended Strategy */}
           {recommendedStrategy && (
-            <div className="rounded border border-zinc-700 bg-zinc-900/50 p-3">
+            <div className="rounded border border-zinc-700 bg-zinc-900/50 p-4">
               <h4 className="mb-1 text-sm font-semibold text-zinc-200">
                 Recommended Strategy
               </h4>

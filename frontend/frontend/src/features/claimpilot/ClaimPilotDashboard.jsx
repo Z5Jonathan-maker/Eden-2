@@ -1,5 +1,16 @@
 import { useClaimpilotAnalytics } from './hooks/useClaimpilot';
 
+const AGENT_LABELS = {
+  claim_monitor: 'Claim Monitor',
+  vision_analyzer: 'Vision Analyzer',
+  intake_parser: 'Intake Parser',
+  evidence_scorer: 'Evidence Scorer',
+  statute_matcher: 'Statute Matcher',
+  negotiation_copilot: 'Negotiation Copilot',
+  estimate_engine: 'Estimate Engine',
+  predictive_analytics: 'Predictive Analytics',
+};
+
 const AGENT_ICONS = {
   claim_monitor: '\uD83D\uDD0D',
   vision_analyzer: '\uD83D\uDCF8',
@@ -14,7 +25,7 @@ const AGENT_ICONS = {
 const DEFAULT_ICON = '\uD83E\uDD16';
 
 function formatAgentName(snakeName) {
-  return snakeName
+  return AGENT_LABELS[snakeName] || snakeName
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -32,6 +43,12 @@ function successRateColor(rate) {
   return 'text-red-400';
 }
 
+function successRateLabel(rate) {
+  if (rate >= 90) return 'Excellent';
+  if (rate >= 75) return 'Good';
+  return 'Needs Attention';
+}
+
 function StatCard({ label, count, colorClass }) {
   return (
     <div className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-4">
@@ -44,7 +61,7 @@ function StatCard({ label, count, colorClass }) {
 function LoadingSpinner() {
   return (
     <div className="flex items-center gap-2 py-12 justify-center text-zinc-400">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
       <span className="text-sm">Loading analytics...</span>
     </div>
   );
@@ -52,7 +69,7 @@ function LoadingSpinner() {
 
 function ErrorState({ message }) {
   return (
-    <div className="rounded-lg border border-red-800 bg-red-900/20 p-4">
+    <div className="rounded-lg border border-red-800 bg-red-500/10 p-4">
       <p className="text-sm text-red-400">
         Failed to load analytics: {message || 'Unknown error'}
       </p>
@@ -142,6 +159,8 @@ export default function ClaimPilotDashboard() {
                   {agentStats.map((agent) => {
                     const icon =
                       AGENT_ICONS[agent.agent_name] || DEFAULT_ICON;
+                    const ariaLabel =
+                      AGENT_LABELS[agent.agent_name] || agent.agent_name;
                     const successRate =
                       agent.success_rate != null
                         ? Math.round(agent.success_rate * 100)
@@ -150,14 +169,14 @@ export default function ClaimPilotDashboard() {
                     return (
                       <tr
                         key={agent.agent_name}
-                        className="bg-zinc-900/30 hover:bg-zinc-800/60 transition-colors"
+                        className="bg-zinc-900/30 transition-colors hover:bg-zinc-700/50"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span
                               className="text-base"
                               role="img"
-                              aria-label={agent.agent_name}
+                              aria-label={ariaLabel}
                             >
                               {icon}
                             </span>
@@ -176,7 +195,9 @@ export default function ClaimPilotDashboard() {
                               : 'text-zinc-500'
                           }`}
                         >
-                          {successRate != null ? `${successRate}%` : '--'}
+                          {successRate != null
+                            ? `${successRate}% (${successRateLabel(successRate)})`
+                            : '--'}
                         </td>
                         <td className="px-4 py-3 text-right text-zinc-300">
                           {agent.avg_confidence != null

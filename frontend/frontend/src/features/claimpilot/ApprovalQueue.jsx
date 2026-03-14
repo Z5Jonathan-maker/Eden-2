@@ -14,7 +14,7 @@ export default function ApprovalQueue() {
           ClaimPilot Approval Queue
         </h1>
         {actions.length > 0 && (
-          <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+          <span className="rounded-full bg-orange-600 px-2.5 py-0.5 text-xs font-semibold text-white">
             {actions.length}
           </span>
         )}
@@ -23,14 +23,14 @@ export default function ApprovalQueue() {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="ml-3 text-zinc-400">Loading pending actions...</span>
         </div>
       )}
 
       {/* Error */}
       {isError && (
-        <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-red-800 bg-red-500/10 p-4 text-sm text-red-400">
           Failed to load pending actions: {error?.message || 'Unknown error'}
         </div>
       )}

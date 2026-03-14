@@ -4,14 +4,14 @@ const RISK_LOW_THRESHOLD = 20;
 const RISK_HIGH_THRESHOLD = 50;
 
 const RISK_LEVELS = {
-  low: { label: 'Low Risk', bg: 'bg-green-500/20', text: 'text-green-400', ring: 'ring-green-500/40' },
-  moderate: { label: 'Moderate', bg: 'bg-amber-500/20', text: 'text-amber-400', ring: 'ring-amber-500/40' },
-  high: { label: 'High Risk', bg: 'bg-red-500/20', text: 'text-red-400', ring: 'ring-red-500/40' },
+  low: { label: 'Low Risk', bg: 'bg-green-500/20', text: 'text-green-400', ring: 'ring-green-500/30' },
+  moderate: { label: 'Moderate', bg: 'bg-amber-500/20', text: 'text-amber-400', ring: 'ring-amber-500/30' },
+  high: { label: 'High Risk', bg: 'bg-red-500/20', text: 'text-red-400', ring: 'ring-red-500/30' },
 };
 
 const CARRIER_TAG_STYLES = {
   'Fast Settler': 'bg-green-500/20 text-green-400',
-  Normal: 'bg-zinc-600/30 text-zinc-300',
+  Normal: 'bg-zinc-600/20 text-zinc-300',
   'Aggressive Denier': 'bg-red-500/20 text-red-400',
 };
 
@@ -38,7 +38,11 @@ function SettlementRangeBar({ p10, p50, p90 }) {
       <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">
         Settlement Range
       </h4>
-      <div className="relative h-3 w-full rounded-full bg-gradient-to-r from-green-600 via-amber-500 to-amber-600">
+      <div
+        className="relative h-3 w-full rounded-full bg-gradient-to-r from-green-600 via-amber-500 to-amber-600"
+        role="img"
+        aria-label={`Settlement range from ${formatCurrency(p10)} to ${formatCurrency(p90)}, expected ${formatCurrency(p50)}`}
+      >
         {/* p50 marker */}
         <div
           className="absolute top-1/2 h-5 w-0.5 -translate-y-1/2 bg-white shadow-sm"
@@ -63,7 +67,14 @@ function LitigationRiskPill({ percentage }) {
   const risk = getRiskLevel(percentage);
 
   return (
-    <div className="flex items-center gap-3">
+    <div
+      className="flex items-center gap-3"
+      role="meter"
+      aria-label={`Litigation risk: ${Math.round(percentage)}% - ${risk.label}`}
+      aria-valuenow={Math.round(percentage)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
         Litigation Risk
       </span>
@@ -88,7 +99,7 @@ export default function PredictionCard({ claimId }) {
     return (
       <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
         <div className="flex items-center gap-2 text-zinc-400">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-blue-500" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-500" />
           <span className="text-sm">Loading prediction...</span>
         </div>
       </div>
