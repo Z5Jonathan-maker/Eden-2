@@ -80,6 +80,11 @@ from routes.garden_dashboard import router as garden_dashboard_router
 from routes.email_intelligence import router as email_intelligence_router
 from routes.claimpilot import router as claimpilot_router
 from routes.photo_analysis import router as photo_analysis_router
+from routes.calendar import router as calendar_router
+from routes.commissions import router as commissions_router
+from routes.compliance import router as compliance_router
+from routes.intake import router as intake_router
+from routes.email_log import router as email_log_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -166,6 +171,21 @@ async def ensure_database_indexes():
         await db.claimpilot_insights.create_index([("claim_id", 1), ("created_at", -1)], background=True)
         await db.claimpilot_pending.create_index([("status", 1), ("created_at", -1)], background=True)
         await db.claimpilot_audit.create_index([("agent_name", 1), ("created_at", -1)], background=True)
+        # Calendar indexes
+        await db.calendar_events.create_index([("assigned_to_id", 1), ("start_time", 1)], background=True)
+        await db.calendar_events.create_index([("claim_id", 1), ("start_time", 1)], background=True)
+        await db.calendar_events.create_index([("start_time", 1), ("status", 1)], background=True)
+        await db.calendar_events.create_index([("parent_event_id", 1)], background=True, sparse=True)
+        # Compliance deadline indexes
+        await db.compliance_deadlines.create_index([("claim_id", 1), ("deadline_date", 1)], background=True)
+        await db.compliance_deadlines.create_index([("status", 1), ("deadline_date", 1)], background=True)
+        await db.compliance_deadlines.create_index([("deadline_type", 1)], background=True)
+        await db.compliance_alerts.create_index([("acknowledged", 1), ("created_at", -1)], background=True)
+        await db.compliance_alerts.create_index([("deadline_id", 1)], background=True)
+        # Intake submission indexes
+        await db.intake_submissions.create_index("submission_token", unique=True, background=True)
+        await db.intake_submissions.create_index([("status", 1), ("submitted_at", -1)], background=True)
+        await db.intake_submissions.create_index([("how_did_you_hear", 1)], background=True)
         logging.info("Database indexes ensured successfully")
     except Exception as e:
         logging.warning(f"Could not create database indexes: {e}")
@@ -559,6 +579,11 @@ app.include_router(garden_dashboard_router)
 app.include_router(email_intelligence_router)
 app.include_router(claimpilot_router)
 app.include_router(photo_analysis_router)
+app.include_router(calendar_router)
+app.include_router(commissions_router)
+app.include_router(compliance_router)
+app.include_router(intake_router)
+app.include_router(email_log_router)
 
 
 async def ensure_workbooks_exist():

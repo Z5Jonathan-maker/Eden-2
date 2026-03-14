@@ -93,6 +93,7 @@ const Layout = () => {
     { icon: NAV_ICONS.sales_ops, label: 'Sales Ops', path: '/sales' },
     { icon: NAV_ICONS.documents, label: 'Docs', path: '/documents' },
     { icon: NAV_ICONS.contracts, label: 'Contracts', path: '/contracts' },
+    { icon: NAV_ICONS.recon, label: 'Calendar', path: '/calendar' },
   ];
 
   const intelligenceItems = [
@@ -101,6 +102,8 @@ const Layout = () => {
     { icon: NAV_ICONS.scales, label: 'Scales', path: '/scales' },
     { icon: NAV_ICONS.eve, label: 'Email DNA', path: '/email-intelligence' },
     { icon: NAV_ICONS.adam_qa, label: 'ClaimPilot', path: '/claimpilot' },
+    { icon: NAV_ICONS.documents, label: 'Email Log', path: '/email-log' },
+    { icon: NAV_ICONS.laws, label: 'Compliance', path: '/compliance' },
   ];
 
   const growthItems = [
@@ -117,6 +120,7 @@ const Layout = () => {
     { icon: NAV_ICONS.squad, label: 'Squad', path: '/users', adminOnly: true },
     { icon: NAV_ICONS.data_ops, label: 'Data Ops', path: '/data' },
     { icon: NAV_ICONS.storage, label: 'Storage', path: '/storage' },
+    { icon: NAV_ICONS.scales, label: 'Revenue', path: '/commissions', adminOnly: true },
   ];
 
   const adminItems = user?.role === 'admin'

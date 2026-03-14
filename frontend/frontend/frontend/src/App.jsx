@@ -62,14 +62,19 @@ const MyCard = lazy(() => import('./components/MyCard'));
 const PublicCard = lazy(() => import('./components/PublicCard'));
 const ChatLayout = lazy(() => import('./components/chat/ChatLayout'));
 const CommCenterThread = lazy(() => import('./components/CommCenterThread'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ClaimPilotPage = lazy(() => import('./pages/ClaimPilotPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'));
+const CommissionsPage = lazy(() => import('./pages/CommissionsPage'));
+const CompliancePage = lazy(() => import('./pages/CompliancePage'));
+const EmailLogPage = lazy(() => import('./pages/EmailLogPage'));
 const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
 const RepHome = lazy(() => import('./components/rep/RepHome'));
 const PerformanceConsole = lazy(() => import('./components/performance/PerformanceConsole'));
 const BookReader = lazy(() => import('./components/university/BookReader'));
 const WorkbookViewer = lazy(() => import('./components/university/WorkbookViewer'));
+const IntakeForm = lazy(() => import('./components/IntakeForm'));
 
 // Suspense fallback
 const PageLoader = () => (
@@ -173,6 +178,9 @@ function AppRoutes() {
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+
+        {/* Public Intake Form - No auth required */}
+        <Route path="/intake" element={<IntakeForm />} />
 
         {/* Public Status Portal - No auth required */}
         <Route path="/status/:claimId" element={<ClaimStatusPortal />} />
@@ -297,11 +305,15 @@ function AppRoutes() {
           <Route path="performance" element={<Safe label="Performance"><PerformanceConsole /></Safe>} />
           <Route path="qa" element={<Safe label="QA"><Adam /></Safe>} />
           <Route path="adam" element={<AdminRoute><Safe label="Adam"><Adam /></Safe></AdminRoute>} />
+          <Route path="calendar" element={<Safe label="Calendar"><CalendarPage /></Safe>} />
           <Route path="claimpilot" element={<Safe label="ClaimPilot"><ClaimPilotPage /></Safe>} />
           <Route path="experts" element={<Safe label="Experts"><IndustryExperts /></Safe>} />
           <Route path="florida-laws" element={<Safe label="Laws"><FloridaLaws /></Safe>} />
           <Route path="battle-pass" element={<Safe label="Battle Pass"><BattlePass /></Safe>} />
           <Route path="mycard" element={<Safe label="My Card"><MyCard /></Safe>} />
+          <Route path="commissions" element={<Safe label="Commissions"><CommissionsPage /></Safe>} />
+          <Route path="compliance" element={<Safe label="Compliance"><CompliancePage /></Safe>} />
+          <Route path="email-log" element={<Safe label="Email Log"><EmailLogPage /></Safe>} />
           <Route path="workspace" element={<Safe label="Workspace"><WorkspacePage /></Safe>} />
           <Route path="comms/chat" element={<Safe label="Comms"><ChatLayout /></Safe>} />
           <Route path="comms/chat/:channelId" element={<Safe label="Comms"><ChatLayout /></Safe>} />
