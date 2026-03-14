@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -504,6 +505,9 @@ def _get_task_daily_budget_usd(task_type: str) -> Optional[float]:
     return parsed if parsed >= 0 else None
 
 
+GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
+
+
 def _default_model_for_provider(provider: str, preferred_model: Optional[str] = None) -> str:
     if preferred_model:
         model = str(preferred_model).strip()
@@ -512,7 +516,19 @@ def _default_model_for_provider(provider: str, preferred_model: Optional[str] = 
         "ollama": OLLAMA_MODEL_DEFAULT,
         "openai": OPENAI_MODEL_DEFAULT,
         "anthropic": ANTHROPIC_MODEL_DEFAULT,
+        "gemini": GEMINI_MODEL_DEFAULT,
     }.get(provider, OLLAMA_MODEL_DEFAULT)
+
+
+def _is_provider_available(provider: str) -> bool:
+    """Check if a provider has its API key configured."""
+    checks = {
+        "gemini": lambda: bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")),
+        "ollama": lambda: bool(get_ollama_api_key()),
+        "openai": lambda: bool(os.environ.get("OPENAI_API_KEY")),
+        "anthropic": lambda: bool(os.environ.get("ANTHROPIC_API_KEY")),
+    }
+    return checks.get(provider, lambda: False)()
 
 
 def _select_provider_and_model(
@@ -521,7 +537,21 @@ def _select_provider_and_model(
     preferred_model: Optional[str] = None,
     provider_order: Optional[List[str]] = None,
 ):
-    # LOCKED TO OLLAMA -- free tier only until OpenAI/Anthropic are paid for.
+    # Try preferred provider first
+    if preferred_provider and _is_provider_available(preferred_provider):
+        return preferred_provider, _default_model_for_provider(preferred_provider, preferred_model)
+
+    # Try provider order from routing policy
+    order = provider_order or resolve_policy_provider_order_for_task(task_type)
+    for provider in order:
+        if _is_provider_available(provider):
+            return provider, _default_model_for_provider(provider, preferred_model)
+
+    # Final fallback: try gemini (free), then ollama
+    for fallback in ["gemini", "ollama"]:
+        if _is_provider_available(fallback):
+            return fallback, _default_model_for_provider(fallback)
+
     return "ollama", OLLAMA_MODEL_DEFAULT
 
 
@@ -639,37 +669,52 @@ async def _send_via_ai_gateway(
     await _enforce_daily_budget(user_id, estimated_cost)
     await _enforce_task_daily_budget(user_id, task_type, estimated_cost)
 
-    def _provider_has_key(p: str) -> bool:
-        """Check if a provider has its own API key configured."""
-        from emergentintegrations.llm.chat import PROVIDER_CONFIGS
-        return bool(PROVIDER_CONFIGS.get(p, {}).get("api_key"))
-
+    # Use _is_provider_available for key checks (supports gemini)
     # Validate primary provider has a key before calling
-    if not _provider_has_key(provider):
+    if not _is_provider_available(provider):
         logger.warning("AI provider '%s' has no API key configured -- skipping to fallback", provider)
         if fallback_enabled:
-            for fp in provider_order[1:]:
-                if _provider_has_key(fp):
+            for fp in provider_order:
+                if _is_provider_available(fp):
                     provider = fp
                     model = _default_model_for_provider(fp)
                     logger.info("Falling back to provider '%s' (has key)", fp)
                     break
             else:
-                raise Exception(
-                    "No AI provider is configured. Set OLLAMA_API_KEY (free \u2014 get one at https://ollama.com/settings/keys) in your Render environment variables."
-                )
+                # Last resort: try gemini
+                if _is_provider_available("gemini"):
+                    provider = "gemini"
+                    model = GEMINI_MODEL_DEFAULT
+                else:
+                    raise Exception(
+                        "No AI provider configured. Set GEMINI_API_KEY (free at https://aistudio.google.com/apikey) in Render environment."
+                    )
         else:
             raise Exception(
-                "AI provider 'ollama' is not configured. Set OLLAMA_API_KEY (free \u2014 get one at https://ollama.com/settings/keys) in your Render environment variables."
+                "No AI provider configured. Set GEMINI_API_KEY (free at https://aistudio.google.com/apikey) in Render environment."
             )
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=session_key,
-            system_message=system_message,
-        ).with_model(provider, model)
-        response_text = await chat.send_message(UserMessage(text=safe_prompt))
+        # Direct Gemini API path (free, no emergentintegrations dependency)
+        if provider == "gemini":
+            import google.generativeai as genai
+            gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
+            genai.configure(api_key=gemini_key)
+            gemini_model = genai.GenerativeModel(
+                model_name=model,
+                system_instruction=system_message,
+            )
+            gemini_response = await asyncio.to_thread(
+                lambda: gemini_model.generate_content(safe_prompt).text
+            )
+            response_text = gemini_response
+        else:
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=session_key,
+                system_message=system_message,
+            ).with_model(provider, model)
+            response_text = await chat.send_message(UserMessage(text=safe_prompt))
         await _log_ai_usage(
             user_id=user_id,
             task_type=task_type,

@@ -405,7 +405,7 @@ Be concise but comprehensive. Use markdown formatting for readability."""
 # ---------------------------------------------------------------------------
 # Provider / model constants
 # ---------------------------------------------------------------------------
-SUPPORTED_PROVIDERS = {"ollama", "openai", "anthropic"}
+SUPPORTED_PROVIDERS = {"ollama", "openai", "anthropic", "gemini"}
 
 OLLAMA_CLOUD_MODELS = [
     {"id": "deepseek-v3.2", "name": "DeepSeek V3.2", "size": "671B", "description": "Powerful reasoning model with chain-of-thought", "recommended": True},

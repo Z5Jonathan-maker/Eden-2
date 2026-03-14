@@ -81,22 +81,31 @@ async def ai_health_check(
         "model": os.environ.get("OPENAI_MODEL", "gpt-4o"),
     }
 
-    any_provider = bool(ollama_key or anthropic_key or openai_key)
+    # Check Gemini (free tier)
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY", "")
+    gemini_status = {
+        "configured": bool(gemini_key),
+        "model": "gemini-2.5-flash",
+    }
+
+    any_provider = bool(gemini_key or ollama_key or anthropic_key or openai_key)
 
     return {
         "service_ready": any_provider,
         "active_key_source": (
-            "OLLAMA_API_KEY" if ollama_key
+            "GEMINI_API_KEY" if gemini_key
+            else "OLLAMA_API_KEY" if ollama_key
             else "ANTHROPIC_API_KEY" if anthropic_key
             else "OPENAI_API_KEY" if openai_key
-            else "NONE \u2014 set OLLAMA_API_KEY (free) at https://ollama.com/settings/keys"
+            else "NONE"
         ),
+        "gemini": gemini_status,
         "ollama": ollama_status,
         "anthropic": anthropic_status,
         "openai": openai_status,
         "instructions": (
-            "All providers configured." if (ollama_key and anthropic_key) else
-            "To enable AI: 1) Sign up at https://ollama.com  2) Create API key at https://ollama.com/settings/keys  3) Set OLLAMA_API_KEY env var on Render"
+            "Gemini configured (free tier)." if gemini_key else
+            "To enable AI: Set GEMINI_API_KEY (free at https://aistudio.google.com/apikey) on Render"
         ),
     }
 

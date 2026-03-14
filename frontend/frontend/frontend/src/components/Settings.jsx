@@ -100,6 +100,7 @@ const Settings = () => {
   const [loadingAiProviderHealth, setLoadingAiProviderHealth] = useState(false);
   const providerOptions = useMemo(
     () => [
+      { value: 'gemini', label: 'Gemini (Free)' },
       { value: 'openai', label: 'OpenAI' },
       { value: 'anthropic', label: 'Anthropic' },
       { value: 'ollama', label: 'Ollama Cloud/API' },

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
-ALLOWED_PROVIDERS = {"openai", "anthropic", "ollama"}
+ALLOWED_PROVIDERS = {"openai", "anthropic", "ollama", "gemini"}
 
 
 def parse_provider_order(value: Optional[str], default_order: List[str]) -> List[str]:
@@ -18,11 +18,11 @@ def parse_provider_order(value: Optional[str], default_order: List[str]) -> List
 
 def task_default_provider_orders() -> Dict[str, List[str]]:
     return {
-        "summarize_communication_thread": ["ollama", "anthropic"],
-        "suggest_follow_up_sms": ["ollama", "openai"],
-        "draft_communication": ["ollama", "openai"],
-        "claim_brief": ["ollama", "anthropic"],
-        "supplement_justification": ["ollama", "anthropic"],
+        "summarize_communication_thread": ["gemini", "ollama"],
+        "suggest_follow_up_sms": ["gemini", "ollama"],
+        "draft_communication": ["gemini", "ollama"],
+        "claim_brief": ["gemini", "ollama"],
+        "supplement_justification": ["gemini", "ollama"],
     }
 
 
