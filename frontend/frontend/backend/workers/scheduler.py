@@ -45,6 +45,9 @@ def init_scheduler(db):
     from workers.claimpilot_monitor import init_claimpilot_monitor
     init_claimpilot_monitor(db)
 
+    from workers.claimpilot_initial_run import init_initial_run
+    init_initial_run(db)
+
     # Add jobs
     _add_harvest_coach_jobs()
     _add_claims_ops_jobs()
@@ -53,6 +56,7 @@ def init_scheduler(db):
     _add_drive_mirror_jobs()
     _add_claimpilot_monitor_jobs()
     _add_legal_feed_jobs()
+    _add_initial_run_job()
 
     logger.info("Background scheduler initialized with all bots")
 
@@ -241,6 +245,23 @@ def _add_legal_feed_jobs():
     logger.info(
         "Legal feed jobs added: weekly sync Sun 02:00 UTC, staleness check daily 06:00 UTC"
     )
+
+
+def _add_initial_run_job():
+    """Schedule one-time ClaimPilot initial analysis 30s after startup."""
+    from workers.claimpilot_initial_run import run_initial_analysis
+    from datetime import datetime, timedelta
+
+    scheduler.add_job(
+        _run_async_job,
+        'date',
+        run_date=datetime.now() + timedelta(seconds=30),
+        args=[run_initial_analysis],
+        id="claimpilot_initial_run",
+        name="ClaimPilot - Initial Analysis",
+        replace_existing=True,
+    )
+    logger.info("ClaimPilot initial run scheduled for 30s after startup")
 
 
 async def _run_async_job(coro_func):
