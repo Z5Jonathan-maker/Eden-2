@@ -1,9 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
+  darkMode: 'media', // Respects system preference
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./index.html"
+    "./public/index.html"
   ],
   theme: {
     extend: {
@@ -85,11 +85,6 @@ module.exports = {
         'eden-xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
         'eden-card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'eden-card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        'glow-orange': '0 0 15px rgba(249, 115, 22, 0.5)',
-        'glow-orange-lg': '0 0 30px rgba(249, 115, 22, 0.5)',
-        'glow-green': '0 0 15px rgba(34, 197, 94, 0.8)',
-        'glow-blue': '0 0 15px rgba(59, 130, 246, 0.5)',
-        'glow-status': '0 0 8px rgba(34, 197, 94, 0.8)',
       },
       
       // Keyframes
@@ -135,25 +130,6 @@ module.exports = {
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite'
       },
       
-      // Z-index scale
-      zIndex: {
-        'dropdown': '100',
-        'sticky': '200',
-        'modal-backdrop': '300',
-        'modal': '400',
-        'popover': '500',
-        'tooltip': '600',
-        'toast': '700',
-      },
-
-      // Drop shadow utilities (for filter: drop-shadow)
-      dropShadow: {
-        'glow-orange': '0 0 15px rgba(249, 115, 22, 0.5)',
-        'glow-orange-lg': '0 0 30px rgba(249, 115, 22, 0.5)',
-        'glow-green': '0 0 15px rgba(34, 197, 94, 0.8)',
-        'glow-blue': '0 0 15px rgba(59, 130, 246, 0.5)',
-      },
-
       // Font sizes matching design system
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
@@ -165,5 +141,5 @@ module.exports = {
       }
     }
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [require("tailwindcss-animate")],
 };

@@ -1,13 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setSentryUser, clearSentryUser } from '../lib/sentry';
-import { apiGet, apiPost, setAuthToken, clearAuthToken, clearCache } from '../lib/api';
-import { clearAllEdenStorage } from '../lib/core';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-// Empty string = same-origin (behind Vercel/nginx proxy). Use ?? so "" isn't skipped.
-const API_URL = import.meta.env.REACT_APP_BACKEND_URL ?? import.meta.env.REACT_APP_API_URL ?? '';
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_API_URL;
 
-const missingApiUrlMessage = "Unable to connect to server. Please try again later.";
+const missingApiUrlMessage = "Missing API base URL. Set REACT_APP_BACKEND_URL (preferred) or REACT_APP_API_URL to your backend, then rebuild/redeploy.";
 
 const AuthContext = createContext(null);
 
@@ -23,85 +18,82 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Global listener: any 401 from api.js triggers logout + redirect (debounced)
-  useEffect(() => {
-    let handled = false;
-    const handleAuthExpired = () => {
-      if (handled) return;
-      handled = true;
-      clearAuthToken();
-      clearCache();
-      clearAllEdenStorage();
-      clearSentryUser();
-      setUser(null);
-      toast.error('Session expired — please log in again.', { duration: 4000 });
-      // Redirect to login. Uses window.location so it works regardless of
-      // which component tree we're in (no dependency on useNavigate).
-      const currentPath = window.location.pathname;
-      const publicPaths = ['/', '/login', '/register', '/install', '/compare'];
-      if (!publicPaths.includes(currentPath) && !currentPath.startsWith('/status/')) {
-        window.location.replace('/login');
-      }
-      // Reset flag after short delay so future expirations (re-login then expire) still work
-      setTimeout(() => { handled = false; }, 2000);
-    };
-    window.addEventListener('eden:auth-expired', handleAuthExpired);
-    return () => window.removeEventListener('eden:auth-expired', handleAuthExpired);
-  }, []);
+  /**
+   * Fetch current user from /api/auth/me using the httpOnly cookie.
+   * This is the only way to determine auth state — no localStorage tokens.
+   */
+  const fetchCurrentUser = useCallback(async () => {
+    if (!API_URL) {
+      setLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    // Check if user is already logged in by calling /api/auth/me
-    // The httpOnly cookie will be sent automatically
-    const checkAuth = async () => {
-      try {
-        if (API_URL == null) {
-          setLoading(false);
-          return;
-        }
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-        const response = await apiGet('/api/auth/me');
-
-        if (response.ok) {
-          setUser(response.data);
-          setSentryUser(response.data); // Track user in Sentry
-        } else {
-          // Not authenticated or session expired
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('[Auth] Failed to check authentication:', error);
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
         setUser(null);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    checkAuth();
+    } catch (error) {
+      console.error('[Auth] Failed to fetch current user:', error.message);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    // Clean up any legacy localStorage tokens (security: XSS-vulnerable)
+    localStorage.removeItem('eden_token');
+    localStorage.removeItem('eden_user');
+
+    // Determine auth state from httpOnly cookie via /api/auth/me
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
   const login = async (email, password) => {
     try {
-      if (API_URL == null) throw new Error(missingApiUrlMessage);
+      if (!API_URL) throw new Error(missingApiUrlMessage);
 
-      const response = await apiPost('/api/auth/login', { email, password });
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      // Read response body
+      let data;
+      let responseText = '';
+      try {
+        responseText = await response.text();
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('[Auth] Response parse error:', parseError, 'Text:', responseText);
+        data = { detail: `Invalid response format: ${responseText.substring(0, 100)}` };
+      }
 
       if (!response.ok) {
-        const errorMessage = response.error?.detail || response.error || 'Login failed';
+        const errorMessage = data.detail || data.message || 'Login failed';
         throw new Error(errorMessage);
       }
 
-      if (!response.data.user) {
-        console.error('[Auth] Missing user in response:', response.data);
+      if (!data.user) {
+        console.error('[Auth] Missing user in response:', data);
         throw new Error('Server returned invalid user format');
       }
 
-      // Store Bearer token for cross-origin auth (cookie is primary, this is fallback)
-      if (response.data.access_token) {
-        setAuthToken(response.data.access_token);
-      }
-
-      setUser(response.data.user);
-      setSentryUser(response.data.user); // Track user in Sentry
+      // Token is set as httpOnly cookie by the server — just store user in state
+      setUser(data.user);
 
       return { success: true };
     } catch (error) {
@@ -112,17 +104,35 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, fullName, role = 'adjuster') => {
     try {
-      if (API_URL == null) throw new Error(missingApiUrlMessage);
+      if (!API_URL) throw new Error(missingApiUrlMessage);
 
-      const response = await apiPost('/api/auth/register', {
-        email,
-        password,
-        full_name: fullName,
-        role,
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName,
+          role,
+        }),
       });
 
+      // Read response body
+      let data;
+      let responseText = '';
+      try {
+        responseText = await response.text();
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('[Auth] Register response parse error:', parseError, 'Text:', responseText);
+        data = { detail: `Invalid response format: ${responseText.substring(0, 100)}` };
+      }
+
       if (!response.ok) {
-        throw new Error(response.error?.detail || response.error || 'Registration failed');
+        throw new Error(data.detail || data.message || 'Registration failed');
       }
 
       // Auto login after registration
@@ -136,19 +146,19 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (API_URL) {
-        // Call backend to clear httpOnly cookie
-        await apiPost('/api/auth/logout', {});
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
       }
     } catch (error) {
-      console.error('[Auth] Logout request failed:', error);
-      // Continue with local logout even if backend call fails
-    } finally {
-      clearAuthToken();
-      clearCache();
-      clearAllEdenStorage();
-      clearSentryUser();
-      setUser(null);
+      console.error('[Auth] Logout request failed:', error.message);
     }
+    setUser(null);
   };
 
   const value = {
@@ -158,6 +168,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    fetchCurrentUser,
   };
 
   return (

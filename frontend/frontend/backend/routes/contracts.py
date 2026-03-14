@@ -1,0 +1,1335 @@
+"""
+Contracts Management API - Templates, E-Signatures, Document Management
+Integrates with SignNow for electronic signatures
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
+import uuid
+import io
+import os
+import logging
+import re
+
+from dependencies import db, get_current_active_user as get_current_user
+from services.signnow_service import SignNowService
+from services.contracts_pdf import PA_AGREEMENT_FIELD_POSITIONS
+from utils.claim_access import can_access_claim as _can_access_claim
+
+router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
+logger = logging.getLogger(__name__)
+MUTATING_ROLES = {"admin", "manager", "adjuster"}
+
+
+def _combine_query_filters(*filters: Dict[str, Any]) -> Dict[str, Any]:
+    valid = [flt for flt in filters if flt]
+    if not valid:
+        return {}
+    if len(valid) == 1:
+        return valid[0]
+    return {"$and": valid}
+
+
+async def _get_claim_for_user_or_403(claim_id: str, current_user: dict) -> dict:
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if not _can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return claim
+
+
+async def _build_contract_visibility_filter(current_user: dict) -> Dict[str, Any]:
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return {}
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip()
+        if not user_email:
+            return {"client_email": "__no_match__"}
+        return {"client_email": {"$regex": f"^{re.escape(user_email)}$", "$options": "i"}}
+
+    full_name = current_user.get("full_name")
+    claim_query_or = [{"created_by": user_id}, {"assigned_to_id": user_id}]
+    if full_name:
+        claim_query_or.append({"assigned_to": full_name})
+
+    visible_claims = await db.claims.find(
+        {"$or": claim_query_or},
+        {"_id": 0, "id": 1},
+    ).limit(500).to_list(500)
+    claim_ids = [item.get("id") for item in visible_claims if item.get("id")]
+
+    visibility_or = [{"created_by": user_id}]
+    if claim_ids:
+        visibility_or.append({"claim_id": {"$in": claim_ids}})
+    return {"$or": visibility_or}
+
+
+def _require_mutating_role(current_user: dict):
+    if current_user.get("role", "client") not in MUTATING_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient role for contract modification")
+
+
+async def _get_contract_for_user_or_403(contract_id: str, current_user: dict) -> dict:
+    contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    role = current_user.get("role", "client")
+    user_id = current_user.get("id")
+    if role in {"admin", "manager"}:
+        return contract
+
+    claim_id = contract.get("claim_id")
+    if claim_id:
+        claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
+        if claim and _can_access_claim(current_user, claim):
+            return contract
+
+    if role == "client":
+        user_email = (current_user.get("email") or "").strip().lower()
+        contract_email = (contract.get("client_email") or "").strip().lower()
+        if user_email and contract_email and user_email == contract_email:
+            return contract
+    elif contract.get("created_by") == user_id:
+        return contract
+
+    raise HTTPException(status_code=403, detail="Access denied")
+
+
+async def _get_signnow_token():
+    """Get SignNow token via client credentials if configured"""
+    try:
+        from integrations.signnow_client import get_signnow_access_token
+        return await get_signnow_access_token()
+    except Exception as e:
+        logger.warning("SignNow token fetch failed: %s", e)
+        return None
+
+
+# Import game event bus helper
+async def _emit_contract_event(user_id: str, event_type: str, contract_id: str):
+    """Emit game event for contract activities"""
+    try:
+        from incentives_engine.events import emit_contract_event
+        await emit_contract_event(
+            db=db,
+            user_id=user_id,
+            event_type=event_type,
+            contract_id=contract_id
+        )
+    except Exception as e:
+        logger.warning(f"Failed to emit contract game event: {e}")
+
+
+# ============================================
+# Models
+# ============================================
+
+class ContractTemplateCreate(BaseModel):
+    name: str
+    description: str
+    template_type: str = "public_adjuster_agreement"  # public_adjuster_agreement, dfs_disclosure, custom
+    content: Dict[str, Any]  # Template content with fields
+
+
+class ContractCreate(BaseModel):
+    template_id: str
+    claim_id: str  # REQUIRED - contracts must be linked to claims
+    client_name: str
+    client_email: str = ""  # Optional for DFS Disclosure (only name + signature needed)
+    client_phone: Optional[str] = None
+    field_values: Dict[str, Any]  # Filled-in field values
+
+
+class ContractSendRequest(BaseModel):
+    signer_email: str = ""
+    signer_name: str
+    signer_phone: Optional[str] = None
+    delivery_method: Optional[str] = "email"  # "email" or "sms"
+    subject: Optional[str] = None
+    message: Optional[str] = None
+
+
+# ============================================
+# Care Claims Contract Template Definition
+# ============================================
+
+CARE_CLAIMS_TEMPLATE = {
+    "id": "care-claims-pa-agreement",
+    "name": "Public Adjuster Agreement",
+    "description": "Care Claims standard public adjuster service agreement for property claims",
+    "template_type": "public_adjuster_agreement",
+    "version": "1.0",
+    "adjuster_info": {
+        "name": os.environ.get("ADJUSTER_NAME", ""),
+        "license_number": os.environ.get("ADJUSTER_LICENSE", ""),
+        "firm_name": os.environ.get("FIRM_NAME", ""),
+        "firm_license": os.environ.get("FIRM_LICENSE", ""),
+        "address": os.environ.get("FIRM_ADDRESS", ""),
+        "phone": os.environ.get("FIRM_PHONE", ""),
+        "email": os.environ.get("FIRM_EMAIL", ""),
+        "website": os.environ.get("FIRM_WEBSITE", "")
+    },
+    "fields": [
+        # Policyholder Section
+        {"id": "policyholder_name", "label": "Named Insured's Name(s)", "type": "text", "required": True, "section": "policyholder"},
+        {"id": "policyholder_email", "label": "Email", "type": "email", "required": True, "section": "policyholder"},
+        {"id": "policyholder_address", "label": "Address", "type": "text", "required": True, "section": "policyholder"},
+        {"id": "policyholder_city", "label": "City", "type": "text", "required": True, "section": "policyholder"},
+        {"id": "policyholder_state", "label": "State", "type": "text", "required": True, "section": "policyholder"},
+        {"id": "policyholder_zip", "label": "Zip", "type": "text", "required": True, "section": "policyholder"},
+        {"id": "policyholder_phone", "label": "Phone", "type": "tel", "required": True, "section": "policyholder"},
+        {"id": "policyholder_mobile", "label": "Mobile", "type": "tel", "required": False, "section": "policyholder"},
+        
+        # Insurance Company Section
+        {"id": "insurance_company", "label": "Insurance Company Name", "type": "text", "required": True, "section": "insurance"},
+        {"id": "policy_number", "label": "Policy #", "type": "text", "required": True, "section": "insurance"},
+        {"id": "claim_number", "label": "Claim #", "type": "text", "required": False, "section": "insurance"},
+        {"id": "insurance_address", "label": "Insurance Address", "type": "text", "required": False, "section": "insurance"},
+        {"id": "field_adjuster", "label": "Field Adjuster", "type": "text", "required": False, "section": "insurance"},
+        {"id": "field_adjuster_phone", "label": "Field Adjuster Phone", "type": "tel", "required": False, "section": "insurance"},
+        {"id": "desk_adjuster", "label": "Desk Adjuster", "type": "text", "required": False, "section": "insurance"},
+        {"id": "desk_adjuster_phone", "label": "Desk Adjuster Phone", "type": "tel", "required": False, "section": "insurance"},
+        
+        # Loss Section
+        {"id": "loss_address", "label": "Loss Address", "type": "text", "required": True, "section": "loss"},
+        {"id": "loss_city", "label": "City", "type": "text", "required": True, "section": "loss"},
+        {"id": "loss_state_zip", "label": "State/Zip", "type": "text", "required": True, "section": "loss"},
+        {"id": "date_of_loss", "label": "Date of Loss", "type": "date", "required": True, "section": "loss"},
+        {"id": "description_of_loss", "label": "Description of Loss", "type": "textarea", "required": True, "section": "loss"},
+        {"id": "claim_type", "label": "Claim Type", "type": "select", "options": ["Emergency", "Non Emergency", "Supplemental"], "required": True, "section": "loss"},
+        
+        # Fee Section
+        {"id": "fee_percentage", "label": "Fee Percentage (%)", "type": "number", "required": True, "section": "fees", "min": 0, "max": 20}
+    ],
+    "sections": [
+        {"id": "policyholder", "title": "Policyholder Information"},
+        {"id": "insurance", "title": "Insurance Company"},
+        {"id": "loss", "title": "Loss Location/Description"},
+        {"id": "fees", "title": "Fee Agreement"}
+    ],
+    "terms": [
+        "SERVICES: CARE CLAIMS will act as a public insurance adjuster on behalf of POLICYHOLDER for the preparation and/or presentment of the claim for loss, damage, and recovery under any insurance policies.",
+        "NOTICE OF ASSIGNMENT: POLICYHOLDER assigns a portion of the recovery to CARE CLAIMS and authorizes co-payee arrangement on all payments.",
+        "CANCELLATION: Either party may cancel with written notice. Work performed entitles CARE CLAIMS to reimbursement for expenses.",
+        "EXPENSES/COSTS: POLICYHOLDER is responsible for all costs and expenses incurred for claim preparation.",
+        "NO LEGAL SERVICES: This Agreement is not for legal services. An attorney must provide any legal services.",
+        "FLORIDA LAW: Pursuant to s 817.234, Florida Statutes, any person who prepares false or misleading claim information commits a felony.",
+        "RESCISSION PERIOD: Contract may be cancelled within 10 days after execution; for certain emergency claims, cancellation is allowed within 30 days after date of loss or 10 days after execution, whichever is longer."
+    ],
+    "signature_blocks": [
+        {"id": "insured_1", "role": "Primary Insured", "required": True},
+        {"id": "insured_2", "role": "Secondary Insured", "required": False},
+        {"id": "adjuster", "role": "Public Adjuster", "required": True, "prefilled": True}
+    ],
+    "initial_blocks": [
+        {"id": "page_1_initials", "page": 1, "description": "Acknowledge receipt of page 1"},
+        {"id": "page_2_initials", "page": 2, "description": "Acknowledge receipt of page 2"},
+        {"id": "page_3_initials", "page": 3, "description": "Acknowledge receipt of page 3"},
+        {"id": "page_4_initials", "page": 4, "description": "Acknowledge receipt of page 4"},
+        {"id": "page_5_initials", "page": 5, "description": "Acknowledge receipt of page 5"},
+        {"id": "page_6_initials", "page": 6, "description": "Acknowledge receipt of page 6"}
+    ],
+    "pdf_url": "https://customer-assets.emergentagent.com/job_eden-insurance/artifacts/2wnjf18n_Care%20Claims%20Contract%20New.pdf",
+    "created_at": "2026-02-03T00:00:00Z"
+}
+
+
+DFS_DISCLOSURE_TEMPLATE = {
+    "id": "dfs-h1-1982-disclosure",
+    "name": "DFS Claim Process Disclosure",
+    "description": "Florida DFS-H1-1982 Claim Process Disclosure Form — required by Rule 69B-220.051, F.A.C.",
+    "template_type": "dfs_disclosure",
+    "version": "1.0",
+    "fields": [
+        {"id": "insured_name", "label": "Insured Name(s)", "type": "text", "required": True, "section": "insured"},
+        {"id": "date_signed", "label": "Date Signed", "type": "date", "required": True, "section": "insured"},
+    ],
+    "sections": [
+        {"id": "insured", "title": "Insured Information"},
+    ],
+    "terms": [
+        "A Company Adjuster is as defined in s. 626.856, F.S. A company adjuster is employed by the insurance company to address insurance claims on its behalf.",
+        "An Independent Adjuster is as defined in s. 626.855, F.S. An independent adjuster is contracted by the insurance company to address insurance claims on its behalf.",
+        "A Public Adjuster is as defined in s. 626.854, F.S. A public adjuster contracts with and is compensated by you, the insured, to assist you in the insurance claim process. A public adjuster is not an employee or representative of the insurance company.",
+    ],
+    "signature_blocks": [
+        {"id": "insured_1", "role": "Primary Insured", "required": True},
+    ],
+    "initial_blocks": [],
+    "pdf_url": None,  # Generated from scratch — standard government form
+    "created_at": "2026-02-18T00:00:00Z",
+}
+
+
+BUILTIN_TEMPLATES = {
+    CARE_CLAIMS_TEMPLATE["id"]: CARE_CLAIMS_TEMPLATE,
+    DFS_DISCLOSURE_TEMPLATE["id"]: DFS_DISCLOSURE_TEMPLATE,
+}
+
+
+def _get_builtin_template(template_id: str):
+    return BUILTIN_TEMPLATES.get(template_id)
+
+
+# ============================================
+# Template Endpoints
+# ============================================
+
+@router.get("/templates")
+async def get_contract_templates(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all available contract templates"""
+    # Get custom templates from DB
+    custom_templates = await db.contract_templates.find({}, {"_id": 0}).to_list(100)
+
+    # Add all built-in templates
+    templates = []
+    for tmpl in BUILTIN_TEMPLATES.values():
+        templates.append({
+            "id": tmpl["id"],
+            "name": tmpl["name"],
+            "description": tmpl["description"],
+            "template_type": tmpl["template_type"],
+            "fields_count": len(tmpl["fields"]),
+            "is_builtin": True,
+        })
+
+    for t in custom_templates:
+        templates.append({
+            "id": t["id"],
+            "name": t["name"],
+            "description": t["description"],
+            "template_type": t["template_type"],
+            "fields_count": len(t.get("fields", [])),
+            "is_builtin": False
+        })
+    
+    return {"templates": templates}
+
+
+@router.get("/templates/{template_id}")
+async def get_contract_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get full template details with fields"""
+    builtin = _get_builtin_template(template_id)
+    if builtin:
+        return builtin
+
+    template = await db.contract_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return template
+
+
+@router.post("/templates")
+async def create_contract_template(
+    template: ContractTemplateCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a custom contract template (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    template_id = str(uuid.uuid4())
+    doc = {
+        "id": template_id,
+        "name": template.name,
+        "description": template.description,
+        "template_type": template.template_type,
+        "content": template.content,
+        "created_by": current_user.get("id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_builtin": False
+    }
+    
+    await db.contract_templates.insert_one(doc)
+    return {"id": template_id, "message": "Template created"}
+
+
+# ============================================
+# Contract Endpoints
+# ============================================
+
+@router.post("/")
+async def create_contract(
+    contract: ContractCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new contract from a template with filled values
+    
+    ENFORCED CONSTRAINTS:
+    - claim_id is REQUIRED (contracts must be linked to claims)
+    - created_by automatically set from current user
+    """
+    _require_mutating_role(current_user)
+    # Validate claim exists and user can access it
+    await _get_claim_for_user_or_403(contract.claim_id, current_user)
+
+    # FL §626.854: Validate fee percentage is within legal limits
+    fee_pct = contract.field_values.get("fee_percentage")
+    if fee_pct is not None:
+        try:
+            fee_val = float(str(fee_pct).replace('%', '').strip())
+            if fee_val < 0 or fee_val > 20:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Fee percentage {fee_val}% is outside FL statutory limits (0–20%). "
+                           f"Standard max is 10%, catastrophe declarations allow up to 20%."
+                )
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail=f"Invalid fee percentage value: {fee_pct}")
+
+    # Get template
+    template = _get_builtin_template(contract.template_id)
+    if not template:
+        template = await db.contract_templates.find_one({"id": contract.template_id}, {"_id": 0})
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+    
+    contract_id = str(uuid.uuid4())
+    doc = {
+        "id": contract_id,
+        "template_id": contract.template_id,
+        "template_name": template["name"],
+        "claim_id": contract.claim_id,
+        "client_name": contract.client_name,
+        "client_email": contract.client_email,
+        "client_phone": contract.client_phone or "",
+        "field_values": contract.field_values,
+        "status": "draft",
+        "created_by": current_user.get("id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "signnow_document_id": None,
+        "signed_at": None,
+        "signatures": []
+    }
+    
+    await db.contracts.insert_one(doc)
+    return {"id": contract_id, "message": "Contract created", "status": "draft"}
+
+
+@router.get("/")
+async def get_contracts(
+    status: Optional[str] = None,
+    claim_id: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all contracts"""
+    query = {}
+    if status:
+        query["status"] = status
+    if claim_id:
+        await _get_claim_for_user_or_403(claim_id, current_user)
+        query["claim_id"] = claim_id
+
+    visibility_filter = await _build_contract_visibility_filter(current_user)
+    effective_query = _combine_query_filters(query, visibility_filter)
+
+    contracts = await db.contracts.find(effective_query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+
+    stats_scope = _combine_query_filters({"claim_id": claim_id} if claim_id else {}, visibility_filter)
+    total = await db.contracts.count_documents(stats_scope)
+    signed = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "signed"}))
+    pending = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "pending"}))
+    draft = await db.contracts.count_documents(_combine_query_filters(stats_scope, {"status": "draft"}))
+    
+    return {
+        "contracts": contracts,
+        "stats": {
+            "total": total,
+            "signed": signed,
+            "pending": pending,
+            "draft": draft
+        }
+    }
+
+
+@router.get("/{contract_id}")
+async def get_contract(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific contract"""
+    return await _get_contract_for_user_or_403(contract_id, current_user)
+
+
+@router.patch("/{contract_id}")
+async def update_contract(
+    contract_id: str,
+    field_values: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    """Update contract field values"""
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    if contract.get("status") == "signed":
+        raise HTTPException(status_code=400, detail="Cannot edit signed contracts")
+
+    result = await db.contracts.update_one(
+        {"id": contract_id},
+        {"$set": {
+            "field_values": field_values,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return {"message": "Contract updated"}
+
+
+@router.delete("/{contract_id}")
+async def delete_contract(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a draft contract"""
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+
+    if contract.get("status") != "draft":
+        raise HTTPException(status_code=400, detail="Only draft contracts can be deleted")
+    
+    await db.contracts.delete_one({"id": contract_id})
+    return {"message": "Contract deleted"}
+
+
+# ============================================
+# E-Signature Endpoints (SignNow Integration)
+# ============================================
+
+@router.post("/{contract_id}/send")
+async def send_contract_for_signature(
+    contract_id: str,
+    request: ContractSendRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Send a contract for e-signature via SignNow"""
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    
+    # Check if SignNow is configured
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
+    if not signnow_token:
+        # Return info about manual process if SignNow not configured
+        template = _get_builtin_template(contract.get("template_id", "")) or CARE_CLAIMS_TEMPLATE
+        return {
+            "status": "signnow_not_configured",
+            "message": "SignNow not configured. Configure your SignNow access token in Settings to enable e-signatures.",
+            "manual_steps": [
+                "1. Download the contract PDF",
+                "2. Have the client sign manually",
+                "3. Upload the signed document"
+            ],
+            "template_pdf_url": template.get("pdf_url")
+        }
+    
+    try:
+        signnow = SignNowService(signnow_token)
+        
+        # If we have a document ID, send for signature
+        doc_id = contract.get("signnow_document_id")
+        
+        if not doc_id:
+            # Auto-upload contract PDF to SignNow before sending
+            try:
+                doc_id = await upload_contract_to_signnow(
+                    signnow_token, contract, request.signer_email
+                )
+                if doc_id:
+                    # Atomic conditional update — prevent double-upload race
+                    result = await db.contracts.update_one(
+                        {"id": contract_id, "signnow_document_id": {"$in": [None, ""]}},
+                        {"$set": {"signnow_document_id": doc_id}}
+                    )
+                    if result.matched_count == 0:
+                        refreshed = await db.contracts.find_one({"id": contract_id}, {"_id": 0, "signnow_document_id": 1})
+                        doc_id = refreshed.get("signnow_document_id") if refreshed else doc_id
+                else:
+                    return {
+                        "status": "upload_failed",
+                        "message": "Failed to upload contract to SignNow. Try the in-person signing flow instead.",
+                        "contract_id": contract_id
+                    }
+            except Exception as upload_err:
+                logger.error("Failed to auto-upload contract %s to SignNow: %s", contract_id, upload_err)
+                return {
+                    "status": "upload_failed",
+                    "message": "Failed to upload contract to SignNow. Check your SignNow configuration.",
+                    "contract_id": contract_id
+                }
+        
+        # Send for signature
+        subject = request.subject or f"Please sign: {contract['template_name']}"
+        message = request.message or f"Please review and sign this {contract['template_name']} for your insurance claim."
+        
+        result = await signnow.send_for_signature(
+            document_id=doc_id,
+            signer_email=request.signer_email,
+            signer_name=request.signer_name,
+            subject=subject,
+            message=message
+        )
+        
+        # Update contract status
+        update_set = {
+            "status": "pending",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "signer_email": request.signer_email,
+            "signer_name": request.signer_name,
+            "delivery_method": request.delivery_method or "email",
+        }
+        if request.signer_phone:
+            update_set["signer_phone"] = request.signer_phone
+        await db.contracts.update_one(
+            {"id": contract_id},
+            {"$set": update_set}
+        )
+
+        delivery_target = request.signer_email if request.delivery_method != "sms" else request.signer_phone
+        return {
+            "status": "sent",
+            "message": f"Contract sent to {delivery_target}",
+            "invite_id": result.get("invite_id")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to send contract")
+
+
+@router.get("/{contract_id}/status")
+async def get_contract_signature_status(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Check signing status from SignNow"""
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    
+    doc_id = contract.get("signnow_document_id")
+    if not doc_id:
+        return {"status": contract.get("status", "draft")}
+    
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
+    if not signnow_token:
+        return {"status": contract.get("status", "draft")}
+    
+    try:
+        signnow = SignNowService(signnow_token)
+        result = await signnow.get_document_status(doc_id)
+        
+        # Update local status if signed remotely
+        if result.get("status") == "completed" and contract.get("status") != "signed":
+            now = datetime.now(timezone.utc).isoformat()
+            update_result = await db.contracts.update_one(
+                {"id": contract_id, "status": {"$ne": "signed"}},
+                {"$set": {"status": "signed", "signed_at": now}}
+            )
+            # Send signed copy email only if we just transitioned to signed
+            if update_result.modified_count > 0:
+                updated_contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0}) or contract
+                await _send_signed_copy_email(updated_contract, contract_id)
+                # Award Battle Pass XP for contract signing
+                try:
+                    from routes.battle_pass import award_xp_internal
+                    user_id = contract.get("created_by") or current_user.get("id", "")
+                    await award_xp_internal(user_id, "contract_signed")
+                except Exception:
+                    pass
+
+        return result
+        
+    except Exception as e:
+        logger.warning(f"SignNow status check failed for {contract_id}: {e}")
+        return {"status": contract.get("status", "draft")}
+
+
+@router.get("/{contract_id}/download")
+async def download_contract(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Download contract PDF (signed if available)"""
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    
+    doc_id = contract.get("signnow_document_id")
+    signnow_token = os.getenv('SIGNNOW_ACCESS_TOKEN') or await _get_signnow_token()
+    
+    if doc_id and signnow_token:
+        try:
+            signnow = SignNowService(signnow_token)
+            content = await signnow.download_signed_document(doc_id)
+            
+            return StreamingResponse(
+                io.BytesIO(content),
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f'attachment; filename="contract_{contract_id}.pdf"'
+                }
+            )
+        except Exception as e:
+            logger.warning(f"SignNow download failed: {e}")
+            pass
+    
+    # Return template PDF URL if no signed version
+    template = _get_builtin_template(contract.get("template_id", "")) or CARE_CLAIMS_TEMPLATE
+    return {
+        "pdf_url": template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url"),
+        "message": "Returning blank template - no signed version available"
+    }
+
+
+def _generate_dfs_disclosure_pdf(contract: dict, field_values: dict):
+    """Generate the Florida DFS-H1-1982 Claim Process Disclosure Form."""
+    import fitz
+
+    W, H = 612, 792  # US Letter
+    doc = fitz.open()
+    page = doc.new_page(width=W, height=H)
+
+    BLACK = (0, 0, 0)
+    DARK = (0.15, 0.15, 0.15)
+    GRAY = (0.4, 0.4, 0.4)
+    BLUE = (0.0, 0.35, 0.65)
+
+    margin_l = 60
+    margin_r = W - 60
+    y = 50
+
+    # ── Title ──
+    page.insert_text(fitz.Point(170, y), "Claim Process Disclosure Form", fontsize=16, fontname="helvetica-bold", color=BLACK)
+    y += 30
+
+    # ── Paragraphs ──
+    paragraphs = [
+        ('A **Company Adjuster** is as defined in s. 626.856, F.S. A company adjuster is '
+         'employed by the insurance company to address insurance claims on its behalf.'),
+        ('An **Independent Adjuster** is as defined in s. 626.855, F.S. An independent adjuster '
+         'is contracted by the insurance company to address insurance claims on its behalf.'),
+        ('A **Public Adjuster** is as defined in s. 626.854, F.S. A public adjuster contracts with '
+         'and is compensated by you, the insured, to assist you in the insurance claim '
+         'process. A public adjuster is not an employee or representative of the insurance company.'),
+        ('**You**, as the Insured, are not required to hire a public adjuster to assist you with '
+         'the insurance claim process but you have a right to do so.'),
+        ('**You**, as the Insured, have a right to initiate direct communications with your '
+         'attorney, the insurer, the company adjuster, the insurer\'s attorney, or any person '
+         'regarding the settlement of your claim.'),
+        ('**You**, as the Insured, should you enter a contract with a public adjuster:'),
+    ]
+
+    for para in paragraphs:
+        # Wrap on clean text for line-length calculation, but render with bold markers
+        clean = para.replace('**', '')
+        wrapped_clean = _wrap_text(clean, 85)
+
+        # Rebuild each wrapped line with its original bold markers
+        remaining = para
+        for line_text in wrapped_clean:
+            # Find the portion of `remaining` (with ** markers) that corresponds to this clean line
+            clean_chars_needed = len(line_text)
+            rich_line = ""
+            chars_consumed = 0
+            ri = 0
+            while chars_consumed < clean_chars_needed and ri < len(remaining):
+                if remaining[ri] == '*' and ri + 1 < len(remaining) and remaining[ri + 1] == '*':
+                    rich_line += "**"
+                    ri += 2
+                else:
+                    rich_line += remaining[ri]
+                    chars_consumed += 1
+                    ri += 1
+            remaining = remaining[ri:]
+
+            _insert_rich_line(page, margin_l, y, rich_line, fontsize=10, color=DARK)
+            y += 15
+        y += 8
+
+    # ── Bullet points ──
+    bullets = [
+        "Are responsible for paying the public adjuster's salary, fee, commission, or other consideration.",
+        "Are entitled to an unaltered copy of the executed public adjusting contract at the time the contract is executed.",
+        "Are entitled to an unaltered copy of this form after it has been executed.",
+        ("May cancel a public adjusting contract without cost or obligation within "
+         "30 days of the loss, or ten (10) days after the date the contract was "
+         "executed, whichever is longer, if the public adjusting contract was "
+         "entered into based on events that are the subject of a declaration of a "
+         "state of emergency by the Governor."),
+    ]
+
+    for bullet in bullets:
+        lines = _wrap_text(bullet, 78)
+        for i, line in enumerate(lines):
+            prefix = "\u2022   " if i == 0 else "    "
+            page.insert_text(fitz.Point(margin_l + 10, y), f"{prefix}{line}", fontsize=10, fontname="helv", color=DARK)
+            y += 15
+        y += 6
+
+    y += 15
+
+    # ── Insured Name ──
+    insured_name = field_values.get("insured_name", field_values.get("policyholder_name", contract.get("client_name", "")))
+    page.insert_text(fitz.Point(margin_l, y), "INSURED NAME(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 130, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    if insured_name:
+        page.insert_text(fitz.Point(margin_l + 135, y), insured_name, fontsize=10, fontname="helv", color=DARK)
+    y += 30
+
+    # ── Insured Signature ──
+    page.insert_text(fitz.Point(margin_l, y), "INSURED SIGNATURE(S):", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 160, y + 2), fitz.Point(margin_r, y + 2), color=BLACK, width=0.5)
+    y += 30
+
+    # ── Date Signed ──
+    date_signed = field_values.get("date_signed", "")
+    page.insert_text(fitz.Point(margin_l, y), "DATE SIGNED:", fontsize=10, fontname="helv", color=BLACK)
+    page.draw_line(fitz.Point(margin_l + 100, y + 2), fitz.Point(margin_l + 250, y + 2), color=BLACK, width=0.5)
+    if date_signed:
+        page.insert_text(fitz.Point(margin_l + 105, y), date_signed, fontsize=10, fontname="helv", color=DARK)
+
+    y += 40
+
+    # ── Footer ──
+    page.insert_text(fitz.Point(margin_l, y), "Form DFS-H1-1982 (Eff. 08/23)", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(margin_l, y + 12), "Rule 69B-220.051, F.A.C.", fontsize=8, fontname="helv", color=GRAY)
+    page.insert_text(fitz.Point(330, y), "FLORIDA DEPARTMENT OF FINANCIAL SERVICES", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(370, y + 12), "1-877-MY-FL-CFO (1-877-693-5236)", fontsize=8, fontname="helv", color=BLUE)
+    page.insert_text(fitz.Point(355, y + 24), "www.myfloridacfo.com/Division/Consumers", fontsize=8, fontname="helv", color=BLUE)
+
+    return doc
+
+
+def _wrap_text(text: str, max_chars: int = 80) -> list:
+    """Simple word-wrap."""
+    words = text.split()
+    lines, current = [], ""
+    for word in words:
+        if len(current) + len(word) + 1 > max_chars:
+            lines.append(current)
+            current = word
+        else:
+            current = f"{current} {word}" if current else word
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _insert_rich_line(page, x: float, y: float, text: str, fontsize: int = 10, color=None):
+    """Render a single line with **bold** markers using inline bold spans.
+
+    Splits on ``**`` delimiters and alternates between regular and bold Helvetica.
+    Returns the total width consumed so callers can track x offsets.
+    """
+    import fitz
+    if color is None:
+        color = (0.15, 0.15, 0.15)
+    segments = text.split("**")
+    cx = x
+    for i, seg in enumerate(segments):
+        if not seg:
+            continue
+        is_bold = (i % 2 == 1)
+        fname = "helvetica-bold" if is_bold else "helv"
+        page.insert_text(fitz.Point(cx, y), seg, fontsize=fontsize, fontname=fname, color=color)
+        cx += fitz.get_text_length(seg, fontname=fname, fontsize=fontsize)
+    return cx - x
+
+
+@router.get("/{contract_id}/pdf")
+async def generate_filled_pdf(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate a filled PDF with the contract data overlaid on the template.
+    PA Agreements: downloads blank template and overlays fields.
+    DFS Disclosure: generates the standard government form from scratch.
+    If signed, includes the captured signature.
+    """
+    import httpx
+    import fitz  # PyMuPDF
+    import base64
+
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+    raw_field_values = contract.get("field_values", {})
+    signature_data = contract.get("signature_data")
+    template_id = contract.get("template_id", "")
+    template = _get_builtin_template(template_id) or CARE_CLAIMS_TEMPLATE
+
+    # Map frontend ContractMergeFields keys → PA template field IDs
+    # so PDFs fill correctly regardless of which naming convention was stored
+    _MERGE_TO_PA_MAP = {
+        "client_name": "policyholder_name",
+        "email": "policyholder_email",
+        "client_address": "policyholder_address",
+        "phone": "policyholder_phone",
+        "carrier": "insurance_company",
+        "property_address": "loss_address",
+        "loss_date": "date_of_loss",
+    }
+    field_values = dict(raw_field_values)
+    for merge_key, pa_key in _MERGE_TO_PA_MAP.items():
+        if merge_key in field_values and pa_key not in field_values:
+            field_values[pa_key] = field_values[merge_key]
+
+    try:
+        # ── DFS Disclosure: generate from scratch ──
+        if template_id == DFS_DISCLOSURE_TEMPLATE["id"]:
+            doc = _generate_dfs_disclosure_pdf(contract, field_values)
+        else:
+            # ── PA Agreement: overlay on existing template ──
+            pdf_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
+            async with httpx.AsyncClient() as client:
+                pdf_response = await client.get(pdf_url, timeout=30.0)
+                if pdf_response.status_code != 200:
+                    raise HTTPException(status_code=500, detail="Failed to download template PDF")
+                pdf_bytes = pdf_response.content
+
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+            # Single source of truth: shared constant from contracts_pdf.py
+            # All fill-in fields: 12pt Regular (Helvetica)
+            # Fee disclosure percentage: 18pt Bold (Helvetica-Bold) — FL DFS non-negotiable
+            field_positions = PA_AGREEMENT_FIELD_POSITIONS
+
+            for field_id, pos in field_positions.items():
+                value = field_values.get(field_id, "")
+                if value:
+                    page = doc[pos["page"]]
+                    fontsize = pos.get("fontsize", 12)
+                    fontname = "helvetica-bold" if pos.get("bold") else "helv"
+                    if field_id == "description_of_loss" and len(str(value)) > 50:
+                        value = str(value)[:200] + "..." if len(str(value)) > 200 else value
+                    # Append % suffix for fee_percentage display
+                    display_value = f"{value}%" if field_id == "fee_percentage" else str(value)
+                    page.insert_text(fitz.Point(pos["x"], pos["y"]), display_value, fontsize=fontsize, fontname=fontname, color=(0, 0, 0))
+
+        # ── Common: signature overlay ───────────────────────────
+        if signature_data and signature_data.startswith('data:image'):
+            try:
+                header, encoded = signature_data.split(',', 1)
+                signature_bytes = base64.b64decode(encoded)
+                sig_page_idx = len(doc) - 1
+                sig_page = doc[sig_page_idx]
+                sig_rect = fitz.Rect(100, 650, 300, 720)
+                sig_page.insert_image(sig_rect, stream=signature_bytes)
+
+                signed_at = contract.get("signed_at", "")
+                if signed_at:
+                    try:
+                        signed_date = datetime.fromisoformat(signed_at.replace('Z', '+00:00'))
+                        date_str = signed_date.strftime("%m/%d/%Y")
+                    except Exception:
+                        date_str = signed_at[:10]
+                    sig_page.insert_text(fitz.Point(320, 700), f"Date: {date_str}", fontsize=10, fontname="helv", color=(0, 0, 0))
+
+                signer_name = contract.get("signer_name") or contract.get("client_name", "")
+                if signer_name:
+                    sig_page.insert_text(fitz.Point(100, 735), f"Signed by: {signer_name}", fontsize=9, fontname="helv", color=(0.3, 0.3, 0.3))
+            except Exception as e:
+                logger.warning(f"Failed to add signature to PDF: {e}")
+
+        # ── Save ────────────────────────────────────────────────
+        pdf_output = io.BytesIO()
+        doc.save(pdf_output)
+        doc.close()
+        pdf_output.seek(0)
+
+        # Add "SIGNED" watermark if contract is signed
+        if contract.get("status") == "signed":
+            doc = fitz.open(stream=pdf_output.getvalue(), filetype="pdf")
+            for page in doc:
+                page.insert_text(fitz.Point(450, 30), "SIGNED", fontsize=12, fontname="helv", color=(0, 0.5, 0))
+            pdf_output = io.BytesIO()
+            doc.save(pdf_output)
+            doc.close()
+            pdf_output.seek(0)
+
+        client_name = contract.get("client_name", "unknown").replace(" ", "_")
+        is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
+        filename = f"{'DFS_Disclosure' if is_dfs else 'PA_Agreement'}_{client_name}_{contract_id[:8]}.pdf"
+
+        return StreamingResponse(
+            pdf_output,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+
+    except Exception as e:
+        logger.error(f"PDF generation error: {e}")
+        fallback_url = template.get("pdf_url") or CARE_CLAIMS_TEMPLATE.get("pdf_url")
+        return {
+            "pdf_url": fallback_url,
+            "message": "PDF generation failed. Download blank template instead.",
+            "field_values": field_values,
+        }
+# Pre-fill from Claim
+# ============================================
+
+@router.get("/prefill/{claim_id}")
+async def prefill_contract_from_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get pre-filled contract values from a claim"""
+    claim = await _get_claim_for_user_or_403(claim_id, current_user)
+    
+    # Parse address if needed
+    address_parts = claim.get("property_address", "").split(",")
+    city = ""
+    state_zip = ""
+    if len(address_parts) >= 2:
+        city = address_parts[-2].strip() if len(address_parts) >= 2 else ""
+        state_zip = address_parts[-1].strip() if len(address_parts) >= 1 else ""
+    
+    # Build prefilled values
+    prefilled = {
+        "policyholder_name": claim.get("client_name", ""),
+        "policyholder_email": claim.get("client_email", ""),
+        "policyholder_address": address_parts[0].strip() if address_parts else "",
+        "policyholder_city": city,
+        "policyholder_state": state_zip.split()[0] if state_zip else "",
+        "policyholder_zip": state_zip.split()[1] if len(state_zip.split()) > 1 else "",
+        "policyholder_phone": claim.get("import_metadata", {}).get("policyholder_phone", ""),
+        "policy_number": claim.get("policy_number", ""),
+        "claim_number": claim.get("claim_number", ""),
+        "insurance_company": claim.get("import_metadata", {}).get("insurance_company", ""),
+        "loss_address": claim.get("property_address", ""),
+        "loss_city": city,
+        "loss_state_zip": state_zip,
+        "date_of_loss": claim.get("date_of_loss", ""),
+        "description_of_loss": claim.get("description", ""),
+        "claim_type": "Non Emergency"
+    }
+    
+    return {
+        "claim_id": claim_id,
+        "prefilled_values": prefilled,
+        "template_id": CARE_CLAIMS_TEMPLATE["id"],
+    }
+
+
+# ============================================
+# Sign On The Spot - In-Person E-Signature
+# ============================================
+
+class InPersonSignRequest(BaseModel):
+    host_email: Optional[str] = None  # Adjuster email override
+
+
+@router.post("/{contract_id}/sign-in-person")
+async def sign_contract_in_person(
+    contract_id: str,
+    body: InPersonSignRequest = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Create an in-person signing link for a contract.
+    
+    Flow:
+    1. Adjuster opens the contract on their phone/tablet
+    2. Taps "Sign On The Spot"
+    3. Eden calls this endpoint → gets SignNow URL
+    4. Browser navigates to SignNow signing UI
+    5. Client signs with finger/stylus
+    6. SignNow redirects back or webhook marks contract signed
+    
+    Returns a signing_url that opens the SignNow embedded signing UI.
+    """
+    from integrations.signnow_client import (
+        get_signnow_access_token,
+        upload_contract_to_signnow,
+        SIGNNOW_API_BASE
+    )
+    import httpx
+
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+
+    # Get signer info from contract
+    signer_email = contract.get("client_email", "")
+    signer_name = contract.get("client_name", "Unknown")
+    host_email = (body.host_email if body else None) or current_user.get("email", "")
+    user_email = current_user.get("email", "")
+
+    # Get SignNow access token — FAIL if not configured
+    access_token = await get_signnow_access_token(user_email)
+
+    if not access_token:
+        raise HTTPException(
+            status_code=503,
+            detail="SignNow is not configured. Set SIGNNOW_ACCESS_TOKEN or connect SignNow in Settings."
+        )
+
+    # Ensure document is uploaded to SignNow
+    signnow_doc_id = contract.get("signnow_document_id")
+
+    if not signnow_doc_id:
+        # Auto-upload: generate PDF and push to SignNow
+        signnow_doc_id = await upload_contract_to_signnow(
+            access_token, contract, signer_email
+        )
+        if not signnow_doc_id:
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to upload contract to SignNow. Ensure the contract PDF exists."
+            )
+        # Atomic conditional update — only set if still None (prevents double-upload race)
+        result = await db.contracts.update_one(
+            {"id": contract_id, "signnow_document_id": {"$in": [None, ""]}},
+            {"$set": {"signnow_document_id": signnow_doc_id}}
+        )
+        if result.matched_count == 0:
+            # Another request already uploaded — use their document ID
+            refreshed = await db.contracts.find_one({"id": contract_id}, {"_id": 0, "signnow_document_id": 1})
+            signnow_doc_id = refreshed.get("signnow_document_id") if refreshed else signnow_doc_id
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        # Create embedded in-person invite
+        invite_payload = {
+            "invites": [
+                {
+                    "email": signer_email,
+                    "role": "Signer",
+                    "role_id": "",
+                    "order": 1,
+                    "auth_method": "none",
+                    "in_person": True,
+                    "signer_name": signer_name,
+                    "host": {
+                        "email": host_email
+                    }
+                }
+            ]
+        }
+
+        async with httpx.AsyncClient() as client:
+            invite_resp = await client.post(
+                f"{SIGNNOW_API_BASE}/v2/documents/{signnow_doc_id}/embedded-invite",
+                headers=headers,
+                json=invite_payload,
+                timeout=30.0
+            )
+
+            if invite_resp.status_code in [200, 201]:
+                invite_data = invite_resp.json()
+                signing_url = invite_data.get("url") or invite_data.get("link")
+
+                if signing_url:
+                    await db.contracts.update_one(
+                        {"id": contract_id},
+                        {"$set": {
+                            "signnow_in_person_url": signing_url,
+                            "status": "in_person_pending",
+                            "in_person_started_at": datetime.now(timezone.utc).isoformat(),
+                            "in_person_host": host_email
+                        }}
+                    )
+
+                    return {
+                        "signing_url": signing_url,
+                        "contract_id": contract_id,
+                        "signer_name": signer_name,
+                        "mock": False
+                    }
+
+            logger.error(f"[SignNow] In-person invite failed: {invite_resp.status_code} - {invite_resp.text}")
+            raise HTTPException(
+                status_code=502,
+                detail=f"SignNow in-person invite failed (HTTP {invite_resp.status_code}). Try again or use email/SMS invite."
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[SignNow] In-person sign error: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail="SignNow signing error"
+        )
+
+
+class CompleteSigningRequest(BaseModel):
+    signature_data: Optional[str] = Field(default=None, max_length=500_000)  # Base64 signature (max ~375KB image)
+    signer_name: Optional[str] = Field(default=None, max_length=200)
+    signed_in_person: bool = True
+
+
+async def _send_signed_copy_email(contract: dict, contract_id: str):
+    """Send signed PDF copy to client email — FL §626.854 requires policyholder gets a copy."""
+    try:
+        client_email = contract.get("client_email")
+        client_name = contract.get("client_name", "Policyholder")
+        if not client_email:
+            logger.warning("[Contract %s] No client email — cannot send signed copy", contract_id)
+            return
+
+        try:
+            from services.email_service import send_email
+            template_id = contract.get("template_id", "")
+            is_dfs = template_id == DFS_DISCLOSURE_TEMPLATE["id"]
+            doc_type = "DFS Disclosure" if is_dfs else "PA Agreement"
+
+            # Build proper HTML email with download link
+            base_url = os.environ.get("BACKEND_URL", os.environ.get("REACT_APP_BACKEND_URL", ""))
+            pdf_url = f"{base_url}/api/contracts/{contract_id}/pdf" if base_url else ""
+            download_section = (
+                f'<p><a href="{pdf_url}" style="color:#2563eb;text-decoration:underline;">'
+                f'Download Your Signed {doc_type}</a></p>'
+            ) if pdf_url else ""
+
+            html_body = (
+                f"<div style='font-family:Arial,sans-serif;max-width:600px;'>"
+                f"<p>Dear {client_name},</p>"
+                f"<p>Your <strong>{doc_type}</strong> has been signed successfully.</p>"
+                f"{download_section}"
+                f"<p>A copy of your signed document is attached to this email for your records.</p>"
+                f"<p>If you have any questions, please contact your public adjuster.</p>"
+                f"<br>"
+                f"<p>— Care Claims / Operation Eden</p>"
+                f"<hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0;'>"
+                f"<p style='font-size:11px;color:#6b7280;'>"
+                f"Per Florida Statute §626.854, you are entitled to receive a copy of all "
+                f"signed documents. Please retain this email for your records.</p>"
+                f"</div>"
+            )
+
+            await send_email(
+                to_email=client_email,
+                subject=f"Your Signed {doc_type} — Care Claims",
+                html_content=html_body,
+            )
+            logger.info("[Contract %s] Signed copy email sent to %s", contract_id, client_email)
+        except ImportError:
+            logger.warning(
+                "[Contract %s] Email service not available. "
+                "Signed copy NOT sent to %s. "
+                "FL §626.854 requires policyholder receive a copy.",
+                contract_id, client_email
+            )
+    except Exception as e:
+        logger.error("[Contract %s] Failed to send signed copy email: %s", contract_id, e)
+
+
+@router.post("/{contract_id}/complete-signing")
+async def complete_contract_signing(
+    contract_id: str,
+    request: CompleteSigningRequest = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Mark a contract as signed after in-person signing completes.
+    Accepts signature data (base64 PNG) and saves it with the contract.
+    Validates the contract is in a signable state.
+    Sends signed copy to client email per FL §626.854.
+    """
+    _require_mutating_role(current_user)
+    contract = await _get_contract_for_user_or_403(contract_id, current_user)
+
+    # Validate contract is in a signable state
+    current_status = contract.get("status", "draft")
+    if current_status == "signed":
+        return {
+            "contract_id": contract_id,
+            "status": "signed",
+            "message": "Contract is already signed",
+            "has_signature": bool(contract.get("signature_data"))
+        }
+
+    signable_states = {"draft", "sent", "viewed", "pending", "in_person_pending", "pending_signature"}
+    if current_status not in signable_states:
+        raise HTTPException(status_code=400, detail=f"Contract in state '{current_status}' cannot be signed")
+
+    # Prepare update data
+    now = datetime.now(timezone.utc).isoformat()
+    update_data = {
+        "status": "signed",
+        "signed_at": now,
+        "signed_in_person": True,
+        "signed_by": current_user.get("id")
+    }
+
+    # Add signature data if provided
+    if request and request.signature_data and request.signature_data != 'embedded-signing-complete':
+        update_data["signature_data"] = request.signature_data
+    update_data["signer_name"] = (
+        (request.signer_name if request else None)
+        or contract.get("client_name")
+    )
+
+    # Atomic conditional update — only sign if still in a signable state (prevents double-signing)
+    sign_result = await db.contracts.update_one(
+        {"id": contract_id, "status": {"$in": list(signable_states)}},
+        {"$set": update_data}
+    )
+    if sign_result.matched_count == 0:
+        # Already signed by another concurrent request — return success (idempotent)
+        return {
+            "contract_id": contract_id,
+            "status": "signed",
+            "message": "Contract was already signed",
+            "has_signature": bool(contract.get("signature_data"))
+        }
+
+    # If contract is linked to a claim, add event to claim
+    if contract.get("claim_id"):
+        await db.claims.update_one(
+            {"id": contract["claim_id"]},
+            {"$push": {
+                "events": {
+                    "type": "contract_signed",
+                    "contract_id": contract_id,
+                    "timestamp": now,
+                    "details": "Contract signed in person with digital signature",
+                    "user_id": current_user.get("id")
+                }
+            }}
+        )
+
+    # Emit game event for incentives engine
+    await _emit_contract_event(
+        user_id=current_user.get("id"),
+        event_type="contract.signed",
+        contract_id=contract_id
+    )
+
+    # FL §626.854: Send signed copy to policyholder
+    # Re-fetch contract after update so email has latest data (signature, signer_name, etc.)
+    updated_contract = await db.contracts.find_one({"id": contract_id}, {"_id": 0}) or contract
+    await _send_signed_copy_email(updated_contract, contract_id)
+
+    # Notify team about the signed contract
+    try:
+        from routes.notifications import notify_contract_signed
+        await notify_contract_signed(
+            claim_id=contract.get("claim_id", ""),
+            contract_id=contract_id,
+            client_name=contract.get("client_name", "Client"),
+            signer_user_id=current_user.get("id"),
+        )
+    except Exception as e:
+        logger.warning("Failed to send contract signed notification: %s", e)
+
+    return {
+        "contract_id": contract_id,
+        "status": "signed",
+        "signed_at": now,
+        "message": "Contract signed successfully",
+        "has_signature": bool(request and request.signature_data and request.signature_data != 'embedded-signing-complete')
+    }
