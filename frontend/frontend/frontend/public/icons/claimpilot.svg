@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#f97316" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+    <filter id="glow-filter">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="node-glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="240" fill="url(#glow)"/>
+
+  <!-- Outer HUD ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#f97316" stroke-width="0.5" stroke-opacity="0.2" stroke-dasharray="8 4"/>
+
+  <!-- Neural network connections (lines between nodes) -->
+  <g filter="url(#glow-filter)" stroke="url(#brainGrad)" stroke-width="2" stroke-opacity="0.6">
+    <!-- Center to outer nodes -->
+    <line x1="256" y1="256" x2="256" y2="120"/>
+    <line x1="256" y1="256" x2="352" y2="152"/>
+    <line x1="256" y1="256" x2="392" y2="256"/>
+    <line x1="256" y1="256" x2="352" y2="360"/>
+    <line x1="256" y1="256" x2="256" y2="392"/>
+    <line x1="256" y1="256" x2="160" y2="360"/>
+    <line x1="256" y1="256" x2="120" y2="256"/>
+    <line x1="256" y1="256" x2="160" y2="152"/>
+
+    <!-- Interconnections between adjacent outer nodes -->
+    <line x1="256" y1="120" x2="352" y2="152" stroke-opacity="0.3"/>
+    <line x1="352" y1="152" x2="392" y2="256" stroke-opacity="0.3"/>
+    <line x1="392" y1="256" x2="352" y2="360" stroke-opacity="0.3"/>
+    <line x1="352" y1="360" x2="256" y2="392" stroke-opacity="0.3"/>
+    <line x1="256" y1="392" x2="160" y2="360" stroke-opacity="0.3"/>
+    <line x1="160" y1="360" x2="120" y2="256" stroke-opacity="0.3"/>
+    <line x1="120" y1="256" x2="160" y2="152" stroke-opacity="0.3"/>
+    <line x1="160" y1="152" x2="256" y2="120" stroke-opacity="0.3"/>
+  </g>
+
+  <!-- 8 outer agent nodes -->
+  <g filter="url(#node-glow)">
+    <circle cx="256" cy="120" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="352" cy="152" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="392" cy="256" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="352" cy="360" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="256" cy="392" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="160" cy="360" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="120" cy="256" r="14" fill="url(#nodeGrad)"/>
+    <circle cx="160" cy="152" r="14" fill="url(#nodeGrad)"/>
+  </g>
+
+  <!-- Inner node dots (white centers) -->
+  <g fill="white" fill-opacity="0.9">
+    <circle cx="256" cy="120" r="5"/>
+    <circle cx="352" cy="152" r="5"/>
+    <circle cx="392" cy="256" r="5"/>
+    <circle cx="352" cy="360" r="5"/>
+    <circle cx="256" cy="392" r="5"/>
+    <circle cx="160" cy="360" r="5"/>
+    <circle cx="120" cy="256" r="5"/>
+    <circle cx="160" cy="152" r="5"/>
+  </g>
+
+  <!-- Center brain node (larger) -->
+  <circle cx="256" cy="256" r="36" fill="#0a0a0a" stroke="url(#brainGrad)" stroke-width="3" filter="url(#node-glow)"/>
+  <circle cx="256" cy="256" r="24" fill="url(#nodeGrad)" fill-opacity="0.9"/>
+  <circle cx="256" cy="256" r="10" fill="white"/>
+
+  <!-- HUD corner brackets -->
+  <g stroke="#3b82f6" stroke-width="2" stroke-opacity="0.5">
+    <!-- Top-left -->
+    <path d="M80 100 L80 80 L100 80"/>
+    <!-- Top-right -->
+    <path d="M432 100 L432 80 L412 80"/>
+    <!-- Bottom-left -->
+    <path d="M80 412 L80 432 L100 432"/>
+    <!-- Bottom-right -->
+    <path d="M432 412 L432 432 L412 432"/>
+  </g>
+
+  <!-- Scanning lines -->
+  <line x1="80" y1="256" x2="110" y2="256" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="402" y1="256" x2="432" y2="256" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="256" y1="80" x2="256" y2="110" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="256" y1="402" x2="256" y2="432" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.4"/>
+</svg>

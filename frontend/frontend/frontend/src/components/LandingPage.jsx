@@ -94,7 +94,7 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: PAGE_ICONS.command_center,
+      icon: FEATURE_ICONS.claimpilot,
       title: 'ClaimPilot AI',
       subtitle: 'Autonomous Agent Mesh',
       description: '8 autonomous AI agents monitoring your claims 24/7. Settlement predictions, compliance alerts, carrier negotiation tactics.',

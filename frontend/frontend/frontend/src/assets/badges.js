@@ -10,6 +10,7 @@ export const APP_LOGO = '/icons/app_logo.png';
 // Feature Icons - AAA Quality with TRUE Transparent Backgrounds
 export const FEATURE_ICONS = {
   agent_eve: '/icons/agent_eve.png',
+  claimpilot: '/icons/claimpilot.svg',
   scales: '/icons/scales.png',
   garden: '/icons/garden.png',
   harvest: '/icons/harvest.png',
