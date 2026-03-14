@@ -16,6 +16,7 @@ Fallback chains:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Optional
@@ -43,10 +44,15 @@ DEFAULT_TEMPERATURE = 0.3
 DEFAULT_MAX_TOKENS = 2000
 GEMINI_MODEL = "gemini-2.0-flash"
 GROQ_MODEL = "llama-3.3-70b-versatile"
+LLM_CALL_TIMEOUT_SECONDS = 30
 
 
 class LLMRouter:
     """Routes LLM calls to the best provider and handles fallback."""
+
+    def __init__(self) -> None:
+        self._gemini_configured = False
+        self._groq_client = None
 
     # ------------------------------------------------------------------
     # Provider selection
@@ -82,8 +88,11 @@ class LLMRouter:
         last_error: Optional[Exception] = None
         for candidate in chain:
             try:
-                return await self._dispatch(
-                    candidate, prompt, system_prompt, temperature, max_tokens
+                return await asyncio.wait_for(
+                    self._dispatch(
+                        candidate, prompt, system_prompt, temperature, max_tokens
+                    ),
+                    timeout=LLM_CALL_TIMEOUT_SECONDS,
                 )
             except Exception as exc:
                 logger.warning(
@@ -102,7 +111,10 @@ class LLMRouter:
         mime_type: str = "image/jpeg",
     ) -> str:
         """Analyse an image via Gemini vision."""
-        return await self._call_gemini_vision(prompt, image_bytes, mime_type)
+        return await asyncio.wait_for(
+            self._call_gemini_vision(prompt, image_bytes, mime_type),
+            timeout=LLM_CALL_TIMEOUT_SECONDS,
+        )
 
     # ------------------------------------------------------------------
     # Internal dispatch
@@ -127,6 +139,38 @@ class LLMRouter:
         return await handler(prompt, system_prompt, temperature, max_tokens)
 
     # ------------------------------------------------------------------
+    # Client initialization helpers
+    # ------------------------------------------------------------------
+
+    def _ensure_gemini_configured(self) -> None:
+        """Configure the Gemini SDK exactly once."""
+        if self._gemini_configured:
+            return
+
+        import google.generativeai as genai
+
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get(
+            "GOOGLE_AI_API_KEY"
+        )
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY / GOOGLE_AI_API_KEY not set")
+
+        genai.configure(api_key=api_key)
+        self._gemini_configured = True
+
+    def _get_groq_client(self):
+        """Return a cached AsyncGroq client."""
+        if self._groq_client is None:
+            from groq import AsyncGroq
+
+            api_key = os.environ.get("GROQ_API_KEY")
+            if not api_key:
+                raise RuntimeError("GROQ_API_KEY not set")
+
+            self._groq_client = AsyncGroq(api_key=api_key)
+        return self._groq_client
+
+    # ------------------------------------------------------------------
     # Provider implementations
     # ------------------------------------------------------------------
 
@@ -137,16 +181,10 @@ class LLMRouter:
         temperature: float,
         max_tokens: int,
     ) -> str:
-        """Call Gemini 2.0 Flash via google.generativeai SDK."""
+        """Call Gemini 2.0 Flash via google.generativeai SDK (async)."""
         import google.generativeai as genai
 
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get(
-            "GOOGLE_AI_API_KEY"
-        )
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY / GOOGLE_AI_API_KEY not set")
-
-        genai.configure(api_key=api_key)
+        self._ensure_gemini_configured()
         model = genai.GenerativeModel(
             GEMINI_MODEL,
             system_instruction=system_prompt,
@@ -155,7 +193,7 @@ class LLMRouter:
                 max_output_tokens=max_tokens,
             ),
         )
-        response = model.generate_content(prompt)
+        response = await model.generate_content_async(prompt)
         return response.text
 
     async def _call_groq(
@@ -165,14 +203,8 @@ class LLMRouter:
         temperature: float,
         max_tokens: int,
     ) -> str:
-        """Call Groq (llama-3.3-70b-versatile) via groq.AsyncGroq."""
-        from groq import AsyncGroq
-
-        api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            raise RuntimeError("GROQ_API_KEY not set")
-
-        client = AsyncGroq(api_key=api_key)
+        """Call Groq (llama-3.3-70b-versatile) via cached groq.AsyncGroq."""
+        client = self._get_groq_client()
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -213,18 +245,12 @@ class LLMRouter:
         image_bytes: bytes,
         mime_type: str,
     ) -> str:
-        """Gemini multimodal (vision) call."""
+        """Gemini multimodal (vision) call (async)."""
         import google.generativeai as genai
 
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get(
-            "GOOGLE_AI_API_KEY"
-        )
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY / GOOGLE_AI_API_KEY not set")
-
-        genai.configure(api_key=api_key)
+        self._ensure_gemini_configured()
         model = genai.GenerativeModel(GEMINI_MODEL)
 
         image_part = {"mime_type": mime_type, "data": image_bytes}
-        response = model.generate_content([prompt, image_part])
+        response = await model.generate_content_async([prompt, image_part])
         return response.text
