@@ -2059,7 +2059,7 @@ body, #root, .App {
   }
 }
 
-/* Smooth scrolling for the entire app */
+/* Smooth scrolling for the entire app (overridden by reduced-motion above) */
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
@@ -2069,6 +2069,46 @@ html {
 @media (max-width: 640px) {
   input, select, textarea {
     font-size: 16px !important;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY: Reduced Motion Support
+   Disables all animations for users who prefer
+   reduced motion in their OS settings.
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-ping,
+  .animate-blob,
+  .animate-float,
+  .animate-glow-breathe,
+  .animate-scale-pulse,
+  .animate-bounce-gentle,
+  .animate-wiggle,
+  .animate-spin-slow,
+  .animate-fade-in-up,
+  .animate-fade-in-left,
+  .animate-fade-in-right,
+  [class*="animate-"] {
+    animation: none !important;
+  }
+
+  .spinner-tactical {
+    animation: none !important;
+    border-top-color: var(--orange-500, rgb(249 115 22));
+    opacity: 0.7;
   }
 }
 
