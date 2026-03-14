@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Mail, Calendar, HardDrive, Loader2, Link2, CheckCircle2,
-  Shield, ArrowRight, Sparkles,
+  Mail, Calendar, HardDrive, Loader2, Shield, ArrowRight,
+  Sparkles, ChevronDown, ChevronUp, WifiOff, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet } from '../lib/api';
@@ -9,11 +9,112 @@ import GmailTab from '../components/workspace/GmailTab';
 import CalendarTab from '../components/workspace/CalendarTab';
 import DriveTab from '../components/workspace/DriveTab';
 
+/* ─── Mock overview data ─── */
+// TODO: Wire to real APIs — replace with live data from /api/gmail/unread-count,
+// /api/calendar/today, /api/drive/recent-count
+const MOCK_OVERVIEW = {
+  unreadEmails: 12,
+  todayEvents: 3,
+  nextEvent: { title: 'Claims Review Sync', time: '2:00 PM' },
+  recentFiles: 7,
+};
+
 const TABS = [
-  { id: 'mail', label: 'Mail', icon: Mail, shortcut: '1' },
-  { id: 'calendar', label: 'Calendar', icon: Calendar, shortcut: '2' },
-  { id: 'drive', label: 'Drive', icon: HardDrive, shortcut: '3' },
+  { id: 'mail', label: 'Mail', icon: Mail, shortcut: '1', badgeKey: 'unreadEmails' },
+  { id: 'calendar', label: 'Calendar', icon: Calendar, shortcut: '2', badgeKey: 'todayEvents' },
+  { id: 'drive', label: 'Drive', icon: HardDrive, shortcut: '3', badgeKey: 'recentFiles' },
 ];
+
+/* ─── Badge Component ─── */
+const TabBadge = ({ count }) => {
+  if (!count || count <= 0) return null;
+  const display = count > 99 ? '99+' : count;
+  return (
+    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none text-white bg-orange-500 rounded-full">
+      {display}
+    </span>
+  );
+};
+
+/* ─── Today's Overview Strip ─── */
+const OverviewStrip = ({ data, collapsed, onToggle }) => (
+  <div className="border-b border-zinc-800/50">
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between px-4 py-1.5 text-[10px] uppercase tracking-[0.15em] text-zinc-500 hover:text-zinc-400 transition-colors"
+    >
+      <span className="font-semibold">Today&apos;s Overview</span>
+      {collapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+    </button>
+
+    {!collapsed && (
+      <div className="grid grid-cols-3 gap-3 px-4 pb-3">
+        {/* Unread Emails */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-zinc-900/60 border border-zinc-800/50 rounded-lg">
+          <div className="w-8 h-8 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
+            <Mail className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white leading-tight">{data.unreadEmails}</p>
+            <p className="text-[11px] text-zinc-500 leading-tight">unread emails</p>
+          </div>
+        </div>
+
+        {/* Today's Events */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-zinc-900/60 border border-zinc-800/50 rounded-lg">
+          <div className="w-8 h-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <Calendar className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white leading-tight">{data.todayEvents} events</p>
+            <p className="text-[11px] text-zinc-500 leading-tight truncate">
+              {data.nextEvent
+                ? <>Next: <span className="text-zinc-400">{data.nextEvent.title}</span> at {data.nextEvent.time}</>
+                : 'No upcoming'}
+            </p>
+          </div>
+        </div>
+
+        {/* Recent Files */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-zinc-900/60 border border-zinc-800/50 rounded-lg">
+          <div className="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white leading-tight">{data.recentFiles}</p>
+            <p className="text-[11px] text-zinc-500 leading-tight">recent files</p>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+/* ─── Connection Status Indicator ─── */
+const ConnectionIndicator = ({ connected, needsReconnect }) => {
+  if (connected && !needsReconnect) {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-emerald-400 text-[11px] font-medium">LINKED</span>
+      </div>
+    );
+  }
+  if (needsReconnect) {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
+        <WifiOff className="w-3 h-3 text-amber-400" />
+        <span className="text-amber-400 text-[11px] font-medium">STALE</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-full">
+      <WifiOff className="w-3 h-3 text-red-400" />
+      <span className="text-red-400 text-[11px] font-medium">OFFLINE</span>
+    </div>
+  );
+};
 
 const WorkspacePage = () => {
   const [activeTab, setActiveTab] = useState(() => {
@@ -24,6 +125,11 @@ const WorkspacePage = () => {
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connError, setConnError] = useState(null);
+  const [overviewCollapsed, setOverviewCollapsed] = useState(() => {
+    return sessionStorage.getItem('eden-workspace-overview') === 'collapsed';
+  });
+
+  const [overview] = useState(MOCK_OVERVIEW); // TODO: Replace with real API calls
 
   const checkConnection = useCallback(async () => {
     try {
@@ -43,11 +149,11 @@ const WorkspacePage = () => {
   }, []);
 
   useEffect(() => { checkConnection(); }, [checkConnection]);
-
-  // Persist active tab
   useEffect(() => { sessionStorage.setItem('eden-workspace-tab', activeTab); }, [activeTab]);
+  useEffect(() => {
+    sessionStorage.setItem('eden-workspace-overview', overviewCollapsed ? 'collapsed' : 'expanded');
+  }, [overviewCollapsed]);
 
-  // Keyboard shortcuts: Alt+1/2/3
   useEffect(() => {
     const handler = (e) => {
       if (e.altKey && ['1', '2', '3'].includes(e.key)) {
@@ -77,10 +183,10 @@ const WorkspacePage = () => {
   /* ─── Loading ─── */
   if (connected === null && !connError) {
     return (
-      <div className="h-full flex items-center justify-center bg-zinc-950">
+      <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
-          <span className="text-xs text-zinc-600 font-medium">Connecting to Google...</span>
+          <span className="text-xs text-zinc-600 font-medium tracking-wide">ESTABLISHING UPLINK...</span>
         </div>
       </div>
     );
@@ -89,17 +195,17 @@ const WorkspacePage = () => {
   /* ─── Connection error (server unreachable) ─── */
   if (connected === null && connError) {
     return (
-      <div className="h-full flex items-center justify-center bg-zinc-950">
+      <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center max-w-md px-6">
           <div className="w-16 h-16 rounded-full bg-red-950/50 border border-red-800/30 flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-8 h-8 text-red-400" />
+            <WifiOff className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="text-xl font-bold text-white mb-2">Connection Failed</h1>
           <p className="text-zinc-400 mb-6 leading-relaxed text-sm">{connError}</p>
           <button onClick={checkConnection}
             className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-medium rounded-full transition-all shadow-lg">
             <ArrowRight className="w-4 h-4" />
-            Retry
+            Retry Connection
           </button>
         </div>
       </div>
@@ -109,7 +215,7 @@ const WorkspacePage = () => {
   /* ─── Needs reconnect (token stale) ─── */
   if (connected && needsReconnect) {
     return (
-      <div className="h-full flex items-center justify-center bg-zinc-950">
+      <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center max-w-md px-6">
           <div className="w-16 h-16 rounded-full bg-amber-950/50 border border-amber-800/30 flex items-center justify-center mx-auto mb-6">
             <Mail className="w-8 h-8 text-amber-400" />
@@ -131,25 +237,22 @@ const WorkspacePage = () => {
   /* ─── Not connected ─── */
   if (!connected) {
     return (
-      <div className="h-full flex items-center justify-center bg-zinc-950">
+      <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center max-w-md px-6">
-          {/* Animated icon stack */}
           <div className="flex items-center justify-center gap-3 mb-8">
             {[Mail, Calendar, HardDrive].map((Icon, i) => (
               <div key={i}
-                className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center"
+                className="w-14 h-14 rounded-2xl bg-[#1a1a1a] border border-zinc-800 flex items-center justify-center"
                 style={{ animationDelay: `${i * 100}ms` }}>
                 <Icon className="w-6 h-6 text-orange-500" />
               </div>
             ))}
           </div>
-
           <h1 className="text-2xl font-bold text-white mb-2">Google Workspace</h1>
           <p className="text-zinc-400 mb-8 leading-relaxed">
             Access your Gmail, Calendar, and Drive — all within Eden.
             Your data stays synced in real-time.
           </p>
-
           <button onClick={handleConnect} disabled={connecting}
             className="inline-flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-zinc-100 disabled:opacity-50 text-zinc-900 font-medium rounded-full transition-all shadow-lg shadow-white/10 hover:shadow-white/20 group">
             {connecting ? (
@@ -165,12 +268,10 @@ const WorkspacePage = () => {
             Sign in with Google
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
-
           <div className="flex items-center justify-center gap-4 mt-8 text-[11px] text-zinc-600">
             <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Secure OAuth 2.0</span>
             <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Real-time sync</span>
           </div>
-
           <p className="text-[10px] text-zinc-700 mt-4">
             Grants access to Gmail, Calendar & Drive. Disconnect anytime in Settings.
           </p>
@@ -181,44 +282,56 @@ const WorkspacePage = () => {
 
   /* ─── Connected — main workspace ─── */
   return (
-    <div className="h-full flex flex-col bg-zinc-950">
-      {/* ── Tab bar ── */}
-      <div className="border-b border-zinc-800/70 bg-zinc-900/30">
-        <div className="flex items-center justify-between px-4">
-          <div className="flex items-center">
-            {TABS.map(tab => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium transition-all duration-150
-                    ${isActive
-                      ? 'text-white'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-orange-400' : ''}`} />
-                  {tab.label}
-                  <span className="text-[10px] text-zinc-600 font-mono ml-0.5 hidden sm:inline">
-                    {tab.shortcut}
-                  </span>
-                  {/* Active indicator */}
-                  {isActive && (
-                    <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-orange-500 rounded-full" />
-                  )}
-                </button>
-              );
-            })}
+    <div className="h-full flex flex-col bg-[#0a0a0a]">
+      {/* ── Tactical Header ── */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/70 bg-[#0a0a0a]">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-5 bg-orange-500 rounded-full" />
+            <h1 className="text-sm font-bold tracking-[0.2em] text-zinc-200 uppercase">Workspace</h1>
           </div>
+          <span className="text-[10px] text-zinc-600 font-mono tracking-wider">GMAIL / CAL / DRIVE</span>
+        </div>
+        <ConnectionIndicator connected={connected} needsReconnect={needsReconnect} />
+      </div>
 
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              <span className="text-emerald-400 text-[11px] font-medium">Connected</span>
-            </div>
-          </div>
+      {/* ── Today's Overview Strip ── */}
+      <OverviewStrip
+        data={overview}
+        collapsed={overviewCollapsed}
+        onToggle={() => setOverviewCollapsed(prev => !prev)}
+      />
+
+      {/* ── Tab bar ── */}
+      <div className="border-b border-zinc-800/70 bg-[#0f0f0f]">
+        <div className="flex items-center px-4">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const badgeCount = overview[tab.badgeKey] || 0;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-150 group
+                  ${isActive
+                    ? 'text-white'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
+                  }`}
+              >
+                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-orange-400' : 'group-hover:text-zinc-400'}`} />
+                {tab.label}
+                <TabBadge count={badgeCount} />
+                <span className="text-[9px] text-zinc-600 font-mono ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">
+                  Alt+{tab.shortcut}
+                </span>
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-orange-500 rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

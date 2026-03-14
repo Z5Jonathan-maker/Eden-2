@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, FileText, Loader2 } from 'lucide-react';
+import { Plus, FileText, FileSignature, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ContractList from './ContractList';
 import ContractDetail from './ContractDetail';
@@ -182,46 +182,59 @@ const ContractsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="font-tactical text-2xl text-white uppercase tracking-wide">
-            Active Contracts
-          </h1>
-          <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-400">
-            PA Agreements & DFS Disclosure | FL compliant | E-signature ready
-          </p>
+    <div className="min-h-screen bg-[#0a0a0a] p-4 md:p-8">
+      {/* Tactical Header */}
+      <div className="mb-6 rounded-xl border border-orange-500/20 bg-[#1a1a1a] p-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-orange-500/15 p-2.5">
+              <FileSignature className="h-6 w-6 text-orange-500" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="font-tactical text-2xl text-white uppercase tracking-[0.18em]">
+                  Contracts
+                </h1>
+                <span className="rounded-md border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-orange-400">
+                  {stats.total} active
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-500">
+                PA Agreements & DFS Disclosure | FL compliant | E-signature ready
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="btn-tactical inline-flex items-center gap-2 rounded-lg border border-orange-500/40 bg-orange-500/15 px-4 py-2 text-xs uppercase text-orange-400 transition-all hover:bg-orange-500/25 hover:text-orange-300 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
+          >
+            <Plus className="h-4 w-4" />
+            Create Contract
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="btn-tactical inline-flex items-center gap-2 px-4 py-2 text-xs uppercase focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-        >
-          <Plus className="h-4 w-4" />
-          Create Contract
-        </button>
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
-          { label: 'Total', value: stats.total },
-          { label: 'Draft', value: stats.draft },
-          { label: 'Sent', value: stats.sent },
-          { label: 'Viewed', value: stats.viewed },
-          { label: 'Signed', value: stats.signed },
+          { label: 'Total', value: stats.total, accent: 'text-white' },
+          { label: 'Draft', value: stats.draft, accent: 'text-zinc-400' },
+          { label: 'Sent', value: stats.sent, accent: 'text-blue-400' },
+          { label: 'Viewed', value: stats.viewed, accent: 'text-amber-400' },
+          { label: 'Signed', value: stats.signed, accent: 'text-emerald-400' },
         ].map((item) => (
-          <div key={item.label} className="rounded-lg border border-zinc-700/40 bg-zinc-900/55 p-3">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+          <div key={item.label} className="rounded-lg border border-zinc-700/40 bg-[#1a1a1a] p-3 transition-colors hover:border-orange-500/30">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
               {item.label}
             </p>
-            <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
+            <p className={`mt-1 text-xl font-bold ${item.accent}`}>{item.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-zinc-700/40 bg-zinc-900/35 p-4">
+      <div className="rounded-2xl border border-zinc-700/40 bg-[#1a1a1a] p-4">
         <div className="mb-4 flex items-center gap-2">
-          <FileText className="h-4 w-4 text-cyan-400" />
+          <FileText className="h-4 w-4 text-orange-500" />
           <p className="text-sm font-semibold text-zinc-100">Contracts</p>
         </div>
         <ContractList

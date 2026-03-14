@@ -3,35 +3,53 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiGet } from '@/lib/api';
 import {
   FolderOpen,
-  Clock,
-  CheckCircle2,
-  Camera,
-  TrendingUp,
+  Activity,
   ArrowRight,
   Plus,
   Loader2,
   CheckCircle,
   XCircle,
-  Target,
-  Activity,
-  Zap,
   Shield,
   ChevronRight,
   AlertTriangle,
   Trophy,
 } from 'lucide-react';
 import { getTierBadge, UI_ICONS, PAGE_ICONS } from '../assets/badges';
+import KpiCards from './dashboard/KpiCards';
+import StatusDistribution from './dashboard/StatusDistribution';
+import ClaimPilotWidget from './dashboard/ClaimPilotWidget';
+import SuggestedActions from './dashboard/SuggestedActions';
+
+const COMPLETED_STATUSES = ['Completed', 'Closed'];
+const ACTIVE_STATUSES_EXCLUDED = COMPLETED_STATUSES;
+
+const computeAvgProcessingDays = (claims) => {
+  const completed = claims.filter(
+    (c) => c.status === 'Completed' && c.created_at && c.updated_at
+  );
+  if (completed.length === 0) return null;
+
+  const totalDays = completed.reduce((sum, c) => {
+    const start = new Date(c.created_at);
+    const end = new Date(c.updated_at);
+    const diffMs = end - start;
+    const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
+    return sum + diffDays;
+  }, 0);
+
+  return Math.round(totalDays / completed.length);
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [stats, setStats] = useState(null);
+  const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [battlePassProgress, setBattlePassProgress] = useState(null);
 
-  // Fetch Battle Pass progress
   const fetchBattlePassProgress = useCallback(async () => {
     try {
       const res = await apiGet('/api/battle-pass/progress');
@@ -49,12 +67,12 @@ const Dashboard = () => {
 
     if (sessionId && payment === 'success') {
       try {
+        const MAX_ATTEMPTS = 5;
+        const POLL_INTERVAL_MS = 2000;
         let attempts = 0;
-        const maxAttempts = 5;
-        const pollInterval = 2000;
 
         const pollStatus = async () => {
-          if (attempts >= maxAttempts) {
+          if (attempts >= MAX_ATTEMPTS) {
             setPaymentStatus({
               type: 'info',
               message: 'Payment is being processed. Please check your email for confirmation.',
@@ -77,7 +95,7 @@ const Dashboard = () => {
             });
           } else {
             attempts++;
-            setTimeout(pollStatus, pollInterval);
+            setTimeout(pollStatus, POLL_INTERVAL_MS);
           }
         };
 
@@ -92,13 +110,7 @@ const Dashboard = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    fetchDashboardData();
-    fetchBattlePassProgress();
-    checkPaymentStatus();
-  }, [checkPaymentStatus, fetchBattlePassProgress]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await apiGet('/api/claims/');
@@ -107,15 +119,23 @@ const Dashboard = () => {
         throw new Error(res.error || 'Failed to fetch claims');
       }
 
-      const claims = Array.isArray(res.data) ? res.data : [];
+      const claimsData = Array.isArray(res.data) ? res.data : [];
+      setClaims(claimsData);
+
       const now = new Date();
       const thisMonth = now.getMonth();
       const thisYear = now.getFullYear();
 
+      const activeClaims = claimsData.filter(
+        (c) => !ACTIVE_STATUSES_EXCLUDED.includes(c.status)
+      );
+
+      const avgDays = computeAvgProcessingDays(claimsData);
+
       const dashboardStats = {
-        totalClaims: claims.length,
-        activeClaims: claims.filter((c) => !['Completed', 'Closed'].includes(c.status)).length,
-        completedThisMonth: claims.filter((c) => {
+        totalClaims: claimsData.length,
+        activeClaims: activeClaims.length,
+        completedThisMonth: claimsData.filter((c) => {
           const createdAt = new Date(c.created_at);
           return (
             c.status === 'Completed' &&
@@ -123,28 +143,45 @@ const Dashboard = () => {
             createdAt.getFullYear() === thisYear
           );
         }).length,
-        pendingInspections: claims.filter((c) => c.status === 'Under Review').length,
-        totalValue: claims.reduce((sum, c) => sum + (c.estimated_value || 0), 0),
-        avgProcessingTime: '12 days', // Would need more data to calculate
-        recentClaims: claims.slice(0, 4),
+        pendingInspections: claimsData.filter((c) => c.status === 'Under Review').length,
+        totalValue: claimsData.reduce((sum, c) => sum + (c.estimated_value || 0), 0),
+        pipelineValue: activeClaims.reduce((sum, c) => sum + (c.estimated_value || 0), 0),
+        avgProcessingTime: avgDays !== null ? `${avgDays} days` : 'N/A',
+        stalledCount: claimsData.filter((c) => {
+          if (COMPLETED_STATUSES.includes(c.status)) return false;
+          const lastUpdate = new Date(c.updated_at || c.created_at);
+          const daysSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+          return daysSinceUpdate > 7;
+        }).length,
+        recentClaims: claimsData.slice(0, 4),
       };
 
       setStats(dashboardStats);
       setError('');
     } catch (err) {
       setError(err.message);
+      setClaims([]);
       setStats({
         totalClaims: 0,
         activeClaims: 0,
         completedThisMonth: 0,
         pendingInspections: 0,
         totalValue: 0,
+        pipelineValue: 0,
+        avgProcessingTime: 'N/A',
+        stalledCount: 0,
         recentClaims: [],
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+    fetchBattlePassProgress();
+    checkPaymentStatus();
+  }, [fetchDashboardData, checkPaymentStatus, fetchBattlePassProgress]);
 
   const getStatusBadge = (status) => {
     if (status === 'In Progress') return 'badge-rare';
@@ -162,7 +199,6 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
-        {/* Header skeleton */}
         <div className="mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-zinc-800 animate-pulse" />
           <div>
@@ -170,9 +206,8 @@ const Dashboard = () => {
             <div className="h-3 w-64 bg-zinc-800/60 rounded animate-pulse" />
           </div>
         </div>
-        {/* Stats grid skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="card-tactical p-3 sm:p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-lg bg-zinc-800 animate-pulse" />
@@ -183,7 +218,6 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-        {/* Recent claims skeleton */}
         <div className="card-tactical p-5">
           <div className="h-5 w-40 bg-zinc-800 rounded animate-pulse mb-4" />
           <div className="space-y-3">
@@ -271,100 +305,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid - HUD Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 stagger-children">
-        {/* Total Claims */}
-        <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-          onClick={() => navigate('/claims')}
-          tabIndex={0}
-          data-testid="stat-total-claims"
-        >
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/40 transition-colors">
-              <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 group-hover:animate-bounce-gentle" />
-            </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
-              Total
-            </span>
-          </div>
-          <p
-            className="text-2xl sm:text-4xl font-tactical font-bold text-white mb-1 stat-glow"
-            style={{ color: '#60a5fa' }}
-          >
-            {stats?.totalClaims || 0}
-          </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
-            Claims Tracked
-          </p>
-        </div>
+      {/* KPI Cards (5 cards including Pipeline Value) */}
+      <KpiCards stats={stats} onNavigate={navigate} />
 
-        {/* Active Claims */}
-        <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-          onClick={() => navigate('/claims')}
-          tabIndex={0}
-          data-testid="stat-active-claims"
-        >
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
-              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 group-hover:animate-bounce-gentle" />
-            </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
-              Active
-            </span>
-          </div>
-          <p className="text-2xl sm:text-4xl font-tactical font-bold text-orange-400 mb-1">
-            {stats?.activeClaims || 0}
-          </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
-            In Progress
-          </p>
-        </div>
-
-        {/* Completed */}
-        <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm"
-          data-testid="stat-completed"
-        >
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2.5 rounded-lg bg-green-500/10 border border-green-500/20 group-hover:border-green-500/40 transition-colors">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 group-hover:animate-bounce-gentle" />
-            </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
-              Done
-            </span>
-          </div>
-          <p className="text-2xl sm:text-4xl font-tactical font-bold text-green-400 mb-1">
-            {stats?.completedThisMonth || 0}
-          </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
-            This Month
-          </p>
-        </div>
-
-        {/* Inspections */}
-        <div
-          className="card-tactical card-tactical-hover p-3 sm:p-5 group cursor-pointer shadow-tactical hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-          onClick={() => navigate('/inspections')}
-          tabIndex={0}
-          data-testid="stat-inspections"
-        >
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 group-hover:border-purple-500/40 transition-colors">
-              <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:animate-bounce-gentle" />
-            </div>
-            <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
-              Recon
-            </span>
-          </div>
-          <p className="text-2xl sm:text-4xl font-tactical font-bold text-purple-400 mb-1">
-            {stats?.pendingInspections || 0}
-          </p>
-          <p className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-wider">
-            Pending
-          </p>
-        </div>
+      {/* Status Distribution Bar */}
+      <div className="mb-6 sm:mb-8">
+        <StatusDistribution claims={claims} />
       </div>
 
       {/* Main Content Grid */}
@@ -403,7 +349,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentClaims.map((claim, index) => (
+              {recentClaims.map((claim) => (
                 <div
                   key={claim.id}
                   className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 cursor-pointer transition-all duration-200 group hover-lift-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
@@ -460,7 +406,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Side Stats Panel */}
+        {/* Right Column */}
         <div className="space-y-6 animate-fade-in-right">
           {/* Battle Pass Progress Widget */}
           {battlePassProgress && (
@@ -521,7 +467,10 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Value Stats */}
+          {/* ClaimPilot AI Insights */}
+          <ClaimPilotWidget onNavigate={navigate} />
+
+          {/* Intel Report */}
           <div className="card-tactical p-5 shadow-tactical">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="w-4 h-4 text-orange-500 animate-scale-pulse" />
@@ -547,57 +496,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="card-tactical p-5 shadow-tactical">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap className="w-4 h-4 text-orange-500 animate-bounce-gentle" />
-              <h3 className="font-tactical font-bold text-white uppercase text-sm tracking-wide">
-                Quick Deploy
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => navigate('/inspections')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-                data-testid="quick-action-inspection"
-              >
-                <Camera className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
-                  Recon
-                </p>
-              </button>
-              <button
-                onClick={() => navigate('/eve')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-                data-testid="quick-action-ai"
-              >
-                <Zap className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-wiggle" />
-                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
-                  Eve AI
-                </p>
-              </button>
-              <button
-                onClick={() => navigate('/contracts')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-                data-testid="quick-action-contracts"
-              >
-                <FolderOpen className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
-                  Contracts
-                </p>
-              </button>
-              <button
-                onClick={() => navigate('/documents')}
-                className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30 hover:border-orange-500/30 hover:bg-zinc-800/50 transition-all duration-200 group hover-lift-sm shadow-tactical focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-                data-testid="quick-action-documents"
-              >
-                <FolderOpen className="w-6 h-6 text-zinc-500 group-hover:text-orange-400 mx-auto mb-2 transition-colors group-hover:animate-bounce-gentle" />
-                <p className="text-xs font-mono text-zinc-400 group-hover:text-zinc-300 uppercase">
-                  Docs
-                </p>
-              </button>
-            </div>
-          </div>
+          {/* Suggested Actions (replaces Quick Deploy) */}
+          <SuggestedActions
+            stalledCount={stats?.stalledCount || 0}
+            pendingInspections={stats?.pendingInspections || 0}
+            onNavigate={navigate}
+          />
         </div>
       </div>
     </div>

@@ -121,6 +121,10 @@ module.exports = {
         'pulse-soft': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' }
+        },
+        'cmd-slide-up': {
+          from: { opacity: '0', transform: 'translateY(16px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' }
         }
       },
       
@@ -132,7 +136,8 @@ module.exports = {
         'fade-out': 'fade-out 0.2s ease-out',
         'slide-in-top': 'slide-in-from-top 0.3s ease-out',
         'slide-in-bottom': 'slide-in-from-bottom 0.3s ease-out',
-        'pulse-soft': 'pulse-soft 2s ease-in-out infinite'
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'cmd-slide-up': 'cmd-slide-up 0.15s ease-out'
       },
       
       // Z-index scale

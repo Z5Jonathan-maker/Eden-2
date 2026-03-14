@@ -32,17 +32,17 @@ const PhotoViewerModal = ({ photo, onClose }) => {
           </div>
 
           {/* Photo Details */}
-          <div className="p-4 bg-white">
+          <div className="p-4 bg-[#1a1a1a]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-zinc-100">
                   {photo.room || 'Inspection Photo'}
                 </h3>
                 {photo.category && (
-                  <p className="text-sm text-gray-500">{photo.category}</p>
+                  <p className="text-sm text-zinc-400">{photo.category}</p>
                 )}
                 {photo.created_at && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-zinc-500 mt-1">
                     Captured {new Date(photo.created_at).toLocaleString()}
                   </p>
                 )}
@@ -62,7 +62,7 @@ const PhotoViewerModal = ({ photo, onClose }) => {
 
             {/* Voice Transcript */}
             {photo.voice_transcript && (
-              <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="mt-4 p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
                     <svg
@@ -77,9 +77,9 @@ const PhotoViewerModal = ({ photo, onClose }) => {
                       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                     </svg>
                   </div>
-                  <span className="text-sm font-medium text-purple-700">Voice Note</span>
+                  <span className="text-sm font-medium text-purple-300">Voice Note</span>
                 </div>
-                <p className="text-sm text-gray-700">{photo.voice_transcript}</p>
+                <p className="text-sm text-zinc-300">{photo.voice_transcript}</p>
               </div>
             )}
 
@@ -95,22 +95,22 @@ const PhotoViewerModal = ({ photo, onClose }) => {
             )}
 
             {/* Evidence Chain Metadata */}
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-500 border-t border-zinc-700/50 pt-3">
               {photo.captured_at && (
                 <div>
-                  <span className="font-medium text-gray-600">Captured:</span>{' '}
+                  <span className="font-medium text-zinc-400">Captured:</span>{' '}
                   {new Date(photo.captured_at).toLocaleString()}
                 </div>
               )}
               {photo.latitude && photo.longitude && (
                 <div>
-                  <span className="font-medium text-gray-600">GPS:</span>{' '}
+                  <span className="font-medium text-zinc-400">GPS:</span>{' '}
                   {Number(photo.latitude).toFixed(5)}, {Number(photo.longitude).toFixed(5)}
                 </div>
               )}
               {photo.uploaded_by_name && (
                 <div>
-                  <span className="font-medium text-gray-600">Uploaded by:</span>{' '}
+                  <span className="font-medium text-zinc-400">Uploaded by:</span>{' '}
                   {photo.uploaded_by_name}
                 </div>
               )}
@@ -118,19 +118,19 @@ const PhotoViewerModal = ({ photo, onClose }) => {
 
             {/* SHA-256 Verification Hash */}
             {photo.sha256_hash && (
-              <div className="mt-3 p-2 bg-gray-50 rounded border border-gray-200">
+              <div className="mt-3 p-2 bg-zinc-900 rounded border border-zinc-700/50">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono uppercase text-gray-500 font-medium">SHA-256 Hash</span>
+                  <span className="text-[10px] font-mono uppercase text-zinc-500 font-medium">SHA-256 Hash</span>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(photo.sha256_hash);
                     }}
-                    className="text-[10px] text-blue-500 hover:text-blue-700"
+                    className="text-[10px] text-orange-400 hover:text-orange-300"
                   >
                     Copy
                   </button>
                 </div>
-                <p className="text-[10px] font-mono text-gray-400 break-all">{photo.sha256_hash}</p>
+                <p className="text-[10px] font-mono text-zinc-500 break-all">{photo.sha256_hash}</p>
               </div>
             )}
           </div>

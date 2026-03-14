@@ -114,7 +114,7 @@ export const UseTemplateDialog = ({
             </Select>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-zinc-900 border border-zinc-700/50 rounded-lg">
             <div>
               <Label>Auto-start when date arrives</Label>
               <p className="text-xs text-muted-foreground">
@@ -130,15 +130,15 @@ export const UseTemplateDialog = ({
 
           {/* Rules Preview */}
           {usingTemplate?.default_rules?.length > 0 && (
-            <div className="border-t pt-4">
-              <Label className="text-xs text-muted-foreground uppercase mb-2 block">
+            <div className="border-t border-zinc-700/50 pt-4">
+              <Label className="text-xs text-zinc-500 uppercase mb-2 block">
                 Rules from Template
               </Label>
               <div className="space-y-2">
                 {usingTemplate.default_rules.map((rule, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded"
+                    className="flex items-center justify-between text-sm p-2 bg-zinc-900 border border-zinc-700/50 rounded"
                   >
                     <span className="capitalize font-medium">{rule.type?.replace('_', ' ')}</span>
                     <span className="text-muted-foreground">

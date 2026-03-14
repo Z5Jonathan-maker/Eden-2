@@ -335,51 +335,72 @@ const FloridaLaws = () => {
     <div className="p-4 sm:p-6 space-y-6 page-enter overflow-x-hidden" data-testid="florida-laws-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
-        <div>
-          <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-2 tracking-wide">
-            <img
-              src="/icons/laws.png"
-              alt="Laws"
-              width={40}
-              height={40}
-              className="w-10 h-10 object-contain icon-3d-shadow"
-            />
-            Florida Laws
-          </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-            Verbatim statutes from Online Sunshine
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30 flex items-center justify-center">
+              <Shield className="w-7 h-7 text-orange-400" />
+            </div>
+            <Scale className="w-4 h-4 text-orange-300 absolute -bottom-1 -right-1 bg-[#0a0a0a] rounded-full p-0.5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-3 tracking-wide uppercase">
+              Florida Statutes
+              <Badge className="bg-orange-500/15 text-orange-300 border border-orange-500/30 text-xs font-mono">
+                {dbStatutes.length > 0 ? `${dbStatutes.length} STATUTES` : `${TOOLKITS.reduce((a, t) => a + t.statutes.length, 0)} INDEXED`}
+              </Badge>
+            </h1>
+            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mt-1">
+              Verbatim from Online Sunshine — Operational Reference
+            </p>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="flex gap-2">
-          <Input
-            placeholder="Search statutes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-64"
-            data-testid="law-search-input"
-          />
-          <Button onClick={handleSearch} size="icon" variant="outline">
-            <Search className="w-4 h-4" />
-          </Button>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
+                placeholder="Search statutes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-72 pl-9 bg-[#1a1a1a] border-zinc-700 focus:border-orange-500/50"
+                data-testid="law-search-input"
+              />
+            </div>
+            <Button onClick={handleSearch} size="icon" className="bg-orange-500/15 border border-orange-500/30 text-orange-300 hover:bg-orange-500/25">
+              <Search className="w-4 h-4" />
+            </Button>
+          </div>
+          {searchResults && (
+            <span className="text-xs font-mono text-zinc-500">
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+            </span>
+          )}
         </div>
       </div>
 
       {/* Database Status Banner */}
       {dbStatus && (
-        <Card className="bg-zinc-900/50 border-blue-500/30">
+        <Card className="bg-[#1a1a1a] border-orange-500/20">
           <CardContent className="py-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                <Database className="w-8 h-8 text-blue-400" />
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-orange-400" />
+                </div>
                 <div>
-                  <p className="font-semibold text-blue-400">Statute Database</p>
-                  <p className="text-sm text-blue-400">
-                    {dbStatus.total_statutes} statutes stored | Chapter 626:{' '}
-                    {dbStatus.coverage?.['626']} | Chapter 627: {dbStatus.coverage?.['627']}
-                  </p>
+                  <p className="font-semibold text-zinc-200">Statute Database</p>
+                  <div className="flex items-center gap-3 text-sm text-zinc-400">
+                    <span className="flex items-center gap-1">
+                      <Badge className="bg-zinc-800 text-zinc-300 text-[10px] px-1.5 py-0 border border-zinc-700">
+                        {dbStatus.total_statutes} total
+                      </Badge>
+                    </span>
+                    <span>Ch. 626: {dbStatus.coverage?.['626']}</span>
+                    <span>Ch. 627: {dbStatus.coverage?.['627']}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -390,7 +411,7 @@ const FloridaLaws = () => {
                     fetchDbStatutes();
                     fetchDbStatus();
                   }}
-                  className="border-blue-300"
+                  className="border-zinc-700 text-zinc-300 hover:border-orange-500/30"
                 >
                   <RefreshCw className="w-4 h-4 mr-1" />
                   Refresh
@@ -421,9 +442,15 @@ const FloridaLaws = () => {
 
       {/* Search Results */}
       {searchResults && (
-        <Card className="border-orange-500/30">
+        <Card className="bg-[#1a1a1a] border-orange-500/30">
           <CardHeader>
-            <CardTitle className="text-lg text-zinc-100">Search Results for "{searchQuery}"</CardTitle>
+            <CardTitle className="text-lg text-zinc-100 flex items-center gap-3">
+              <Search className="w-5 h-5 text-orange-400" />
+              Results for "{searchQuery}"
+              <Badge className="bg-orange-500/15 text-orange-300 border border-orange-500/30 text-xs font-mono">
+                {searchResults.length}
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {searchResults.length === 0 ? (
@@ -433,7 +460,7 @@ const FloridaLaws = () => {
                 {searchResults.map((result, i) => (
                   <div
                     key={i}
-                    className="flex items-start justify-between p-3 border border-zinc-700 rounded-lg hover:border-blue-500/40 cursor-pointer transition-all"
+                    className="flex items-start justify-between p-3 bg-[#0a0a0a] border border-zinc-700 rounded-lg hover:border-orange-500/30 cursor-pointer transition-all"
                     onClick={() => fetchStatuteDetail(result.section_number)}
                   >
                     <div className="flex-1">
@@ -473,7 +500,7 @@ const FloridaLaws = () => {
 
       {/* Statute Detail View */}
       {selectedStatute ? (
-        <Card className="border-zinc-700">
+        <Card className="bg-[#1a1a1a] border-zinc-700">
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -610,10 +637,12 @@ const FloridaLaws = () => {
               <TabsTrigger value="toolkits" data-testid="tab-toolkits" className="flex-shrink-0">
                 <Wrench className="w-4 h-4 mr-2" />
                 Toolkits
+                <Badge className="ml-1.5 bg-orange-500/15 text-orange-300 text-[10px] px-1.5 py-0 border-0">{TOOLKITS.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="database" data-testid="tab-database" className="flex-shrink-0">
                 <Database className="w-4 h-4 mr-2" />
-                All Statutes ({dbStatutes.length})
+                All Statutes
+                <Badge className="ml-1.5 bg-blue-500/15 text-blue-300 text-[10px] px-1.5 py-0 border-0">{dbStatutes.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="overview" data-testid="tab-overview" className="flex-shrink-0">
                 <Hash className="w-4 h-4 mr-2" />
@@ -625,7 +654,8 @@ const FloridaLaws = () => {
               </TabsTrigger>
               <TabsTrigger value="updates" data-testid="tab-updates" className="flex-shrink-0">
                 <AlertTriangle className="w-4 h-4 mr-2" />
-                2026 Updates ({updates.length})
+                2026 Updates
+                {updates.length > 0 && <Badge className="ml-1.5 bg-yellow-500/15 text-yellow-300 text-[10px] px-1.5 py-0 border-0">{updates.length}</Badge>}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -647,7 +677,7 @@ const FloridaLaws = () => {
                   const colors = TOOLKIT_COLORS[tk.color];
                   const Icon = tk.icon;
                   return (
-                    <Card className={`${colors.border} border`}>
+                    <Card className={`${colors.border} border bg-[#1a1a1a]`}>
                       <CardHeader>
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${colors.bg}`}>
@@ -677,7 +707,7 @@ const FloridaLaws = () => {
                             {tk.statutes.map(s => (
                               <div
                                 key={s.section}
-                                className="flex items-center justify-between p-3 border border-zinc-700 rounded-lg hover:border-blue-500/40 cursor-pointer transition-all"
+                                className="flex items-center justify-between p-3 bg-[#0a0a0a] border border-zinc-700 rounded-lg hover:border-orange-500/30 cursor-pointer transition-all"
                                 onClick={() => {
                                   fetchStatuteDetail(s.section);
                                   setSelectedToolkit(null);
@@ -705,7 +735,7 @@ const FloridaLaws = () => {
                   return (
                     <Card
                       key={tk.id}
-                      className={`cursor-pointer hover:shadow-lg transition-all border-zinc-700 hover:${colors.border}`}
+                      className="cursor-pointer hover:shadow-lg hover:shadow-orange-500/5 transition-all bg-[#1a1a1a] border-zinc-700 hover:border-orange-500/30"
                       onClick={() => setSelectedToolkit(tk.id)}
                     >
                       <CardHeader className="pb-2">
@@ -734,9 +764,9 @@ const FloridaLaws = () => {
           {/* Database Tab - Verbatim Statutes */}
           <TabsContent value="database" className="mt-6">
             {dbStatutes.length === 0 ? (
-              <Card className="border-dashed">
+              <Card className="border-dashed bg-[#1a1a1a] border-zinc-700">
                 <CardContent className="py-12 text-center">
-                  <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <Database className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-zinc-300">No Statutes in Database</h3>
                   <p className="text-zinc-500 mt-1 mb-4">
                     Click "Scrape All Statutes" to fetch from Online Sunshine
@@ -760,7 +790,7 @@ const FloridaLaws = () => {
                     return (
                       <Card
                         key={statute.id}
-                        className={`cursor-pointer hover:shadow-md transition-all ${isHistoryOnly ? 'border-red-500/30 hover:border-red-500/50' : 'border-zinc-700 hover:border-blue-500/40'}`}
+                        className={`cursor-pointer hover:shadow-md transition-all bg-[#1a1a1a] ${isHistoryOnly ? 'border-red-500/30 hover:border-red-500/50' : 'border-zinc-700 hover:border-orange-500/30'}`}
                         onClick={() => fetchStatuteDetail(statute.section_number)}
                         data-testid={`db-statute-${statute.section_number}`}
                       >
@@ -815,25 +845,25 @@ const FloridaLaws = () => {
                     icon={DollarSign}
                     label="Max Fee (Standard)"
                     value={overview.key_numbers.max_fee_standard}
-                    color="bg-green-50 border-green-200 text-green-700"
+                    color="bg-green-500/10 border-green-500/30 text-green-300"
                   />
                   <KeyNumberCard
                     icon={AlertCircle}
                     label="Max Fee (Emergency)"
                     value={overview.key_numbers.max_fee_emergency}
-                    color="bg-yellow-50 border-yellow-200 text-yellow-700"
+                    color="bg-yellow-500/10 border-yellow-500/30 text-yellow-300"
                   />
                   <KeyNumberCard
                     icon={Shield}
                     label="Surety Bond"
                     value={`$${overview.key_numbers.surety_bond?.toLocaleString()}`}
-                    color="bg-blue-50 border-blue-200 text-blue-400"
+                    color="bg-blue-500/10 border-blue-500/30 text-blue-300"
                   />
                   <KeyNumberCard
                     icon={Calendar}
                     label="Rescission Period"
                     value={`${overview.key_numbers.contract_rescission_days} days`}
-                    color="bg-purple-50 border-purple-200 text-purple-700"
+                    color="bg-purple-500/10 border-purple-500/30 text-purple-300"
                   />
                 </div>
 
@@ -842,32 +872,35 @@ const FloridaLaws = () => {
                     icon={Clock}
                     label="Claim Acknowledgment"
                     value={`${overview.key_numbers.claim_acknowledgment_days} days`}
-                    color="bg-orange-50 border-orange-200 text-orange-700"
+                    color="bg-orange-500/10 border-orange-500/30 text-orange-300"
                   />
                   <KeyNumberCard
                     icon={CheckCircle}
                     label="Pay/Deny Deadline"
                     value={`${overview.key_numbers.claim_pay_deny_days} days`}
-                    color="bg-red-50 border-red-200 text-red-700"
+                    color="bg-red-500/10 border-red-500/30 text-red-300"
                   />
                   <KeyNumberCard
                     icon={BookOpen}
                     label="CE Hours (Biennial)"
                     value={`${overview.key_numbers.ce_hours_biennial} hrs`}
-                    color="bg-indigo-50 border-indigo-200 text-indigo-700"
+                    color="bg-indigo-500/10 border-indigo-500/30 text-indigo-300"
                   />
                   <KeyNumberCard
                     icon={Users}
                     label="Max Apprentices"
                     value={overview.key_numbers.max_apprentices_per_firm}
-                    color="bg-pink-50 border-pink-200 text-pink-700"
+                    color="bg-pink-500/10 border-pink-500/30 text-pink-300"
                   />
                 </div>
 
                 {/* Resources */}
-                <Card>
+                <Card className="bg-[#1a1a1a] border-zinc-700">
                   <CardHeader>
-                    <CardTitle className="text-lg">Official Resources</CardTitle>
+                    <CardTitle className="text-lg text-zinc-100 flex items-center gap-2">
+                      <ExternalLink className="w-5 h-5 text-orange-400" />
+                      Official Resources
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-3 sm:grid-cols-3">
@@ -877,10 +910,10 @@ const FloridaLaws = () => {
                           href={resource.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-3 border rounded-lg hover:bg-zinc-800/30 transition-colors"
+                          className="p-3 bg-[#0a0a0a] border border-zinc-700 rounded-lg hover:border-orange-500/30 transition-colors group"
                         >
-                          <p className="font-medium text-white">{resource.type}</p>
-                          <p className="text-sm text-zinc-400">{resource.description}</p>
+                          <p className="font-medium text-zinc-200 group-hover:text-orange-300 transition-colors">{resource.type}</p>
+                          <p className="text-sm text-zinc-500">{resource.description}</p>
                         </a>
                       ))}
                     </div>
@@ -892,7 +925,7 @@ const FloridaLaws = () => {
 
           {/* Argument Builder Tab */}
           <TabsContent value="builder" className="mt-6">
-            <Card className="border-zinc-700">
+            <Card className="bg-[#1a1a1a] border-zinc-700">
               <CardHeader>
                 <CardTitle className="text-zinc-100 flex items-center gap-2">
                   <ClipboardList className="w-5 h-5 text-orange-400" />
@@ -1039,33 +1072,33 @@ const FloridaLaws = () => {
           {/* Updates Tab */}
           <TabsContent value="updates" className="mt-6">
             <div className="space-y-4">
-              <Card className="bg-yellow-50 border-yellow-200">
+              <Card className="bg-yellow-500/5 border-yellow-500/30">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  <CardTitle className="text-lg flex items-center gap-2 text-zinc-100">
+                    <AlertTriangle className="w-5 h-5 text-yellow-400" />
                     2026 Legislative Tracking
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-zinc-400">
                     Verify pending bill text and status from official trackers before citing as law
                   </CardDescription>
                 </CardHeader>
               </Card>
 
               {updates.map((update) => (
-                <Card key={update.id} data-testid={`update-card-${update.id}`}>
+                <Card key={update.id} data-testid={`update-card-${update.id}`} className="bg-[#1a1a1a] border-zinc-700 hover:border-orange-500/30 transition-all">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-base">{update.bill}</CardTitle>
+                        <CardTitle className="text-base text-zinc-100">{update.bill}</CardTitle>
                         <CardDescription>{update.summary}</CardDescription>
                       </div>
                       <Badge
                         className={
                           update.status?.includes('advancing')
-                            ? 'bg-yellow-100 text-yellow-700'
+                            ? 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/30'
                             : update.status?.includes('Passed')
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-zinc-300'
+                              ? 'bg-green-500/15 text-green-300 border border-green-500/30'
+                              : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
                         }
                       >
                         {update.status?.includes('advancing')

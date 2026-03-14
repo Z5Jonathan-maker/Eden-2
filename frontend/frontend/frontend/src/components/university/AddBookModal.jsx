@@ -129,10 +129,10 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-[#1a1a1a] border border-zinc-700/50 rounded-2xl w-full max-w-lg shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700/50">
           <h3 className="text-base font-mono uppercase text-zinc-200 flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-orange-400" /> Add Book to Library
           </h3>
@@ -166,7 +166,7 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
               <p className="text-[10px] text-zinc-600 mt-1">Max 50 MB · Kindle books → export as EPUB</p>
             </div>
           ) : (
-            <div className="flex items-center gap-3 bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-700/50 rounded-lg px-4 py-3">
               <FileText className="w-5 h-5 text-orange-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-zinc-200 font-mono truncate">{uploadedFile.original_name}</p>
@@ -185,27 +185,27 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
 
           {/* Metadata */}
           <div>
-            <label className="text-[11px] font-mono text-zinc-500 uppercase">Title</label>
+            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., The Art of the Supplement"
-              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              className="mt-1 w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-orange-500/50 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-mono text-zinc-500 uppercase">Author</label>
+            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Author</label>
             <input
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               placeholder="e.g., John Smith"
-              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100"
+              className="mt-1 w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-orange-500/50 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-mono text-zinc-500 uppercase">Category</label>
+            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Category</label>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {CATEGORIES.map((c) => (
                 <button
@@ -214,7 +214,7 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase border transition-all ${
                     category === c.id
                       ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
-                      : 'text-zinc-500 border-zinc-800/40 hover:text-zinc-300'
+                      : 'text-zinc-500 border-zinc-700/50 hover:text-zinc-300'
                   }`}
                 >
                   {c.label}
@@ -224,19 +224,19 @@ const AddBookModal = ({ show, onClose, onBookAdded }) => {
           </div>
 
           <div>
-            <label className="text-[11px] font-mono text-zinc-500 uppercase">Description (optional)</label>
+            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Description (optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Brief description or notes for the team..."
-              className="mt-1 w-full bg-zinc-950/40 border border-zinc-800/70 rounded-lg px-3 py-2 text-sm text-zinc-100 resize-none"
+              className="mt-1 w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-orange-500/50 focus:outline-none resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-zinc-800">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-zinc-700/50">
           <button
             onClick={handleClose}
             className="px-4 py-2 rounded-lg text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 transition-colors"

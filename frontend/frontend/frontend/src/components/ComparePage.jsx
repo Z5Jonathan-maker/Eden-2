@@ -117,7 +117,7 @@ const ComparePage = () => {
                 Sign In
               </button>
               <button onClick={() => navigate('/register')} className="btn-tactical px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm">
-                Start Free Trial
+                Get Started
               </button>
             </div>
           </div>

@@ -91,12 +91,12 @@ const VoiceAssistantConsole = () => {
 
   const getIntentBadge = (intent) => {
     const variants = {
-      'message': { color: 'bg-blue-100 text-blue-700', label: 'Message' },
-      'confirm_yes': { color: 'bg-green-100 text-green-700', label: 'Confirmed' },
-      'confirm_no': { color: 'bg-red-100 text-red-700', label: 'Declined' },
-      'reschedule_request': { color: 'bg-amber-100 text-amber-700', label: 'Reschedule' },
-      'complaint': { color: 'bg-red-100 text-red-700', label: 'Complaint' },
-      'urgent': { color: 'bg-orange-100 text-orange-700', label: 'Urgent' }
+      'message': { color: 'bg-blue-500/15 text-blue-400', label: 'Message' },
+      'confirm_yes': { color: 'bg-green-500/15 text-green-400', label: 'Confirmed' },
+      'confirm_no': { color: 'bg-red-500/15 text-red-400', label: 'Declined' },
+      'reschedule_request': { color: 'bg-amber-500/15 text-amber-400', label: 'Reschedule' },
+      'complaint': { color: 'bg-red-500/15 text-red-400', label: 'Complaint' },
+      'urgent': { color: 'bg-orange-500/15 text-orange-400', label: 'Urgent' }
     };
     const v = variants[intent] || { color: 'bg-zinc-800/40 text-zinc-300', label: intent || 'Unknown' };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${v.color}`}>{v.label}</span>;
@@ -139,53 +139,61 @@ const VoiceAssistantConsole = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto page-enter" data-testid="voice-assistant-console">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-in-up">
-        <div className="flex items-center gap-3">
-          <img src={NAV_ICONS.voice_assistant} alt="Voice Assistant" width={48} height={48} className="w-12 h-12 object-contain icon-3d-shadow" />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">VOICE ASSISTANT</h1>
-            <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Twilio Voice + AI Receptionist</p>
+      <div className="mb-6 animate-fade-in-up">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <img src={NAV_ICONS.voice_assistant} alt="Voice Assistant" width={48} height={48} className="w-12 h-12 object-contain icon-3d-shadow" />
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0a0a0a] ${config?.enabled ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">VOICE ASSISTANT</h1>
+              <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Twilio Voice + AI Receptionist</p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-400">Assistant</span>
-            <Switch 
-              checked={config?.enabled || false}
-              onCheckedChange={toggleAssistant}
-              data-testid="assistant-toggle"
-            />
-            <span className={`text-sm font-medium ${config?.enabled ? 'text-green-400' : 'text-zinc-400'}`}>
-              {config?.enabled ? 'ON' : 'OFF'}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <span className="text-sm text-zinc-400 font-mono uppercase tracking-wide">System</span>
+              <Switch
+                checked={config?.enabled || false}
+                onCheckedChange={toggleAssistant}
+                data-testid="assistant-toggle"
+              />
+              {config?.enabled ? (
+                <Badge className="bg-green-500/15 text-green-400 border-green-500/30 font-mono text-xs">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></span>
+                  ONLINE
+                </Badge>
+              ) : (
+                <Badge className="bg-zinc-800 text-zinc-500 border-zinc-700 font-mono text-xs">
+                  <span className="w-2 h-2 bg-zinc-600 rounded-full mr-2 inline-block"></span>
+                  OFFLINE
+                </Badge>
+              )}
+            </div>
           </div>
-          {config?.enabled && (
-            <Badge className="bg-green-100 text-green-700">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              Active
-            </Badge>
-          )}
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview" className="gap-2">
+        <TabsList className="mb-6 bg-[#1a1a1a] border border-zinc-800/60">
+          <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <PhoneCall className="w-4 h-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="scripts" className="gap-2">
+          <TabsTrigger value="scripts" className="gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <FileText className="w-4 h-4" />
             Scripts
           </TabsTrigger>
-          <TabsTrigger value="behavior" className="gap-2">
+          <TabsTrigger value="behavior" className="gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <Shield className="w-4 h-4" />
-            Behavior & Guardrails
+            Guardrails
           </TabsTrigger>
-          <TabsTrigger value="calls" className="gap-2">
+          <TabsTrigger value="calls" className="gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <Phone className="w-4 h-4" />
-            Review Calls
+            Calls
+            {calls.length > 0 && <span className="ml-1 text-[10px] bg-zinc-700 text-zinc-300 rounded-full px-1.5 py-0.5 font-mono">{calls.length}</span>}
           </TabsTrigger>
         </TabsList>
 
@@ -193,53 +201,53 @@ const VoiceAssistantConsole = () => {
         <TabsContent value="overview">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card>
+            <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-orange-500/40 transition-all group">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-zinc-500">Today's Calls</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-zinc-100">{stats?.today_calls || 0}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wide">Today's Calls</p>
+                  <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                    <PhoneCall className="w-5 h-5 text-orange-400" />
                   </div>
-                  <PhoneCall className="w-10 h-10 text-orange-500 opacity-50" />
                 </div>
+                <p className="text-2xl sm:text-3xl font-tactical font-bold text-white">{stats?.today_calls || 0}</p>
               </CardContent>
             </Card>
-            
-            <Card>
+
+            <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-green-500/40 transition-all group">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-zinc-500">Matched to Claims</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-green-400">{stats?.today_matched || 0}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wide">Matched</p>
+                  <div className="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
-                  <CheckCircle className="w-10 h-10 text-green-500 opacity-50" />
                 </div>
+                <p className="text-2xl sm:text-3xl font-tactical font-bold text-green-400">{stats?.today_matched || 0}</p>
               </CardContent>
             </Card>
-            
-            <Card>
+
+            <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-amber-500/40 transition-all group">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-zinc-500">Flagged for Review</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-amber-600">{stats?.today_flagged || 0}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wide">Flagged</p>
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
                   </div>
-                  <AlertTriangle className="w-10 h-10 text-amber-500 opacity-50" />
                 </div>
+                <p className="text-2xl sm:text-3xl font-tactical font-bold text-amber-400">{stats?.today_flagged || 0}</p>
               </CardContent>
             </Card>
-            
-            <Card>
+
+            <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-zinc-700 transition-all group">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-zinc-500">Mode</p>
-                    <p className="text-lg font-semibold text-zinc-100">
-                      {config?.mode === 'message_plus_confirm' ? 'Message + Confirm' : config?.mode?.replace(/_/g, ' ')}
-                    </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wide">Mode</p>
+                  <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700/60 transition-colors">
+                    <Settings className="w-5 h-5 text-zinc-400" />
                   </div>
-                  <Settings className="w-10 h-10 text-zinc-400 opacity-50" />
                 </div>
+                <p className="text-lg font-tactical font-semibold text-zinc-100 truncate">
+                  {config?.mode === 'message_plus_confirm' ? 'Msg + Confirm' : config?.mode?.replace(/_/g, ' ')}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -254,10 +262,10 @@ const VoiceAssistantConsole = () => {
               {stats?.recent_calls?.length > 0 ? (
                 <div className="space-y-3">
                   {stats.recent_calls.map((call, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800/40 transition-colors">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-zinc-800/40 rounded-lg hover:border-zinc-700/60 transition-all cursor-pointer group">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-orange-600" />
+                        <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                          <User className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
                           <p className="font-medium text-zinc-100">
@@ -276,10 +284,12 @@ const VoiceAssistantConsole = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-zinc-500">
-                  <Phone className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>No calls yet today</p>
-                  <p className="text-sm">Calls will appear here when received</p>
+                <div className="text-center py-12 text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Phone className="w-8 h-8 text-zinc-600" />
+                  </div>
+                  <p className="text-zinc-400 font-medium">No calls yet today</p>
+                  <p className="text-sm text-zinc-600 mt-1">Incoming calls will appear here in real-time</p>
                 </div>
               )}
             </CardContent>
@@ -369,7 +379,7 @@ const VoiceAssistantConsole = () => {
                         name="mode" 
                         checked={config?.mode === 'message_only'}
                         onChange={() => setConfig({...config, mode: 'message_only'})}
-                        className="w-4 h-4 text-orange-600"
+                        className="w-4 h-4 text-orange-400"
                       />
                       <div>
                         <p className="font-medium">Message Only (Level 1)</p>
@@ -382,7 +392,7 @@ const VoiceAssistantConsole = () => {
                         name="mode" 
                         checked={config?.mode === 'message_plus_confirm'}
                         onChange={() => setConfig({...config, mode: 'message_plus_confirm'})}
-                        className="w-4 h-4 text-orange-600"
+                        className="w-4 h-4 text-orange-400"
                       />
                       <div>
                         <p className="font-medium">Message + Appointment Confirm (Level 2)</p>
@@ -438,7 +448,7 @@ const VoiceAssistantConsole = () => {
                   <p className="text-xs text-zinc-500 mb-2">AI will not discuss these topics</p>
                   <div className="flex flex-wrap gap-2 p-3 bg-zinc-800/50 rounded-lg min-h-[60px]">
                     {guardrails?.forbidden_topics?.map((topic, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-red-100 text-red-700">
+                      <Badge key={idx} variant="secondary" className="bg-red-500/15 text-red-400">
                         {topic}
                       </Badge>
                     ))}
@@ -450,7 +460,7 @@ const VoiceAssistantConsole = () => {
                   <p className="text-xs text-zinc-500 mb-2">Immediately take message if caller says these</p>
                   <div className="flex flex-wrap gap-2 p-3 bg-zinc-800/50 rounded-lg min-h-[60px]">
                     {guardrails?.escalation_triggers?.keywords?.map((kw, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-amber-100 text-amber-700">
+                      <Badge key={idx} variant="secondary" className="bg-amber-500/15 text-amber-400">
                         {kw}
                       </Badge>
                     ))}
@@ -525,7 +535,7 @@ const VoiceAssistantConsole = () => {
                           <td className="py-3">
                             {call.matched_claim_id ? (
                               <button
-                                className="text-orange-600 text-sm hover:underline"
+                                className="text-orange-400 text-sm hover:underline"
                                 onClick={() => navigate(`/claims/${call.matched_claim_id}`)}
                                 type="button"
                               >
@@ -554,10 +564,12 @@ const VoiceAssistantConsole = () => {
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-12 text-zinc-500">
-                  <Phone className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-medium">No calls recorded yet</p>
-                  <p className="text-sm">Calls will appear here once the assistant starts handling them</p>
+                <div className="text-center py-16 text-zinc-500">
+                  <div className="w-20 h-20 bg-zinc-800/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Phone className="w-10 h-10 text-zinc-600" />
+                  </div>
+                  <p className="text-lg font-medium text-zinc-400">No calls recorded yet</p>
+                  <p className="text-sm text-zinc-600 mt-1">Call history will populate once the assistant begins handling calls</p>
                 </div>
               )}
             </CardContent>
@@ -596,7 +608,7 @@ const VoiceAssistantConsole = () => {
               
               <div>
                 <Label className="text-sm font-medium mb-2 block">AI Summary</Label>
-                <div className="p-3 bg-orange-50 rounded-lg text-sm">
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm text-zinc-200">
                   {selectedCall.ai_summary || 'Processing...'}
                 </div>
               </div>

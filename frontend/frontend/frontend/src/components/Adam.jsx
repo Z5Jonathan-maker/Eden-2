@@ -396,7 +396,7 @@ const Adam = () => {
   };
 
   return (
-    <div className="min-h-screen bg-tactical-animated text-white page-enter">
+    <div className="min-h-screen bg-[#0a0a0a] text-white page-enter">
       {/* Header */}
       <AdamHeader cqilMetrics={cqilMetrics} activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -449,17 +449,16 @@ const Adam = () => {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-zinc-700/30 px-6 py-4">
+      <div className="border-t border-zinc-700/50 bg-[#1a1a1a] px-6 py-4">
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-orange-500" />
-            <span className="font-mono">Eden CQIL — Continuous Quality & Integrity Layer</span>
+            <span className="font-mono uppercase tracking-wider">Eden CQIL — Continuous Quality & Integrity Layer</span>
           </div>
-          <span>
-            Last updated:{' '}
+          <span className="font-mono">
             {cqilMetrics?.last_updated
               ? new Date(cqilMetrics.last_updated).toLocaleString()
-              : 'N/A'}
+              : 'Awaiting data...'}
           </span>
         </div>
       </div>

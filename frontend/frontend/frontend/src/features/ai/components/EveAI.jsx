@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '../../../shared/ui/button';
 import { Badge } from '../../../shared/ui/badge';
 import {
@@ -20,10 +20,27 @@ import {
   File,
   Loader2,
   Cpu,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { FEATURE_ICONS, PAGE_ICONS } from '../../../assets/badges';
 import { toast } from 'sonner';
 import { apiGet, apiPost, apiDelete, API_URL } from '../../../lib/api';
+
+// Lightweight markdown renderer — handles bold, inline code, and list items
+const renderMarkdown = (text) => {
+  if (!text) return '';
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-zinc-700/60 text-orange-300 rounded text-xs">$1</code>')
+    .replace(/^[•\-]\s+(.+)$/gm, '<div class="flex items-start gap-2 ml-2"><span class="text-orange-500 mt-1 shrink-0">&#8226;</span><span>$1</span></div>')
+    .replace(/\n/g, '<br />');
+};
 
 // Fallback model list in case backend /api/ai/models is unreachable
 const FALLBACK_MODELS = [
@@ -42,7 +59,7 @@ const EveAI = () => {
     {
       role: 'assistant',
       content:
-        'Hello! I\'m **Agent Eve**, your AI property intelligence officer powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert tactical guidance.\n\n**Tip:** Reference any claim by typing #claim-number (e.g., #12345) or use "Link Claim" to select one. How can I assist with your mission today?',
+        'Hello! I\'m **Agent Eve**, your AI property intelligence officer AI Powered. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert tactical guidance.\n\n**Tip:** Reference any claim by typing #claim-number (e.g., #12345) or use "Link Claim" to select one. How can I assist with your mission today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -50,6 +67,7 @@ const EveAI = () => {
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showSessions, setShowSessions] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
 
   // Claim linking state
   const [linkedClaim, setLinkedClaim] = useState(null);
@@ -110,7 +128,6 @@ const EveAI = () => {
           setSelectedModel(defaultModel);
         }
       }
-      // If API fails or returns empty, FALLBACK_MODELS are already set as initial state
     } catch (error) {
       console.error('Failed to fetch models (using fallback list):', error);
     }
@@ -150,12 +167,11 @@ const EveAI = () => {
         setShowClaimSelector(false);
         setClaimSearch('');
 
-        // Add system message about linked claim
         setMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `📋 **Claim #${response.data.claim_number} linked**\n\nClient: ${response.data.client_name}\nStatus: ${response.data.status}\nCarrier: ${response.data.carrier || 'N/A'}\n\nI now have full access to this claim's details, notes, and documents. Ask me anything about it!`,
+            content: `**Claim #${response.data.claim_number} linked**\n\nClient: ${response.data.client_name}\nStatus: ${response.data.status}\nCarrier: ${response.data.carrier || 'N/A'}\n\nI now have full access to this claim's details, notes, and documents. Ask me anything about it!`,
           },
         ]);
       }
@@ -171,7 +187,7 @@ const EveAI = () => {
       {
         role: 'assistant',
         content:
-          "📋 Claim unlinked. I'll no longer reference specific claim data unless you mention a claim number or link another one.",
+          "Claim unlinked. I'll no longer reference specific claim data unless you mention a claim number or link another one.",
       },
     ]);
   };
@@ -189,7 +205,6 @@ const EveAI = () => {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // Check file type
         const allowedTypes = [
           'application/pdf',
           'image/jpeg',
@@ -204,7 +219,6 @@ const EveAI = () => {
           continue;
         }
 
-        // Check file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`File too large: ${file.name} (max 10MB)`);
           continue;
@@ -231,13 +245,12 @@ const EveAI = () => {
       if (uploadedFiles.length > 0) {
         setUploadedDocs((prev) => [...prev, ...uploadedFiles]);
 
-        // Add system message about uploaded documents
         const docNames = uploadedFiles.map((d) => d.name).join(', ');
         setMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `📄 **Document${uploadedFiles.length > 1 ? 's' : ''} uploaded:** ${docNames}\n\nI'm ready to analyze ${uploadedFiles.length > 1 ? 'these documents' : 'this document'}. What would you like me to help you with?\n\n**Suggestions:**\n• "Summarize the key points"\n• "What coverage does this policy provide?"\n• "Compare this to the carrier estimate"\n• "Find any discrepancies or issues"`,
+            content: `**Document${uploadedFiles.length > 1 ? 's' : ''} uploaded:** ${docNames}\n\nI'm ready to analyze ${uploadedFiles.length > 1 ? 'these documents' : 'this document'}. What would you like me to help you with?\n\n**Suggestions:**\n- "Summarize the key points"\n- "What coverage does this policy provide?"\n- "Compare this to the carrier estimate"\n- "Find any discrepancies or issues"`,
           },
         ]);
 
@@ -250,7 +263,6 @@ const EveAI = () => {
       toast.error('Failed to upload documents');
     } finally {
       setIsUploading(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -269,7 +281,6 @@ const EveAI = () => {
       }
     } catch (error) {
       // Silently fail - sessions will load when user interacts
-      // console.log('Sessions fetch skipped:', error.message);
     }
   };
 
@@ -278,12 +289,11 @@ const EveAI = () => {
       const response = await apiGet(`/api/ai/sessions/${sid}`);
       if (response.ok) {
         setSessionId(sid);
-        // Add welcome message at the beginning
         setMessages([
           {
             role: 'assistant',
             content:
-              "Hello! I'm Eve, your AI property intelligence assistant powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims. How can I assist you today?",
+              "Hello! I'm Eve, your AI property intelligence assistant AI Powered. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims. How can I assist you today?",
           },
           ...(response.data.messages || []),
         ]);
@@ -314,51 +324,51 @@ const EveAI = () => {
       {
         role: 'assistant',
         content:
-          'Hello! I\'m Eve, your AI property intelligence assistant powered by Ollama Cloud. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims.\n\n**Tip:** You can reference any claim by typing #claim-number (e.g., #12345) or use the "Link Claim" button to select one. How can I assist you today?',
+          'Hello! I\'m Eve, your AI property intelligence assistant AI Powered. I can help you analyze insurance policies, compare estimates, build claim strategies, and provide expert guidance on your claims.\n\n**Tip:** You can reference any claim by typing #claim-number (e.g., #12345) or use the "Link Claim" button to select one. How can I assist you today?',
       },
     ]);
     setShowSessions(false);
   };
 
-  const quickActions = [
-    {
-      icon: <FileText className="w-4 h-4" />,
-      label: 'Analyze Policy',
-      prompt: 'Help me analyze an insurance policy. What information do you need from me?',
-    },
-    {
-      icon: <TrendingUp className="w-4 h-4" />,
-      label: 'Compare Estimates',
-      prompt:
-        'I need to compare a carrier estimate with a contractor estimate. Can you walk me through the key areas to focus on?',
-    },
-    {
-      icon: <AlertCircle className="w-4 h-4" />,
-      label: 'Claim Strategy',
-      prompt: linkedClaim
-        ? `What's the best strategy for claim #${linkedClaim.claim_number}? Consider the current status and carrier.`
-        : 'Help me develop a claim strategy. What information do you need about the claim?',
-    },
-    {
-      icon: <Sparkles className="w-4 h-4" />,
-      label: 'Write Supplement',
-      prompt: linkedClaim
-        ? `Help me write a supplement for claim #${linkedClaim.claim_number}. What additional items should we request?`
-        : 'I need help writing a supplement request. What details should I include?',
-    },
-    {
-      icon: <Sparkles className="w-4 h-4" />,
-      label: 'Adjuster Meeting',
-      prompt:
-        'I have an adjuster meeting coming up. What should I prepare and what questions should I ask?',
-    },
-    {
-      icon: <Sparkles className="w-4 h-4" />,
-      label: 'Coverage Question',
-      prompt:
-        "I have a question about policy coverage. Can you help me understand what's typically covered for wind and hail damage?",
-    },
-  ];
+  // Context-aware quick actions
+  const quickActions = useMemo(() => {
+    const I = (Icon) => <Icon className="w-4 h-4" />;
+    const actions = [
+      { icon: I(FileText), label: 'Analyze Policy', prompt: 'Help me analyze an insurance policy. What information do you need from me?' },
+    ];
+    if (uploadedDocs.length > 0) {
+      actions.push(
+        { icon: I(FileText), label: 'Summarize Document', prompt: 'Summarize the key points of the uploaded document(s).' },
+        { icon: I(Search), label: 'Find Coverage Gaps', prompt: 'Analyze the uploaded documents for any coverage gaps or issues.' },
+      );
+    }
+    if (linkedClaim) {
+      const cn = linkedClaim.claim_number;
+      actions.push(
+        { icon: I(TrendingUp), label: 'Claim Strategy', prompt: `What's the best strategy for claim #${cn}? Consider the current status and carrier.` },
+        { icon: I(Sparkles), label: 'Write Supplement', prompt: `Help me write a supplement for claim #${cn}. What additional items should we request?` },
+        { icon: I(AlertCircle), label: 'Settlement Range', prompt: `What's a realistic settlement range for claim #${cn}?` },
+      );
+    } else {
+      actions.push(
+        { icon: I(TrendingUp), label: 'Compare Estimates', prompt: 'I need to compare a carrier estimate with a contractor estimate. Can you walk me through the key areas to focus on?' },
+        { icon: I(Sparkles), label: 'Claim Strategy', prompt: 'Help me develop a claim strategy. What information do you need about the claim?' },
+      );
+    }
+    actions.push({ icon: I(Sparkles), label: 'Coverage Question', prompt: "What's typically covered for wind and hail damage?" });
+    return actions;
+  }, [linkedClaim, uploadedDocs]);
+
+  const copyMessage = async (content, index) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      toast.success('Copied to clipboard');
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (error) {
+      toast.error('Failed to copy');
+    }
+  };
 
   const sendMessage = async (messageText) => {
     if (!messageText.trim()) return;
@@ -369,7 +379,6 @@ const EveAI = () => {
     setIsAnalyzing(true);
 
     try {
-      // Build request with claim context, model, and documents if available
       const requestBody = {
         message: userMessage,
         session_id: sessionId,
@@ -384,7 +393,6 @@ const EveAI = () => {
         requestBody.claim_id = linkedClaim.claim_id;
       }
 
-      // Include uploaded document IDs
       if (uploadedDocs.length > 0) {
         requestBody.document_ids = uploadedDocs.map((d) => d.id);
         requestBody.document_names = uploadedDocs.map((d) => d.name);
@@ -398,13 +406,11 @@ const EveAI = () => {
 
       const data = response.data;
 
-      // Update session ID if this is a new session
       if (!sessionId && data.session_id) {
         setSessionId(data.session_id);
-        fetchSessions(); // Refresh sessions list
+        fetchSessions();
       }
 
-      // If Eve detected a claim reference, update linked claim
       if (data.claim_context && !linkedClaim) {
         setLinkedClaim(data.claim_context);
       }
@@ -431,6 +437,16 @@ const EveAI = () => {
   const handleQuickAction = (prompt) => {
     sendMessage(prompt);
   };
+
+  // Capabilities with availability status
+  const capabilities = useMemo(() => [
+    { label: 'Policy analysis & coverage interpretation', available: true },
+    { label: 'Line-by-line estimate comparison', available: true },
+    { label: 'Claim strategy & negotiation tactics', available: !!linkedClaim },
+    { label: 'Supplement writing assistance', available: !!linkedClaim },
+    { label: 'Florida insurance regulations (627.70131)', available: true },
+    { label: 'IICRC standards (S500, S520)', available: true },
+  ], [linkedClaim]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen page-enter">
@@ -664,20 +680,18 @@ const EveAI = () => {
               </h3>
             </div>
             <div className="space-y-2.5">
-              {[
-                'Policy analysis & coverage interpretation',
-                'Line-by-line estimate comparison',
-                'Claim strategy & negotiation tactics',
-                'Supplement writing assistance',
-                'Florida insurance regulations (627.70131)',
-                'IICRC standards (S500, S520)',
-              ].map((cap, i) => (
+              {capabilities.map((cap, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-zinc-400 text-xs font-mono">{cap}</p>
+                  <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${cap.available ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  <p className={`text-xs font-mono ${cap.available ? 'text-zinc-400' : 'text-zinc-500'}`}>{cap.label}</p>
                 </div>
               ))}
             </div>
+            {!linkedClaim && (
+              <p className="text-[10px] text-yellow-500/70 font-mono mt-3 border-t border-zinc-700/30 pt-2">
+                Link a claim to unlock more capabilities
+              </p>
+            )}
           </div>
         </div>
 
@@ -712,7 +726,7 @@ const EveAI = () => {
                   <div className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl z-50 overflow-hidden">
                     <div className="p-2 border-b border-zinc-700/50">
                       <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider px-2">
-                        Ollama Cloud Models
+                        AI Models
                       </span>
                     </div>
                     <div className="max-h-64 overflow-y-auto p-1">
@@ -777,38 +791,59 @@ const EveAI = () => {
                         <Zap className="w-4 h-4 text-zinc-900" />
                       )}
                     </div>
-                    <div
-                      className={`rounded-lg p-3 sm:p-4 ${
-                        message.role === 'user'
-                          ? 'bg-orange-500/20 border border-orange-500/30 text-zinc-200'
-                          : 'bg-zinc-800 border border-zinc-700/30 text-zinc-300'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-line font-mono leading-relaxed">
-                        {message.content}
-                      </p>
+                    <div className="relative group">
+                      <div
+                        className={`rounded-lg p-3 sm:p-4 ${
+                          message.role === 'user'
+                            ? 'bg-orange-500/20 border border-orange-500/30 text-zinc-200'
+                            : 'bg-zinc-800 border border-zinc-700/30 text-zinc-300'
+                        }`}
+                      >
+                        <div
+                          className="text-sm font-mono leading-relaxed [&_strong]:text-white [&_strong]:font-semibold [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:bg-zinc-700/60 [&_code]:text-orange-300 [&_code]:rounded [&_code]:text-xs"
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+                        />
+                      </div>
+                      {message.role === 'assistant' && (
+                        <button
+                          onClick={() => copyMessage(message.content, index)}
+                          className="absolute -bottom-3 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 rounded bg-zinc-700/80 border border-zinc-600/50 hover:bg-zinc-600/80 text-zinc-400 hover:text-white"
+                          title="Copy message"
+                        >
+                          {copiedIndex === index ? (
+                            <Check className="w-3 h-3 text-green-400" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
 
               {isAnalyzing && (
-                <div className="flex justify-start">
+                <div className="flex justify-start animate-fade-in-up">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
                       <Zap className="w-4 h-4 text-zinc-900" />
                     </div>
                     <div className="bg-zinc-800 border border-zinc-700/30 rounded-lg p-4">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.1s' }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.2s' }}
-                        ></div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                          <div
+                            className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.1s' }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.2s' }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-zinc-500 font-mono animate-pulse">
+                          Eve is analyzing...
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -902,7 +937,7 @@ const EveAI = () => {
                 </button>
               </div>
               <p className="text-xs text-zinc-500 mt-2 font-mono">
-                📄 Upload documents (PDF, images, Word) • 🔗 Link claims with # or the link button
+                Upload documents (PDF, images, Word) | Link claims with # or the link button
               </p>
             </div>
           </div>

@@ -32,7 +32,10 @@ import {
   Quote,
   Trophy,
   Eye,
-  ChevronRight
+  ChevronRight,
+  Rocket,
+  Mountain,
+  Crosshair
 } from 'lucide-react';
 
 // ============ CONSTANTS ============
@@ -63,11 +66,20 @@ const POST_TYPE_CONFIG = {
   milestone: { label: 'Milestone', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
 };
 
+const SUGGESTED_GOALS = [
+  { category: 'faith', title: 'Daily prayer & devotion', icon: Heart },
+  { category: 'fitness', title: 'Run a 5K this quarter', icon: Activity },
+  { category: 'finances', title: 'Build 3-month emergency fund', icon: DollarSign },
+  { category: 'career', title: 'Launch side project', icon: Rocket },
+  { category: 'personal', title: 'Read 12 books this year', icon: BookOpen },
+  { category: 'family', title: 'Weekly family dinner', icon: Users },
+];
+
 // ============ SUB-COMPONENTS ============
 
 const GlassCard = ({ children, className = '', glow = '', ...props }) => (
   <div
-    className={`relative rounded-xl border border-zinc-700/50 bg-zinc-800/50 backdrop-blur-sm overflow-hidden ${className}`}
+    className={`relative rounded-xl border border-zinc-700/50 bg-zinc-800/50 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-orange-500/30 ${className}`}
     style={glow ? { boxShadow: glow } : undefined}
     {...props}
   >
@@ -85,21 +97,33 @@ const StatBlock = ({ icon: Icon, label, value, color = 'text-orange-400' }) => (
   </div>
 );
 
-const EmptyState = ({ icon: Icon, title, description, action, onAction }) => (
-  <div className="flex flex-col items-center justify-center py-16 px-4">
-    <div className="w-20 h-20 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center mb-6">
-      <Icon className="w-10 h-10 text-zinc-600" />
+const ProgressRing = ({ percent, size = 80, stroke = 6 }) => {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#27272a" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none"
+          stroke="url(#progressGradient)" strokeWidth={stroke}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" className="transition-all duration-700 ease-out"
+        />
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="#f59e0b" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-lg font-mono font-bold text-white">{percent}%</span>
+      </div>
     </div>
-    <h3 className="text-lg font-mono font-bold text-zinc-300 uppercase tracking-wider mb-2">{title}</h3>
-    <p className="text-zinc-500 text-sm text-center max-w-sm mb-6">{description}</p>
-    {action && (
-      <Button onClick={onAction} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
-        <Plus className="w-4 h-4" />
-        {action}
-      </Button>
-    )}
-  </div>
-);
+  );
+};
 
 const ModalOverlay = ({ children, onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -147,25 +171,27 @@ const VisionCard = ({ item, categories, onToggleAchieved, onDelete }) => {
   const categoryMeta = categories?.find((cat) => cat.id === item.category);
   const catConfig = CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[6];
   const CatIcon = catConfig.icon;
+  const isAchieved = item.is_achieved;
 
   return (
-    <div className={`group relative rounded-xl border bg-zinc-800/60 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:translate-y-[-3px] hover:shadow-[0_8px_32px_rgba(249,115,22,0.12)] ${item.is_achieved ? 'border-emerald-500/40' : 'border-zinc-700/50 hover:border-orange-500/30'}`}>
+    <div className={`group relative rounded-xl border bg-zinc-800/60 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:translate-y-[-3px] ${isAchieved ? 'border-emerald-500/40 shadow-[0_0_24px_rgba(16,185,129,0.12)]' : 'border-zinc-700/50 hover:border-orange-500/30 hover:shadow-[0_8px_32px_rgba(249,115,22,0.12)]'}`}>
       {/* Category accent bar */}
-      <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${catConfig.color}, transparent)` }} />
+      <div className="h-1 w-full" style={{ background: isAchieved ? 'linear-gradient(90deg, #10b981, #34d399, transparent)' : `linear-gradient(90deg, ${catConfig.color}, transparent)` }} />
 
       {/* Image area */}
       {item.image_url ? (
         <div className="relative">
-          <img
-            src={`${API_URL}${item.image_url}`}
-            alt={item.title}
-            className="w-full h-44 object-cover"
-          />
+          <img src={`${API_URL}${item.image_url}`} alt={item.title} className="w-full h-44 object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent" />
         </div>
       ) : (
-        <div className={`h-32 w-full bg-gradient-to-br ${catConfig.gradient} flex items-center justify-center`}>
+        <div className={`h-32 w-full bg-gradient-to-br ${catConfig.gradient} flex items-center justify-center relative`}>
           <CatIcon className="w-10 h-10 opacity-30" style={{ color: catConfig.color }} />
+          {isAchieved && (
+            <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/5">
+              <Trophy className="w-8 h-8 text-emerald-400/40" />
+            </div>
+          )}
         </div>
       )}
 
@@ -183,20 +209,17 @@ const VisionCard = ({ item, categories, onToggleAchieved, onDelete }) => {
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onToggleAchieved(item.id, item.is_achieved)}
-              className={`p-1.5 rounded-md transition-colors ${item.is_achieved ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10'}`}
+              className={`p-1.5 rounded-md transition-colors ${isAchieved ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10'}`}
             >
               <Check className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={() => onDelete(item.id)}
-              className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            >
+            <button onClick={() => onDelete(item.id)} className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        <h4 className="text-white font-semibold text-sm leading-snug mb-1">{item.title}</h4>
+        <h4 className={`font-semibold text-sm leading-snug mb-1 ${isAchieved ? 'text-emerald-300' : 'text-white'}`}>{item.title}</h4>
 
         {item.description && (
           <p className="text-zinc-400 text-xs leading-relaxed mb-2 line-clamp-2">{item.description}</p>
@@ -216,7 +239,7 @@ const VisionCard = ({ item, categories, onToggleAchieved, onDelete }) => {
               {item.target_date}
             </span>
           )}
-          {item.is_achieved && (
+          {isAchieved && (
             <Badge className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] px-2 py-0.5">
               <Trophy className="w-3 h-3 mr-1" />
               Achieved
@@ -227,6 +250,47 @@ const VisionCard = ({ item, categories, onToggleAchieved, onDelete }) => {
     </div>
   );
 };
+
+// ============ INSPIRING EMPTY STATE ============
+
+const VisionEmptyState = ({ onAddVision, onQuickAdd }) => (
+  <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="relative mb-8">
+      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center">
+        <Mountain className="w-12 h-12 text-orange-400" />
+      </div>
+      <div className="absolute -inset-3 rounded-3xl bg-orange-500/5 blur-xl -z-10 animate-pulse" />
+    </div>
+    <h3 className="text-xl font-mono font-bold text-white uppercase tracking-wider mb-2">Your Vision Starts Here</h3>
+    <p className="text-zinc-500 text-sm text-center max-w-md mb-8 leading-relaxed">
+      Pin your boldest dreams, set targets, speak affirmations. This board becomes your daily compass -- a visual declaration of where you are headed.
+    </p>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8 max-w-xl w-full">
+      {SUGGESTED_GOALS.map((goal) => {
+        const GoalIcon = goal.icon;
+        const cat = CATEGORIES.find((c) => c.id === goal.category) || CATEGORIES[6];
+        return (
+          <button
+            key={goal.title}
+            onClick={() => onQuickAdd(goal)}
+            className="group flex items-center gap-2.5 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/40 hover:border-orange-500/40 hover:bg-zinc-800/80 transition-all text-left"
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors" style={{ background: `${cat.color}15` }}>
+              <GoalIcon className="w-4 h-4" style={{ color: cat.color }} />
+            </div>
+            <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors leading-tight">{goal.title}</span>
+          </button>
+        );
+      })}
+    </div>
+
+    <Button onClick={onAddVision} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2 px-6 py-3 text-sm shadow-[0_0_24px_rgba(249,115,22,0.25)]">
+      <Plus className="w-4 h-4" />
+      Create Custom Vision
+    </Button>
+  </div>
+);
 
 // ============ MAIN COMPONENT ============
 
@@ -247,33 +311,16 @@ const InteractiveVisionBoard = () => {
   const initialJournalSync = useRef(false);
   const autoSaveTimerRef = useRef(null);
 
-  // Journal form
   const [journalForm, setJournalForm] = useState({
-    thoughts: '',
-    gratitude: ['', '', ''],
-    beliefs: [''],
-    wins: [''],
-    goals_today: [''],
-    mood: '',
-    energy_level: 5,
-    is_shared: false
+    thoughts: '', gratitude: ['', '', ''], beliefs: [''], wins: [''], goals_today: [''],
+    mood: '', energy_level: 5, is_shared: false
   });
 
-  // Vision item form
   const [visionForm, setVisionForm] = useState({
-    category: 'personal',
-    title: '',
-    description: '',
-    affirmation: '',
-    target_date: '',
-    color: '#6366F1'
+    category: 'personal', title: '', description: '', affirmation: '', target_date: '', color: '#6366F1'
   });
 
-  // Team post form
-  const [teamPostForm, setTeamPostForm] = useState({
-    content: '',
-    post_type: 'encouragement'
-  });
+  const [teamPostForm, setTeamPostForm] = useState({ content: '', post_type: 'encouragement' });
 
   const moodValue = MOOD_CONFIG.order.indexOf(journalForm.mood) + 1 || 3;
   const energyGlow = Math.min(0.95, 0.2 + (journalForm.energy_level / 10) * 0.75);
@@ -288,14 +335,21 @@ const InteractiveVisionBoard = () => {
   const winEntries = journalForm.wins.filter((item) => item.trim());
   const isStreakHot = (journalHistory?.stats?.current_streak || 0) > 7;
 
-  // Filter vision items by active category
+  // Vision board computed stats
+  const visionStats = useMemo(() => {
+    const items = visionItems?.items || [];
+    const total = items.length;
+    const achieved = items.filter((i) => i.is_achieved).length;
+    const percent = total > 0 ? Math.round((achieved / total) * 100) : 0;
+    return { total, achieved, active: total - achieved, percent };
+  }, [visionItems]);
+
   const filteredVisionItems = useMemo(() => {
     if (!visionItems?.items) return [];
     if (activeCategory === 'all') return visionItems.items;
     return visionItems.items.filter((item) => item.category === activeCategory);
   }, [visionItems, activeCategory]);
 
-  // Count items by category
   const categoryCounts = useMemo(() => {
     const counts = { all: visionItems?.items?.length || 0 };
     visionItems?.items?.forEach((item) => {
@@ -340,9 +394,7 @@ const InteractiveVisionBoard = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSaveJournal = useCallback(async ({ silent = false } = {}) => {
     try {
@@ -359,18 +411,13 @@ const InteractiveVisionBoard = () => {
       params.append('is_shared', journalForm.is_shared);
 
       const res = await apiPost(`/api/vision-board/journal?${params.toString()}`, {
-        gratitude: cleanGratitude,
-        beliefs: cleanBeliefs,
-        wins: cleanWins,
-        goals_today: cleanGoals
+        gratitude: cleanGratitude, beliefs: cleanBeliefs, wins: cleanWins, goals_today: cleanGoals
       });
 
       if (res.ok) {
         setSaveState('saved');
         setSavePulse(true);
-        if (!silent) {
-          fetchData();
-        }
+        if (!silent) fetchData();
         setTimeout(() => setSavePulse(false), 450);
         setTimeout(() => setSaveState('idle'), 1400);
       }
@@ -382,24 +429,10 @@ const InteractiveVisionBoard = () => {
 
   useEffect(() => {
     if (!journalReady) return undefined;
-    if (!initialJournalSync.current) {
-      initialJournalSync.current = true;
-      return undefined;
-    }
-
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    autoSaveTimerRef.current = setTimeout(() => {
-      handleSaveJournal({ silent: true });
-    }, 850);
-
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
+    if (!initialJournalSync.current) { initialJournalSync.current = true; return undefined; }
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => { handleSaveJournal({ silent: true }); }, 850);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
   }, [journalForm, journalReady, handleSaveJournal]);
 
   const handleAddVisionItem = async () => {
@@ -413,17 +446,9 @@ const InteractiveVisionBoard = () => {
       if (visionForm.color) params.append('color', visionForm.color);
 
       const res = await apiPost(`/api/vision-board/items?${params.toString()}`, {});
-
       if (res.ok) {
         setShowAddVision(false);
-        setVisionForm({
-          category: 'personal',
-          title: '',
-          description: '',
-          affirmation: '',
-          target_date: '',
-          color: '#6366F1'
-        });
+        setVisionForm({ category: 'personal', title: '', description: '', affirmation: '', target_date: '', color: '#6366F1' });
         fetchData();
       }
     } catch (error) {
@@ -431,11 +456,15 @@ const InteractiveVisionBoard = () => {
     }
   };
 
+  const handleQuickAddSuggested = (goal) => {
+    setVisionForm({ ...visionForm, category: goal.category, title: goal.title });
+    setShowAddVision(true);
+  };
+
   const handleToggleAchieved = async (itemId, currentStatus) => {
     try {
       const params = new URLSearchParams();
       params.append('is_achieved', !currentStatus);
-
       await apiPut(`/api/vision-board/items/${itemId}?${params.toString()}`, {});
       fetchData();
     } catch (error) {
@@ -445,7 +474,6 @@ const InteractiveVisionBoard = () => {
 
   const handleDeleteVisionItem = async (itemId) => {
     if (!window.confirm('Delete this vision item?')) return;
-
     try {
       await apiDelete(`/api/vision-board/items/${itemId}`);
       fetchData();
@@ -459,9 +487,7 @@ const InteractiveVisionBoard = () => {
       const params = new URLSearchParams();
       params.append('content', teamPostForm.content);
       params.append('post_type', teamPostForm.post_type);
-
       const res = await apiPost(`/api/vision-board/team/post?${params.toString()}`, {});
-
       if (res.ok) {
         setShowTeamPost(false);
         setTeamPostForm({ content: '', post_type: 'encouragement' });
@@ -504,20 +530,25 @@ const InteractiveVisionBoard = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
-                src={PAGE_ICONS.vision_board}
-                alt="Vision Board"
-                width={56}
-                height={56}
+                src={PAGE_ICONS.vision_board} alt="Vision Board" width={56} height={56}
                 className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
                 style={{ filter: 'drop-shadow(0 0 18px rgba(249, 115, 22, 0.5))' }}
               />
               <div className="absolute -inset-1 rounded-full bg-orange-500/10 blur-lg -z-10" />
             </div>
             <div>
-              <h1 className="text-2xl font-mono font-bold text-white uppercase tracking-wider">
+              <h1 className="text-2xl sm:text-3xl font-mono font-bold text-white uppercase tracking-wider">
                 Vision Board
               </h1>
-              <p className="text-zinc-500 font-mono text-sm">Dream it. Believe it. Achieve it.</p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-zinc-500 font-mono text-sm">Dream it. Believe it. Achieve it.</p>
+                {visionStats.total > 0 && (
+                  <span className="text-xs font-mono text-zinc-600 hidden sm:inline-flex items-center gap-1.5">
+                    <Crosshair className="w-3 h-3 text-orange-500/60" />
+                    {visionStats.total} goals &middot; {visionStats.percent}% complete
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -553,8 +584,7 @@ const InteractiveVisionBoard = () => {
             const TabIcon = tab.icon;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]'
@@ -574,7 +604,6 @@ const InteractiveVisionBoard = () => {
         {/* ========== DAILY JOURNAL TAB ========== */}
         {activeTab === 'journal' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Journal Form */}
             <div className="lg:col-span-2 space-y-6">
               <GlassCard className="p-5 sm:p-6">
                 <div className="flex items-center justify-between gap-2 mb-5">
@@ -599,25 +628,17 @@ const InteractiveVisionBoard = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Heart className="w-4 h-4 text-amber-400" />
-                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
-                        What I&apos;m Grateful For
-                      </label>
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">What I&apos;m Grateful For</label>
                       {journalForm.is_shared && (
                         <span className="ml-auto rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20 px-2 py-0.5 text-[10px] font-mono uppercase">Shared</span>
                       )}
                     </div>
                     {journalForm.gratitude.map((item, i) => (
-                      <DarkInput
-                        key={i}
-                        value={item}
-                        onChange={(e) => {
-                          const newGratitude = [...journalForm.gratitude];
-                          newGratitude[i] = e.target.value;
-                          setJournalForm({...journalForm, gratitude: newGratitude});
-                        }}
-                        className="mb-2"
-                        placeholder={`Gratitude ${i + 1}...`}
-                      />
+                      <DarkInput key={i} value={item} onChange={(e) => {
+                        const newGratitude = [...journalForm.gratitude];
+                        newGratitude[i] = e.target.value;
+                        setJournalForm({...journalForm, gratitude: newGratitude});
+                      }} className="mb-2" placeholder={`Gratitude ${i + 1}...`} />
                     ))}
                   </div>
 
@@ -625,26 +646,18 @@ const InteractiveVisionBoard = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles className="w-4 h-4 text-purple-400" />
-                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
-                        What I&apos;m Believing For
-                      </label>
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">What I&apos;m Believing For</label>
                     </div>
                     {journalForm.beliefs.map((item, i) => (
                       <div key={i} className="flex gap-2 mb-2">
-                        <DarkInput
-                          value={item}
-                          onChange={(e) => {
-                            const newBeliefs = [...journalForm.beliefs];
-                            newBeliefs[i] = e.target.value;
-                            setJournalForm({...journalForm, beliefs: newBeliefs});
-                          }}
-                          placeholder="I believe..."
-                        />
+                        <DarkInput value={item} onChange={(e) => {
+                          const newBeliefs = [...journalForm.beliefs];
+                          newBeliefs[i] = e.target.value;
+                          setJournalForm({...journalForm, beliefs: newBeliefs});
+                        }} placeholder="I believe..." />
                         {i === journalForm.beliefs.length - 1 && (
-                          <button
-                            onClick={() => setJournalForm({...journalForm, beliefs: [...journalForm.beliefs, '']})}
-                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors"
-                          >
+                          <button onClick={() => setJournalForm({...journalForm, beliefs: [...journalForm.beliefs, '']})}
+                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors">
                             <Plus className="w-4 h-4" />
                           </button>
                         )}
@@ -656,29 +669,21 @@ const InteractiveVisionBoard = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Trophy className="w-4 h-4 text-emerald-400" />
-                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
-                        Today&apos;s Wins
-                      </label>
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">Today&apos;s Wins</label>
                       {journalForm.is_shared && (
                         <span className="ml-auto rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20 px-2 py-0.5 text-[10px] font-mono uppercase">Shared</span>
                       )}
                     </div>
                     {journalForm.wins.map((item, i) => (
                       <div key={i} className="flex gap-2 mb-2">
-                        <DarkInput
-                          value={item}
-                          onChange={(e) => {
-                            const newWins = [...journalForm.wins];
-                            newWins[i] = e.target.value;
-                            setJournalForm({...journalForm, wins: newWins});
-                          }}
-                          placeholder="A win today..."
-                        />
+                        <DarkInput value={item} onChange={(e) => {
+                          const newWins = [...journalForm.wins];
+                          newWins[i] = e.target.value;
+                          setJournalForm({...journalForm, wins: newWins});
+                        }} placeholder="A win today..." />
                         {i === journalForm.wins.length - 1 && (
-                          <button
-                            onClick={() => setJournalForm({...journalForm, wins: [...journalForm.wins, '']})}
-                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors"
-                          >
+                          <button onClick={() => setJournalForm({...journalForm, wins: [...journalForm.wins, '']})}
+                            className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-orange-400 hover:border-orange-500/30 transition-colors">
                             <Plus className="w-4 h-4" />
                           </button>
                         )}
@@ -690,17 +695,10 @@ const InteractiveVisionBoard = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Feather className="w-4 h-4 text-zinc-400" />
-                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
-                        My Thoughts
-                      </label>
+                      <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">My Thoughts</label>
                       <span className="text-[10px] font-mono text-zinc-600 uppercase">(Private)</span>
                     </div>
-                    <DarkTextarea
-                      value={journalForm.thoughts}
-                      onChange={(e) => setJournalForm({...journalForm, thoughts: e.target.value})}
-                      placeholder="What's on your mind today..."
-                      rows={4}
-                    />
+                    <DarkTextarea value={journalForm.thoughts} onChange={(e) => setJournalForm({...journalForm, thoughts: e.target.value})} placeholder="What's on your mind today..." rows={4} />
                   </div>
 
                   {/* Mood & Energy */}
@@ -711,19 +709,11 @@ const InteractiveVisionBoard = () => {
                         <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">Mood</label>
                       </div>
                       <GlassCard className="p-3">
-                        <input
-                          type="range"
-                          min="1"
-                          max="5"
-                          value={moodValue}
+                        <input type="range" min="1" max="5" value={moodValue}
                           onChange={(e) => setJournalForm({...journalForm, mood: MOOD_CONFIG.byValue[parseInt(e.target.value, 10)]})}
-                          className="w-full accent-orange-500"
-                        />
+                          className="w-full accent-orange-500" />
                         <div className="flex items-center justify-center gap-2 mt-2">
-                          {(() => {
-                            const MoodIcon = MOOD_CONFIG.icons[moodValue - 1];
-                            return <MoodIcon className="w-4 h-4" style={{ color: MOOD_CONFIG.colors[moodValue - 1] }} />;
-                          })()}
+                          {(() => { const MoodIcon = MOOD_CONFIG.icons[moodValue - 1]; return <MoodIcon className="w-4 h-4" style={{ color: MOOD_CONFIG.colors[moodValue - 1] }} />; })()}
                           <span className="text-sm font-mono text-white capitalize">{journalForm.mood || 'okay'}</span>
                         </div>
                       </GlassCard>
@@ -734,24 +724,13 @@ const InteractiveVisionBoard = () => {
                         <label className="text-xs font-mono text-zinc-300 uppercase tracking-wider">Energy</label>
                         <span className="text-xs font-mono text-zinc-600">{journalForm.energy_level}/10</span>
                       </div>
-                      <GlassCard
-                        className="p-3"
-                        glow={journalForm.energy_level >= 8 ? `0 0 18px rgba(34, 211, 238, ${energyGlow * 0.4})` : ''}
-                      >
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={journalForm.energy_level}
+                      <GlassCard className="p-3" glow={journalForm.energy_level >= 8 ? `0 0 18px rgba(34, 211, 238, ${energyGlow * 0.4})` : ''}>
+                        <input type="range" min="1" max="10" value={journalForm.energy_level}
                           onChange={(e) => setJournalForm({...journalForm, energy_level: parseInt(e.target.value, 10)})}
-                          className="w-full accent-cyan-500"
-                        />
+                          className="w-full accent-cyan-500" />
                         <div className="flex justify-between mt-1">
                           {[...Array(10)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-1.5 h-1.5 rounded-full transition-colors ${i < journalForm.energy_level ? 'bg-cyan-400' : 'bg-zinc-700'}`}
-                            />
+                            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i < journalForm.energy_level ? 'bg-cyan-400' : 'bg-zinc-700'}`} />
                           ))}
                         </div>
                       </GlassCard>
@@ -760,10 +739,8 @@ const InteractiveVisionBoard = () => {
 
                   {/* Share Toggle */}
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-700/30">
-                    <button
-                      onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}
-                      className={`relative w-10 h-5 rounded-full transition-colors ${journalForm.is_shared ? 'bg-orange-500' : 'bg-zinc-700'}`}
-                    >
+                    <button onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${journalForm.is_shared ? 'bg-orange-500' : 'bg-zinc-700'}`}>
                       <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${journalForm.is_shared ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
                     <label className="text-sm text-zinc-400 cursor-pointer" onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}>
@@ -783,8 +760,7 @@ const InteractiveVisionBoard = () => {
                             <ul className="space-y-1">
                               {gratitudeEntries.slice(0, 3).map((item, index) => (
                                 <li key={`g-${index}`} className="text-zinc-300 text-sm flex items-start gap-2">
-                                  <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />
-                                  {item}
+                                  <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />{item}
                                 </li>
                               ))}
                             </ul>
@@ -796,8 +772,7 @@ const InteractiveVisionBoard = () => {
                             <ul className="space-y-1">
                               {winEntries.slice(0, 3).map((item, index) => (
                                 <li key={`w-${index}`} className="text-zinc-300 text-sm flex items-start gap-2">
-                                  <ChevronRight className="w-3 h-3 text-emerald-400 mt-1 flex-shrink-0" />
-                                  {item}
+                                  <ChevronRight className="w-3 h-3 text-emerald-400 mt-1 flex-shrink-0" />{item}
                                 </li>
                               ))}
                             </ul>
@@ -807,12 +782,8 @@ const InteractiveVisionBoard = () => {
                     </GlassCard>
                   )}
 
-                  <Button
-                    onClick={handleSaveJournal}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 font-mono uppercase tracking-wider py-3"
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Save Journal Entry
+                  <Button onClick={handleSaveJournal} className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 font-mono uppercase tracking-wider py-3">
+                    <Check className="w-4 h-4 mr-2" />Save Journal Entry
                   </Button>
                 </div>
               </GlassCard>
@@ -825,29 +796,23 @@ const InteractiveVisionBoard = () => {
                 <div className="space-y-3">
                   <div className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${isStreakHot ? 'border-orange-500/40 bg-orange-500/5' : 'border-zinc-700/40'}`}>
                     <span className="text-zinc-300 flex items-center gap-2 text-sm">
-                      {isStreakHot ? <Flame className="w-4 h-4 text-orange-400" /> : <Award className="w-4 h-4 text-orange-400" />}
-                      Streak
+                      {isStreakHot ? <Flame className="w-4 h-4 text-orange-400" /> : <Award className="w-4 h-4 text-orange-400" />}Streak
                     </span>
                     <span className="text-2xl font-mono font-bold text-orange-400">
-                      {journalHistory?.stats?.current_streak || 0}
-                      <span className="text-xs text-zinc-500 ml-1">days</span>
+                      {journalHistory?.stats?.current_streak || 0}<span className="text-xs text-zinc-500 ml-1">days</span>
                     </span>
                   </div>
                   <StatBlock icon={BookOpen} label="Total Entries" value={journalHistory?.stats?.total_entries || 0} color="#f59e0b" />
                   <StatBlock icon={Calendar} label="This Month" value={`${journalHistory?.stats?.days_this_month || 0} days`} color="#22d3ee" />
                   <div className="pt-1">
                     <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-700/50">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500"
-                        style={{ width: `${monthProgress}%` }}
-                      />
+                      <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500" style={{ width: `${monthProgress}%` }} />
                     </div>
                     <p className="text-[10px] text-zinc-500 font-mono mt-1">{monthProgress}% of month logged</p>
                   </div>
                 </div>
               </GlassCard>
 
-              {/* Recent Entries */}
               {journalHistory?.entries?.length > 0 && (
                 <GlassCard className="p-5">
                   <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm mb-4">Recent Days</h3>
@@ -859,13 +824,8 @@ const InteractiveVisionBoard = () => {
                           <span className="text-sm text-zinc-400 font-mono">{entry.date}</span>
                           <div className="flex items-center gap-2">
                             {entry.mood && (
-                              <span
-                                className="text-xs font-mono uppercase px-2 py-0.5 rounded-full"
-                                style={{
-                                  color: MOOD_CONFIG.colors[entryMoodIdx] || '#71717a',
-                                  background: `${MOOD_CONFIG.colors[entryMoodIdx] || '#71717a'}15`,
-                                }}
-                              >
+                              <span className="text-xs font-mono uppercase px-2 py-0.5 rounded-full"
+                                style={{ color: MOOD_CONFIG.colors[entryMoodIdx] || '#71717a', background: `${MOOD_CONFIG.colors[entryMoodIdx] || '#71717a'}15` }}>
                                 {entry.mood}
                               </span>
                             )}
@@ -883,81 +843,77 @@ const InteractiveVisionBoard = () => {
         {/* ========== VISION BOARD TAB ========== */}
         {activeTab === 'vision' && (
           <div>
-            {/* Header bar */}
+            {/* Header with progress ring */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-mono font-bold text-white uppercase tracking-wider">My Vision Board</h2>
-                <p className="text-zinc-500 text-sm mt-1">
-                  {visionItems?.items?.length || 0} visions &middot; {visionItems?.items?.filter(i => i.is_achieved).length || 0} achieved
-                </p>
+              <div className="flex items-center gap-5">
+                {visionStats.total > 0 && <ProgressRing percent={visionStats.percent} size={72} stroke={5} />}
+                <div>
+                  <h2 className="text-xl font-mono font-bold text-white uppercase tracking-wider">My Vision Board</h2>
+                  <p className="text-zinc-500 text-sm mt-1">
+                    {visionStats.total > 0 ? (
+                      <>{visionStats.active} active &middot; {visionStats.achieved} achieved of {visionStats.total} visions</>
+                    ) : 'Your visual map of dreams and goals'}
+                  </p>
+                </div>
               </div>
-              <Button onClick={() => setShowAddVision(true)} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+              <Button onClick={() => setShowAddVision(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2 shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_28px_rgba(249,115,22,0.35)] transition-shadow">
                 <Plus className="w-4 h-4" /> Add Vision
               </Button>
             </div>
 
-            {/* Category Filter Pills */}
+            {/* Category Filter Chips */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin">
-              <button
-                onClick={() => setActiveCategory('all')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+              <button onClick={() => setActiveCategory('all')}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
                   activeCategory === 'all'
-                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
-                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300'
-                }`}
-              >
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/40 shadow-[0_0_12px_rgba(249,115,22,0.1)]'
+                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:border-zinc-600'
+                }`}>
+                <Target className="w-3.5 h-3.5" />
                 All
-                <span className="text-[10px] opacity-60">{categoryCounts.all || 0}</span>
+                <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-700/50">{categoryCounts.all || 0}</span>
               </button>
               {CATEGORIES.map((cat) => {
                 const CatIcon = cat.icon;
                 const count = categoryCounts[cat.id] || 0;
-                if (count === 0 && activeCategory !== cat.id) return null;
+                const isActive = activeCategory === cat.id;
                 return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
-                      activeCategory === cat.id
-                        ? 'text-white border'
-                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300'
-                    }`}
-                    style={activeCategory === cat.id ? {
-                      background: `${cat.color}15`,
-                      borderColor: `${cat.color}40`,
-                      color: cat.color,
-                    } : undefined}
-                  >
+                  <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+                      isActive ? 'text-white border' : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:border-zinc-600'
+                    } ${count === 0 && !isActive ? 'opacity-40' : ''}`}
+                    style={isActive ? { background: `${cat.color}15`, borderColor: `${cat.color}40`, color: cat.color, boxShadow: `0 0 12px ${cat.color}15` } : undefined}>
                     <CatIcon className="w-3.5 h-3.5" />
                     {cat.name.split(' ')[0]}
-                    <span className="text-[10px] opacity-60">{count}</span>
+                    <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-700/50">{count}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Masonry Grid */}
+            {/* Masonry Grid or Empty State */}
             {filteredVisionItems.length > 0 ? (
               <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
                 {filteredVisionItems.map((item) => (
                   <div key={item.id} className="break-inside-avoid">
-                    <VisionCard
-                      item={item}
-                      categories={visionItems?.categories}
-                      onToggleAchieved={handleToggleAchieved}
-                      onDelete={handleDeleteVisionItem}
-                    />
+                    <VisionCard item={item} categories={visionItems?.categories} onToggleAchieved={handleToggleAchieved} onDelete={handleDeleteVisionItem} />
                   </div>
                 ))}
               </div>
+            ) : visionStats.total > 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center mb-4">
+                  <Target className="w-8 h-8 text-zinc-600" />
+                </div>
+                <h3 className="text-lg font-mono font-bold text-zinc-300 uppercase tracking-wider mb-2">No Visions in This Category</h3>
+                <p className="text-zinc-500 text-sm text-center max-w-sm mb-4">Try selecting a different category or add a new vision here.</p>
+                <Button onClick={() => setShowAddVision(true)} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+                  <Plus className="w-4 h-4" />Add Vision
+                </Button>
+              </div>
             ) : (
-              <EmptyState
-                icon={Target}
-                title="Start Your Vision Board"
-                description="Pin your dreams, goals, affirmations, and milestones. Build a visual map of where you're headed."
-                action="Add Your First Vision"
-                onAction={() => setShowAddVision(true)}
-              />
+              <VisionEmptyState onAddVision={() => setShowAddVision(true)} onQuickAdd={handleQuickAddSuggested} />
             )}
           </div>
         )}
@@ -976,12 +932,11 @@ const InteractiveVisionBoard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main Feed */}
               <div className="lg:col-span-2 space-y-4">
                 {teamFeed?.posts?.map((post) => {
                   const typeConfig = POST_TYPE_CONFIG[post.post_type] || POST_TYPE_CONFIG.encouragement;
                   return (
-                    <GlassCard key={post.id} className="p-5 hover:border-zinc-600/50 transition-colors">
+                    <GlassCard key={post.id} className="p-5">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-mono font-bold text-sm flex-shrink-0">
                           {post.user_name?.charAt(0)?.toUpperCase() || '?'}
@@ -989,22 +944,14 @@ const InteractiveVisionBoard = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-mono font-semibold text-white text-sm">{post.user_name}</span>
-                            <Badge className={`text-[10px] px-2 py-0.5 border ${typeConfig.color}`}>
-                              {typeConfig.label}
-                            </Badge>
+                            <Badge className={`text-[10px] px-2 py-0.5 border ${typeConfig.color}`}>{typeConfig.label}</Badge>
                           </div>
                           <p className="text-zinc-300 text-sm leading-relaxed">{post.content}</p>
                           <div className="flex items-center gap-4 mt-3">
-                            <button
-                              onClick={() => handleLikePost(post.id)}
-                              className="flex items-center gap-1.5 text-zinc-500 hover:text-orange-400 transition-colors text-sm"
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                              <span className="font-mono">{post.likes?.length || 0}</span>
+                            <button onClick={() => handleLikePost(post.id)} className="flex items-center gap-1.5 text-zinc-500 hover:text-orange-400 transition-colors text-sm">
+                              <ThumbsUp className="w-3.5 h-3.5" /><span className="font-mono">{post.likes?.length || 0}</span>
                             </button>
-                            <span className="text-xs text-zinc-600 font-mono">
-                              {new Date(post.created_at).toLocaleDateString()}
-                            </span>
+                            <span className="text-xs text-zinc-600 font-mono">{new Date(post.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
@@ -1012,7 +959,6 @@ const InteractiveVisionBoard = () => {
                   );
                 })}
 
-                {/* Shared Gratitude */}
                 {teamFeed?.shared_gratitude?.map((entry) => (
                   <GlassCard key={entry.id} className="p-5 border-amber-500/20">
                     <div className="flex items-start gap-3">
@@ -1024,8 +970,7 @@ const InteractiveVisionBoard = () => {
                         <ul className="space-y-1">
                           {entry.gratitude?.map((g, i) => (
                             <li key={i} className="text-zinc-300 text-sm flex items-start gap-2">
-                              <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />
-                              {g}
+                              <ChevronRight className="w-3 h-3 text-amber-400 mt-1 flex-shrink-0" />{g}
                             </li>
                           ))}
                         </ul>
@@ -1035,22 +980,23 @@ const InteractiveVisionBoard = () => {
                 ))}
 
                 {(!teamFeed?.posts?.length && !teamFeed?.shared_gratitude?.length) && (
-                  <EmptyState
-                    icon={Users}
-                    title="No Team Posts Yet"
-                    description="Be the first to share something inspiring with the team. A word of encouragement goes a long way."
-                    action="Share Something"
-                    onAction={() => setShowTeamPost(true)}
-                  />
+                  <div className="flex flex-col items-center justify-center py-16 px-4">
+                    <div className="w-20 h-20 rounded-2xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-zinc-600" />
+                    </div>
+                    <h3 className="text-lg font-mono font-bold text-zinc-300 uppercase tracking-wider mb-2">No Team Posts Yet</h3>
+                    <p className="text-zinc-500 text-sm text-center max-w-sm mb-6">Be the first to share something inspiring with the team.</p>
+                    <Button onClick={() => setShowTeamPost(true)} className="bg-orange-500 hover:bg-orange-600 text-white border-0 gap-2">
+                      <Plus className="w-4 h-4" />Share Something
+                    </Button>
+                  </div>
                 )}
               </div>
 
-              {/* Milestones Sidebar */}
               <div>
                 <GlassCard className="p-5">
                   <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm mb-4 flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                    Team Milestones
+                    <Trophy className="w-4 h-4 text-amber-400" />Team Milestones
                   </h3>
                   {teamFeed?.milestones?.length > 0 ? (
                     <div className="space-y-3">
@@ -1095,7 +1041,7 @@ const InteractiveVisionBoard = () => {
               ].map((anchor, i) => {
                 const AnchorIcon = anchor.icon;
                 return (
-                  <GlassCard key={i} className="p-5 hover:border-orange-500/30 transition-colors group">
+                  <GlassCard key={i} className="p-5 group">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-500/20 transition-colors">
                         <AnchorIcon className="w-5 h-5 text-orange-400" />
@@ -1134,73 +1080,58 @@ const InteractiveVisionBoard = () => {
         <ModalOverlay onClose={() => setShowAddVision(false)}>
           <GlassCard className="p-6 border-zinc-600/50">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm">Add to Vision Board</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-orange-400" />
+                </div>
+                <h3 className="font-mono font-bold text-white uppercase tracking-wider text-sm">Add to Vision Board</h3>
+              </div>
               <button onClick={() => setShowAddVision(false)} className="p-1 text-zinc-500 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Category selector as visual chips */}
+            <div className="mb-5">
+              <label className="block text-xs font-mono text-zinc-400 mb-2 uppercase tracking-wider">Category</label>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((cat) => {
+                  const CatIcon = cat.icon;
+                  const isSelected = visionForm.category === cat.id;
+                  return (
+                    <button key={cat.id} onClick={() => setVisionForm({...visionForm, category: cat.id})}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                        isSelected ? 'text-white border' : 'bg-zinc-900/60 text-zinc-500 border border-zinc-700/40 hover:text-zinc-300'
+                      }`}
+                      style={isSelected ? { background: `${cat.color}20`, borderColor: `${cat.color}50`, color: cat.color } : undefined}>
+                      <CatIcon className="w-3.5 h-3.5" />{cat.name.split('&')[0].trim()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-4">
-              <InputField label="Category">
-                <DarkSelect
-                  value={visionForm.category}
-                  onChange={(e) => setVisionForm({...visionForm, category: e.target.value})}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </DarkSelect>
-              </InputField>
-
               <InputField label="Title *">
-                <DarkInput
-                  value={visionForm.title}
-                  onChange={(e) => setVisionForm({...visionForm, title: e.target.value})}
-                  placeholder="My dream..."
-                />
+                <DarkInput value={visionForm.title} onChange={(e) => setVisionForm({...visionForm, title: e.target.value})} placeholder="My dream..." />
               </InputField>
-
               <InputField label="Description">
-                <DarkTextarea
-                  value={visionForm.description}
-                  onChange={(e) => setVisionForm({...visionForm, description: e.target.value})}
-                  rows={2}
-                  placeholder="Describe your vision..."
-                />
+                <DarkTextarea value={visionForm.description} onChange={(e) => setVisionForm({...visionForm, description: e.target.value})} rows={2} placeholder="Describe your vision..." />
               </InputField>
-
               <InputField label="Affirmation" hint="A declaration in present tense">
-                <DarkInput
-                  value={visionForm.affirmation}
-                  onChange={(e) => setVisionForm({...visionForm, affirmation: e.target.value})}
-                  placeholder="I am..."
-                />
+                <DarkInput value={visionForm.affirmation} onChange={(e) => setVisionForm({...visionForm, affirmation: e.target.value})} placeholder="I am..." />
               </InputField>
-
               <InputField label="Target Date">
-                <DarkInput
-                  type="date"
-                  value={visionForm.target_date}
-                  onChange={(e) => setVisionForm({...visionForm, target_date: e.target.value})}
-                />
+                <DarkInput type="date" value={visionForm.target_date} onChange={(e) => setVisionForm({...visionForm, target_date: e.target.value})} />
               </InputField>
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddVision(false)}
-                className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent"
-              >
+              <Button variant="outline" onClick={() => setShowAddVision(false)} className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent">
                 Cancel
               </Button>
-              <Button
-                onClick={handleAddVisionItem}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
-                disabled={!visionForm.title}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Vision
+              <Button onClick={handleAddVisionItem} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-[0_0_16px_rgba(249,115,22,0.2)]" disabled={!visionForm.title}>
+                <Plus className="w-4 h-4 mr-2" />Add Vision
               </Button>
             </div>
           </GlassCard>
@@ -1217,13 +1148,9 @@ const InteractiveVisionBoard = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
             <div className="space-y-4">
               <InputField label="Type">
-                <DarkSelect
-                  value={teamPostForm.post_type}
-                  onChange={(e) => setTeamPostForm({...teamPostForm, post_type: e.target.value})}
-                >
+                <DarkSelect value={teamPostForm.post_type} onChange={(e) => setTeamPostForm({...teamPostForm, post_type: e.target.value})}>
                   <option value="encouragement">Encouragement</option>
                   <option value="gratitude">Gratitude</option>
                   <option value="win">Win / Celebration</option>
@@ -1231,32 +1158,16 @@ const InteractiveVisionBoard = () => {
                   <option value="milestone">Milestone</option>
                 </DarkSelect>
               </InputField>
-
               <InputField label="Message">
-                <DarkTextarea
-                  value={teamPostForm.content}
-                  onChange={(e) => setTeamPostForm({...teamPostForm, content: e.target.value})}
-                  rows={4}
-                  placeholder="Share something inspiring with the team..."
-                />
+                <DarkTextarea value={teamPostForm.content} onChange={(e) => setTeamPostForm({...teamPostForm, content: e.target.value})} rows={4} placeholder="Share something inspiring with the team..." />
               </InputField>
             </div>
-
             <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowTeamPost(false)}
-                className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent"
-              >
+              <Button variant="outline" onClick={() => setShowTeamPost(false)} className="flex-1 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 bg-transparent">
                 Cancel
               </Button>
-              <Button
-                onClick={handleShareTeamPost}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0"
-                disabled={!teamPostForm.content}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Share
+              <Button onClick={handleShareTeamPost} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0" disabled={!teamPostForm.content}>
+                <Send className="w-4 h-4 mr-2" />Share
               </Button>
             </div>
           </GlassCard>

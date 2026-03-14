@@ -188,8 +188,8 @@ export const RuleEditor = React.memo(({ rule, index, rewards, onUpdate, onRemove
         )}
 
         {/* Reward configuration */}
-        <div className="border-t mt-3 pt-3">
-          <Label className="text-xs text-muted-foreground uppercase mb-2 block">Reward</Label>
+        <div className="border-t border-zinc-700/50 mt-3 pt-3">
+          <Label className="text-xs text-zinc-500 uppercase mb-2 block">Reward</Label>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 text-amber-500" />

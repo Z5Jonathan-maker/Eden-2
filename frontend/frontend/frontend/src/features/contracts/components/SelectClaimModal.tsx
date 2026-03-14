@@ -26,7 +26,7 @@ const SelectClaimModal: React.FC<Props> = ({ open, claims, onClose, onSelect }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-3xl rounded-xl border border-zinc-700/60 bg-zinc-900 p-5">
+      <div className="w-full max-w-3xl rounded-xl border border-zinc-700/50 bg-[#1a1a1a] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-tactical text-white uppercase tracking-wide">Select Claim</h3>
           <button type="button" onClick={onClose} className="text-zinc-400 hover:text-white">
@@ -39,7 +39,7 @@ const SelectClaimModal: React.FC<Props> = ({ open, claims, onClose, onSelect }) 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search client, address, carrier, claim id"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-200 outline-none focus:border-cyan-500"
+            className="w-full rounded-md border border-zinc-700/50 bg-[#0a0a0a] py-2 pl-9 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-orange-500/50"
           />
         </div>
         <div className="max-h-[420px] space-y-2 overflow-auto">

@@ -279,34 +279,44 @@ const BattlePassPage: React.FC = () => {
 
   return (
     <main
-      className={`bp-shell bp-grid-bg min-h-screen p-4 md:p-8 ${tierShake ? 'bp-tier-shake' : ''}`}
+      className={`bp-shell bp-grid-bg min-h-screen bg-[#0a0a0a] p-4 md:p-8 ${tierShake ? 'bp-tier-shake' : ''}`}
     >
-      <header className="mb-6 rounded-xl border border-zinc-700/60 bg-zinc-900/60 p-4">
+      <header className="mb-6 rounded-xl border border-orange-500/20 bg-[#1a1a1a] p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold uppercase tracking-[0.18em] text-white md:text-2xl">
-              Battle Pass
-            </h1>
-            <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-500">
-              Tactical progression, missions, and operator rankings
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-orange-500/15 p-2.5">
+              <Award className="h-6 w-6 text-orange-500" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold uppercase tracking-[0.18em] text-white md:text-2xl">
+                  Battle Pass
+                </h1>
+                <span className="rounded-md border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-orange-400">
+                  Season Active
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-mono uppercase tracking-wider text-zinc-500">
+                Tactical progression, missions, and operator rankings
+              </p>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
-            <div className="rounded-md border border-zinc-700/70 bg-zinc-950/70 px-3 py-2">
+            <div className="rounded-md border border-zinc-700/70 bg-[#0a0a0a] px-3 py-2 transition-colors hover:border-orange-500/30">
               <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Level</p>
-              <p className="text-sm font-semibold text-cyan-300">{state.currentLevel}</p>
+              <p className="text-sm font-semibold text-orange-400">{state.currentLevel}</p>
             </div>
-            <div className="rounded-md border border-zinc-700/70 bg-zinc-950/70 px-3 py-2">
+            <div className="rounded-md border border-zinc-700/70 bg-[#0a0a0a] px-3 py-2 transition-colors hover:border-orange-500/30">
               <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
                 Missions
               </p>
-              <p className="text-sm font-semibold text-emerald-300">{missionCompletedCount}</p>
+              <p className="text-sm font-semibold text-emerald-400">{missionCompletedCount}</p>
             </div>
-            <div className="rounded-md border border-zinc-700/70 bg-zinc-950/70 px-3 py-2">
+            <div className="rounded-md border border-zinc-700/70 bg-[#0a0a0a] px-3 py-2 transition-colors hover:border-orange-500/30">
               <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
                 Rewards
               </p>
-              <p className="text-sm font-semibold text-amber-300">{rewardsClaimedCount}</p>
+              <p className="text-sm font-semibold text-amber-400">{rewardsClaimedCount}</p>
             </div>
           </div>
         </div>
@@ -318,7 +328,7 @@ const BattlePassPage: React.FC = () => {
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`bp-tab inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-mono uppercase tracking-wider text-zinc-400 ${activeTab === tab.key ? 'bp-tab-active' : ''}`}
+            className={`bp-tab inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-mono uppercase tracking-wider transition-all ${activeTab === tab.key ? 'border-orange-500/40 bg-orange-500/15 text-orange-400' : 'border-zinc-700/40 bg-[#1a1a1a] text-zinc-400 hover:border-orange-500/20 hover:text-zinc-300'}`}
           >
             {tab.icon}
             {tab.label}

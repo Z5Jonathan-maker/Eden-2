@@ -50,7 +50,7 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
+      <div className="w-full max-w-md rounded-xl border border-zinc-700/50 bg-[#1a1a1a] p-5">
         <h3 className="font-tactical text-white uppercase tracking-wide">
           {mode === 'email' ? 'Send To Email' : 'Send To Text'}
         </h3>
@@ -61,7 +61,7 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
             <input
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-cyan-500"
+              className="mt-1 w-full rounded-md border border-zinc-700/50 bg-[#0a0a0a] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-orange-500/50"
               placeholder="Full legal name"
             />
           </label>
@@ -71,7 +71,7 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
               type={mode === 'email' ? 'email' : 'tel'}
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-cyan-500"
+              className="mt-1 w-full rounded-md border border-zinc-700/50 bg-[#0a0a0a] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-orange-500/50"
               placeholder={mode === 'email' ? 'client@example.com' : '(555) 123-4567'}
             />
           </label>
@@ -83,7 +83,7 @@ const SendInviteModal: React.FC<Props> = ({ open, contract, mode, onClose, onSen
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-600 px-3 py-2 text-xs text-zinc-300"
+            className="rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-300 transition-colors hover:text-white hover:border-orange-500/30"
           >
             Cancel
           </button>

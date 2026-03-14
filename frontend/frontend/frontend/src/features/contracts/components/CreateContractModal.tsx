@@ -54,7 +54,7 @@ interface FieldProps {
 
 const Field: React.FC<FieldProps> = ({ label, value, onChange, required, suffix, type }) => (
   <div className="flex flex-col">
-    <span className="text-[10px] uppercase tracking-wide text-slate-500">
+    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
       {label}{required && <span className="text-red-400 ml-0.5">*</span>}
     </span>
     <div className="relative mt-1">
@@ -62,11 +62,11 @@ const Field: React.FC<FieldProps> = ({ label, value, onChange, required, suffix,
         type={type || 'text'}
         value={value || ''}
         onChange={(e) => onChange?.(e.target.value)}
-        className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-50"
+        className="w-full rounded border border-zinc-700/50 bg-[#0a0a0a] px-2 py-1 text-sm text-zinc-200 outline-none focus:border-orange-500/50 placeholder:text-zinc-500 disabled:opacity-50"
         readOnly={!onChange}
       />
       {suffix && (
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500">{suffix}</span>
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-500">{suffix}</span>
       )}
     </div>
   </div>
@@ -146,25 +146,25 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4">
-        <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl border border-slate-700/60 bg-slate-900 p-6 shadow-xl">
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl border border-zinc-700/50 bg-[#1a1a1a] p-6 shadow-xl">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="font-tactical text-lg text-white uppercase tracking-wide">
                 Create Document
               </h2>
-              <p className="text-xs font-mono uppercase tracking-wider text-slate-500">
+              <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">
                 Select document → Select claim → Review → Create & Sign
               </p>
             </div>
-            <button type="button" onClick={onClose} className="text-slate-400 hover:text-white">
+            <button type="button" onClick={onClose} className="text-zinc-400 hover:text-white">
               Close
             </button>
           </div>
 
           {/* ── Template Picker ── */}
           <div className="mb-4">
-            <p className="mb-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+            <p className="mb-2 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
               Document Type
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -175,7 +175,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                   ? tmpl.accent === 'amber'
                     ? 'border-amber-500 bg-amber-500/10'
                     : 'border-cyan-500 bg-cyan-500/10'
-                  : 'border-slate-700/60 hover:border-slate-600';
+                  : 'border-zinc-700/50 hover:border-orange-500/30';
                 const textColor =
                   tmpl.accent === 'amber' ? 'text-amber-400' : 'text-cyan-400';
 
@@ -188,15 +188,15 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon
-                        className={`h-4 w-4 ${active ? textColor : 'text-slate-500'}`}
+                        className={`h-4 w-4 ${active ? textColor : 'text-zinc-500'}`}
                       />
                       <span
-                        className={`text-sm font-semibold ${active ? 'text-white' : 'text-slate-300'}`}
+                        className={`text-sm font-semibold ${active ? 'text-white' : 'text-zinc-300'}`}
                       >
                         {tmpl.name}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">
                       {tmpl.description}
                     </p>
                     {active && (
@@ -213,7 +213,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
           </div>
 
           {/* ── Claim Selection ── */}
-          <div className="mb-4 rounded-lg border border-cyan-600/30 bg-cyan-950/20 p-3 text-xs text-slate-300">
+          <div className="mb-4 rounded-lg border border-cyan-600/30 bg-cyan-950/20 p-3 text-xs text-zinc-300">
             <p className="font-semibold text-cyan-300">Claim Selection</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <button
@@ -223,7 +223,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
               >
                 {selectedClaim ? 'Change Claim' : 'Select Claim'}
               </button>
-              <span className="text-slate-400">
+              <span className="text-zinc-400">
                 {selectedClaim
                   ? `${selectedClaim.client_name || selectedClaim.insured_name || 'Unknown'} | ${selectedClaim.claim_number || selectedClaim.id}`
                   : 'No claim selected'}
@@ -232,11 +232,11 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
           </div>
 
           {/* ── Fields Preview ── */}
-          <div className="rounded-xl border border-slate-700/60 bg-[linear-gradient(rgba(20,20,20,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(20,20,20,0.55)_1px,transparent_1px)] bg-[size:18px_18px] bg-slate-900/65 p-4">
+          <div className="rounded-xl border border-zinc-700/50 bg-[linear-gradient(rgba(20,20,20,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(20,20,20,0.55)_1px,transparent_1px)] bg-[size:18px_18px] bg-zinc-900/65 p-4">
             {!selectedClaim ? (
-              <div className="py-10 text-center text-slate-500">
+              <div className="py-10 text-center text-zinc-500">
                 No claim selected
-                <div className="mt-1 text-xs text-slate-600">
+                <div className="mt-1 text-xs text-zinc-600">
                   Select a claim to autofill document fields.
                 </div>
               </div>
@@ -248,7 +248,7 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
                 </div>
                 <Field label="Insured Name(s)" value={fields.client_name} onChange={(v) => updateField('client_name', v)} required />
                 <Field label="Date Signed" value={new Date().toLocaleDateString()} />
-                <div className="col-span-2 mt-3 rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-slate-400 leading-relaxed">
+                <div className="col-span-2 mt-3 rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-zinc-400 leading-relaxed">
                   <p className="mb-2 font-semibold text-amber-300">Form DFS-H1-1982</p>
                   <p>This is a 1-page Florida-mandated disclosure form that explains the roles of Company, Independent, and Public Adjusters, and the insured's rights under FL law. The insured's name and signature will be captured on the generated document.</p>
                 </div>
@@ -292,14 +292,14 @@ const CreateContractModal: React.FC<Props> = ({ open, claims, onClose, onCreate 
 
           {/* ── Actions ── */}
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-[10px] font-mono text-slate-600">
+            <p className="text-[10px] font-mono text-zinc-600">
               {isDfs ? 'DFS-H1-1982 | Rule 69B-220.051, F.A.C.' : 'FL §626.854 compliant | 22 fields | E-signature ready'}
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md border border-slate-600 px-3 py-2 text-xs text-slate-300 hover:text-white"
+                className="rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:text-white hover:border-orange-500/30 transition-colors"
               >
                 Cancel
               </button>

@@ -65,7 +65,7 @@ const LandingPage = () => {
     }
   }, [searchParams]);
 
-  const handleStartTrial = async (packageId) => {
+  const handleGetStarted = async (packageId) => {
     if (!isAuthenticated) {
       navigate('/register', { state: { selectedPlan: packageId } });
       return;
@@ -337,7 +337,7 @@ const LandingPage = () => {
               className="btn-tactical px-8 sm:px-10 py-3 sm:py-4 text-base sm:text-lg flex items-center justify-center gap-3 hover:scale-105 transition-transform"
             >
               <Target className="w-5 h-5" />
-              Start Free Trial
+              Deploy Now
             </button>
             <button
               onClick={() => setShowDemo(true)}
@@ -577,7 +577,7 @@ const LandingPage = () => {
 
                 {/* CTA */}
                 <button
-                  onClick={() => handleStartTrial(tier.id)}
+                  onClick={() => handleGetStarted(tier.id)}
                   disabled={loadingPlan === tier.id}
                   className={`w-full py-2.5 sm:py-3 rounded font-tactical uppercase tracking-wider flex items-center justify-center gap-2 transition-all text-sm sm:text-base ${
                     tier.popular 
@@ -589,7 +589,7 @@ const LandingPage = () => {
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      Start Free Trial
+                      Get Started
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -838,7 +838,7 @@ const LandingPage = () => {
                   </button>
                 ) : (
                   <button onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/login'); }} className="px-6 py-2.5 text-sm bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white rounded-lg transition-all font-medium shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-105">
-                    Start Free Trial →
+                    Get Started →
                   </button>
                 )}
               </div>

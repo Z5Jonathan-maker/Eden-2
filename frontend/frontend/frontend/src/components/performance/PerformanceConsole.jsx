@@ -39,17 +39,17 @@ const PerformanceConsole = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <div className="min-h-screen bg-zinc-950" data-testid="performance-console">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
-        <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-[#0a0a0a]" data-testid="performance-console">
+      {/* Tactical Header */}
+      <div className="border-b border-orange-500/20 bg-[#1a1a1a]">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Zap className="w-8 h-8" />
+            <div className="rounded-lg bg-orange-500/15 p-2.5">
+              <Zap className="w-7 h-7 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Performance Console</h1>
-              <p className="text-white/70">Harvest operations & incentives management</p>
+              <h1 className="text-2xl font-bold uppercase tracking-[0.18em] text-white">Performance</h1>
+              <p className="mt-0.5 text-xs font-mono uppercase tracking-wider text-zinc-500">Harvest operations & incentives management</p>
             </div>
           </div>
         </div>
@@ -58,16 +58,16 @@ const PerformanceConsole = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="tab-overview">
+          <TabsList className="mb-6 flex-wrap border border-zinc-700/40 bg-[#1a1a1a]">
+            <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400" data-testid="tab-overview">
               <BarChart3 className="w-4 h-4" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="harvest" className="flex items-center gap-2" data-testid="tab-harvest">
+            <TabsTrigger value="harvest" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400" data-testid="tab-harvest">
               <MapPin className="w-4 h-4" />
               Harvest & Territories
             </TabsTrigger>
-            <TabsTrigger value="incentives" className="flex items-center gap-2" data-testid="tab-incentives">
+            <TabsTrigger value="incentives" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400" data-testid="tab-incentives">
               <Trophy className="w-4 h-4" />
               Competitions & Rewards
             </TabsTrigger>
@@ -515,12 +515,12 @@ const PerformanceOverview = ({ onNavigate }) => {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold mb-4 uppercase tracking-wider text-zinc-300">Quick Actions</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, idx) => (
-            <Card 
+            <Card
               key={idx}
-              className="cursor-pointer hover:border-slate-300 transition-colors"
+              className="cursor-pointer border-zinc-700/40 bg-[#1a1a1a] transition-all hover:border-orange-500/30 hover:bg-[#1a1a1a]/80"
               onClick={action.onClick}
             >
               <CardContent className="p-4">
@@ -541,7 +541,7 @@ const PerformanceOverview = ({ onNavigate }) => {
 
       {/* AI Ops */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">AI Ops</h2>
+        <h2 className="text-lg font-semibold mb-4 uppercase tracking-wider text-zinc-300">AI Ops</h2>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
@@ -801,7 +801,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                 <div className="mt-2 text-xs text-muted-foreground">Loading org thresholds...</div>
               )}
               {smsThresholdsError && (
-                <div className="mt-2 text-xs text-red-600">{smsThresholdsError}</div>
+                <div className="mt-2 text-xs text-red-400">{smsThresholdsError}</div>
               )}
               {(smsThresholdsMeta.updatedAt || smsThresholdsMeta.updatedBy) && (
                 <div className="mt-2 text-[11px] text-muted-foreground">
@@ -823,7 +823,7 @@ const PerformanceOverview = ({ onNavigate }) => {
                   {String(preset.id).startsWith('custom_') && (
                     <button
                       onClick={() => removeSmsAuditPreset(preset.id)}
-                      className="text-[10px] text-zinc-500 hover:text-red-600"
+                      className="text-[10px] text-zinc-500 hover:text-red-400"
                       title="Remove preset"
                     >
                       x
@@ -902,7 +902,7 @@ const PerformanceOverview = ({ onNavigate }) => {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+        <h2 className="text-lg font-semibold mb-4 uppercase tracking-wider text-zinc-300">Recent Activity</h2>
         <Card>
           <CardContent className="p-0">
             <div className="divide-y">
@@ -944,13 +944,13 @@ const PerformanceOverview = ({ onNavigate }) => {
 
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
-  <Card>
+  <Card className="border-zinc-700/40 bg-[#1a1a1a] transition-all hover:border-orange-500/30">
     <CardContent className="p-4">
       <div className="flex items-center gap-3">
         <Icon className={`w-8 h-8 ${color}`} />
         <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          <p className="text-sm text-zinc-500">{title}</p>
         </div>
       </div>
     </CardContent>
@@ -966,15 +966,15 @@ const MetricPill = ({ label, value }) => (
 
 
 const ActivityItem = ({ icon: Icon, iconColor, title, description, time }) => (
-  <div className="flex items-start gap-3 p-4">
-    <div className={`p-2 rounded-full bg-zinc-800/50 ${iconColor}`}>
+  <div className="flex items-start gap-3 p-4 transition-colors hover:bg-zinc-800/30">
+    <div className={`p-2 rounded-full bg-[#1a1a1a] border border-zinc-700/40 ${iconColor}`}>
       <Icon className="w-4 h-4" />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="font-medium text-zinc-200">{title}</p>
+      <p className="text-sm text-zinc-500">{description}</p>
     </div>
-    <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
+    <span className="text-xs text-zinc-600 whitespace-nowrap">{time}</span>
   </div>
 );
 

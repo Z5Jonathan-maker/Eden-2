@@ -19,7 +19,7 @@ const ScheduleAppointmentModal = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="w-5 h-5 text-green-600" />
+            <CalendarPlus className="w-5 h-5 text-emerald-400" />
             Schedule Appointment
           </DialogTitle>
           <DialogDescription>Create an appointment for this claim</DialogDescription>
@@ -71,7 +71,7 @@ const ScheduleAppointmentModal = ({
               onChange={(e) =>
                 setAppointmentForm({ ...appointmentForm, duration: parseInt(e.target.value) })
               }
-              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+              className="w-full border border-zinc-700/50 bg-[#0a0a0a] text-zinc-200 rounded-md p-2 text-sm focus:border-orange-500/50 focus:outline-none"
               data-testid="apt-duration-select"
             >
               <option value={30}>30 minutes</option>
@@ -121,7 +121,7 @@ const ScheduleAppointmentModal = ({
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={onSchedule}
               disabled={isScheduling}
               data-testid="confirm-schedule-btn"

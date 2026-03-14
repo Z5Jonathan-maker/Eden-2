@@ -60,17 +60,17 @@ const getCategoryIcon = (category) => {
 
 const getCategoryColor = (category) => {
   const colors = {
-    'Roofing & Claims': 'bg-orange-100 text-orange-700 border-orange-200',
-    'Public Adjusting': 'bg-blue-100 text-blue-700 border-blue-200',
-    'Insurance Law': 'bg-purple-100 text-purple-700 border-purple-200',
-    'Insurance Coverage': 'bg-green-100 text-green-700 border-green-200',
-    'Insurance Appraisal': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    'Public Adjusting Business': 'bg-pink-100 text-pink-700 border-pink-200',
-    Leadership: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    'Business Growth': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'Faith & Purpose': 'bg-rose-100 text-rose-700 border-rose-200',
+    'Roofing & Claims': 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    'Public Adjusting': 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    'Insurance Law': 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+    'Insurance Coverage': 'bg-green-500/15 text-green-400 border-green-500/30',
+    'Insurance Appraisal': 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+    'Public Adjusting Business': 'bg-pink-500/15 text-pink-400 border-pink-500/30',
+    Leadership: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+    'Business Growth': 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    'Faith & Purpose': 'bg-rose-500/15 text-rose-400 border-rose-500/30',
   };
-  return colors[category] || 'bg-gray-100 text-zinc-300 border-gray-200';
+  return colors[category] || 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30';
 };
 
 const IndustryExperts = () => {
@@ -136,49 +136,49 @@ const IndustryExperts = () => {
 
   const ExpertCard = ({ expert, onClick }) => (
     <Card
-      className="cursor-pointer hover:shadow-lg transition-all hover:border-orange-300 group"
+      className="cursor-pointer bg-[#1a1a1a] border-zinc-700/50 hover:shadow-lg hover:shadow-orange-500/5 transition-all hover:border-orange-500/30 group"
       onClick={() => onClick(expert.id)}
       data-testid={`expert-card-${expert.id}`}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-bold text-lg ring-2 ring-orange-500/20 group-hover:ring-orange-500/40 transition-all">
               {expert.name
                 .split(' ')
                 .map((n) => n[0])
                 .join('')}
             </div>
             <div>
-              <CardTitle className="text-lg group-hover:text-orange-600 transition-colors">
+              <CardTitle className="text-lg text-white group-hover:text-orange-500 transition-colors">
                 {expert.name}
               </CardTitle>
               {expert.alias && <p className="text-sm text-zinc-500 italic">"{expert.alias}"</p>}
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+          <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-orange-500 transition-colors" />
         </div>
       </CardHeader>
       <CardContent>
-        <Badge className={`${getCategoryColor(expert.category)} mb-3`}>
+        <Badge className={`${getCategoryColor(expert.category)} mb-3 border`}>
           {getCategoryIcon(expert.category)}
           <span className="ml-1">{expert.category}</span>
         </Badge>
         <p className="text-sm text-zinc-400 line-clamp-3">{expert.bio}</p>
-        <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-700/50 text-xs text-zinc-500">
           {expert.books_count > 0 && (
             <span className="flex items-center gap-1">
-              <Book className="w-3 h-3" /> {expert.books_count} books
+              <Book className="w-3 h-3 text-blue-400" /> {expert.books_count} books
             </span>
           )}
           {expert.articles_count > 0 && (
             <span className="flex items-center gap-1">
-              <FileText className="w-3 h-3" /> {expert.articles_count} articles
+              <FileText className="w-3 h-3 text-green-400" /> {expert.articles_count} articles
             </span>
           )}
           {expert.expertise_count > 0 && (
             <span className="flex items-center gap-1">
-              <Lightbulb className="w-3 h-3" /> {expert.expertise_count} areas
+              <Lightbulb className="w-3 h-3 text-yellow-400" /> {expert.expertise_count} areas
             </span>
           )}
         </div>
@@ -189,8 +189,8 @@ const IndustryExperts = () => {
   const ExpertDetailView = ({ expert }) => (
     <div className="space-y-6" data-testid="expert-detail-view">
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+      <div className="flex items-start gap-4 p-6 bg-[#1a1a1a] rounded-xl border border-zinc-700/50">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0 ring-3 ring-orange-500/20">
           {expert.name
             .split(' ')
             .map((n) => n[0])
@@ -199,7 +199,7 @@ const IndustryExperts = () => {
         <div>
           <h2 className="text-2xl font-bold text-white">{expert.name}</h2>
           {expert.alias && <p className="text-zinc-500 italic">"{expert.alias}"</p>}
-          <Badge className={`${getCategoryColor(expert.category)} mt-2`}>
+          <Badge className={`${getCategoryColor(expert.category)} mt-2 border`}>
             {getCategoryIcon(expert.category)}
             <span className="ml-1">{expert.category}</span>
           </Badge>
@@ -208,9 +208,9 @@ const IndustryExperts = () => {
       </div>
 
       {/* Bio */}
-      <Card>
+      <Card className="bg-[#1a1a1a] border-zinc-700/50">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-lg flex items-center gap-2 text-white">
             <User className="w-5 h-5 text-orange-500" />
             Biography
           </CardTitle>
@@ -222,17 +222,17 @@ const IndustryExperts = () => {
 
       {/* Expertise Areas */}
       {expert.expertise && expert.expertise.length > 0 && (
-        <Card>
+        <Card className="bg-[#1a1a1a] border-zinc-700/50">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-white">
               <Lightbulb className="w-5 h-5 text-yellow-500" />
-              Areas of Expertise
+              Areas of Expertise ({expert.expertise.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {expert.expertise.map((exp, i) => (
-                <Badge key={i} variant="outline" className="bg-yellow-50 border-yellow-200">
+                <Badge key={i} variant="outline" className="bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
                   {exp}
                 </Badge>
               ))}
@@ -243,19 +243,19 @@ const IndustryExperts = () => {
 
       {/* Key Insights */}
       {expert.key_insights && expert.key_insights.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50/50">
+        <Card className="border-orange-500/30 bg-orange-500/5">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-white">
               <Sparkles className="w-5 h-5 text-orange-500" />
               Key Insights
             </CardTitle>
-            <CardDescription>Wisdom from {expert.name}</CardDescription>
+            <CardDescription className="text-zinc-500">Wisdom from {expert.name}</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
               {expert.key_insights.map((insight, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-orange-500 mt-1 font-bold">{i + 1}.</span>
                   <span className="text-zinc-300">{insight}</span>
                 </li>
               ))}
@@ -266,17 +266,17 @@ const IndustryExperts = () => {
 
       {/* Books */}
       {expert.books && expert.books.length > 0 && (
-        <Card>
+        <Card className="bg-[#1a1a1a] border-zinc-700/50">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Book className="w-5 h-5 text-blue-500" />
-              Books
+            <CardTitle className="text-lg flex items-center gap-2 text-white">
+              <Book className="w-5 h-5 text-blue-400" />
+              Books ({expert.books.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {expert.books.map((book, i) => (
-                <div key={i} className="border rounded-lg p-4 bg-blue-50/30">
+                <div key={i} className="border border-zinc-700/50 rounded-lg p-4 bg-blue-500/5 hover:border-blue-500/30 transition-colors">
                   <h4 className="font-semibold text-white">{book.title}</h4>
                   {book.coauthor && <p className="text-sm text-zinc-500">with {book.coauthor}</p>}
                   {book.excerpt && (
@@ -287,7 +287,7 @@ const IndustryExperts = () => {
                       href={book.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
+                      className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 hover:underline mt-2"
                     >
                       <ExternalLink className="w-3 h-3" /> View on Amazon
                     </a>
@@ -301,11 +301,11 @@ const IndustryExperts = () => {
 
       {/* Articles & Content */}
       {expert.articles && expert.articles.length > 0 && (
-        <Card>
+        <Card className="bg-[#1a1a1a] border-zinc-700/50">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="w-5 h-5 text-green-500" />
-              Articles & Content
+            <CardTitle className="text-lg flex items-center gap-2 text-white">
+              <FileText className="w-5 h-5 text-green-400" />
+              Articles & Content ({expert.articles.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -341,10 +341,10 @@ const IndustryExperts = () => {
 
       {/* Resources */}
       {expert.resources && expert.resources.length > 0 && (
-        <Card>
+        <Card className="bg-[#1a1a1a] border-zinc-700/50">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Link className="w-5 h-5 text-purple-500" />
+            <CardTitle className="text-lg flex items-center gap-2 text-white">
+              <Link className="w-5 h-5 text-purple-400" />
               Resources & Links
             </CardTitle>
           </CardHeader>
@@ -394,45 +394,58 @@ const IndustryExperts = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 page-enter" data-testid="industry-experts-page">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
-        <div>
-          <h1 className="text-2xl font-tactical font-bold text-white flex items-center gap-2 tracking-wide">
+      {/* Tactical Header */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-zinc-700/50 p-6 animate-fade-in-up">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
             <img
               src="/icons/experts.png"
               alt="Experts"
-              width={40}
-              height={40}
-              className="w-10 h-10 object-contain icon-3d-shadow"
+              width={48}
+              height={48}
+              className="w-12 h-12 object-contain"
+              style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))' }}
             />
-            Industry Experts
-          </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-            Learn from the best in public adjusting
-          </p>
-        </div>
+            <div>
+              <h1 className="text-2xl font-tactical font-bold text-white uppercase tracking-wide text-glow-orange">
+                Industry Experts
+              </h1>
+              <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mt-1">
+                {experts.length + mentors.length} experts & mentors indexed
+              </p>
+            </div>
+          </div>
 
-        {/* Search */}
-        <div className="flex gap-2">
-          <Input
-            placeholder="Search experts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-64"
-            data-testid="expert-search-input"
-          />
-          <Button onClick={handleSearch} size="icon" variant="outline">
-            <Search className="w-4 h-4" />
-          </Button>
+          {/* Search */}
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Input
+                placeholder="Search experts, topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-72 pl-9 bg-zinc-900/50 border-zinc-700/50 focus:border-orange-500/50"
+                data-testid="expert-search-input"
+              />
+            </div>
+            <Button onClick={handleSearch} size="icon" variant="outline" className="border-zinc-700/50 hover:border-orange-500/30 hover:bg-orange-500/10">
+              <Search className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Search Results */}
       {searchResults && (
-        <Card className="border-orange-200">
+        <Card className="border-orange-500/30 bg-[#1a1a1a]">
           <CardHeader>
-            <CardTitle className="text-lg">Search Results for "{searchQuery}"</CardTitle>
+            <CardTitle className="text-lg text-white flex items-center justify-between">
+              <span>Search Results for "{searchQuery}"</span>
+              <Badge className="bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                {searchResults.length} found
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {searchResults.length === 0 ? (
@@ -442,21 +455,23 @@ const IndustryExperts = () => {
                 {searchResults.map((result, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-800/50 cursor-pointer"
+                    className="flex items-center justify-between p-3 border border-zinc-700/50 rounded-lg hover:bg-zinc-800/50 hover:border-orange-500/20 cursor-pointer transition-colors"
                     onClick={() => fetchExpertDetail(result.expert_id)}
                   >
                     <div>
-                      <p className="font-medium">{result.name}</p>
+                      <p className="font-medium text-white">{result.name}</p>
                       <p className="text-sm text-zinc-500">{result.category}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {result.matches.slice(0, 3).map((match, j) => (
-                          <Badge key={j} variant="outline" className="text-xs">
+                          <Badge key={j} variant="outline" className="text-xs border-zinc-600 text-zinc-400">
                             {match}
                           </Badge>
                         ))}
                       </div>
                     </div>
-                    <Badge className="bg-orange-100 text-orange-700">Score: {result.score}</Badge>
+                    <Badge className="bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                      {result.score}
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -465,7 +480,7 @@ const IndustryExperts = () => {
               variant="ghost"
               size="sm"
               onClick={() => setSearchResults(null)}
-              className="mt-4"
+              className="mt-4 text-zinc-400 hover:text-white"
             >
               Clear Search
             </Button>
@@ -507,7 +522,7 @@ const IndustryExperts = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">{selectedMentor.name}</h2>
-                    <Badge className="bg-indigo-100 text-indigo-700 mt-2">
+                    <Badge className="bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 mt-2">
                       {getCategoryIcon(selectedMentor.category)}
                       <span className="ml-1">{selectedMentor.category}</span>
                     </Badge>
@@ -515,10 +530,10 @@ const IndustryExperts = () => {
                 </div>
 
                 {/* Bio */}
-                <Card>
+                <Card className="bg-[#1a1a1a] border-zinc-700/50">
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <User className="w-5 h-5 text-indigo-500" />
+                    <CardTitle className="text-lg flex items-center gap-2 text-white">
+                      <User className="w-5 h-5 text-indigo-400" />
                       About
                     </CardTitle>
                   </CardHeader>
@@ -534,11 +549,11 @@ const IndustryExperts = () => {
 
                 {/* Key Insights */}
                 {selectedMentor.key_insights && selectedMentor.key_insights.length > 0 && (
-                  <Card>
+                  <Card className="bg-[#1a1a1a] border-zinc-700/50">
                     <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        Key Insights
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <Lightbulb className="w-5 h-5 text-yellow-400" />
+                        Key Insights ({selectedMentor.key_insights.length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -556,11 +571,11 @@ const IndustryExperts = () => {
 
                 {/* Books */}
                 {selectedMentor.books && selectedMentor.books.length > 0 && (
-                  <Card>
+                  <Card className="bg-[#1a1a1a] border-zinc-700/50">
                     <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Book className="w-5 h-5 text-blue-500" />
-                        Books & Reading
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <Book className="w-5 h-5 text-blue-400" />
+                        Books & Reading ({selectedMentor.books.length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -590,10 +605,10 @@ const IndustryExperts = () => {
 
                 {/* Resources */}
                 {selectedMentor.resources && selectedMentor.resources.length > 0 && (
-                  <Card>
+                  <Card className="bg-[#1a1a1a] border-zinc-700/50">
                     <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Link className="w-5 h-5 text-purple-500" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <Link className="w-5 h-5 text-purple-400" />
                         Resources & Links
                       </CardTitle>
                     </CardHeader>
@@ -636,39 +651,39 @@ const IndustryExperts = () => {
                 {mentors.map((mentor) => (
                   <Card
                     key={mentor.id}
-                    className="cursor-pointer hover:shadow-lg transition-all hover:border-indigo-300 group"
+                    className="cursor-pointer bg-[#1a1a1a] border-zinc-700/50 hover:shadow-lg hover:shadow-indigo-500/5 transition-all hover:border-orange-500/30 group"
                     onClick={() => setSelectedMentor(mentor)}
                     data-testid={`mentor-card-${mentor.id}`}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-bold text-lg ring-2 ring-indigo-500/20 group-hover:ring-indigo-500/40 transition-all">
                             {mentor.name.split(' ').map((n) => n[0]).join('')}
                           </div>
                           <div>
-                            <CardTitle className="text-lg group-hover:text-indigo-400 transition-colors">
+                            <CardTitle className="text-lg text-white group-hover:text-indigo-400 transition-colors">
                               {mentor.name}
                             </CardTitle>
-                            <Badge className="bg-indigo-100 text-indigo-700 mt-1">
+                            <Badge className="bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 mt-1">
                               {mentor.category}
                             </Badge>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+                        <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
                       </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-zinc-400 line-clamp-3">{mentor.bio}</p>
-                      <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-700/50 text-xs text-zinc-500">
                         {mentor.books && mentor.books.length > 0 && (
                           <span className="flex items-center gap-1">
-                            <Book className="w-3 h-3" /> {mentor.books.length} books
+                            <Book className="w-3 h-3 text-blue-400" /> {mentor.books.length} books
                           </span>
                         )}
                         {mentor.key_insights && mentor.key_insights.length > 0 && (
                           <span className="flex items-center gap-1">
-                            <Lightbulb className="w-3 h-3" /> {mentor.key_insights.length} insights
+                            <Lightbulb className="w-3 h-3 text-yellow-400" /> {mentor.key_insights.length} insights
                           </span>
                         )}
                       </div>

@@ -70,14 +70,14 @@ const DnaProfileCard = ({ profile }) => {
   if (!profile) return null;
 
   return (
-    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5">
+    <div className="bg-[#1a1a1a] border border-zinc-800 hover:border-orange-500/30 rounded-xl p-5 transition-colors">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between mb-4"
       >
         <div className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-orange-400" />
-          <h3 className="text-white font-bold text-sm">Your Writing DNA</h3>
+          <h3 className="text-white font-bold text-sm uppercase tracking-wide">Writing DNA</h3>
         </div>
         {expanded ? (
           <ChevronUp className="w-4 h-4 text-zinc-500" />
@@ -219,7 +219,7 @@ const TemplateCard = ({ template, onDelete, onCopy, onEdit }) => {
   };
 
   return (
-    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl overflow-hidden">
+    <div className="bg-[#1a1a1a] border border-zinc-800 hover:border-orange-500/20 rounded-xl overflow-hidden transition-colors">
       {/* Header */}
       <button
         onClick={() => !editing && setExpanded(!expanded)}
@@ -429,65 +429,79 @@ const EmailIntelligence = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#0a0a0a] p-4 md:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-orange-400" />
+        {/* Tactical Header */}
+        <div className="bg-[#1a1a1a]/95 border border-zinc-800 rounded-xl p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-11 h-11 bg-gradient-to-br from-orange-600/20 to-orange-500/5 border border-orange-500/20 rounded-xl flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-orange-400" />
+                </div>
+                {templates.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold font-mono rounded-full px-1 shadow-lg shadow-orange-600/30">
+                    {templates.length}
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5 mb-0.5">
+                  <h1 className="text-xl font-bold text-white uppercase tracking-wide">Email Intel</h1>
+                  <div className="h-4 w-px bg-zinc-700" />
+                  <span className="text-[10px] font-mono text-orange-400/70 uppercase tracking-widest">Writing DNA</span>
+                </div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3" />
+                  Your style powers every AI response
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-white text-lg sm:text-xl font-bold">Email DNA</h1>
-              <p className="text-zinc-500 text-xs">
-                Your writing style powers every AI response
-              </p>
-            </div>
-          </div>
 
-          <button
-            onClick={handleScan}
-            disabled={scanning}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-              scanning
-                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                : profile
-                  ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                  : 'bg-orange-600 text-white hover:bg-orange-700'
-            }`}
-          >
-            {scanning ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Scanning...
-              </>
-            ) : profile ? (
-              <>
-                <RefreshCw className="w-4 h-4" />
-                Rescan
-              </>
-            ) : (
-              <>
-                <Mail className="w-4 h-4" />
-                Scan My Emails
-              </>
-            )}
-          </button>
+            <button
+              onClick={handleScan}
+              disabled={scanning}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all active:scale-95 ${
+                scanning
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : profile
+                    ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/30'
+                    : 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-600/20'
+              }`}
+            >
+              {scanning ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Scanning...
+                </>
+              ) : profile ? (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  Rescan
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Scan Emails
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Status banner */}
         {!profile && !scanning && (
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-start gap-3">
+          <div className="bg-[#1a1a1a] border border-orange-500/20 rounded-xl p-4 flex items-start gap-3">
             <Zap className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-orange-300 text-sm font-bold mb-1">No Writing DNA Yet</h3>
+              <h3 className="text-orange-300 text-sm font-bold mb-1 uppercase tracking-wide">No Writing DNA Yet</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">
                 Click "Scan My Emails" to analyze your Gmail sent folder. Eden will learn your
                 writing style and inject it into every AI response — Eve, SMS drafts, comms copilot,
@@ -499,10 +513,10 @@ const EmailIntelligence = () => {
 
         {/* Scanning progress */}
         {scanning && (
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-[#1a1a1a] border border-blue-500/20 rounded-xl p-4 flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-blue-400 animate-spin shrink-0" />
             <div>
-              <h3 className="text-blue-300 text-sm font-bold">Analyzing Your Emails...</h3>
+              <h3 className="text-blue-300 text-sm font-bold uppercase tracking-wide">Analyzing Emails...</h3>
               <p className="text-zinc-400 text-xs">
                 Reading sent emails, extracting patterns, building your DNA profile. This takes 30-60 seconds.
               </p>
@@ -515,10 +529,10 @@ const EmailIntelligence = () => {
 
         {/* How it works */}
         {profile && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
+          <div className="bg-[#1a1a1a] border border-green-500/20 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-green-300 text-xs font-bold uppercase tracking-wider">DNA Active</span>
+              <span className="text-green-300 text-xs font-bold uppercase tracking-widest font-mono">DNA Active</span>
             </div>
             <p className="text-zinc-400 text-xs leading-relaxed">
               Your writing DNA is now injected into <span className="text-zinc-200 font-medium">every AI response</span> across Eden.
@@ -532,10 +546,13 @@ const EmailIntelligence = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-zinc-500" />
-                <h2 className="text-zinc-300 text-sm font-bold">
-                  Extracted Templates ({templates.length})
+                <FileText className="w-4 h-4 text-orange-500" />
+                <h2 className="text-white text-sm font-bold uppercase tracking-wide">
+                  Extracted Templates
                 </h2>
+                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                  {templates.length}
+                </span>
               </div>
             </div>
 

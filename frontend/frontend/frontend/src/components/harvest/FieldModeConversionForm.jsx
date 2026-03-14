@@ -101,7 +101,7 @@ const FieldModeConversionForm = ({ status, pin, onSubmit, onCancel }) => {
                 type="datetime-local"
                 value={datetime}
                 onChange={(e) => setDatetime(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-colors"
                 placeholder="Appointment date & time"
               />
             </div>
@@ -115,7 +115,7 @@ const FieldModeConversionForm = ({ status, pin, onSubmit, onCancel }) => {
               onChange={(e) => setNotes(e.target.value)}
               placeholder={config.placeholder}
               rows={2}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-xl pl-10 pr-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-orange-500/50 transition-colors"
             />
           </div>
 
@@ -128,7 +128,7 @@ const FieldModeConversionForm = ({ status, pin, onSubmit, onCancel }) => {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder="Contract value (optional)"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[#0a0a0a] border border-zinc-700/50 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-colors"
               />
             </div>
           )}

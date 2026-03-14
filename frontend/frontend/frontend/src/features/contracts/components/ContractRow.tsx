@@ -48,7 +48,7 @@ const ContractRow: React.FC<Props> = ({ contract, onOpen, onDownload, onRegenera
           <button
             type="button"
             onClick={() => onOpen(contract)}
-            className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:border-cyan-500 hover:text-cyan-300"
+            className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:border-cyan-500 hover:text-cyan-300"
           >
             <Eye className="h-4 w-4" />
             Open
@@ -56,7 +56,7 @@ const ContractRow: React.FC<Props> = ({ contract, onOpen, onDownload, onRegenera
           <button
             type="button"
             onClick={() => onDownload(contract)}
-            className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500 hover:text-emerald-300"
+            className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:border-emerald-500 hover:text-emerald-300"
           >
             <Download className="h-4 w-4" />
             PDF
@@ -65,7 +65,7 @@ const ContractRow: React.FC<Props> = ({ contract, onOpen, onDownload, onRegenera
             <button
               type="button"
               onClick={() => onRegenerate(contract)}
-              className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:border-orange-500 hover:text-orange-300"
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:border-orange-500 hover:text-orange-300"
             >
               <RotateCcw className="h-4 w-4" />
               Regenerate

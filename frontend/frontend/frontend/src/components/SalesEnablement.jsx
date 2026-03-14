@@ -387,12 +387,51 @@ const SalesEnablement = () => {
     return (
       <div className="min-h-screen p-4 sm:p-6 page-enter">
         {/* Header */}
-        <div className="mb-8 animate-fade-in-up">
-          <div className="flex items-center gap-3 mb-2">
-            <img src={NAV_ICONS.sales_ops} alt="Sales Ops" width={40} height={40} className="w-10 h-10 object-contain icon-3d-shadow" />
-            <div>
-              <h1 className="text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SALES OPS</h1>
-              <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Step-by-step guided sales flows</p>
+        <div className="mb-6 animate-fade-in-up">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <img src={NAV_ICONS.sales_ops} alt="Sales Ops" width={40} height={40} className="w-10 h-10 object-contain icon-3d-shadow" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse border-2 border-[#0a0a0a]" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SALES OPS</h1>
+                <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">Field Ops Command Center</p>
+              </div>
+            </div>
+            <Badge className="bg-green-500/15 text-green-400 border-green-500/30 font-mono text-xs">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse inline-block" />
+              FIELD READY
+            </Badge>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 hover:border-orange-500/30 transition-all group">
+              <div className="flex items-center gap-2 mb-1">
+                <Target className="w-3.5 h-3.5 text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="text-zinc-500 font-mono text-[10px] uppercase">Deals in Pipeline</span>
+              </div>
+              <p className="text-xl font-tactical font-bold text-orange-400">12</p>
+              <p className="text-zinc-600 text-[10px] font-mono mt-0.5">+3 this week</p>
+            </div>
+            <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 hover:border-green-500/30 transition-all group">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="text-zinc-500 font-mono text-[10px] uppercase">Win Rate</span>
+              </div>
+              <p className="text-xl font-tactical font-bold text-green-400">68%</p>
+              <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5">
+                <div className="bg-green-500 h-1 rounded-full" style={{ width: '68%' }} />
+              </div>
+            </div>
+            <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 hover:border-blue-500/30 transition-all group">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-3.5 h-3.5 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="text-zinc-500 font-mono text-[10px] uppercase">Revenue MTD</span>
+              </div>
+              <p className="text-xl font-tactical font-bold text-blue-400">$47.2K</p>
+              <p className="text-zinc-600 text-[10px] font-mono mt-0.5">Target: $60K</p>
             </div>
           </div>
         </div>
@@ -410,10 +449,10 @@ const SalesEnablement = () => {
                 <button
                   key={key}
                   onClick={() => setSelectedLossType(key)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    isSelected 
-                      ? `border-${flow.color}-500 bg-${flow.color}-500/20` 
-                      : 'border-gray-300 bg-gray-800 hover:border-gray-600'
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected
+                      ? `border-${flow.color}-500 bg-${flow.color}-500/20 shadow-lg shadow-${flow.color}-500/10`
+                      : 'border-zinc-700/50 bg-[#1a1a1a] hover:border-zinc-600 hover:bg-zinc-800/80 hover:scale-[1.02]'
                   }`}
                 >
                   <Icon className={`w-8 h-8 mx-auto mb-2 ${
@@ -430,9 +469,9 @@ const SalesEnablement = () => {
 
         {/* Start Button */}
         <div className="flex gap-4 mb-8">
-          <button 
+          <button
             onClick={() => setMode('presentation')}
-            className="flex-1 h-14 btn-tactical text-lg font-tactical font-bold flex items-center justify-center gap-2"
+            className="flex-1 h-14 btn-tactical text-lg font-tactical font-bold flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
           >
             <Play className="w-5 h-5" />
             Start {currentFlow.name} Pitch
@@ -526,9 +565,9 @@ const SalesEnablement = () => {
           </div>
           <div className="p-4 space-y-2">
             {Object.entries(OBJECTIONS).slice(0, 5).map(([key, obj]) => (
-              <div 
+              <div
                 key={key}
-                className="bg-zinc-800/30 border border-zinc-700/30 rounded-lg overflow-hidden"
+                className="bg-[#1a1a1a] border border-zinc-800/50 rounded-lg overflow-hidden hover:border-zinc-700/60 transition-colors"
               >
                 <button
                   onClick={() => setExpandedObjection(expandedObjection === key ? null : key)}

@@ -12,6 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File as FastA
 
 from dependencies import db, get_current_active_user
 
+import os
+
 from routes.ai.prompts import (
     EMERGENT_LLM_KEY,
     EVE_SYSTEM_PROMPT,
@@ -31,6 +33,9 @@ from routes.ai.shared import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Check if Gemini is available at module level for fast path
+_GEMINI_AVAILABLE = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY"))
 router = APIRouter()
 
 
@@ -48,10 +53,10 @@ async def chat_with_eve(
     user_id_for_rl = current_user.get("id", "unknown")
     check_rate_limit(f"ai:{user_id_for_rl}", "ai")
 
-    if not EMERGENT_LLM_KEY:
+    if not EMERGENT_LLM_KEY and not _GEMINI_AVAILABLE:
         raise HTTPException(
             status_code=500,
-            detail="No AI provider configured. Set OLLAMA_API_KEY (free \u2014 get one at https://ollama.com/settings/keys) or ANTHROPIC_API_KEY in your environment variables.",
+            detail="No AI provider configured. Set GEMINI_API_KEY (free \u2014 get one at https://aistudio.google.com/apikey) or OLLAMA_API_KEY in your environment variables.",
         )
 
     user_id = current_user.get("id")
@@ -124,15 +129,36 @@ async def chat_with_eve(
             full_prompt += claim_context_str
         full_prompt += f"User's current question: {request.message}"
 
-        response_text, _, _ = await _send_via_ai_gateway(
-            user_id=user_id,
-            session_key=f"eve-{user_id}-{session_id}",
-            system_message=EVE_SYSTEM_PROMPT,
-            prompt_text=full_prompt,
-            task_type=request.task_type or "chat",
-            preferred_provider=request.provider,
-            preferred_model=request.model,
-        )
+        # --- Gemini Flash (free, fast) as primary provider ---
+        provider_used = None
+        if _GEMINI_AVAILABLE:
+            try:
+                from services.claimpilot.llm_router import LLMRouter
+
+                llm = LLMRouter()
+                response_text = await llm.generate(
+                    prompt=full_prompt,
+                    system_prompt=EVE_SYSTEM_PROMPT,
+                    task_type="text_generation",
+                    max_tokens=4000,
+                )
+                provider_used = "gemini_flash"
+            except Exception as gemini_err:
+                logger.warning("Gemini failed, falling back to AI gateway: %s", gemini_err)
+                provider_used = None
+
+        # --- Fallback to existing emergentintegrations gateway ---
+        if provider_used is None:
+            response_text, _, _ = await _send_via_ai_gateway(
+                user_id=user_id,
+                session_key=f"eve-{user_id}-{session_id}",
+                system_message=EVE_SYSTEM_PROMPT,
+                prompt_text=full_prompt,
+                task_type=request.task_type or "chat",
+                preferred_provider=request.provider,
+                preferred_model=request.model,
+            )
+            provider_used = "ai_gateway"
 
         # Store the conversation in the database
         now = datetime.now(timezone.utc).isoformat()
@@ -176,8 +202,8 @@ async def chat_with_eve(
     except Exception as e:
         err_str = str(e)
         logger.error("Eve AI error: %s", err_str)
-        if "OLLAMA_API_KEY" in err_str or "No AI provider" in err_str:
-            detail = "AI is not configured yet. An admin needs to set the OLLAMA_API_KEY in the server environment. Get a free key at https://ollama.com/settings/keys"
+        if "OLLAMA_API_KEY" in err_str or "GEMINI_API_KEY" in err_str or "No AI provider" in err_str:
+            detail = "AI is not configured yet. An admin needs to set GEMINI_API_KEY (free at https://aistudio.google.com/apikey) or OLLAMA_API_KEY in the server environment."
         elif "invalid x-api-key" in err_str or "authentication_error" in err_str:
             detail = "AI provider authentication failed. The API key may be invalid or expired. Please contact your administrator."
         elif "timed out" in err_str.lower() or "timeout" in err_str.lower():

@@ -5,10 +5,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../ui/button';
 import NotificationBell from '../../components/NotificationBell';
+import NotificationCenter from '../../components/NotificationCenter';
 import { ChevronRight, ChevronDown, Search, Menu, X, LogOut, Radio, Target } from 'lucide-react';
 import { APP_LOGO, NAV_ICONS } from '../../assets/badges';
 import useUnreadCount from '../../hooks/useUnreadCount';
 import OnboardingTour from '../../components/OnboardingTour';
+import ClaimPilotStatusBar from '../../components/ClaimPilotStatusBar';
+import CommandPalette from '../../components/CommandPalette';
+import KeyboardShortcuts from '../../components/KeyboardShortcuts';
+import OnboardingChecklist from '../../components/OnboardingChecklist';
 
 
 const NAV_SECTION_STATE_KEY = 'eden_nav_sections_collapsed_v1';
@@ -37,6 +42,7 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userPermissions, setUserPermissions] = useState([]);
   const [navQuery, setNavQuery] = useState('');
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState({});
 
   useEffect(() => {
@@ -94,7 +100,7 @@ const Layout = () => {
     { icon: NAV_ICONS.intel_hub, label: 'Intel Hub', path: '/property' },
     { icon: NAV_ICONS.scales, label: 'Scales', path: '/scales' },
     { icon: NAV_ICONS.eve, label: 'Email DNA', path: '/email-intelligence' },
-    { icon: NAV_ICONS.adam_qa, label: 'AI Approvals', path: '/claimpilot' },
+    { icon: NAV_ICONS.adam_qa, label: 'ClaimPilot', path: '/claimpilot' },
   ];
 
   const growthItems = [
@@ -346,6 +352,18 @@ const Layout = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCmdPaletteOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/50 text-xs font-mono text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-orange-500/60"
+              aria-label="Open command palette"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="text-zinc-500">Search...</span>
+              <kbd className="ml-1 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-500">
+                Ctrl+K
+              </kbd>
+            </button>
+            <NotificationCenter />
             <NotificationBell />
           </div>
         </div>
@@ -353,12 +371,24 @@ const Layout = () => {
         {/* Page Content with Tactical Background */}
         <div className="bg-zinc-950 min-h-[calc(100vh-64px)] relative">
           <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
+          <div className="relative z-10 px-4 pt-3">
+            <ClaimPilotStatusBar />
+          </div>
           <AnimatedOutlet />
         </div>
       </main>
 
       {/* First-login onboarding tour — only shows if user hasn't completed it */}
       {user && <OnboardingTour />}
+
+      {/* Global command palette — Ctrl+K / Cmd+K */}
+      <CommandPalette />
+
+      {/* Keyboard shortcuts guide — press ? to open */}
+      <KeyboardShortcuts />
+
+      {/* Onboarding checklist — floating bottom-right */}
+      <OnboardingChecklist />
     </div>
   );
 };

@@ -68,7 +68,7 @@ const ContractDetail: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={onOpenSignOnDevice}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-500/10"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-xs text-cyan-200 transition-colors hover:bg-cyan-500/10"
                 >
                   <PenSquare className="h-4 w-4" />
                   Sign On Device
@@ -76,7 +76,7 @@ const ContractDetail: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => onOpenInvite('email')}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-emerald-500 hover:text-emerald-300"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition-colors hover:border-emerald-500 hover:text-emerald-300"
                 >
                   <Mail className="h-4 w-4" />
                   Send to Email
@@ -84,7 +84,7 @@ const ContractDetail: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => onOpenInvite('sms')}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-amber-500 hover:text-amber-300"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition-colors hover:border-amber-500 hover:text-amber-300"
                 >
                   <MessageSquare className="h-4 w-4" />
                   Send to Text
@@ -94,7 +94,7 @@ const ContractDetail: React.FC<Props> = ({
             <button
               type="button"
               onClick={onDownload}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-sky-500 hover:text-sky-300"
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition-colors hover:border-sky-500 hover:text-sky-300"
             >
               <Download className="h-4 w-4" />
               Download PDF
@@ -103,7 +103,7 @@ const ContractDetail: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onRegenerate}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:border-orange-500 hover:text-orange-300"
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 transition-colors hover:border-orange-500 hover:text-orange-300"
               >
                 <RefreshCcw className="h-4 w-4" />
                 Regenerate

@@ -79,6 +79,7 @@ from routes.tasks import router as tasks_router
 from routes.garden_dashboard import router as garden_dashboard_router
 from routes.email_intelligence import router as email_intelligence_router
 from routes.claimpilot import router as claimpilot_router
+from routes.photo_analysis import router as photo_analysis_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -557,6 +558,7 @@ app.include_router(tasks_router)
 app.include_router(garden_dashboard_router)
 app.include_router(email_intelligence_router)
 app.include_router(claimpilot_router)
+app.include_router(photo_analysis_router)
 
 
 async def ensure_workbooks_exist():

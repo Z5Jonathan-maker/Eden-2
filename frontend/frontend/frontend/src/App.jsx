@@ -60,6 +60,7 @@ const MyCard = lazy(() => import('./components/MyCard'));
 const PublicCard = lazy(() => import('./components/PublicCard'));
 const ChatLayout = lazy(() => import('./components/chat/ChatLayout'));
 const CommCenterThread = lazy(() => import('./components/CommCenterThread'));
+const ClaimPilotPage = lazy(() => import('./pages/ClaimPilotPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'));
 const RepLayout = lazy(() => import('./shared/layouts/RepLayout'));
@@ -292,6 +293,7 @@ function AppRoutes() {
           <Route path="performance" element={<Safe label="Performance"><PerformanceConsole /></Safe>} />
           <Route path="qa" element={<Safe label="QA"><Adam /></Safe>} />
           <Route path="adam" element={<AdminRoute><Safe label="Adam"><Adam /></Safe></AdminRoute>} />
+          <Route path="claimpilot" element={<Safe label="ClaimPilot"><ClaimPilotPage /></Safe>} />
           <Route path="experts" element={<Safe label="Experts"><IndustryExperts /></Safe>} />
           <Route path="florida-laws" element={<Safe label="Laws"><FloridaLaws /></Safe>} />
           <Route path="battle-pass" element={<Safe label="Battle Pass"><BattlePass /></Safe>} />

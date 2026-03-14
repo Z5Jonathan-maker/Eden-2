@@ -55,6 +55,7 @@ import ClaimFinancials from './ClaimFinancials';
 import ClaimCarrierInfo from './ClaimCarrierInfo';
 import ClaimTasksPanel from './ClaimTasksPanel';
 import ClaimActivityLog from './ClaimActivityLog';
+import ClaimTimeline from '../../../components/claims/ClaimTimeline';
 import { Textarea } from '../../../shared/ui/textarea';
 import { Input } from '../../../shared/ui/input';
 import { Label } from '../../../shared/ui/label';
@@ -919,6 +920,11 @@ const ClaimDetails = () => {
       {/* Activity Log */}
       <div className="mb-4 md:mb-6">
         <ClaimActivityLog claimId={claimId} />
+      </div>
+
+      {/* Claim Timeline */}
+      <div className="mb-4 md:mb-6">
+        <ClaimTimeline claimId={claimId} />
       </div>
 
       {/* Client Status Panel - Stage Progress and Eve Updates */}

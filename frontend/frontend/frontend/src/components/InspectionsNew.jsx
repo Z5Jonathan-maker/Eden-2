@@ -13,11 +13,11 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Camera, FileText, MapPin, Plus, 
+import {
+  Camera, FileText, MapPin, Plus, Eye,
   ChevronRight, Check, Loader2,
   Mic, Image as ImageIcon, Sparkles, FolderOpen,
-  Play, History, X
+  Play, History, X, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NAV_ICONS } from '../assets/badges';
@@ -134,23 +134,39 @@ const InspectionsNew = () => {
 
   return (
     <div className="min-h-screen page-enter">
-      <div className="bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-800/50 sticky top-0 z-10">
+      <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border-b border-orange-500/10 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <img src={NAV_ICONS.recon} alt="Recon" width={32} height={32} className="w-8 h-8 object-contain icon-3d-shadow" />
-                <h1 className="text-xl font-tactical font-bold text-white uppercase tracking-wide text-glow-orange">Recon Module</h1>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-11 h-11 bg-gradient-to-br from-orange-600/20 to-orange-500/5 border border-orange-500/20 rounded-xl flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-orange-400" />
+                </div>
+                {sessions.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold font-mono rounded-full px-1 shadow-lg shadow-orange-600/30">
+                    {sessions.length}
+                  </span>
+                )}
               </div>
-              <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Capture property photos with voice notes</p>
+              <div>
+                <div className="flex items-center gap-2.5 mb-0.5">
+                  <h1 className="text-xl font-tactical font-bold text-white uppercase tracking-wide text-glow-orange">Recon</h1>
+                  <div className="h-4 w-px bg-zinc-700" />
+                  <span className="text-[10px] font-mono text-orange-400/70 uppercase tracking-widest">Field Intel</span>
+                </div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Camera className="w-3 h-3" />
+                  Capture photos with voice notes
+                </p>
+              </div>
             </div>
             {selectedClaim && (
-              <button 
+              <button
                 onClick={handleStartInspection}
-                className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2"
+                className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2 group"
                 data-testid="start-inspection-btn"
               >
-                <Camera className="w-4 h-4" />
+                <Camera className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span>Deploy Recon</span>
               </button>
             )}
@@ -162,10 +178,13 @@ const InspectionsNew = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Claim Selection */}
           <div className={`lg:col-span-1 ${selectedClaim ? 'hidden lg:block' : ''}`}>
-            <div className="card-tactical p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <FileText className="w-5 h-5 text-orange-500" />
-                <h2 className="font-tactical font-bold text-white uppercase text-sm tracking-wide">Select Target</h2>
+            <div className="bg-[#1a1a1a] border border-zinc-800 hover:border-orange-500/20 rounded-xl p-5 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-orange-500" />
+                  <h2 className="font-tactical font-bold text-white uppercase text-sm tracking-wide">Select Target</h2>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-600">{filteredClaims.length} targets</span>
               </div>
               
               {/* Search Input - Tactical */}
@@ -341,10 +360,17 @@ const InspectionsNew = () => {
                 </div>
 
                 {/* Previous Sessions - Tactical */}
-                <div className="card-tactical p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <History className="w-5 h-5 text-zinc-500" />
-                    <h3 className="font-tactical font-bold text-white uppercase text-sm tracking-wide">Recon History</h3>
+                <div className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-zinc-500" />
+                      <h3 className="font-tactical font-bold text-white uppercase text-sm tracking-wide">Recon History</h3>
+                    </div>
+                    {sessions.length > 0 && (
+                      <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                        {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                   
                   {loadingSessions ? (

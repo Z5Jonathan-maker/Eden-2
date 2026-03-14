@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '@/lib/api';
 import { toast } from 'sonner';
@@ -50,6 +50,28 @@ const ClaimsList = () => {
   const [batchValue, setBatchValue] = useState('');
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Status count badges (computed from unfiltered claims)
+  const statusCounts = useMemo(() => {
+    const counts = { All: claims.length };
+    claims.forEach(claim => {
+      const status = claim.status || 'Unknown';
+      counts[status] = (counts[status] || 0) + 1;
+    });
+    return counts;
+  }, [claims]);
+
+  // Keyboard shortcut: "/" to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        document.querySelector('[data-testid="claims-search-input"]')?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -306,7 +328,7 @@ const ClaimsList = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-5 h-5" />
             <input
-              placeholder="Search by claim ID, client name, or address..."
+              placeholder="Search claims... (press / to focus)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-tactical w-full pl-10 py-2.5 focus:ring-2 focus:ring-orange-500/40"
@@ -326,7 +348,7 @@ const ClaimsList = () => {
                 size="sm"
                 data-testid={`filter-${status.toLowerCase().replace(' ', '-')}`}
               >
-                {status}
+                {status} <span className="ml-1 text-[10px] opacity-70">({statusCounts[status] || 0})</span>
               </button>
             ))}
           </div>
@@ -497,17 +519,31 @@ const ClaimsList = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-zinc-300 mb-2">No claims found</h3>
-            <p className="text-sm text-zinc-500 max-w-sm">
-              Try adjusting your filters or search terms to find what you&apos;re looking for.
-            </p>
-            <button
-              onClick={() => navigate('/claims/new')}
-              className="btn-tactical px-6 py-3 text-sm mt-6 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-            >
-              <Plus className="w-4 h-4 mr-2 inline" />
-              Create First Mission
-            </button>
+            {searchTerm ? (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-300 mb-2">No claims matching &ldquo;{searchTerm}&rdquo;</h3>
+                <p className="text-sm text-zinc-500 max-w-sm">Try a different search term or clear the search.</p>
+                <button onClick={() => setSearchTerm('')} className="btn-tactical px-6 py-3 text-sm mt-6 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
+                  <X className="w-4 h-4 mr-2 inline" /> Clear Search
+                </button>
+              </>
+            ) : filterStatus !== 'All' ? (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-300 mb-2">No {filterStatus} claims</h3>
+                <p className="text-sm text-zinc-500 max-w-sm">There are no claims with the &ldquo;{filterStatus}&rdquo; status right now.</p>
+                <button onClick={() => setFilterStatus('All')} className="btn-tactical px-6 py-3 text-sm mt-6 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
+                  <X className="w-4 h-4 mr-2 inline" /> Clear Filter
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-300 mb-2">No claims found</h3>
+                <p className="text-sm text-zinc-500 max-w-sm">Get started by creating your first mission.</p>
+                <button onClick={() => navigate('/claims/new')} className="btn-tactical px-6 py-3 text-sm mt-6 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
+                  <Plus className="w-4 h-4 mr-2 inline" /> Create First Mission
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto -mx-3 px-3 sm:-mx-0 sm:px-0">
@@ -531,6 +567,12 @@ const ClaimsList = () => {
                       >
                         {selectedIds.has(claim.id) ? <CheckSquare className="w-5 h-5 text-orange-400" /> : <Square className="w-5 h-5" />}
                       </button>
+                      {(() => {
+                        const daysSinceUpdate = Math.floor((Date.now() - new Date(claim.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+                        const dotColor = daysSinceUpdate > 14 ? 'bg-red-500' : daysSinceUpdate >= 7 ? 'bg-yellow-500' : 'bg-green-500';
+                        const dotLabel = daysSinceUpdate > 14 ? 'Stalled' : daysSinceUpdate >= 7 ? 'Aging' : 'Active';
+                        return <span className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0`} title={dotLabel} />;
+                      })()}
                       <span className="font-tactical font-bold text-base text-white group-hover:text-orange-400 transition-colors">
                         {claim.claim_number}
                       </span>
@@ -546,29 +588,29 @@ const ClaimsList = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-3">
                       <div className="min-w-0">
                         <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Client</p>
-                        <p className="text-sm font-medium text-zinc-200 truncate">
-                          {claim.client_name}
-                        </p>
+                        <p className="text-sm font-medium text-zinc-200 truncate">{claim.client_name}</p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
-                          Location
-                        </p>
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Location</p>
                         <p className="text-sm text-zinc-300 truncate">{claim.property_address}</p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">
-                          Date of Loss
-                        </p>
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Date of Loss</p>
                         <p className="text-sm text-zinc-300">{claim.date_of_loss}</p>
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Type</p>
                         <p className="text-sm text-zinc-300 truncate">{claim.claim_type}</p>
                       </div>
+                      {claim.carrier && (
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-mono text-zinc-500 uppercase mb-1">Carrier</p>
+                          <p className="text-sm text-zinc-300 truncate">{claim.carrier}</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 font-mono">
@@ -579,6 +621,11 @@ const ClaimsList = () => {
                         Updated:{' '}
                         <span className="text-zinc-400">{formatDate(claim.updated_at)}</span>
                       </span>
+                      {claim.assigned_to && (
+                        <span>
+                          Assigned: <span className="text-zinc-400">{claim.assigned_to}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 

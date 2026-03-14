@@ -132,7 +132,7 @@ export const SeasonFormDialog = ({
                     (color) => (
                       <button
                         key={color}
-                        className={`w-8 h-8 rounded-full border-2 ${formData.theme_color === color ? 'border-gray-800' : 'border-transparent'}`}
+                        className={`w-8 h-8 rounded-full border-2 ${formData.theme_color === color ? 'border-zinc-300' : 'border-transparent'}`}
                         style={{ backgroundColor: color }}
                         onClick={() => setFormData({ ...formData, theme_color: color })}
                         type="button"
@@ -158,7 +158,7 @@ export const SeasonFormDialog = ({
           </div>
 
           {/* Grand Prize Section */}
-          <div className="border-t pt-4">
+          <div className="border-t border-zinc-700/50 pt-4">
             <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
               <Crown className="w-4 h-4 text-amber-500" />
               Grand Prize (Season Winner)

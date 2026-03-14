@@ -88,8 +88,8 @@ const SignOnDeviceModal: React.FC<Props> = ({ open, signingUrl, loading, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
-      <div className="w-full max-w-5xl rounded-xl border border-zinc-700 bg-zinc-900 p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+      <div className="w-full max-w-5xl rounded-xl border border-zinc-700/50 bg-[#1a1a1a] p-3 sm:p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h3 className="font-tactical text-white uppercase tracking-wide text-sm sm:text-base">Sign On Device</h3>
@@ -134,7 +134,7 @@ const SignOnDeviceModal: React.FC<Props> = ({ open, signingUrl, loading, onClose
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-zinc-600 px-3 py-2 text-xs text-zinc-300"
+              className="rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-300 transition-colors hover:text-white hover:border-orange-500/30"
             >
               Cancel
             </button>

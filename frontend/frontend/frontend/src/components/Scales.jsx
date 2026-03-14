@@ -35,7 +35,7 @@ const VarianceIndicator = ({ value, showPercent = false, baseValue = 0 }) => {
   const percent = baseValue > 0 ? ((value / baseValue) * 100).toFixed(1) : 0;
   
   return (
-    <span className={`flex items-center gap-1 font-medium ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+    <span className={`flex items-center gap-1 font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
       {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
       {formatCurrency(Math.abs(value))}
       {showPercent && <span className="text-xs opacity-75">({percent}%)</span>}
@@ -381,49 +381,62 @@ export default function Scales() {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 page-enter" data-testid="scales-page">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
-        <div className="flex items-center gap-3">
-          <img src="/icons/scales.png" alt="Scales" width={40} height={40} className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SCALES</h1>
-            <p className="text-sm sm:text-base text-zinc-400 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>
+      <div className="animate-fade-in-up">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <img src="/icons/scales.png" alt="Scales" width={40} height={40} className="w-10 h-10 sm:w-12 sm:h-12 object-contain icon-3d-shadow" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse border-2 border-[#0a0a0a]" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-tactical font-bold text-white tracking-wide text-glow-orange">SCALES</h1>
+              <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">Estimate Comparison Engine</p>
+            </div>
           </div>
         </div>
-        
-        {stats && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-6 text-xs sm:text-sm">
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-tactical font-bold text-blue-400">{stats.estimates_uploaded}</p>
-              <p className="text-zinc-400 font-mono text-xs">Estimates</p>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 sm:p-4 hover:border-blue-500/40 transition-all group">
+            <div className="flex items-center gap-2 mb-1">
+              <Upload className="w-4 h-4 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <span className="text-zinc-500 font-mono text-xs uppercase">Estimates</span>
             </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-tactical font-bold text-purple-400">{stats.comparisons_completed}</p>
-              <p className="text-zinc-400 font-mono text-xs">Comparisons</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-tactical font-bold text-green-400 truncate">
-                {formatCurrency(stats.total_variance_identified)}
-              </p>
-              <p className="text-zinc-400 font-mono text-xs">Variance</p>
-            </div>
+            <p className="text-xl sm:text-2xl font-tactical font-bold text-blue-400">{stats?.estimates_uploaded || 0}</p>
           </div>
-        )}
+          <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 sm:p-4 hover:border-purple-500/40 transition-all group">
+            <div className="flex items-center gap-2 mb-1">
+              <Scale className="w-4 h-4 text-purple-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <span className="text-zinc-500 font-mono text-xs uppercase">Comparisons</span>
+            </div>
+            <p className="text-xl sm:text-2xl font-tactical font-bold text-purple-400">{stats?.comparisons_completed || 0}</p>
+          </div>
+          <div className="bg-[#1a1a1a] border border-zinc-800/60 rounded-xl p-3 sm:p-4 hover:border-green-500/40 transition-all group">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-4 h-4 text-green-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <span className="text-zinc-500 font-mono text-xs uppercase">Variance</span>
+            </div>
+            <p className="text-xl sm:text-2xl font-tactical font-bold text-green-400 truncate">{formatCurrency(stats?.total_variance_identified || 0)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-xl">
-          <TabsTrigger value="upload" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 max-w-xl bg-[#1a1a1a] border border-zinc-800/60">
+          <TabsTrigger value="upload" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <Upload className="w-4 h-4" /> Upload
           </TabsTrigger>
-          <TabsTrigger value="compare" className="flex items-center gap-2">
+          <TabsTrigger value="compare" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <Scale className="w-4 h-4" /> Compare
+            {estimates.length > 0 && <span className="ml-1 text-[10px] bg-zinc-700 text-zinc-300 rounded-full px-1.5 py-0.5 font-mono">{estimates.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="results" className="flex items-center gap-2" disabled={!activeComparison}>
+          <TabsTrigger value="results" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400" disabled={!activeComparison}>
             <BarChart3 className="w-4 h-4" /> Results
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
+          <TabsTrigger value="history" className="flex items-center gap-2 data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400">
             <FileText className="w-4 h-4" /> History
+            {comparisons.length > 0 && <span className="ml-1 text-[10px] bg-zinc-700 text-zinc-300 rounded-full px-1.5 py-0.5 font-mono">{comparisons.length}</span>}
           </TabsTrigger>
         </TabsList>
 
@@ -431,9 +444,9 @@ export default function Scales() {
         <TabsContent value="upload" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Carrier Upload */}
-            <Card className="border-2 border-dashed border-zinc-700/30 hover:border-indigo-300 transition-colors">
+            <Card className="border-2 border-dashed border-zinc-700/30 hover:border-indigo-500/50 bg-[#1a1a1a] transition-all hover:shadow-lg hover:shadow-indigo-500/5">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-indigo-700">
+                <CardTitle className="flex items-center gap-2 text-indigo-400">
                   <FileWarning className="w-5 h-5" />
                   Carrier Estimate
                 </CardTitle>
@@ -529,9 +542,9 @@ export default function Scales() {
             </Card>
 
             {/* Contractor Upload */}
-            <Card className="border-2 border-dashed border-zinc-700/30 hover:border-emerald-300 transition-colors">
+            <Card className="border-2 border-dashed border-zinc-700/30 hover:border-emerald-500/50 bg-[#1a1a1a] transition-all hover:shadow-lg hover:shadow-emerald-500/5">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-emerald-700">
+                <CardTitle className="flex items-center gap-2 text-emerald-400">
                   <FileText className="w-5 h-5" />
                   Contractor Estimate
                 </CardTitle>
@@ -647,7 +660,7 @@ export default function Scales() {
               size="lg"
               onClick={handleUploadBoth}
               disabled={!carrierFile || !contractorFile || uploading}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-tactical"
               data-testid="upload-and-compare-btn"
             >
               {uploading ? (
@@ -665,7 +678,7 @@ export default function Scales() {
             {/* Select Carrier Estimate */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-indigo-700">Select Carrier Estimate</CardTitle>
+                <CardTitle className="text-indigo-400">Select Carrier Estimate</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-64">
@@ -678,7 +691,7 @@ export default function Scales() {
                         role="button"
                         className={`p-3 rounded-lg border cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                           selectedCarrier === est.id
-                            ? 'border-indigo-500 bg-indigo-50'
+                            ? 'border-indigo-500 bg-indigo-500/10'
                             : 'border-zinc-700/30 hover:border-indigo-300'
                         }`}
                       >
@@ -687,7 +700,7 @@ export default function Scales() {
                             <p className="font-medium text-white">{est.file_name}</p>
                             <p className="text-sm text-zinc-500">{est.line_item_count} line items</p>
                           </div>
-                          <p className="font-semibold text-indigo-600">{formatCurrency(est.total_rcv)}</p>
+                          <p className="font-semibold text-indigo-400">{formatCurrency(est.total_rcv)}</p>
                         </div>
                       </div>
                     ))}
@@ -702,7 +715,7 @@ export default function Scales() {
             {/* Select Contractor Estimate */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-emerald-700">Select Contractor Estimate</CardTitle>
+                <CardTitle className="text-emerald-400">Select Contractor Estimate</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-64">
@@ -715,7 +728,7 @@ export default function Scales() {
                         role="button"
                         className={`p-3 rounded-lg border cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                           selectedContractor === est.id
-                            ? 'border-emerald-500 bg-emerald-50'
+                            ? 'border-emerald-500 bg-emerald-500/10'
                             : 'border-zinc-700/30 hover:border-emerald-300'
                         }`}
                       >
@@ -724,7 +737,7 @@ export default function Scales() {
                             <p className="font-medium text-white">{est.file_name}</p>
                             <p className="text-sm text-zinc-500">{est.line_item_count} line items</p>
                           </div>
-                          <p className="font-semibold text-emerald-600">{formatCurrency(est.total_rcv)}</p>
+                          <p className="font-semibold text-emerald-400">{formatCurrency(est.total_rcv)}</p>
                         </div>
                       </div>
                     ))}
@@ -742,7 +755,7 @@ export default function Scales() {
               size="lg"
               onClick={runComparison}
               disabled={!selectedCarrier || !selectedContractor || loading}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-tactical"
               data-testid="run-comparison-btn"
             >
               {loading ? (
@@ -760,45 +773,60 @@ export default function Scales() {
             <>
               {/* Summary Cards */}
               <div className="grid md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+                <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-indigo-500/40 transition-all group">
                   <CardContent className="pt-6">
-                    <p className="text-sm text-indigo-600 font-medium">Carrier Total</p>
-                    <p className="text-2xl font-bold text-indigo-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-indigo-400 font-medium font-mono uppercase tracking-wide">Carrier Total</p>
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                        <FileWarning className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-tactical font-bold text-white">
                       {formatCurrency(activeComparison.summary?.carrier_total)}
                     </p>
                   </CardContent>
                 </Card>
-                
-                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+
+                <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-emerald-500/40 transition-all group">
                   <CardContent className="pt-6">
-                    <p className="text-sm text-emerald-600 font-medium">Contractor Total</p>
-                    <p className="text-2xl font-bold text-emerald-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-emerald-400 font-medium font-mono uppercase tracking-wide">Contractor Total</p>
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-emerald-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-tactical font-bold text-white">
                       {formatCurrency(activeComparison.summary?.contractor_total)}
                     </p>
                   </CardContent>
                 </Card>
-                
-                <Card className={`bg-gradient-to-br ${
-                  activeComparison.total_variance > 0 
-                    ? 'from-amber-50 to-amber-100 border-amber-200' 
-                    : 'from-red-50 to-red-100 border-red-200'
+
+                <Card className={`bg-[#1a1a1a] border-zinc-800/60 transition-all ${
+                  activeComparison.total_variance > 0
+                    ? 'hover:border-amber-500/40'
+                    : 'hover:border-red-500/40'
                 }`}>
                   <CardContent className="pt-6">
-                    <p className="text-sm font-medium opacity-80">Total Variance</p>
-                    <p className="text-2xl font-bold">
-                      <VarianceIndicator 
-                        value={activeComparison.total_variance} 
-                        showPercent 
+                    <p className="text-sm font-medium font-mono uppercase tracking-wide text-zinc-400 mb-2">Total Variance</p>
+                    <p className="text-2xl font-tactical font-bold">
+                      <VarianceIndicator
+                        value={activeComparison.total_variance}
+                        showPercent
                         baseValue={activeComparison.summary?.carrier_total}
                       />
                     </p>
                   </CardContent>
                 </Card>
-                
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+
+                <Card className="bg-[#1a1a1a] border-zinc-800/60 hover:border-red-500/40 transition-all group">
                   <CardContent className="pt-6">
-                    <p className="text-sm text-purple-600 font-medium">High Impact Items</p>
-                    <p className="text-2xl font-bold text-purple-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-red-400 font-medium font-mono uppercase tracking-wide">High Impact</p>
+                      <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-tactical font-bold text-white">
                       {activeComparison.summary?.high_impact_items || 0}
                     </p>
                   </CardContent>
@@ -810,7 +838,7 @@ export default function Scales() {
                 <Button
                   onClick={() => runAIAnalysis('comprehensive')}
                   disabled={analyzing}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600"
+                  className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 font-tactical"
                   data-testid="ai-analysis-btn"
                 >
                   {analyzing ? (
@@ -831,9 +859,9 @@ export default function Scales() {
 
               {/* AI Analysis Results */}
               {aiAnalysis && (
-                <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+                <Card className="border-purple-500/30 bg-[#1a1a1a]">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-700">
+                    <CardTitle className="flex items-center gap-2 text-purple-400">
                       <Sparkles className="w-5 h-5" />
                       AI Analysis
                       <Badge variant="outline" className="ml-2">{aiAnalysis.analysis_focus}</Badge>
@@ -934,11 +962,11 @@ export default function Scales() {
                       <ScrollArea className="h-96">
                         <div className="space-y-2">
                           {getFilteredItems(activeComparison.missing_items).map((item, idx) => (
-                            <div key={idx} className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                            <div key={idx} className="p-4 bg-red-500/5 border border-red-500/20 rounded-lg hover:border-red-500/40 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                                    <Badge variant="outline" className="bg-red-500/15 text-red-400 border-red-500/30">
                                       {item.contractor_item?.category || 'N/A'}
                                     </Badge>
                                     <ImpactBadge impact={item.impact} />
@@ -950,12 +978,12 @@ export default function Scales() {
                                     {item.contractor_item?.quantity} {item.contractor_item?.unit} @ {formatCurrency(item.contractor_item?.unit_price)}/unit
                                   </p>
                                   {item.notes && (
-                                    <p className="text-sm text-red-600 mt-1 italic">{item.notes}</p>
+                                    <p className="text-sm text-red-400 mt-1 italic">{item.notes}</p>
                                   )}
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm text-zinc-500">Missing Amount</p>
-                                  <p className="text-xl font-bold text-red-600">
+                                  <p className="text-xl font-bold text-red-400">
                                     {formatCurrency(item.total_diff)}
                                   </p>
                                 </div>
@@ -973,11 +1001,11 @@ export default function Scales() {
                       <ScrollArea className="h-96">
                         <div className="space-y-2">
                           {getFilteredItems(activeComparison.modified_items).map((item, idx) => (
-                            <div key={idx} className="p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                            <div key={idx} className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-lg hover:border-amber-500/40 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">
+                                    <Badge variant="outline" className="bg-amber-500/15 text-amber-400 border-amber-500/30">
                                       {item.carrier_item?.category || 'N/A'}
                                     </Badge>
                                     <ImpactBadge impact={item.impact} />
@@ -997,7 +1025,7 @@ export default function Scales() {
                                     </div>
                                   </div>
                                   {item.notes && (
-                                    <p className="text-sm text-amber-700 mt-2 italic">{item.notes}</p>
+                                    <p className="text-sm text-amber-400 mt-2 italic">{item.notes}</p>
                                   )}
                                 </div>
                                 <div className="text-right">
@@ -1018,14 +1046,14 @@ export default function Scales() {
                       <ScrollArea className="h-96">
                         <div className="space-y-2">
                           {getFilteredItems(activeComparison.matched_items).map((item, idx) => (
-                            <div key={idx} className="p-4 bg-green-50 border border-green-100 rounded-lg">
+                            <div key={idx} className="p-4 bg-green-500/5 border border-green-500/20 rounded-lg hover:border-green-500/40 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                                    <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30">
                                       {item.carrier_item?.category || 'N/A'}
                                     </Badge>
-                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    <CheckCircle className="w-4 h-4 text-green-400" />
                                   </div>
                                   <p className="font-medium text-white mt-2">
                                     {item.carrier_item?.description || 'Unknown Item'}
@@ -1036,7 +1064,7 @@ export default function Scales() {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm text-zinc-500">Amount</p>
-                                  <p className="font-semibold text-green-600">
+                                  <p className="font-semibold text-green-400">
                                     {formatCurrency(item.carrier_item?.total)}
                                   </p>
                                 </div>
@@ -1055,13 +1083,13 @@ export default function Scales() {
 
               {/* Recommendation */}
               {activeComparison.summary?.recommendation && (
-                <Card className="border-blue-200 bg-blue-50">
+                <Card className="border-orange-500/30 bg-orange-500/5">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
-                      <TrendingUp className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                      <TrendingUp className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold text-blue-900">Recommendation</p>
-                        <p className="text-blue-800 mt-1">{activeComparison.summary.recommendation}</p>
+                        <p className="font-semibold text-orange-400 font-tactical uppercase tracking-wide text-sm">Recommendation</p>
+                        <p className="text-zinc-300 mt-1">{activeComparison.summary.recommendation}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1095,21 +1123,21 @@ export default function Scales() {
                 <div className="space-y-2">
                   {estimates.map(est => (
                     <div key={est.id} className={`flex items-center justify-between p-4 rounded-lg ${
-                      est.line_item_count === 0 ? 'bg-amber-50 border border-amber-200' : 'bg-zinc-800/30'
+                      est.line_item_count === 0 ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-[#1a1a1a] border border-zinc-800/40 hover:border-zinc-700/60 transition-colors'
                     }`}>
                       <div className="flex items-center gap-4">
                         <div className={`p-2 rounded-lg ${
                           est.line_item_count === 0 
-                            ? 'bg-amber-100' 
+                            ? 'bg-amber-500/15' 
                             : est.estimate_type === 'carrier' 
-                              ? 'bg-indigo-100' 
-                              : 'bg-emerald-100'
+                              ? 'bg-indigo-500/15' 
+                              : 'bg-emerald-500/15'
                         }`}>
                           {est.line_item_count === 0 ? (
-                            <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            <AlertTriangle className="w-5 h-5 text-amber-400" />
                           ) : (
                             <FileText className={`w-5 h-5 ${
-                              est.estimate_type === 'carrier' ? 'text-indigo-600' : 'text-emerald-600'
+                              est.estimate_type === 'carrier' ? 'text-indigo-400' : 'text-emerald-400'
                             }`} />
                           )}
                         </div>
@@ -1119,7 +1147,7 @@ export default function Scales() {
                             {est.estimate_type.toUpperCase()} • {est.line_item_count} items • {formatCurrency(est.total_rcv)}
                           </p>
                           {est.line_item_count === 0 && (
-                            <p className="text-xs text-amber-600 mt-1">
+                            <p className="text-xs text-amber-400 mt-1">
                               ⚠️ No line items - may not be valid Xactimate format
                             </p>
                           )}
@@ -1154,8 +1182,8 @@ export default function Scales() {
                       onClick={() => loadComparison(comp.id)}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Scale className="w-5 h-5 text-purple-600" />
+                        <div className="p-2 bg-purple-500/15 rounded-lg">
+                          <Scale className="w-5 h-5 text-purple-400" />
                         </div>
                         <div>
                           <p className="font-medium text-white">

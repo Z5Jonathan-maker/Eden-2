@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ExternalLink, FileText, Loader2, MapPin, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import ClaimReportButton from '../../../components/claims/ClaimReportButton';
 
 const ClaimHeader = ({
   claim,
@@ -118,6 +119,7 @@ const ClaimHeader = ({
             <MapPin className="w-4 h-4" />
             Share Location
           </button>
+          <ClaimReportButton claim={claim} />
           <button
             className="btn-tactical min-h-[44px] px-5 py-2.5 text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             onClick={handleEditClaim}
