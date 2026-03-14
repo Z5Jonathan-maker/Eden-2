@@ -113,7 +113,7 @@ const Dashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await apiGet('/api/claims/');
+      const res = await apiGet('/api/claims/', { cache: false });
 
       if (!res.ok) {
         throw new Error(res.error || 'Failed to fetch claims');

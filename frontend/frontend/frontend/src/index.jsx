@@ -32,5 +32,5 @@ root.render(
   </React.StrictMode>,
 );
 
-// Register service worker for offline shell caching
-serviceWorkerRegistration.register();
+// Unregister service worker — was caching stale API responses
+serviceWorkerRegistration.unregister();

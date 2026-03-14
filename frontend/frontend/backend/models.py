@@ -166,6 +166,8 @@ class ClaimUpdate(BaseModel):
     mortgage_company: Optional[str] = None
 
 class Claim(ClaimBase):
+    model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "New"
     assigned_to: Optional[str] = None
