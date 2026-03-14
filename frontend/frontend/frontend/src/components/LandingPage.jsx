@@ -637,94 +637,207 @@ const LandingPage = () => {
       </footer>
 
       {/* Payment Message */}
-      {/* Demo Walkthrough Modal */}
+      {/* Demo Walkthrough Modal — Interactive with Visual Mockups */}
       {showDemo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => { setShowDemo(false); setDemoStep(0); }}>
-          <div className="relative w-full max-w-3xl mx-4 bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Eden Platform Demo</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md" onClick={() => { setShowDemo(false); setDemoStep(0); }}>
+          <div className="relative w-full max-w-5xl mx-4 bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-700/40 rounded-2xl shadow-[0_0_80px_rgba(234,88,12,0.08)] overflow-hidden" onClick={e => e.stopPropagation()}>
+
+            {/* Cinematic Header */}
+            <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-800/60">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-3 h-3 rounded-full bg-orange-500" />
+                  <div className="absolute inset-0 w-3 h-3 rounded-full bg-orange-500 animate-ping opacity-40" />
+                </div>
+                <span className="text-sm font-mono text-zinc-400 uppercase tracking-[0.2em]">Eden Platform</span>
+                <span className="text-xs px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono">LIVE DEMO</span>
               </div>
-              <button onClick={() => { setShowDemo(false); setDemoStep(0); }} className="text-zinc-500 hover:text-white transition-colors" aria-label="Close demo">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-zinc-600 font-mono">{demoStep + 1} / 5</span>
+                <button onClick={() => { setShowDemo(false); setDemoStep(0); }} className="text-zinc-500 hover:text-white transition-colors p-1 rounded hover:bg-zinc-800" aria-label="Close demo">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Demo Steps */}
-            <div className="p-8 min-h-[400px]">
-              {[
-                {
-                  title: "AI-Powered Claims Intelligence",
-                  icon: "🤖",
-                  description: "8 specialized AI agents analyze every claim automatically — from intake parsing to settlement prediction. No manual work required.",
-                  features: ["ClaimMonitor detects stalled claims every 2 hours", "VisionAnalyzer classifies damage from inspection photos", "PredictiveAnalytics forecasts settlement ranges"],
-                },
-                {
-                  title: "Smart Carrier Negotiation",
-                  icon: "🤝",
-                  description: "NegotiationCopilot analyzes carrier responses, identifies leverage points, and drafts counter-arguments with FL statute citations.",
-                  features: ["Auto-detects carrier lowball offers", "Suggests counter at 1.5x with statute backing", "Tracks carrier behavior patterns over time"],
-                },
-                {
-                  title: "FL Statute Compliance",
-                  icon: "⚖️",
-                  description: "StatuteMatcher automatically tracks compliance deadlines. Never miss a 14-day acknowledgment or 90-day resolution deadline again.",
-                  features: ["Live FL statute sync (updated weekly)", "Deadline alerts before they're due", "Carrier violation detection with statute citations"],
-                },
-                {
-                  title: "Evidence Gap Analysis",
-                  icon: "📊",
-                  description: "EvidenceScorer rates your claim documentation across 4 categories and tells you exactly what to gather next.",
-                  features: ["Property, damage, communication, financial scoring", "Priority-ranked gap recommendations", "Negotiation readiness indicator"],
-                },
-                {
-                  title: "Human-in-the-Loop Safety",
-                  icon: "🛡️",
-                  description: "Every AI action that changes data or sends communication requires human approval. Full audit trail of every AI decision.",
-                  features: ["Approval queue with confidence scores", "One-click approve or reject with reason", "Complete audit log for compliance"],
-                },
-              ].map((step, i) => (
-                demoStep === i && (
-                  <div key={i} className="animate-fade-in">
-                    <div className="flex items-center gap-4 mb-6">
-                      <span className="text-4xl" aria-label={step.title}>{step.icon}</span>
-                      <h3 className="text-2xl font-bold text-zinc-100">{step.title}</h3>
+            {/* Content Area — Two Column: Mockup + Description */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[480px]">
+
+              {/* Left: Visual Mockup */}
+              <div className="p-8 flex items-center justify-center border-r border-zinc-800/40 bg-zinc-950/50">
+                {[
+                  /* Step 0: AI Agents Overview */
+                  <div key="mock-0" className="w-full max-w-sm space-y-3 transition-all duration-500">
+                    <div className="text-xs text-zinc-500 font-mono mb-4 uppercase tracking-wider">ClaimPilot Agent Mesh</div>
+                    {['ClaimMonitor','VisionAnalyzer','IntakeParser','EvidenceScorer','NegotiationCopilot','StatuteMatcher','PredictiveAnalytics','EstimateEngine'].map((agent, i) => (
+                      <div key={agent} className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 transition-all duration-300" style={{ animationDelay: `${i * 100}ms`, opacity: 1 }}>
+                        <div className={`w-2 h-2 rounded-full ${i < 5 ? 'bg-green-500' : 'bg-amber-500'} animate-pulse`} style={{ animationDelay: `${i * 200}ms` }} />
+                        <span className="text-xs text-zinc-300 font-mono flex-1">{agent}</span>
+                        <span className="text-[10px] text-zinc-600">{i < 5 ? 'ACTIVE' : 'READY'}</span>
+                      </div>
+                    ))}
+                  </div>,
+
+                  /* Step 1: Negotiation Mockup */
+                  <div key="mock-1" className="w-full max-w-sm space-y-4 transition-all duration-500">
+                    <div className="text-xs text-zinc-500 font-mono mb-2 uppercase tracking-wider">Carrier Response Analysis</div>
+                    <div className="p-4 rounded-lg bg-zinc-800/60 border border-zinc-700/30">
+                      <div className="text-xs text-zinc-500 mb-2">Carrier Offer</div>
+                      <div className="text-2xl font-bold text-red-400 font-mono">$4,200</div>
                     </div>
-                    <p className="text-zinc-400 text-lg mb-6 leading-relaxed">{step.description}</p>
-                    <ul className="space-y-3">
-                      {step.features.map((f, j) => (
-                        <li key={j} className="flex items-start gap-3 text-zinc-300">
-                          <span className="text-orange-500 mt-0.5">✓</span>
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              ))}
-            </div>
+                    <div className="flex items-center justify-center">
+                      <div className="text-orange-500 text-xs font-mono flex items-center gap-2"><Zap className="w-3 h-3" /> AI Counter Strategy</div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                      <div className="text-xs text-orange-400 mb-2">Recommended Counter</div>
+                      <div className="text-2xl font-bold text-green-400 font-mono">$12,600</div>
+                      <div className="text-xs text-zinc-500 mt-2">Based on F.S. 627.70131 + 3 comparable settlements</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-[10px] px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">3 leverage points</span>
+                      <span className="text-[10px] px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">2 statute violations</span>
+                    </div>
+                  </div>,
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between px-8 py-5 border-t border-zinc-800 bg-zinc-900/50">
-              <div className="flex gap-2">
-                {[0,1,2,3,4].map(i => (
-                  <button key={i} onClick={() => setDemoStep(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${demoStep === i ? 'bg-orange-500 scale-125' : 'bg-zinc-600 hover:bg-zinc-500'}`} aria-label={`Step ${i + 1}`} />
+                  /* Step 2: Statute Compliance */
+                  <div key="mock-2" className="w-full max-w-sm space-y-3 transition-all duration-500">
+                    <div className="text-xs text-zinc-500 font-mono mb-2 uppercase tracking-wider">FL Compliance Dashboard</div>
+                    {[
+                      { statute: '627.70131', title: '14-Day Acknowledgment', days: 3, status: 'compliant' },
+                      { statute: '627.70131(5)', title: 'Investigation Start', days: -2, status: 'overdue' },
+                      { statute: '627.70131(7)', title: '90-Day Resolution', days: 23, status: 'approaching' },
+                    ].map((s, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-zinc-800/60 border border-zinc-700/30">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-mono text-zinc-300">F.S. {s.statute}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                            s.status === 'compliant' ? 'bg-green-500/20 text-green-400' :
+                            s.status === 'overdue' ? 'bg-red-500/20 text-red-400' :
+                            'bg-amber-500/20 text-amber-400'
+                          }`}>{s.status === 'overdue' ? `${Math.abs(s.days)}d OVERDUE` : `${s.days}d remaining`}</span>
+                        </div>
+                        <div className="text-xs text-zinc-500">{s.title}</div>
+                        <div className="mt-2 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-1000 ${
+                            s.status === 'compliant' ? 'bg-green-500 w-[85%]' :
+                            s.status === 'overdue' ? 'bg-red-500 w-full' :
+                            'bg-amber-500 w-[74%]'
+                          }`} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>,
+
+                  /* Step 3: Evidence Scoring */
+                  <div key="mock-3" className="w-full max-w-sm space-y-4 transition-all duration-500">
+                    <div className="text-xs text-zinc-500 font-mono mb-2 uppercase tracking-wider">Evidence Completeness</div>
+                    <div className="text-center mb-2">
+                      <div className="text-5xl font-bold text-orange-400 font-mono">72%</div>
+                      <div className="text-xs text-amber-400 mt-1">Needs Work</div>
+                    </div>
+                    {[
+                      { cat: 'Property Docs', pct: 75, color: 'bg-green-500' },
+                      { cat: 'Damage Evidence', pct: 90, color: 'bg-green-500' },
+                      { cat: 'Communications', pct: 60, color: 'bg-amber-500' },
+                      { cat: 'Financial Records', pct: 35, color: 'bg-red-500' },
+                    ].map((c, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-zinc-400">{c.cat}</span>
+                          <span className="text-zinc-500 font-mono">{c.pct}%</span>
+                        </div>
+                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${c.color} transition-all duration-1000`} style={{ width: `${c.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                    <div className="p-3 rounded bg-red-500/5 border border-red-500/20">
+                      <div className="text-[10px] text-red-400 font-mono mb-1">PRIORITY GAP</div>
+                      <div className="text-xs text-zinc-300">Missing: contractor estimates, loss inventory</div>
+                    </div>
+                  </div>,
+
+                  /* Step 4: Approval Queue */
+                  <div key="mock-4" className="w-full max-w-sm space-y-3 transition-all duration-500">
+                    <div className="text-xs text-zinc-500 font-mono mb-2 uppercase tracking-wider">Approval Queue</div>
+                    {[
+                      { agent: 'NegotiationCopilot', action: 'Send counter-offer email', confidence: 94 },
+                      { agent: 'ClaimMonitor', action: 'Create follow-up task', confidence: 88 },
+                      { agent: 'IntakeParser', action: 'Update client phone', confidence: 76 },
+                    ].map((item, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-zinc-800/60 border border-zinc-700/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-zinc-400">{item.agent}</span>
+                          <span className={`text-xs font-mono ${item.confidence >= 85 ? 'text-green-400' : item.confidence >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{item.confidence}%</span>
+                        </div>
+                        <div className="text-sm text-zinc-200 mb-3">{item.action}</div>
+                        <div className="flex gap-2">
+                          <button className="flex-1 py-1.5 text-xs rounded bg-green-600/80 text-white font-medium">Approve</button>
+                          <button className="flex-1 py-1.5 text-xs rounded bg-zinc-700 text-zinc-300 font-medium">Reject</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>,
+                ][demoStep]}
+              </div>
+
+              {/* Right: Description */}
+              <div className="p-8 flex flex-col justify-center">
+                {[
+                  { title: "8 AI Agents. Zero Manual Work.", desc: "ClaimPilot deploys specialized AI agents that analyze every aspect of your claims automatically. From intake parsing to settlement prediction — each agent handles a specific domain with expert-level accuracy.", features: ["Stall detection catches idle claims every 2 hours", "Vision AI classifies damage from inspection photos", "Predictive models forecast settlement ranges and litigation risk"] },
+                  { title: "Negotiate Like a 20-Year Veteran.", desc: "NegotiationCopilot reads carrier responses, identifies their position, and crafts counter-arguments backed by FL statute citations and comparable settlements.", features: ["Detects lowball offers and recommends 1.5x counter", "Cites specific FL statutes as leverage", "Learns carrier behavior patterns over time"] },
+                  { title: "Never Miss a Deadline.", desc: "StatuteMatcher tracks every compliance deadline from F.S. 627. Approaching deadlines trigger alerts. Overdue items escalate automatically.", features: ["14-day acknowledgment tracking", "90-day resolution countdown", "Carrier violation flagging with statute references"] },
+                  { title: "Know Exactly What's Missing.", desc: "EvidenceScorer rates your documentation across 4 categories and tells you the exact next piece of evidence to gather — prioritized by impact on negotiation strength.", features: ["4-category scoring: property, damage, comms, financial", "Priority-ranked gap recommendations", "Readiness indicator: ready / needs work / insufficient"] },
+                  { title: "AI Recommends. You Decide.", desc: "Every action that changes data or sends communication goes through your approval queue. You see the AI's confidence score, reasoning, and can approve or reject with one click.", features: ["Confidence-scored recommendations", "Full reasoning visible before approval", "Complete audit trail for FL compliance"] },
+                ].map((step, i) => (
+                  demoStep === i && (
+                    <div key={i} className="transition-all duration-500">
+                      <h3 className="text-2xl lg:text-3xl font-bold text-zinc-100 mb-4 leading-tight">{step.title}</h3>
+                      <p className="text-zinc-400 mb-8 leading-relaxed">{step.desc}</p>
+                      <ul className="space-y-4">
+                        {step.features.map((f, j) => (
+                          <li key={j} className="flex items-start gap-3">
+                            <div className="mt-1 w-5 h-5 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-orange-400" />
+                            </div>
+                            <span className="text-zinc-300 text-sm leading-relaxed">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
                 ))}
               </div>
+            </div>
+
+            {/* Navigation Bar */}
+            <div className="flex items-center justify-between px-8 py-5 border-t border-zinc-800/60 bg-zinc-950/80">
+              {/* Step Indicators */}
+              <div className="flex gap-3">
+                {['Agents', 'Negotiate', 'Comply', 'Evidence', 'Approve'].map((label, i) => (
+                  <button key={i} onClick={() => setDemoStep(i)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono transition-all duration-300 ${
+                    demoStep === i
+                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 scale-105'
+                      : 'text-zinc-600 hover:text-zinc-400 border border-transparent'
+                  }`} aria-label={`Step ${i + 1}: ${label}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${demoStep === i ? 'bg-orange-500' : 'bg-zinc-700'}`} />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+              {/* Actions */}
               <div className="flex gap-3">
                 {demoStep > 0 && (
-                  <button onClick={() => setDemoStep(s => s - 1)} className="px-5 py-2 text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded transition-colors">
-                    Back
+                  <button onClick={() => setDemoStep(s => s - 1)} className="px-5 py-2.5 text-sm text-zinc-400 hover:text-white border border-zinc-700/50 rounded-lg transition-all hover:border-zinc-600 font-mono">
+                    ← Back
                   </button>
                 )}
                 {demoStep < 4 ? (
-                  <button onClick={() => setDemoStep(s => s + 1)} className="px-5 py-2 text-sm bg-orange-600 hover:bg-orange-500 text-white rounded transition-colors font-medium">
-                    Next
+                  <button onClick={() => setDemoStep(s => s + 1)} className="px-6 py-2.5 text-sm bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-all font-medium shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 hover:scale-105">
+                    Next →
                   </button>
                 ) : (
-                  <button onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/login'); }} className="px-5 py-2 text-sm bg-orange-600 hover:bg-orange-500 text-white rounded transition-colors font-medium">
+                  <button onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/login'); }} className="px-6 py-2.5 text-sm bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white rounded-lg transition-all font-medium shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-105">
                     Start Free Trial →
                   </button>
                 )}
