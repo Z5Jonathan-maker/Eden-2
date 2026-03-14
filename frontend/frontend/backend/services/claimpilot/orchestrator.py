@@ -17,12 +17,14 @@ logger = logging.getLogger(__name__)
 
 # Default event-to-agent mappings
 DEFAULT_EVENT_MAPPINGS = {
-    "ClaimCreated": ["claim_monitor", "intake_parser", "evidence_scorer"],
-    "ClaimUpdated": ["claim_monitor", "evidence_scorer"],
+    "ClaimCreated": ["claim_monitor", "intake_parser", "evidence_scorer", "statute_matcher", "predictive_analytics"],
+    "ClaimUpdated": ["claim_monitor", "evidence_scorer", "statute_matcher", "predictive_analytics"],
     "ClaimArchived": [],
     "ClaimRestored": ["claim_monitor"],
     "PhotoUploaded": ["vision_analyzer", "evidence_scorer"],
     "EvidenceIngested": ["evidence_scorer"],
+    "CarrierResponseReceived": ["negotiation_copilot", "statute_matcher"],
+    "StageTransition": ["claim_monitor", "predictive_analytics", "statute_matcher"],
 }
 
 
@@ -128,11 +130,17 @@ def init_orchestrator(db) -> AgentOrchestrator:
     from services.claimpilot.agents.vision_analyzer import VisionAnalyzerAgent
     from services.claimpilot.agents.intake_parser import IntakeParserAgent
     from services.claimpilot.agents.evidence_scorer import EvidenceScorerAgent
+    from services.claimpilot.agents.negotiation_copilot import NegotiationCopilotAgent
+    from services.claimpilot.agents.statute_matcher import StatuteMatcherAgent
+    from services.claimpilot.agents.predictive_analytics import PredictiveAnalyticsAgent
 
     _orchestrator.register("claim_monitor", ClaimMonitorAgent(db))
     _orchestrator.register("vision_analyzer", VisionAnalyzerAgent(db))
     _orchestrator.register("intake_parser", IntakeParserAgent(db))
     _orchestrator.register("evidence_scorer", EvidenceScorerAgent(db))
+    _orchestrator.register("negotiation_copilot", NegotiationCopilotAgent(db))
+    _orchestrator.register("statute_matcher", StatuteMatcherAgent(db))
+    _orchestrator.register("predictive_analytics", PredictiveAnalyticsAgent(db))
 
     # Register default event mappings
     for event_type, agent_names in DEFAULT_EVENT_MAPPINGS.items():
