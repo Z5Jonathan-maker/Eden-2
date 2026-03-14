@@ -27,6 +27,9 @@ const ComparePage = () => {
         { name: 'Team assignments & collaboration', eden: true, drodat: true, claimwizard: true, brelly: false },
         { name: 'Client portal (policyholder access)', eden: true, drodat: false, claimwizard: true, brelly: false },
         { name: 'Supplement tracking', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Claim timeline / activity log', eden: true, drodat: false, claimwizard: true, brelly: false },
+        { name: 'PDF claim report generation', eden: true, drodat: true, claimwizard: false, brelly: false },
+        { name: 'Batch operations (status, assign, archive)', eden: true, drodat: false, claimwizard: false, brelly: false },
       ],
     },
     {
@@ -38,6 +41,11 @@ const ComparePage = () => {
         { name: 'Document upload & AI summarization', eden: true, drodat: true, claimwizard: false, brelly: true },
         { name: 'Florida statute research (built-in)', eden: true, drodat: false, claimwizard: false, brelly: false },
         { name: 'Forensic weather data', eden: true, drodat: true, claimwizard: false, brelly: false },
+        { name: 'AI Agent Mesh (8 autonomous agents)', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'AI photo damage analysis (Gemini Vision)', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'AI settlement prediction', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Carrier-specific negotiation tactics', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Xactimate category code reference', eden: true, drodat: false, claimwizard: false, brelly: false },
       ],
     },
     {
@@ -56,6 +64,8 @@ const ComparePage = () => {
         { name: 'Team leaderboards & gamification', eden: true, drodat: false, claimwizard: false, brelly: false },
         { name: 'Voice-annotated photo capture', eden: true, drodat: true, claimwizard: false, brelly: false },
         { name: 'AI photo transcription', eden: true, drodat: true, claimwizard: false, brelly: false },
+        { name: 'Daily target tracking with progress bar', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Battle pass / incentive system', eden: true, drodat: false, claimwizard: false, brelly: false },
       ],
     },
     {
@@ -73,6 +83,26 @@ const ComparePage = () => {
         { name: 'Training courses & quizzes', eden: true, drodat: false, claimwizard: false, brelly: false },
         { name: 'Certificates & completion tracking', eden: true, drodat: false, claimwizard: false, brelly: false },
         { name: 'Custom content for your team', eden: true, drodat: false, claimwizard: false, brelly: false },
+      ],
+    },
+    {
+      label: 'Productivity & UX',
+      features: [
+        { name: 'Command palette (Ctrl+K)', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Keyboard shortcuts throughout app', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Notification center with grouped alerts', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Onboarding checklist for new users', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Vision board / goal tracking', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Google Workspace integration (Gmail, Cal, Drive)', eden: true, drodat: false, claimwizard: false, brelly: false },
+      ],
+    },
+    {
+      label: 'Compliance & Legal',
+      features: [
+        { name: 'Florida statute database (Ch. 626, 627)', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'FL compliance monitoring (90-day deadlines)', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'IICRC S500/S520/S540 standards reference', eden: true, drodat: false, claimwizard: false, brelly: false },
+        { name: 'Post-SB 2A strategy guidance', eden: true, drodat: false, claimwizard: false, brelly: false },
       ],
     },
     {

@@ -94,52 +94,60 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: FEATURE_ICONS.scales,
-      title: 'Scales',
-      subtitle: 'Estimate Warfare',
-      description: 'AI-powered Xactimate comparison. Upload carrier vs contractor estimates—instantly identify underpayments and win more at negotiation.',
-      tag: 'SIGNATURE WEAPON',
-      tagColor: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
-    },
-    {
       icon: FEATURE_ICONS.agent_eve,
-      title: 'Agent Eve',
-      subtitle: 'AI Intelligence Officer',
-      description: 'Your AI analyst. Policy coverage analysis, dispute letter generation, claim strategy recommendations, and document intelligence—all in one workspace.',
+      title: 'ClaimPilot AI',
+      subtitle: 'Autonomous Agent Mesh',
+      description: '8 autonomous AI agents monitoring your claims 24/7. Settlement predictions, compliance alerts, carrier negotiation tactics.',
       tag: 'AI POWERED',
       tagColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10'
     },
     {
+      icon: FEATURE_ICONS.agent_eve,
+      title: 'Agent Eve',
+      subtitle: 'AI Claims Expert',
+      description: 'Your AI claims expert powered by Gemini. Knows FL statutes, 11 carrier playbooks, Xactimate codes, and IICRC standards.',
+      tag: 'INTELLIGENCE',
+      tagColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10'
+    },
+    {
+      icon: FEATURE_ICONS.recon,
+      title: 'Photo AI Analysis',
+      subtitle: 'Instant Damage Assessment',
+      description: 'Upload inspection photos and get instant AI damage assessment — severity scoring, damage classification, and repair scope recommendations.',
+      tag: 'VISION AI',
+      tagColor: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
+    },
+    {
       icon: FEATURE_ICONS.garden,
-      title: 'The Garden',
-      subtitle: 'Claims Command Center',
-      description: 'Full lifecycle claim tracking with Excel/CSV import, client management, status pipelines, team assignments, and real-time collaboration.',
+      title: 'Command Center',
+      subtitle: 'Full Lifecycle Tracking',
+      description: 'Full lifecycle claim tracking with pipeline views, batch operations, and one-click PDF reports.',
       tag: 'CORE SYSTEM',
       tagColor: 'text-green-400 border-green-500/30 bg-green-500/10'
     },
     {
+      icon: FEATURE_ICONS.contracts,
+      title: 'Smart Docs',
+      subtitle: 'Contracts & E-Signatures',
+      description: 'E-signatures via SignNow, contract templates auto-filled from claim data, and cloud document management.',
+      tag: 'E-SIGN READY',
+      tagColor: 'text-red-400 border-red-500/30 bg-red-500/10'
+    },
+    {
       icon: FEATURE_ICONS.harvest,
-      title: 'Harvest',
-      subtitle: 'Territory Conquest',
-      description: 'Satellite maps with GPS tracking, door-to-door canvassing pins, team leaderboards, gamification, and territory management.',
+      title: 'Harvest Ops',
+      subtitle: 'Gamified Field Operations',
+      description: 'Gamified field operations with GPS canvassing maps, daily targets, team leaderboards, and battle pass incentives.',
       tag: 'CANVASSING',
       tagColor: 'text-orange-400 border-orange-500/30 bg-orange-500/10'
     },
     {
-      icon: FEATURE_ICONS.recon,
-      title: 'Recon',
-      subtitle: 'Field Intelligence',
-      description: 'Voice-annotated photo capture with AI transcription. Narrate while shooting—AI organizes notes by room and damage type.',
-      tag: 'VOICE + AI',
-      tagColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10'
-    },
-    {
-      icon: FEATURE_ICONS.contracts,
-      title: 'Contracts',
-      subtitle: 'Mission Documents',
-      description: 'Digital contracts with fillable templates, one-click e-signatures via SignNow, auto-fill from claim data, and live tracking.',
-      tag: 'E-SIGN READY',
-      tagColor: 'text-red-400 border-red-500/30 bg-red-500/10'
+      icon: FEATURE_ICONS.scales,
+      title: 'Scales',
+      subtitle: 'Estimate Warfare',
+      description: 'AI-powered Xactimate comparison. Upload carrier vs contractor estimates — instantly identify underpayments and win more at negotiation.',
+      tag: 'SIGNATURE WEAPON',
+      tagColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
     },
     {
       icon: FEATURE_ICONS.doctrine,
@@ -147,14 +155,6 @@ const LandingPage = () => {
       subtitle: 'Training Academy',
       description: 'Onboard and level up your team with courses, quizzes, certificates, and custom training content built for adjusters.',
       tag: 'TRAINING',
-      tagColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
-    },
-    {
-      icon: FEATURE_ICONS.garden,
-      title: 'Client Portal',
-      subtitle: 'Policyholder Access',
-      description: 'Give your clients real-time claim status visibility. Fewer phone calls, faster communication, and a professional edge competitors lack.',
-      tag: 'CLIENT FACING',
       tagColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
     },
     {
