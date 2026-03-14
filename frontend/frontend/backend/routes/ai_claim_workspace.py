@@ -157,7 +157,8 @@ def _get_task_daily_budget_usd(task: str) -> Optional[float]:
         return None
     try:
         parsed = float(raw)
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to parse task budget for %s: %s", task, e)
         return None
     return parsed if parsed >= 0 else None
 
@@ -166,7 +167,8 @@ def _get_task_projected_cost_usd(task: str) -> float:
     raw = os.environ.get(_task_projected_cost_env_key(task), os.environ.get("AI_TASK_PROJECTED_COST_USD_DEFAULT", "0.02"))
     try:
         parsed = float(raw)
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to parse projected cost for %s, defaulting to 0.02: %s", task, e)
         parsed = 0.02
     return max(parsed, 0.0)
 
@@ -183,7 +185,7 @@ async def _enforce_task_daily_budget(user: Dict[str, Any], task: str, projected_
             "created_at": {"$gte": start_of_day},
         },
         {"_id": 0, "estimated_cost_usd": 1},
-    ).to_list(5000)
+    ).to_list(500)
     spent = sum(float(item.get("estimated_cost_usd") or 0.0) for item in rows)
     if spent + projected_cost_usd > limit:
         raise HTTPException(
@@ -227,9 +229,9 @@ async def _log_ai_task_event(
                 "created_at": datetime.now(timezone.utc),
             }
         )
-    except Exception:
+    except Exception as e:
         # Logging failure should never break request path
-        pass
+        logger.warning("Failed to log AI task event: %s", e)
 
 
 def _missing_core_fields(claim: Dict[str, Any]) -> List[str]:
@@ -330,7 +332,8 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
                         "output_tokens": output_tokens,
                         "estimated_cost_usd": est_cost,
                     }
-        except Exception:
+        except Exception as e:
+            logger.error("Anthropic provider call failed: %s", e)
             return None
 
     async def call_ollama() -> Optional[Dict[str, Any]]:
@@ -353,7 +356,8 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
                     if resp.status >= 300:
                         try:
                             detail_payload = await resp.json()
-                        except Exception:
+                        except Exception as e:
+                            logger.debug("Ollama error response not JSON, falling back to text: %s", e)
                             detail_payload = await resp.text()
                         logger.warning(
                             "Ollama call failed (status=%s, detail=%s)",
@@ -376,7 +380,8 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
                         "output_tokens": 0,
                         "estimated_cost_usd": 0.0,
                     }
-        except Exception:
+        except Exception as e:
+            logger.error("Ollama provider call failed: %s", e)
             return None
 
     def call_openai() -> Optional[Dict[str, Any]]:
@@ -409,7 +414,8 @@ async def _generate_with_provider(system_prompt: str, user_prompt: str, task: st
                     "output_tokens": output_tokens,
                     "estimated_cost_usd": est_cost,
                 }
-        except Exception:
+        except Exception as e:
+            logger.error("OpenAI provider call failed: %s", e)
             return None
 
     for provider in provider_order:
@@ -606,7 +612,8 @@ async def get_ai_providers_health(
                     else:
                         try:
                             error_payload = await chat_resp.json()
-                        except Exception:
+                        except Exception as e:
+                            logger.debug("Health-check error response not JSON, falling back to text: %s", e)
                             error_payload = await chat_resp.text()
                         detail = extract_ollama_error_detail(error_payload)
                         status_detail = f"chat_http_{chat_resp.status}"
@@ -951,9 +958,12 @@ async def get_ai_task_metrics(
     rows = await db.ai_task_logs.find(
         {"created_at": {"$gte": since}},
         {"_id": 0},
-    ).to_list(5000)
+    ).to_list(500)
 
-    usage_raw = await db.ai_usage_logs.find({}, {"_id": 0}).to_list(10000)
+    usage_raw = await db.ai_usage_logs.find(
+        {"created_at": {"$gte": since.isoformat()}},
+        {"_id": 0},
+    ).to_list(500)
     usage_rows: List[Dict[str, Any]] = []
     start_of_today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     today_gateway_spend = 0.0
@@ -966,7 +976,8 @@ async def get_ai_task_metrics(
         elif isinstance(created_raw, str):
             try:
                 created_dt = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
-            except Exception:
+            except Exception as e:
+                logger.warning("Failed to parse created_at timestamp %r: %s", created_raw, e)
                 created_dt = None
         if not created_dt:
             continue
