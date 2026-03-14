@@ -42,7 +42,7 @@ FALLBACK_CHAINS: dict[str, list[str]] = {
 
 DEFAULT_TEMPERATURE = 0.3
 DEFAULT_MAX_TOKENS = 2000
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 LLM_CALL_TIMEOUT_SECONDS = 30
 
