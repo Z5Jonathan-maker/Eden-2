@@ -417,10 +417,10 @@ const ClaimsList = () => {
 
       {/* Claims List - Tactical Style */}
       {viewMode !== VIEW_MODES.list ? null :
-      <div className="card-tactical p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+      <div className="card-tactical p-3 sm:p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <button onClick={selectAll} className="text-zinc-500 hover:text-orange-400 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" title="Select all" aria-label="Select all">
+            <button onClick={selectAll} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-colors focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" title="Select all" aria-label="Select all">
               {selectedIds.size === sortedAndFilteredClaims.length && sortedAndFilteredClaims.length > 0
                 ? <CheckSquare className="w-5 h-5 text-orange-400" />
                 : <Square className="w-5 h-5" />
@@ -491,26 +491,27 @@ const ClaimsList = () => {
             ))}
           </div>
         ) : sortedAndFilteredClaims.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
-              <AlertCircle className="w-8 h-8 text-zinc-500" />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4 border border-zinc-700/50">
+              <svg className="w-8 h-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-            <h3 className="text-lg font-tactical font-bold text-white mb-2 uppercase">
-              No Targets Found
-            </h3>
-            <p className="text-zinc-400 mb-6 max-w-sm mx-auto font-mono text-sm">
-              Initialize your first mission to begin operations
+            <h3 className="text-lg font-semibold text-zinc-300 mb-2">No claims found</h3>
+            <p className="text-sm text-zinc-500 max-w-sm">
+              Try adjusting your filters or search terms to find what you&apos;re looking for.
             </p>
             <button
               onClick={() => navigate('/claims/new')}
-              className="btn-tactical px-6 py-3 text-sm focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+              className="btn-tactical px-6 py-3 text-sm mt-6 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             >
               <Plus className="w-4 h-4 mr-2 inline" />
               Create First Mission
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="overflow-x-auto -mx-3 px-3 sm:-mx-0 sm:px-0">
+          <div className="space-y-3 min-w-[320px]">
             {paginatedClaims.map((claim, index) => (
               <div
                 key={claim.id}
@@ -525,10 +526,10 @@ const ClaimsList = () => {
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <button
                         onClick={(e) => toggleSelect(claim.id, e)}
-                        className="text-zinc-500 hover:text-orange-400 transition-colors mr-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-colors mr-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                         aria-label={selectedIds.has(claim.id) ? 'Deselect claim' : 'Select claim'}
                       >
-                        {selectedIds.has(claim.id) ? <CheckSquare className="w-4 h-4 text-orange-400" /> : <Square className="w-4 h-4" />}
+                        {selectedIds.has(claim.id) ? <CheckSquare className="w-5 h-5 text-orange-400" /> : <Square className="w-5 h-5" />}
                       </button>
                       <span className="font-tactical font-bold text-base text-white group-hover:text-orange-400 transition-colors">
                         {claim.claim_number}
@@ -596,11 +597,12 @@ const ClaimsList = () => {
               </div>
             ))}
           </div>
+          </div>
         )}
 
         {/* Pagination Controls */}
         {totalPages > 1 && !loading && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-700/30">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-zinc-700/30 gap-3">
             <p className="text-xs text-zinc-500 font-mono">
               {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredClaims.length)} of {sortedAndFilteredClaims.length}
             </p>
@@ -608,7 +610,8 @@ const ClaimsList = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                aria-label="Previous page"
+                className="min-w-[44px] min-h-[44px] px-3 py-2 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 Prev
               </button>
@@ -626,10 +629,12 @@ const ClaimsList = () => {
                     <button
                       key={item}
                       onClick={() => setCurrentPage(item)}
-                      className={`w-8 h-8 rounded text-xs font-mono transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
+                      aria-label={`Page ${item}`}
+                      aria-current={currentPage === item ? 'page' : undefined}
+                      className={`min-w-[44px] min-h-[44px] px-3 py-2 rounded-lg text-sm font-mono transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
                         currentPage === item
-                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
-                          : 'text-zinc-400 hover:text-orange-400 border border-transparent hover:border-orange-500/30'
+                          ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
                       }`}
                     >
                       {item}
@@ -639,7 +644,8 @@ const ClaimsList = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                aria-label="Next page"
+                className="min-w-[44px] min-h-[44px] px-3 py-2 rounded border border-zinc-700/50 text-xs font-mono uppercase text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               >
                 Next
               </button>

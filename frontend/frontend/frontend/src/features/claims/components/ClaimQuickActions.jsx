@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Shield,
   CalendarPlus,
@@ -52,6 +52,13 @@ const ClaimQuickActions = ({
   generatingDeck,
   handleGenerateDeck,
 }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (text) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="card-tactical p-5">
       <div className="flex items-center gap-3 mb-5">
@@ -217,6 +224,8 @@ const ClaimQuickActions = ({
         {Array.isArray(copilotActions) && copilotActions.length > 0 && (
           <div
             className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-3 space-y-2"
+            role="region"
+            aria-label="Copilot Next Actions"
             data-testid="copilot-actions-panel"
           >
             <div className="flex items-center justify-between gap-2">
@@ -292,6 +301,8 @@ const ClaimQuickActions = ({
         {aiBrief && (
           <div
             className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-2"
+            role="region"
+            aria-label="AI Brief Results"
             data-testid="ai-brief-panel"
           >
             <div className="flex items-center justify-between gap-2">
@@ -369,6 +380,8 @@ const ClaimQuickActions = ({
         {aiDraft && (
           <div
             className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 space-y-2"
+            role="region"
+            aria-label="AI Draft Results"
             data-testid="ai-draft-panel"
           >
             <div className="flex items-center justify-between gap-2">
@@ -391,12 +404,13 @@ const ClaimQuickActions = ({
                   Use & Send
                 </button>
                 <button
-                  onClick={copyAIDraft}
+                  onClick={() => { copyAIDraft(); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                   className="px-2 py-1 rounded border border-blue-500/30 text-blue-200 hover:bg-blue-500/10 text-[10px] uppercase font-mono"
                   data-testid="copy-ai-draft-btn"
                 >
-                  Copy
+                  {copied ? 'Copied!' : 'Copy'}
                 </button>
+                {copied && <span className="text-xs text-green-400 ml-1">Copied!</span>}
                 {aiDraft.channel === 'email' && (
                   <button
                     onClick={handleSendAIDraftEmail}
@@ -435,6 +449,8 @@ const ClaimQuickActions = ({
         {floridaReadiness && (
           <div
             className="rounded-lg border border-orange-500/25 bg-orange-500/5 p-3 space-y-3"
+            role="region"
+            aria-label="Florida Readiness Assessment"
             data-testid="florida-readiness-panel"
           >
             <div className="flex items-center justify-between gap-2">
@@ -543,6 +559,8 @@ const ClaimQuickActions = ({
         {demandManifest && (
           <div
             className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-3 space-y-3"
+            role="region"
+            aria-label="Demand Package Manifest"
             data-testid="demand-manifest-panel"
           >
             <div className="flex items-center justify-between gap-2">
@@ -659,6 +677,8 @@ const ClaimQuickActions = ({
             className="w-full px-4 py-3 rounded bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 text-blue-400 hover:from-blue-600/30 hover:to-purple-600/30 font-mono text-xs uppercase flex items-center justify-between transition-all"
             onClick={() => setShowDeckMenu(!showDeckMenu)}
             disabled={!!generatingDeck}
+            aria-expanded={showDeckMenu}
+            aria-controls="deck-menu-panel"
             data-testid="gamma-deck-btn"
           >
             <span className="flex items-center gap-2">
@@ -677,7 +697,7 @@ const ClaimQuickActions = ({
           </button>
 
           {showDeckMenu && (
-            <div className="absolute z-50 mt-1 w-full bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
+            <div id="deck-menu-panel" className="absolute z-50 mt-1 w-full bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden">
               <div className="p-2 text-[10px] font-mono text-zinc-500 uppercase border-b border-zinc-700/50">
                 Select Deck Type
               </div>

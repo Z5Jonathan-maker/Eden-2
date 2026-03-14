@@ -57,8 +57,9 @@ const ClaimHeader = ({
     <div className="mb-4 md:mb-6 animate-fade-in-up">
       <button
         onClick={() => navigate('/claims')}
-        className="mb-4 px-3 py-2 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
+        className="mb-4 min-w-[44px] min-h-[44px] px-3 py-2 rounded border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         data-testid="back-to-claims"
+        aria-label="Go back to claims list"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Garden
@@ -87,7 +88,7 @@ const ClaimHeader = ({
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {gammaPage?.exists ? (
             <button
-              className="px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
+              className="min-h-[44px] px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center justify-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               onClick={() => window.open(gammaPage.url, '_blank')}
               data-testid="notion-page-btn"
             >
@@ -96,7 +97,7 @@ const ClaimHeader = ({
             </button>
           ) : (
             <button
-              className="px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center gap-2 transition-all"
+              className="min-h-[44px] px-4 py-2 rounded border border-zinc-700/50 text-zinc-300 hover:text-purple-400 hover:border-purple-500/30 font-mono text-xs uppercase flex items-center justify-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               onClick={createGammaStrategyPage}
               disabled={creatingGammaPage}
               data-testid="create-notion-btn"
@@ -110,7 +111,7 @@ const ClaimHeader = ({
             </button>
           )}
           <button
-            className="px-4 py-2 rounded border border-green-500/30 text-green-400 hover:bg-green-500/10 font-mono text-xs uppercase flex items-center gap-2 transition-all"
+            className="min-h-[44px] px-4 py-2 rounded border border-green-500/30 text-green-400 hover:bg-green-500/10 font-mono text-xs uppercase flex items-center justify-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             onClick={handleShareLocation}
             data-testid="share-location-btn"
           >
@@ -118,7 +119,7 @@ const ClaimHeader = ({
             Share Location
           </button>
           <button
-            className="btn-tactical px-5 py-2.5 text-sm flex items-center gap-2"
+            className="btn-tactical min-h-[44px] px-5 py-2.5 text-sm flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
             onClick={handleEditClaim}
             data-testid="edit-claim-btn"
           >
