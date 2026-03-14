@@ -637,6 +637,103 @@ const LandingPage = () => {
       </footer>
 
       {/* Payment Message */}
+      {/* Demo Walkthrough Modal */}
+      {showDemo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => { setShowDemo(false); setDemoStep(0); }}>
+          <div className="relative w-full max-w-3xl mx-4 bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">Eden Platform Demo</span>
+              </div>
+              <button onClick={() => { setShowDemo(false); setDemoStep(0); }} className="text-zinc-500 hover:text-white transition-colors" aria-label="Close demo">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Demo Steps */}
+            <div className="p-8 min-h-[400px]">
+              {[
+                {
+                  title: "AI-Powered Claims Intelligence",
+                  icon: "🤖",
+                  description: "8 specialized AI agents analyze every claim automatically — from intake parsing to settlement prediction. No manual work required.",
+                  features: ["ClaimMonitor detects stalled claims every 2 hours", "VisionAnalyzer classifies damage from inspection photos", "PredictiveAnalytics forecasts settlement ranges"],
+                },
+                {
+                  title: "Smart Carrier Negotiation",
+                  icon: "🤝",
+                  description: "NegotiationCopilot analyzes carrier responses, identifies leverage points, and drafts counter-arguments with FL statute citations.",
+                  features: ["Auto-detects carrier lowball offers", "Suggests counter at 1.5x with statute backing", "Tracks carrier behavior patterns over time"],
+                },
+                {
+                  title: "FL Statute Compliance",
+                  icon: "⚖️",
+                  description: "StatuteMatcher automatically tracks compliance deadlines. Never miss a 14-day acknowledgment or 90-day resolution deadline again.",
+                  features: ["Live FL statute sync (updated weekly)", "Deadline alerts before they're due", "Carrier violation detection with statute citations"],
+                },
+                {
+                  title: "Evidence Gap Analysis",
+                  icon: "📊",
+                  description: "EvidenceScorer rates your claim documentation across 4 categories and tells you exactly what to gather next.",
+                  features: ["Property, damage, communication, financial scoring", "Priority-ranked gap recommendations", "Negotiation readiness indicator"],
+                },
+                {
+                  title: "Human-in-the-Loop Safety",
+                  icon: "🛡️",
+                  description: "Every AI action that changes data or sends communication requires human approval. Full audit trail of every AI decision.",
+                  features: ["Approval queue with confidence scores", "One-click approve or reject with reason", "Complete audit log for compliance"],
+                },
+              ].map((step, i) => (
+                demoStep === i && (
+                  <div key={i} className="animate-fade-in">
+                    <div className="flex items-center gap-4 mb-6">
+                      <span className="text-4xl" aria-label={step.title}>{step.icon}</span>
+                      <h3 className="text-2xl font-bold text-zinc-100">{step.title}</h3>
+                    </div>
+                    <p className="text-zinc-400 text-lg mb-6 leading-relaxed">{step.description}</p>
+                    <ul className="space-y-3">
+                      {step.features.map((f, j) => (
+                        <li key={j} className="flex items-start gap-3 text-zinc-300">
+                          <span className="text-orange-500 mt-0.5">✓</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              ))}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between px-8 py-5 border-t border-zinc-800 bg-zinc-900/50">
+              <div className="flex gap-2">
+                {[0,1,2,3,4].map(i => (
+                  <button key={i} onClick={() => setDemoStep(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${demoStep === i ? 'bg-orange-500 scale-125' : 'bg-zinc-600 hover:bg-zinc-500'}`} aria-label={`Step ${i + 1}`} />
+                ))}
+              </div>
+              <div className="flex gap-3">
+                {demoStep > 0 && (
+                  <button onClick={() => setDemoStep(s => s - 1)} className="px-5 py-2 text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded transition-colors">
+                    Back
+                  </button>
+                )}
+                {demoStep < 4 ? (
+                  <button onClick={() => setDemoStep(s => s + 1)} className="px-5 py-2 text-sm bg-orange-600 hover:bg-orange-500 text-white rounded transition-colors font-medium">
+                    Next
+                  </button>
+                ) : (
+                  <button onClick={() => { setShowDemo(false); setDemoStep(0); navigate('/login'); }} className="px-5 py-2 text-sm bg-orange-600 hover:bg-orange-500 text-white rounded transition-colors font-medium">
+                    Start Free Trial →
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {paymentMessage && (
         <div role="alert" aria-live="assertive" className={`fixed top-20 right-4 z-50 p-4 rounded-lg border ${
           paymentMessage.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
