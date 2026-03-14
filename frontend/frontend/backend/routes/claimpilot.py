@@ -46,9 +46,9 @@ async def get_pending_actions(
     """Return pending approval-gate actions."""
     _require_level(current_user, MIN_LEVEL_ADJUSTER, "Adjuster")
 
-    from services.claimpilot.approval_gate import ApprovalGate
+    from services.claimpilot.orchestrator import get_orchestrator
 
-    gate = ApprovalGate(db)
+    gate = get_orchestrator()._approval_gate
     actions = await gate.get_pending(claim_id=claim_id, limit=limit)
     return _envelope(actions, count=len(actions))
 
@@ -65,9 +65,9 @@ async def approve_action(
     """Approve a pending agent action."""
     _require_level(current_user, MIN_LEVEL_MANAGER, "Manager")
 
-    from services.claimpilot.approval_gate import ApprovalGate
+    from services.claimpilot.orchestrator import get_orchestrator
 
-    gate = ApprovalGate(db)
+    gate = get_orchestrator()._approval_gate
     ok = await gate.approve(action_id, reviewed_by=current_user["id"])
     if not ok:
         raise HTTPException(status_code=404, detail="Action not found or not pending")
@@ -87,9 +87,9 @@ async def reject_action(
     """Reject a pending agent action."""
     _require_level(current_user, MIN_LEVEL_MANAGER, "Manager")
 
-    from services.claimpilot.approval_gate import ApprovalGate
+    from services.claimpilot.orchestrator import get_orchestrator
 
-    gate = ApprovalGate(db)
+    gate = get_orchestrator()._approval_gate
     ok = await gate.reject(action_id, reviewed_by=current_user["id"], reason=reason)
     if not ok:
         raise HTTPException(status_code=404, detail="Action not found or not pending")
@@ -133,12 +133,10 @@ async def run_agent(
     from services.claimpilot.orchestrator import get_orchestrator
 
     orchestrator = get_orchestrator()
-    results = await orchestrator.handle_event(
-        event_type=f"manual:{agent_name}",
-        claim_id=claim_id,
-        details={"triggered_by": current_user["id"]},
-    )
-    serialized = [r.model_dump() if hasattr(r, "model_dump") else vars(r) for r in results]
+    result = await orchestrator.run_agent(agent_name, claim_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
+    serialized = result.model_dump() if hasattr(result, "model_dump") else vars(result)
     return _envelope(serialized, claim_id=claim_id, agent=agent_name)
 
 
