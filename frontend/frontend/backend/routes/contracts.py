@@ -60,7 +60,7 @@ async def _build_contract_visibility_filter(current_user: dict) -> Dict[str, Any
     visible_claims = await db.claims.find(
         {"$or": claim_query_or},
         {"_id": 0, "id": 1},
-    ).limit(5000).to_list(5000)
+    ).limit(500).to_list(500)
     claim_ids = [item.get("id") for item in visible_claims if item.get("id")]
 
     visibility_or = [{"created_by": user_id}]

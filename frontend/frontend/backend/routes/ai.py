@@ -730,7 +730,7 @@ async def _enforce_daily_budget(user_id: str, projected_cost_usd: float):
         {"user_id": user_id, "created_at": {"$gte": start_of_day}},
         {"_id": 0, "estimated_cost_usd": 1}
     )
-    entries = await cursor.to_list(10000)
+    entries = await cursor.to_list(500)
     spent = sum(float(item.get("estimated_cost_usd", 0)) for item in entries)
     if spent + projected_cost_usd > AI_DAILY_BUDGET_USD:
         raise HTTPException(
@@ -748,7 +748,7 @@ async def _enforce_task_daily_budget(user_id: str, task_type: str, projected_cos
         {"user_id": user_id, "task_type": task_type, "created_at": {"$gte": start_of_day}},
         {"_id": 0, "estimated_cost_usd": 1}
     )
-    entries = await cursor.to_list(10000)
+    entries = await cursor.to_list(500)
     spent = sum(float(item.get("estimated_cost_usd", 0)) for item in entries)
     if spent + projected_cost_usd > task_limit:
         raise HTTPException(

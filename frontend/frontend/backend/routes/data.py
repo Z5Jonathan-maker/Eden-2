@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
 from fastapi.responses import StreamingResponse
 from dependencies import db, get_current_active_user, require_role
 from models import Claim, ClaimCreate
@@ -228,11 +228,13 @@ async def get_import_claims_capabilities(
 
 @router.get("/export/claims")
 async def export_claims_csv(
+    page: int = Query(0, ge=0, description="Page number (0-indexed)"),
+    limit: int = Query(100, ge=1, le=500, description="Items per page (max 500)"),
     current_user: dict = Depends(require_role(["admin", "adjuster"]))
 ):
-    """Export all claims to CSV"""
+    """Export claims to CSV with pagination"""
     try:
-        claims = await db.claims.find({}, {"_id": 0}).to_list(10000)
+        claims = await db.claims.find({}, {"_id": 0}).skip(page * limit).limit(limit).to_list(limit)
         
         if not claims:
             raise HTTPException(status_code=404, detail="No claims to export")
@@ -273,11 +275,13 @@ async def export_claims_csv(
 
 @router.get("/export/claims/json")
 async def export_claims_json(
+    page: int = Query(0, ge=0, description="Page number (0-indexed)"),
+    limit: int = Query(100, ge=1, le=500, description="Items per page (max 500)"),
     current_user: dict = Depends(require_role(["admin", "adjuster"]))
 ):
-    """Export all claims to JSON"""
+    """Export claims to JSON with pagination"""
     try:
-        claims = await db.claims.find({}, {"_id": 0}).to_list(10000)
+        claims = await db.claims.find({}, {"_id": 0}).skip(page * limit).limit(limit).to_list(limit)
         
         if not claims:
             raise HTTPException(status_code=404, detail="No claims to export")

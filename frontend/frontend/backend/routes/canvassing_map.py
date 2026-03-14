@@ -1121,7 +1121,7 @@ async def repair_invalid_pins(
     2) latest history lat/lng
     Leaves unresolved pins untouched and reports IDs.
     """
-    pins = await db.canvassing_pins.find({}, {"_id": 0}).to_list(5000)
+    pins = await db.canvassing_pins.find({}, {"_id": 0}).to_list(500)
     scanned = len(pins)
     repaired = 0
     unresolved = []
