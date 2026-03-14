@@ -22,9 +22,10 @@ DEFAULT_EVENT_MAPPINGS = {
     "ClaimArchived": [],
     "ClaimRestored": ["claim_monitor"],
     "PhotoUploaded": ["vision_analyzer", "evidence_scorer"],
-    "EvidenceIngested": ["evidence_scorer"],
+    "EvidenceIngested": ["evidence_scorer", "estimate_engine"],
     "CarrierResponseReceived": ["negotiation_copilot", "statute_matcher"],
     "StageTransition": ["claim_monitor", "predictive_analytics", "statute_matcher"],
+    "EstimateRequested": ["estimate_engine"],
 }
 
 
@@ -133,6 +134,7 @@ def init_orchestrator(db) -> AgentOrchestrator:
     from services.claimpilot.agents.negotiation_copilot import NegotiationCopilotAgent
     from services.claimpilot.agents.statute_matcher import StatuteMatcherAgent
     from services.claimpilot.agents.predictive_analytics import PredictiveAnalyticsAgent
+    from services.claimpilot.agents.estimate_engine import EstimateEngineAgent
 
     _orchestrator.register("claim_monitor", ClaimMonitorAgent(db))
     _orchestrator.register("vision_analyzer", VisionAnalyzerAgent(db))
@@ -141,6 +143,7 @@ def init_orchestrator(db) -> AgentOrchestrator:
     _orchestrator.register("negotiation_copilot", NegotiationCopilotAgent(db))
     _orchestrator.register("statute_matcher", StatuteMatcherAgent(db))
     _orchestrator.register("predictive_analytics", PredictiveAnalyticsAgent(db))
+    _orchestrator.register("estimate_engine", EstimateEngineAgent(db))
 
     # Register default event mappings
     for event_type, agent_names in DEFAULT_EVENT_MAPPINGS.items():
