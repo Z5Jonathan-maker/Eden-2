@@ -625,10 +625,12 @@ async def ensure_admin_user():
             )
             return
 
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@eden.com")
+        admin_name = os.environ.get("ADJUSTER_NAME", "System Admin")
         admin_user = {
             "id": str(uuid.uuid4()),
-            "email": "admin@eden.com",
-            "full_name": "System Admin",
+            "email": admin_email,
+            "full_name": admin_name,
             "role": "admin",
             "password": get_password_hash(admin_password),
             "is_active": True,
@@ -636,8 +638,20 @@ async def ensure_admin_user():
         }
         await db.users.insert_one(admin_user)
         logging.info(
-            "Created admin user admin@eden.com using ADMIN_INITIAL_PASSWORD bootstrap"
+            "Created admin user %s using ADMIN_INITIAL_PASSWORD bootstrap", admin_email
         )
+
+    # Also ensure existing admin can log in with current password if ADMIN_INITIAL_PASSWORD is set
+    admin_email_env = os.environ.get("ADMIN_EMAIL", "").strip()
+    admin_password_env = os.environ.get("ADMIN_INITIAL_PASSWORD", "").strip()
+    if admin_email_env and admin_password_env:
+        existing = await db.users.find_one({"email": admin_email_env})
+        if existing:
+            await db.users.update_one(
+                {"email": admin_email_env},
+                {"$set": {"password": get_password_hash(admin_password_env), "role": "admin"}}
+            )
+            logging.info("Updated password for admin user %s", admin_email_env)
 
 # WebSocket endpoint for real-time notifications
 @app.websocket("/ws/notifications")
