@@ -119,12 +119,20 @@ Built fresh for each agent execution. Contains:
 
 | Task Type | Primary | Fallback | Cost |
 |-----------|---------|----------|------|
-| Vision (photos) | Gemini 2.0 Flash | Ollama (if local model supports) | $0 |
-| Text generation (drafts, analysis) | Gemini 2.0 Flash | Groq llama-3.3-70b | $0 |
-| Structured extraction (parsing) | Gemini 2.0 Flash | Groq | $0 |
-| Local/private data | Ollama gemma3:27b | — | $0 |
+| Vision (photos) | Gemini 2.0 Flash | Groq (if text-describable) → heuristic | $0 |
+| Text generation (drafts, analysis) | Gemini 2.0 Flash | Groq llama-3.3-70b → heuristic | $0 |
+| Structured extraction (parsing) | Gemini 2.0 Flash | Groq → heuristic | $0 |
+| Local/private data (dev only) | Ollama gemma3:27b | — | $0 |
 
 Router selects based on: task type, payload size, privacy sensitivity, rate limit headroom.
+
+**Production note:** Ollama is unavailable on Render (no GPU). In production, fallback chain is Gemini → Groq → heuristic. Every agent MUST define a non-LLM heuristic fallback that returns a reasonable result without any LLM call.
+
+**Rate limiting:** Gemini free tier = 15 RPM, 1,500 req/day. Groq = 30 RPM, 14,400 req/day. LLM Router implements per-provider token-bucket rate limiter. VisionAnalyzer batches multiple photos into single multi-image prompts (Gemini supports this).
+
+**Scale ceiling:** Free tier supports ~50 active claims with regular updates. Beyond that, Gemini paid tier ($0.10/1M tokens) is required. Document escape hatch in deployment guide.
+
+**PII disclosure:** Client names, addresses, policy numbers, and damage photos are sent to Gemini/Groq for processing. Both providers' data policies reviewed — neither uses API data for training. FL data protection compliance confirmed for claims processing use case.
 
 ### 3.4 Approval Gate
 
