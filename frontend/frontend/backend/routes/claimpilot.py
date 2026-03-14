@@ -141,7 +141,57 @@ async def run_agent(
 
 
 # ---------------------------------------------------------------------------
-# 6. GET /analytics — admin only (level >= 100)
+# 6. GET /legal/status — adjuster+ (level >= 50)
+# ---------------------------------------------------------------------------
+
+@router.get("/legal/status")
+async def get_legal_feed_status(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Get legal feed sync status and staleness check."""
+    _require_level(current_user, MIN_LEVEL_ADJUSTER, "Adjuster")
+
+    from services.claimpilot.legal_feed import LegalFeedService
+
+    service = LegalFeedService(db)
+    staleness = await service.check_staleness()
+    statutes = await service.get_all_statutes()
+    return _envelope(
+        {
+            "staleness": {
+                "is_stale": staleness["is_stale"],
+                "last_sync": (
+                    staleness["last_sync"].isoformat()
+                    if staleness["last_sync"]
+                    else None
+                ),
+                "days_since_sync": staleness["days_since_sync"],
+            },
+            "statute_count": len(statutes),
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# 7. POST /legal/sync — admin only (level >= 100)
+# ---------------------------------------------------------------------------
+
+@router.post("/legal/sync")
+async def force_legal_sync(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Force legal data refresh (admin only)."""
+    _require_level(current_user, MIN_LEVEL_ADMIN, "Admin")
+
+    from services.claimpilot.legal_feed import LegalFeedService
+
+    service = LegalFeedService(db)
+    result = await service.sync_statutes(force=True)
+    return _envelope(result)
+
+
+# ---------------------------------------------------------------------------
+# 8. GET /analytics — admin only (level >= 100)
 # ---------------------------------------------------------------------------
 
 @router.get("/analytics")

@@ -52,6 +52,7 @@ def init_scheduler(db):
     _add_evidence_sync_jobs()
     _add_drive_mirror_jobs()
     _add_claimpilot_monitor_jobs()
+    _add_legal_feed_jobs()
 
     logger.info("Background scheduler initialized with all bots")
 
@@ -179,6 +180,67 @@ def _add_claimpilot_monitor_jobs():
         misfire_grace_time=600,
     )
     logger.info("ClaimPilot Monitor job added: every 2 hours")
+
+
+def _add_legal_feed_jobs():
+    """Add ClaimPilot legal feed sync and staleness check jobs."""
+
+    async def _run_weekly_sync():
+        """Weekly FL statute sync — Sunday 02:00 UTC."""
+        from services.claimpilot.legal_feed import LegalFeedService
+
+        if _db is None:
+            logger.warning("legal_feed sync skipped: no DB connection")
+            return
+        service = LegalFeedService(_db)
+        result = await service.sync_statutes(force=False)
+        logger.info(
+            "legal_feed weekly sync: updated=%d unchanged=%d errors=%d",
+            result["updated"],
+            result["unchanged"],
+            len(result["errors"]),
+        )
+
+    async def _run_staleness_check():
+        """Daily staleness check — 06:00 UTC."""
+        from services.claimpilot.legal_feed import LegalFeedService
+
+        if _db is None:
+            logger.warning("legal_feed staleness check skipped: no DB connection")
+            return
+        service = LegalFeedService(_db)
+        status = await service.check_staleness()
+        if status["is_stale"]:
+            logger.warning(
+                "legal_feed STALE: %d days since last sync",
+                status["days_since_sync"],
+            )
+
+    # Weekly sync: Sunday at 02:00 UTC
+    scheduler.add_job(
+        _run_async_job,
+        CronTrigger(day_of_week="sun", hour=2, minute=0),
+        args=[_run_weekly_sync],
+        id="legal_feed_weekly_sync",
+        name="ClaimPilot Legal Feed - Weekly Sync",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # Daily staleness check at 06:00 UTC
+    scheduler.add_job(
+        _run_async_job,
+        CronTrigger(hour=6, minute=0),
+        args=[_run_staleness_check],
+        id="legal_feed_staleness_check",
+        name="ClaimPilot Legal Feed - Daily Staleness Check",
+        replace_existing=True,
+        misfire_grace_time=1800,
+    )
+
+    logger.info(
+        "Legal feed jobs added: weekly sync Sun 02:00 UTC, staleness check daily 06:00 UTC"
+    )
 
 
 async def _run_async_job(coro_func):

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx craco build)",
+      "Bash(DISABLE_ESLINT_PLUGIN=true npx craco build)",
+      "Bash(git status -u)",
+      "Bash(git add package.json src/App.jsx src/components/AnimatedOutlet.jsx src/components/DataManagement.jsx src/components/HarvestPage.jsx src/components/NewClaim.jsx src/components/NotFoundPage.jsx src/components/NotificationBell.jsx src/components/RouteErrorBoundary.jsx src/components/chat/ChatLayout.jsx src/context/AuthContext.jsx src/features/claims/components/ClaimDetails.jsx src/features/claims/components/ClaimEditModal.jsx src/features/contracts/components/ContractsPage.tsx src/features/documents/components/DocumentsPage.jsx src/hooks/useChat.js src/lib/api.js src/lib/core.js src/pages/WorkspacePage.jsx)",
+      "Bash(git commit:*)",
+      "Bash(git push origin master)",
+      "Bash(npm install dompurify)",
+      "Bash(git add package.json package-lock.json public/index.html src/lib/sanitize.js src/lib/api.js src/lib/core.js src/context/AuthContext.jsx src/components/workspace/GmailTab.jsx src/components/SecureImage.jsx src/components/InspectionPhotoGallery.jsx src/components/Settings.jsx src/features/claims/components/ClaimDetails.jsx src/features/claims/components/PhotoViewerModal.jsx src/features/claims/components/ComplianceDeadlineTracker.jsx src/features/inspections/hooks/useInspectionPhotos.js src/hooks/useChat.js src/hooks/useDriveBackup.js)",
+      "Bash(gh auth status)",
+      "WebFetch(domain:eden2-five.vercel.app)",
+      "Bash(git add src/App.jsx src/components/InspectionPhotoGallery.jsx src/components/NewClaim.jsx src/components/Register.jsx src/components/chat/ChatComposer.jsx src/context/AuthContext.jsx src/features/documents/components/DocumentsPage.jsx src/features/inspections/hooks/useInspectionPhotos.js src/hooks/useChat.js src/lib/requestQueue.js src/shared/layouts/Layout.jsx)",
+      "Bash(npm install:*)",
+      "Bash(npx craco:*)",
+      "Bash(git add package.json package-lock.json src/setupTests.js src/test/setup.js src/features/claims/components/ClaimDetails.jsx src/features/claims/components/ClaimQuickActions.jsx src/tests/security/sanitize.test.js src/tests/security/api.test.js src/tests/security/core.test.js src/tests/security/rbac.test.js src/tests/security/fileValidation.test.js src/tests/resilience/offlineQueue.test.js)",
+      "Bash(find src -type f \\\\\\( -name \"*.jsx\" -o -name \"*.js\" \\\\\\) -exec head -30 {} +)",
+      "Bash(xargs grep -l \"REACT_APP_\")",
+      "Bash(git:*)",
+      "Bash(sed:*)",
+      "Bash(npx source-map-explorer build/static/js/main.*.js --json)",
+      "Bash(head -c 500 build/static/js/2335.*.chunk.js)",
+      "Bash(ls \"C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/frontend/.env\"*)",
+      "Bash(ls \"C:/Users/HP/Documents/trae_projects/eden 2/frontend/.env\"*)",
+      "Bash(ls \"C:/Users/HP/Documents/trae_projects/eden 2/frontend/frontend/.env\"*)",
+      "Bash(npx vercel:*)",
+      "Bash(vercel:*)",
+      "Bash(VERCEL_ORG_ID=team_sgUnwrDyrMp8pPKOIZN0qUlz:*)"
+    ]
+  }
+}
