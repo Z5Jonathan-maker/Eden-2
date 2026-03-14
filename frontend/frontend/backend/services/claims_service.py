@@ -1,0 +1,404 @@
+import logging
+import os
+import uuid
+from datetime import datetime, timezone
+from typing import List, Optional, Dict, Any
+from fastapi import HTTPException
+
+from models import ClaimCreate, ClaimUpdate, Claim
+from dependencies import db
+
+# Structured logging setup
+logger = logging.getLogger(__name__)
+
+# --- 1. State Machine Definition (Enforcement Rule #3) ---
+ALLOWED_TRANSITIONS = {
+    # Includes legacy UI statuses ("In Progress", "Completed") plus newer workflow statuses.
+    "New": ["In Progress", "Under Review", "Archived"],
+    "In Progress": ["Under Review", "Completed", "Denied", "Archived", "New"],
+    "Under Review": ["Approved", "Denied", "In Progress", "Completed", "Archived", "New"],
+    "Approved": ["Completed", "Closed", "Archived"],
+    "Denied": ["Under Review", "Archived"],
+    "Completed": ["Closed", "Archived", "Under Review"],
+    "Closed": ["Archived"],
+    "Archived": ["New", "In Progress"]  # Can be restored to active workflow
+}
+
+class ClaimsService:
+    def __init__(self, database=db):
+        self.db = database
+
+    # --- 2. Single Source of Truth (Enforcement Rule #2) ---
+    async def create_claim(self, claim_data: ClaimCreate, current_user: Dict[str, Any]) -> Claim:
+        """Create a new claim with all side effects (notifications, events, logs)"""
+        try:
+            claim_dict = claim_data.model_dump()
+            claim_dict["created_by"] = current_user["id"]
+            claim_dict["assigned_to"] = current_user["full_name"]
+            claim_dict["public_status_token"] = uuid.uuid4().hex
+            
+            # Enforce initial state
+            claim_dict["status"] = "New"
+            
+            claim_obj = Claim(**claim_dict)
+            await self.db.claims.insert_one(claim_obj.model_dump())
+            
+            # --- 4. Domain Events (Enforcement Rule #4) ---
+            await self._dispatch_domain_event("ClaimCreated", claim_obj, current_user)
+
+            # Award Battle Pass XP for claim creation
+            try:
+                from routes.battle_pass import award_xp_internal
+                await award_xp_internal(current_user["id"], "claim_created")
+            except Exception:
+                pass  # Non-critical
+
+            return claim_obj
+            
+        except Exception as e:
+            logger.error(f"Create claim error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def update_claim(self, claim_id: str, updates: ClaimUpdate, current_user: Dict[str, Any]) -> Claim:
+        """Update a claim with STRICT status transition logic"""
+        try:
+            # Only operational roles can update claim records
+            user_role = current_user.get("role", "")
+            if user_role not in ["admin", "manager", "adjuster"]:
+                raise HTTPException(status_code=403, detail="Not authorized to update claims")
+
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+            if not claim:
+                raise HTTPException(status_code=404, detail="Claim not found")
+
+            # Adjusters can only update their own assigned claims
+            if user_role == "adjuster":
+                assigned_to_id = claim.get("assigned_to_id") or claim.get("created_by")
+                if assigned_to_id != current_user.get("id"):
+                    raise HTTPException(status_code=403, detail="You can only update claims assigned to you")
+
+            current_status = claim.get("status", "New")
+            new_status = updates.status
+
+            # --- 3. Lifecycle Enforcement (Enforcement Rule #3) ---
+            if new_status and new_status != current_status:
+                self._validate_transition(current_status, new_status)
+
+            update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+            update_data["updated_at"] = datetime.now(timezone.utc)
+
+            # Atomic conditional update: include current status in filter to prevent race conditions
+            update_filter = {"id": claim_id}
+            if new_status and new_status != current_status:
+                update_filter["status"] = current_status
+
+            result = await self.db.claims.update_one(
+                update_filter,
+                {"$set": update_data}
+            )
+
+            if result.matched_count == 0 and "status" in update_filter:
+                # Status changed between our read and write — retry once
+                claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+                if claim and claim.get("status") == new_status:
+                    pass  # Already at target status, proceed
+                else:
+                    raise HTTPException(status_code=409, detail="Claim status was changed by another user. Please refresh and try again.")
+
+            updated_claim_doc = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+            updated_claim = Claim(**updated_claim_doc)
+            
+            # --- 4. Domain Events (Enforcement Rule #4) ---
+            await self._dispatch_domain_event("ClaimUpdated", updated_claim, current_user, 
+                                            details={"changes": update_data, "old_status": current_status})
+            
+            return updated_claim
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Update claim error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def get_claims(self, filter_status: Optional[str], include_archived: bool, limit: int, current_user: Dict[str, Any]) -> List[Claim]:
+        """Get all claims (filtered by role). Archived claims hidden by default."""
+        try:
+            query = {}
+            
+            # Exclude archived claims by default
+            if not include_archived:
+                query["is_archived"] = {"$ne": True}
+            
+            # Clients only see their own claims
+            if current_user["role"] == "client":
+                query["client_email"] = current_user["email"]
+            
+            # Filter by status if provided
+            if filter_status and filter_status != "All":
+                query["status"] = filter_status
+            
+            # Limit to reasonable max
+            fetch_limit = min(limit, 1000)
+            claims = await self.db.claims.find(query, {"_id": 0}).sort("created_at", -1).to_list(fetch_limit)
+            return [Claim(**claim) for claim in claims]
+            
+        except Exception as e:
+            logger.error(f"Get claims error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def get_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Claim:
+        """Get specific claim by ID with permission check"""
+        try:
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+
+            if not claim:
+                raise HTTPException(status_code=404, detail="Claim not found")
+
+            # Clients can only view their own claims
+            if current_user["role"] == "client" and claim["client_email"] != current_user["email"]:
+                raise HTTPException(status_code=403, detail="Access denied")
+            
+            return Claim(**claim)
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Get claim error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def delete_claim(self, claim_id: str, permanent: bool, current_user: Dict[str, Any]) -> Dict[str, str]:
+        """Soft-delete (archive) or hard-delete a claim"""
+        try:
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+            if not claim:
+                raise HTTPException(status_code=404, detail="Claim not found")
+            
+            if permanent:
+                # Hard delete - only for truly removing data
+                result = await self.db.claims.delete_one({"id": claim_id})
+                if result.deleted_count == 0:
+                    raise HTTPException(status_code=404, detail="Claim not found")
+                logger.info(f"Claim permanently deleted: {claim_id}")
+                return {"message": "Claim permanently deleted"}
+            else:
+                # Soft delete - archive the claim
+                await self.db.claims.update_one(
+                    {"id": claim_id},
+                    {
+                        "$set": {
+                            "status": "Archived", # Explicit status change
+                            "archived_at": datetime.now(timezone.utc).isoformat(),
+                            "archived_by": current_user.get("id"),
+                            "is_archived": True
+                        }
+                    }
+                )
+                
+                # --- 4. Domain Events (Enforcement Rule #4) ---
+                # We need to create a Claim object for the event, even though we just modified it
+                archived_claim = Claim(**claim) # Use old state + new status logically
+                archived_claim.status = "Archived"
+                
+                await self._dispatch_domain_event("ClaimArchived", archived_claim, current_user)
+                
+                return {"message": "Claim archived successfully"}
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Delete claim error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def restore_claim(self, claim_id: str, current_user: Dict[str, Any]) -> Dict[str, str]:
+        """Restore an archived claim"""
+        try:
+            claim = await self.db.claims.find_one({"id": claim_id}, {"_id": 0})
+            if not claim:
+                raise HTTPException(status_code=404, detail="Claim not found")
+            
+            if not claim.get("is_archived"):
+                raise HTTPException(status_code=400, detail="Claim is not archived")
+            
+            await self.db.claims.update_one(
+                {"id": claim_id},
+                {
+                    "$set": {
+                        "status": "New",  # Reset to New upon restore
+                        "is_archived": False,
+                        "restored_at": datetime.now(timezone.utc).isoformat(),
+                        "restored_by": current_user.get("id")
+                    },
+                    "$unset": {
+                        "archived_at": "",
+                        "archived_by": ""
+                    }
+                }
+            )
+            
+            restored_claim = Claim(**claim)
+            restored_claim.status = "New"
+            
+            await self._dispatch_domain_event("ClaimRestored", restored_claim, current_user)
+            
+            return {"message": "Claim restored successfully"}
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Restore claim error: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    # --- Internal Enforcement Methods ---
+
+    def _validate_transition(self, current_status: str, new_status: str):
+        """
+        Enforce allowed state transitions.
+        Raises HTTPException if transition is invalid.
+        """
+        allowed = ALLOWED_TRANSITIONS.get(current_status, [])
+        if new_status not in allowed:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid state transition from '{current_status}' to '{new_status}'. Allowed: {allowed}"
+            )
+
+    async def _dispatch_domain_event(self, event_type: str, claim: Claim, user: Dict[str, Any], details: dict = None):
+        """
+        Internal Event Bus: Dispatches domain events to side-effect handlers.
+        This keeps the core service logic clean.
+        """
+        logger.info(f"DOMAIN_EVENT: {event_type} for Claim {claim.id}")
+        
+        # 1. Structured Logging (Audit Trail)
+        self._log_claim_event(event_type, claim.id, user["email"], details)
+        
+        # 2. Side Effects (Notifications, Email, SMS, Gamification)
+        # In a larger system, this would be a real event bus (RabbitMQ/Kafka)
+        # Here we just await the handlers directly.
+        
+        if event_type == "ClaimCreated":
+            await self._notify_claim_created(claim, user["full_name"])
+            await self._email_claim_created(claim)
+            try:
+                await self._sms_claim_created(claim.model_dump())
+            except Exception as sms_err:
+                logger.warning(f"SMS notification failed for claim {claim.id}: {sms_err}")
+            await self._emit_gamification_event(user["id"], "claims.created", claim)
+
+        elif event_type == "ClaimUpdated":
+            # Handle specific update triggers (status change, assignment)
+            changes = details.get("changes", {})
+            old_status = details.get("old_status")
+            
+            if "status" in changes and changes["status"] != old_status:
+                await self._notify_status_change(claim.id, claim.claim_number, old_status, changes["status"], user["full_name"])
+                await self._email_status_change(claim.client_email, claim.client_name, claim.claim_number, old_status, changes["status"], claim.claim_type)
+            
+            if "assigned_to" in changes:
+                await self._notify_claim_assigned(claim.id, claim.claim_number, changes["assigned_to"], user["full_name"])
+                await self._email_assignment(claim.client_email, claim.client_name, claim.claim_number, changes["assigned_to"])
+
+        # ClaimPilot AI Agent Dispatch
+        try:
+            from services.claimpilot.orchestrator import get_orchestrator
+            orchestrator = get_orchestrator()
+            await orchestrator.handle_event(event_type, claim.id, details)
+        except Exception as cp_err:
+            logger.warning("ClaimPilot dispatch failed (non-critical): %s", cp_err)
+
+    # --- Side Effect Handlers (Private) ---
+
+    def _log_claim_event(self, event: str, claim_id: str, user_email: str, details: dict = None):
+        log_data = {
+            "event": event,
+            "claim_id": claim_id,
+            "user": user_email,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        if details:
+            # Store a subset safe for DB (strip Pydantic objects / large blobs)
+            safe_details = {}
+            changes = details.get("changes", {})
+            if changes:
+                safe_details["changes"] = {k: str(v)[:200] for k, v in changes.items() if k != "_id"}
+            old_status = details.get("old_status")
+            if old_status:
+                safe_details["old_status"] = old_status
+            log_data["details"] = safe_details
+        logger.info(f"AUDIT: {log_data}")
+        # Persist to MongoDB for frontend activity feed
+        try:
+            import asyncio
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._persist_activity(log_data))
+        except RuntimeError:
+            pass  # No running event loop (e.g. during testing)
+
+    async def _persist_activity(self, log_data: dict):
+        """Store activity record in claim_activity collection"""
+        try:
+            record = {
+                "id": str(uuid.uuid4()),
+                "event": log_data.get("event", ""),
+                "claim_id": log_data.get("claim_id", ""),
+                "user": log_data.get("user", ""),
+                "timestamp": log_data.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                "details": log_data.get("details", {}),
+            }
+            await self.db.claim_activity.insert_one(record)
+        except Exception as e:
+            logger.warning(f"Failed to persist activity: {e}")
+
+    async def _emit_gamification_event(self, user_id: str, event_type: str, claim: Claim):
+        try:
+            from incentives_engine.events import emit_claim_event
+            await emit_claim_event(
+                db=self.db,
+                user_id=user_id,
+                event_type=event_type,
+                claim_id=claim.id,
+                claim_number=claim.claim_number,
+                claim_type=claim.claim_type
+            )
+        except Exception as e:
+            logger.warning(f"Failed to emit game event: {e}")
+
+    # Wrappers for external notification services (kept for now to minimize refactor scope outside Claims)
+    async def _notify_claim_created(self, claim, creator_name):
+        from routes.notifications import notify_claim_created
+        await notify_claim_created(claim, creator_name)
+
+    async def _notify_claim_assigned(self, claim_id, claim_number, assigned_to, assigner_name):
+        from routes.notifications import notify_claim_assigned
+        await notify_claim_assigned(claim_id, claim_number, assigned_to, assigner_name)
+
+    async def _notify_status_change(self, claim_id, claim_number, old_status, new_status, changer_name):
+        from routes.notifications import notify_status_change
+        await notify_status_change(claim_id, claim_number, old_status, new_status, changer_name)
+
+    async def _email_claim_created(self, claim):
+        from services.email_service import send_claim_created_notification
+        await send_claim_created_notification(claim.client_email, claim.client_name, claim.claim_number, claim.claim_type, claim.property_address)
+
+    async def _email_status_change(self, client_email, client_name, claim_number, old_status, new_status, claim_type):
+        from services.email_service import send_status_change_notification
+        await send_status_change_notification(client_email, client_name, claim_number, old_status, new_status, claim_type)
+
+    async def _email_assignment(self, client_email, client_name, claim_number, adjuster_name):
+        from services.email_service import send_assignment_notification
+        await send_assignment_notification(client_email, client_name, claim_number, adjuster_name)
+
+    async def _sms_claim_created(self, claim_dict):
+        from routes.messaging_sms import send_fnol_sms
+        if claim_dict.get("client_phone"):
+            status_token = claim_dict.get("public_status_token")
+            if not status_token:
+                status_token = uuid.uuid4().hex
+                await self.db.claims.update_one(
+                    {"id": claim_dict["id"]},
+                    {"$set": {"public_status_token": status_token}},
+                )
+
+            frontend_url = os.environ.get("FRONTEND_URL", "https://eden.careclaims.com").rstrip("/")
+            status_link = f"{frontend_url}/status/{claim_dict['id']}?t={status_token}"
+            await send_fnol_sms(claim_dict["id"], claim_dict["client_phone"], status_link)
