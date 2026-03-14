@@ -10,7 +10,7 @@ import {
   Shield, Target, Zap, Users, ArrowRight
 } from 'lucide-react';
 import { apiPost } from '@/lib/api';
-import { APP_LOGO, FEATURE_ICONS, TIER_BADGES } from '../assets/badges';
+import { APP_LOGO, FEATURE_ICONS, PAGE_ICONS, TIER_BADGES } from '../assets/badges';
 
 // Custom hook for intersection observer animations
 const useInView = (options = {}) => {
@@ -94,7 +94,7 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: FEATURE_ICONS.agent_eve,
+      icon: PAGE_ICONS.command_center,
       title: 'ClaimPilot AI',
       subtitle: 'Autonomous Agent Mesh',
       description: '8 autonomous AI agents monitoring your claims 24/7. Settlement predictions, compliance alerts, carrier negotiation tactics.',
