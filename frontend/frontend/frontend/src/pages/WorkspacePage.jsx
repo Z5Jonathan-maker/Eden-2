@@ -254,7 +254,7 @@ const WorkspacePage = () => {
             Your data stays synced in real-time.
           </p>
           <button onClick={handleConnect} disabled={connecting}
-            className="inline-flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-zinc-100 disabled:opacity-50 text-zinc-900 font-medium rounded-full transition-all shadow-lg shadow-white/10 hover:shadow-white/20 group">
+            className="inline-flex items-center gap-3 px-8 py-3.5 bg-[#1a1a1a] hover:bg-zinc-100 disabled:opacity-50 text-zinc-900 font-medium rounded-full transition-all shadow-lg shadow-white/10 hover:shadow-white/20 group">
             {connecting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (

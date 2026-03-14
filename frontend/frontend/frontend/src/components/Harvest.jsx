@@ -1875,7 +1875,7 @@ const Harvest = () => {
                       >
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-                            isActive ? 'bg-white/20' : config.bgClass
+                            isActive ? 'bg-[#1a1a1a]/20' : config.bgClass
                           }`}
                         >
                           <IconComponent className="w-4 h-4 text-white" />
@@ -2128,7 +2128,7 @@ const Harvest = () => {
                     ))
                   ) : (
                     <div className="text-center py-4">
-                      <Footprints className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                      <Footprints className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
                       <p className="text-zinc-500 text-sm">First knock at this address</p>
                     </div>
                   )}

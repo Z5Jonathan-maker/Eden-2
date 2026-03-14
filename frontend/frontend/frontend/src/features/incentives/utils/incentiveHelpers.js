@@ -101,7 +101,7 @@ export const TIER_CONFIG = {
   },
   common: {
     color: 'bg-gradient-to-r from-slate-400 to-slate-500',
-    ring: 'ring-slate-300',
+    ring: 'ring-zinc-700',
     label: 'Common',
   },
 };
@@ -174,38 +174,38 @@ export const getStatusColor = (status) => {
     case 'scheduled':
       return 'bg-blue-500';
     case 'completed':
-      return 'bg-gray-500';
+      return 'bg-zinc-9000';
     case 'draft':
       return 'bg-yellow-500';
     case 'paused':
       return 'bg-orange-500';
     default:
-      return 'bg-gray-400';
+      return 'bg-zinc-600';
   }
 };
 
 export const getStatusBadge = (status) => {
   const colors = {
-    active: 'bg-green-100 text-green-800',
-    scheduled: 'bg-blue-100 text-blue-800',
-    completed: 'bg-gray-100 text-gray-800',
-    draft: 'bg-yellow-100 text-yellow-800',
+    active: 'bg-green-500/20 text-green-400',
+    scheduled: 'bg-blue-500/20 text-blue-400',
+    completed: 'bg-zinc-900 text-zinc-200',
+    draft: 'bg-yellow-500/20 text-yellow-400',
     paused: 'bg-orange-100 text-orange-800',
-    upcoming: 'bg-blue-100 text-blue-800',
+    upcoming: 'bg-blue-500/20 text-blue-400',
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[status] || 'bg-zinc-900 text-zinc-200';
 };
 
 export const getCategoryColor = (category) => {
   const colors = {
-    sprint: 'bg-green-100 text-green-800',
-    ladder: 'bg-purple-100 text-purple-800',
+    sprint: 'bg-green-500/20 text-green-400',
+    ladder: 'bg-purple-500/20 text-purple-400',
     threshold: 'bg-orange-100 text-orange-800',
-    team_battle: 'bg-red-100 text-red-800',
-    milestone: 'bg-blue-100 text-blue-800',
-    lottery: 'bg-pink-100 text-pink-800',
+    team_battle: 'bg-red-500/20 text-red-400',
+    milestone: 'bg-blue-500/20 text-blue-400',
+    lottery: 'bg-pink-500/20 text-pink-400',
   };
-  return colors[category] || 'bg-gray-100 text-gray-800';
+  return colors[category] || 'bg-zinc-900 text-zinc-200';
 };
 
 export const getCategoryIconComponent = (category) => {

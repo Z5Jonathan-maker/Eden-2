@@ -27,7 +27,7 @@ const CONFIDENCE_STYLES = {
   high: { color: 'text-green-400', bg: 'bg-green-500/20', label: 'HIGH CONFIDENCE', description: 'Strong evidence supports this DOL' },
   medium: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'MEDIUM CONFIDENCE', description: 'Moderate evidence, review recommended' },
   low: { color: 'text-red-400', bg: 'bg-red-500/20', label: 'LOW CONFIDENCE', description: 'Limited evidence, additional verification needed' },
-  unverified: { color: 'text-slate-300', bg: 'bg-slate-500/20', label: 'UNVERIFIED', description: 'No claim-grade event signal found in selected window' },
+  unverified: { color: 'text-slate-300', bg: 'bg-zinc-9000/20', label: 'UNVERIFIED', description: 'No claim-grade event signal found in selected window' },
 };
 
 const WeatherVerification = ({ embedded = false }) => {
@@ -560,7 +560,7 @@ const WeatherVerification = ({ embedded = false }) => {
             {/* Left Column - Verification Summary */}
             <div className="space-y-4">
               {/* Status Card */}
-              <Card className="bg-white border-zinc-700/50">
+              <Card className="bg-[#1a1a1a] border-zinc-700/50">
                 <CardContent className="p-4">
                   <div className="text-center">
                     {result.verification_status === 'verified' ? (
@@ -598,7 +598,7 @@ const WeatherVerification = ({ embedded = false }) => {
               </Card>
 
               {/* Station Info */}
-              <Card className="bg-white border-zinc-700/50">
+              <Card className="bg-[#1a1a1a] border-zinc-700/50">
                 <CardContent className="p-4">
                   <h4 className="text-sm font-medium text-zinc-400 mb-3">Data Source</h4>
                   <div className="space-y-2">
@@ -638,7 +638,7 @@ const WeatherVerification = ({ embedded = false }) => {
 
             {/* Right Column - Events Table (Drodat Style) */}
             <div className="lg:col-span-2">
-              <Card className="bg-white border-zinc-700/50 mb-4">
+              <Card className="bg-[#1a1a1a] border-zinc-700/50 mb-4">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -673,7 +673,7 @@ const WeatherVerification = ({ embedded = false }) => {
                                 ? 'bg-green-500/20 text-green-700'
                                 : candidate.confidence === 'medium'
                                   ? 'bg-yellow-500/20 text-yellow-700'
-                                  : 'bg-slate-500/20 text-slate-700'
+                                  : 'bg-zinc-9000/20 text-zinc-300'
                             }`}>
                               {(candidate.confidence || 'low').toUpperCase()}
                             </Badge>
@@ -692,7 +692,7 @@ const WeatherVerification = ({ embedded = false }) => {
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-white border-zinc-700/50">
+              <Card className="bg-[#1a1a1a] border-zinc-700/50">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">

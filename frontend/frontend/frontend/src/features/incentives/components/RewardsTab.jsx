@@ -171,7 +171,7 @@ export const RewardsTab = () => {
           {rewards.map((reward) => (
             <Card
               key={reward.id}
-              className={`hover:border-green-200 transition-all ${!reward.is_active ? 'opacity-50' : ''}`}
+              className={`hover:border-green-500/30 transition-all ${!reward.is_active ? 'opacity-50' : ''}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -191,7 +191,7 @@ export const RewardsTab = () => {
                       <div>
                         <h3 className="font-semibold truncate">{reward.name}</h3>
                         {reward.is_featured && (
-                          <Badge className="bg-amber-100 text-amber-800 text-xs mt-1">
+                          <Badge className="bg-amber-500/20 text-amber-400 text-xs mt-1">
                             <Star className="w-3 h-3 mr-1" />
                             Featured
                           </Badge>

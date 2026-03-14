@@ -140,9 +140,9 @@ const PodiumPosition = ({ entry, position, getInitials }) => {
   const borderColor = position === 2 ? 'border-gray-400' : 'border-amber-700';
   const bgGradient =
     position === 2
-      ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700'
+      ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-zinc-300'
       : 'bg-gradient-to-br from-amber-600 to-amber-800 text-white';
-  const positionBg = position === 2 ? 'bg-gray-400' : 'bg-amber-700';
+  const positionBg = position === 2 ? 'bg-zinc-600' : 'bg-amber-700';
 
   return (
     <div className="text-center harvest-bp-card harvest-grid-overlay">

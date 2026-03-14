@@ -400,10 +400,12 @@ const Settings = () => {
     ];
   }, [user?.role]);
 
+  const sectionCount = 5 + (canViewAiOps ? 1 : 0);
+
   if (loading) {
     return (
       <div className="settings-shell flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
   }
@@ -411,11 +413,19 @@ const Settings = () => {
   return (
     <div className="settings-shell">
       <div className="settings-wrapper">
-        <header className="settings-fade-in">
-          <h1 className="text-2xl font-semibold text-slate-100">Settings</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Operator control panel for profile, integrations, notifications, permissions, and security.
-          </p>
+        <header className="settings-fade-in flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-orange-500/30 bg-orange-500/10">
+            <UserCog className="h-6 w-6 text-orange-500" />
+          </div>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-50">SETTINGS</h1>
+              <span className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-mono text-zinc-400">{sectionCount} SECTIONS</span>
+            </div>
+            <p className="mt-0.5 text-sm text-zinc-500">
+              Operator control panel &mdash; profile, integrations, notifications, security, AI ops.
+            </p>
+          </div>
         </header>
 
         <section className="settings-section">
@@ -431,43 +441,43 @@ const Settings = () => {
             />
 
             <article className="settings-card settings-fade-in">
-              <h3 className="text-sm font-semibold text-slate-100">Company Profile</h3>
+              <h3 className="text-sm font-semibold text-zinc-100">Company Profile</h3>
               <div className="mt-3 space-y-3">
                 <div>
-                  <Label className="text-xs text-slate-400">Company Name</Label>
+                  <Label className="text-xs text-zinc-500">Company Name</Label>
                   <Input
                     value={companySettings.company_name}
                     onChange={(event) =>
                       setCompanySettings((prev) => ({ ...prev, company_name: event.target.value }))
                     }
-                    className="mt-1 border-slate-700 bg-slate-900/70 text-slate-100"
+                    className="mt-1 border-zinc-700 bg-[#0a0a0a] text-zinc-100"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-400">Documentation</Label>
+                  <Label className="text-xs text-zinc-500">Documentation</Label>
                   <Input
                     value={companySettings.university_name}
                     onChange={(event) =>
                       setCompanySettings((prev) => ({ ...prev, university_name: event.target.value }))
                     }
-                    className="mt-1 border-slate-700 bg-slate-900/70 text-slate-100"
+                    className="mt-1 border-zinc-700 bg-[#0a0a0a] text-zinc-100"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-400">Tagline</Label>
+                  <Label className="text-xs text-zinc-500">Tagline</Label>
                   <Input
                     value={companySettings.tagline}
                     onChange={(event) =>
                       setCompanySettings((prev) => ({ ...prev, tagline: event.target.value }))
                     }
-                    className="mt-1 border-slate-700 bg-slate-900/70 text-slate-100"
+                    className="mt-1 border-zinc-700 bg-[#0a0a0a] text-zinc-100"
                   />
                 </div>
                 <Button
                   onClick={saveCompanySettings}
                   disabled={companySaving}
                   variant="outline"
-                  className="w-full border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500"
+                  className="w-full border-zinc-700 bg-zinc-800/60 text-zinc-100 hover:border-orange-500/40"
                 >
                   {companySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Save Profile
@@ -579,7 +589,7 @@ const Settings = () => {
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-100">Email Digests</h3>
+                <h3 className="text-sm font-semibold text-zinc-100">Email Digests</h3>
                 <Switch
                   checked={notificationPrefs.emailDigests}
                   onCheckedChange={(checked) =>
@@ -587,12 +597,12 @@ const Settings = () => {
                   }
                 />
               </div>
-              <p className="text-xs text-slate-400">Daily summary of claims and contracts.</p>
+              <p className="text-xs text-zinc-500">Daily summary of claims and contracts.</p>
             </article>
 
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-100">Contract Alerts</h3>
+                <h3 className="text-sm font-semibold text-zinc-100">Contract Alerts</h3>
                 <Switch
                   checked={notificationPrefs.contractAlerts}
                   onCheckedChange={(checked) =>
@@ -600,12 +610,12 @@ const Settings = () => {
                   }
                 />
               </div>
-              <p className="text-xs text-slate-400">Signature and delivery updates from SignNow.</p>
+              <p className="text-xs text-zinc-500">Signature and delivery updates from SignNow.</p>
             </article>
 
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-100">System Warnings</h3>
+                <h3 className="text-sm font-semibold text-zinc-100">System Warnings</h3>
                 <Switch
                   checked={notificationPrefs.systemWarnings}
                   onCheckedChange={(checked) =>
@@ -613,7 +623,7 @@ const Settings = () => {
                   }
                 />
               </div>
-              <p className="text-xs text-slate-400">Receive alerts for integration failures or auth issues.</p>
+              <p className="text-xs text-zinc-500">Receive alerts for integration failures or auth issues.</p>
             </article>
           </div>
         </section>
@@ -625,8 +635,8 @@ const Settings = () => {
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <HardDrive className="h-4 w-4 text-slate-300" />
-                  <h3 className="text-sm font-semibold text-slate-100">Google Drive Auto-Backup</h3>
+                  <HardDrive className="h-4 w-4 text-zinc-300" />
+                  <h3 className="text-sm font-semibold text-zinc-100">Google Drive Auto-Backup</h3>
                 </div>
                 <Switch
                   checked={backupPrefs.autoBackup}
@@ -636,7 +646,7 @@ const Settings = () => {
                   disabled={!oauthStatuses.google?.connected}
                 />
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-zinc-500">
                 Automatically backup new photos and documents to Google Drive when uploaded.
               </p>
               {!oauthStatuses.google?.connected && (
@@ -648,16 +658,16 @@ const Settings = () => {
 
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center gap-2">
-                <FolderOpen className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Backup Folder Structure</h3>
+                <FolderOpen className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Backup Folder Structure</h3>
               </div>
-              <div className="text-xs text-slate-400 space-y-0.5 font-mono mt-2">
+              <div className="text-xs text-zinc-500 space-y-0.5 font-mono mt-2">
                 <p>Google Drive /</p>
                 <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Photos/</p>
                 <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Documents/</p>
                 <p className="ml-3">Eden_{'{'}<span className="text-orange-400">ClaimNumber</span>{'}'}_Contracts/</p>
               </div>
-              <p className="text-[10px] text-slate-500 mt-3">
+              <p className="text-[10px] text-zinc-600 mt-3">
                 Manual backup is always available via the "Backup to Drive" button on each claim.
               </p>
             </article>
@@ -670,24 +680,24 @@ const Settings = () => {
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <article className="settings-card settings-fade-in">
               <div className="mb-3 flex items-center gap-2">
-                <UserCog className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Role Overview</h3>
+                <UserCog className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Role Overview</h3>
               </div>
-              <p className="text-sm text-slate-300">Current role: {roleLabel}</p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="text-sm text-zinc-300">Current role: {roleLabel}</p>
+              <p className="mt-1 text-xs text-zinc-500">
                 Access below is derived from your current operator role.
               </p>
             </article>
 
             <article className="settings-card settings-fade-in">
               <div className="mb-3 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Access Matrix</h3>
+                <Shield className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Access Matrix</h3>
               </div>
               <div className="space-y-2">
                 {permissions.map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-md border border-slate-700/50 bg-slate-900/45 px-3 py-2">
-                    <span className="text-sm text-slate-300">{item.label}</span>
+                  <div key={item.label} className="flex items-center justify-between rounded-md border border-zinc-700/50 bg-[#0a0a0a]/80 px-3 py-2">
+                    <span className="text-sm text-zinc-300">{item.label}</span>
                     <StatusBadge status={item.enabled ? 'connected' : 'not_connected'} label={item.enabled ? 'Allowed' : 'Restricted'} />
                   </div>
                 ))}
@@ -702,13 +712,13 @@ const Settings = () => {
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Password</h3>
+                <KeyRound className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Password</h3>
               </div>
-              <p className="text-xs text-slate-400">Rotate credentials on a regular cycle.</p>
+              <p className="text-xs text-zinc-500">Rotate credentials on a regular cycle.</p>
               <Button
                 variant="outline"
-                className="mt-3 w-full border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500"
+                className="mt-3 w-full border-zinc-700 bg-zinc-800/60 text-zinc-100 hover:border-orange-500/40"
                 onClick={() => toast.info('Password reset will be available in a future update.')}
               >
                 Reset Password
@@ -717,13 +727,13 @@ const Settings = () => {
 
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Two-Factor Authentication</h3>
+                <CheckCircle2 className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Two-Factor Authentication</h3>
               </div>
-              <p className="text-xs text-slate-400">Protect this operator account with step-up verification.</p>
+              <p className="text-xs text-zinc-500">Protect this operator account with step-up verification.</p>
               <Button
                 variant="outline"
-                className="mt-3 w-full border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500"
+                className="mt-3 w-full border-zinc-700 bg-zinc-800/60 text-zinc-100 hover:border-orange-500/40"
                 onClick={() => toast.info('Two-factor authentication will be available in a future update.')}
               >
                 Configure 2FA
@@ -732,10 +742,10 @@ const Settings = () => {
 
             <article className="settings-card settings-fade-in">
               <div className="mb-2 flex items-center gap-2">
-                <Bell className="h-4 w-4 text-slate-300" />
-                <h3 className="text-sm font-semibold text-slate-100">Session Health</h3>
+                <Bell className="h-4 w-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-100">Session Health</h3>
               </div>
-              <div className="rounded-md border border-slate-700/50 bg-slate-900/45 p-3 text-xs text-slate-300">
+              <div className="rounded-md border border-zinc-700/50 bg-[#0a0a0a]/80 p-3 text-xs text-zinc-300">
                 <p>Current account: {user?.email || 'Unknown'}</p>
                 <p className="mt-1">Auth token: {getAuthToken() ? 'Active' : 'Missing'}</p>
               </div>
@@ -756,9 +766,9 @@ const Settings = () => {
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <article className="settings-card settings-fade-in">
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-100">Gateway Health</h3>
+                  <h3 className="text-sm font-semibold text-zinc-100">Gateway Health</h3>
                   {loadingAiMetrics ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                    <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
                   ) : aiMetricsError ? (
                     <StatusBadge status="error" label="Error" />
                   ) : (
@@ -771,7 +781,7 @@ const Settings = () => {
                 {aiMetricsError ? (
                   <p className="text-xs text-red-300">{aiMetricsError}</p>
                 ) : (
-                  <div className="space-y-1 text-xs text-slate-300">
+                  <div className="space-y-1 text-xs text-zinc-300">
                     <p>Total calls (7d): {aiMetrics?.total_calls ?? 0}</p>
                     <p>Success rate: {aiMetrics?.success_rate ?? 0}%</p>
                     <p>Failure rate: {aiMetrics?.failure_rate ?? 0}%</p>
@@ -781,8 +791,8 @@ const Settings = () => {
               </article>
 
               <article className="settings-card settings-fade-in">
-                <h3 className="mb-2 text-sm font-semibold text-slate-100">Latency + Cost</h3>
-                <div className="space-y-1 text-xs text-slate-300">
+                <h3 className="mb-2 text-sm font-semibold text-zinc-100">Latency + Cost</h3>
+                <div className="space-y-1 text-xs text-zinc-300">
                   <p>p50 latency: {aiMetrics?.latency_ms?.p50 ?? 0}ms</p>
                   <p>p95 latency: {aiMetrics?.latency_ms?.p95 ?? 0}ms</p>
                   <p>Estimated cost (7d): ${Number(aiMetrics?.cost_usd?.total || 0).toFixed(4)}</p>
@@ -794,10 +804,10 @@ const Settings = () => {
               </article>
 
               <article className="settings-card settings-fade-in">
-                <h3 className="mb-2 text-sm font-semibold text-slate-100">Top Activity</h3>
-                <div className="space-y-2 text-xs text-slate-300">
+                <h3 className="mb-2 text-sm font-semibold text-zinc-100">Top Activity</h3>
+                <div className="space-y-2 text-xs text-zinc-300">
                   <div>
-                    <p className="mb-1 text-slate-400">By provider</p>
+                    <p className="mb-1 text-zinc-500">By provider</p>
                     {aiMetrics?.by_provider && Object.keys(aiMetrics.by_provider).length > 0 ? (
                       Object.entries(aiMetrics.by_provider)
                         .slice(0, 3)
@@ -811,7 +821,7 @@ const Settings = () => {
                     )}
                   </div>
                   <div>
-                    <p className="mb-1 text-slate-400">By task</p>
+                    <p className="mb-1 text-zinc-500">By task</p>
                     {aiMetrics?.by_task && Object.keys(aiMetrics.by_task).length > 0 ? (
                       Object.entries(aiMetrics.by_task)
                         .slice(0, 3)
@@ -829,7 +839,7 @@ const Settings = () => {
 
               <article className="settings-card settings-fade-in md:col-span-3">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-100">AI Routing Controls</h3>
+                  <h3 className="text-sm font-semibold text-zinc-100">AI Routing Controls</h3>
                   <Button
                     size="sm"
                     onClick={saveAiRouting}
@@ -841,14 +851,14 @@ const Settings = () => {
                   </Button>
                 </div>
                 {loadingAiRouting ? (
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 text-xs text-zinc-300">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Loading routing config...
                   </div>
                 ) : !aiRouting?.config ? (
-                  <p className="text-xs text-slate-400">Routing config unavailable.</p>
+                  <p className="text-xs text-zinc-500">Routing config unavailable.</p>
                 ) : (
-                  <div className="space-y-3 text-xs text-slate-300">
+                  <div className="space-y-3 text-xs text-zinc-300">
                     {(() => {
                       const ollamaHealth = aiProviderHealth?.providers?.ollama;
                       const ollamaHealthy = Boolean(ollamaHealth?.healthy);
@@ -867,7 +877,7 @@ const Settings = () => {
                     })()}
                     <div className="flex flex-wrap gap-2">
                       {Object.keys(aiRouting.providers_available || {}).length === 0 ? (
-                        <span className="rounded border border-slate-700/60 bg-slate-900/40 px-2 py-1 text-[10px] text-slate-400">
+                        <span className="rounded border border-zinc-700/60 bg-[#0a0a0a]/60 px-2 py-1 text-[10px] text-zinc-500">
                           No providers configured
                         </span>
                       ) : (
@@ -884,7 +894,7 @@ const Settings = () => {
                                 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
                                 : enabled && !isMissingKey
                                 ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                                : 'border-slate-700/60 bg-slate-900/40 text-slate-400'
+                                : 'border-zinc-700/60 bg-[#0a0a0a]/60 text-zinc-500'
                             }`}
                           >
                             {provider}: {enabled ? (healthy ? 'healthy' : (isMissingKey ? 'no api key' : 'degraded')) : 'off'}
@@ -895,12 +905,12 @@ const Settings = () => {
                       )}
                     </div>
                     {loadingAiProviderHealth && (
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-600">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Refreshing provider health...
                       </div>
                     )}
-                    <div className="flex items-center justify-between rounded-md border border-slate-700/50 bg-slate-900/45 px-3 py-2">
+                    <div className="flex items-center justify-between rounded-md border border-zinc-700/50 bg-[#0a0a0a]/80 px-3 py-2">
                       <span>Hard fallback enabled</span>
                       <Switch
                         checked={Boolean(aiRouting.config.fallback_enabled)}
@@ -922,11 +932,11 @@ const Settings = () => {
                         const primary = currentOrder[0] || 'openai';
                         const secondary = currentOrder[1] || providerOptions.find((opt) => opt.value !== primary)?.value || 'openai';
                         return (
-                          <div key={task} className="rounded-md border border-slate-700/50 bg-slate-900/45 p-3">
-                            <p className="mb-2 font-mono text-[11px] uppercase text-slate-200">{task}</p>
+                          <div key={task} className="rounded-md border border-zinc-700/50 bg-[#0a0a0a]/80 p-3">
+                            <p className="mb-2 font-mono text-[11px] uppercase text-zinc-200">{task}</p>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <Label className="text-[10px] text-slate-500">Primary</Label>
+                                <Label className="text-[10px] text-zinc-600">Primary</Label>
                                 <select
                                   value={primary}
                                   onChange={(event) => {
@@ -948,7 +958,7 @@ const Settings = () => {
                                         : prev
                                     );
                                   }}
-                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200 focus:ring-2 focus:ring-orange-500/40"
+                                  className="mt-1 w-full rounded-md border border-zinc-700 bg-[#0a0a0a] px-2 py-1 text-xs text-zinc-200 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/40"
                                 >
                                   {providerOptions.map((opt) => (
                                     <option key={`${task}-primary-${opt.value}`} value={opt.value}>
@@ -958,7 +968,7 @@ const Settings = () => {
                                 </select>
                               </div>
                               <div>
-                                <Label className="text-[10px] text-slate-500">Secondary</Label>
+                                <Label className="text-[10px] text-zinc-600">Secondary</Label>
                                 <select
                                   value={secondary}
                                   onChange={(event) => {
@@ -980,7 +990,7 @@ const Settings = () => {
                                         : prev
                                     );
                                   }}
-                                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200 focus:ring-2 focus:ring-orange-500/40"
+                                  className="mt-1 w-full rounded-md border border-zinc-700 bg-[#0a0a0a] px-2 py-1 text-xs text-zinc-200 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/40"
                                 >
                                   {providerOptions.map((opt) => (
                                     <option key={`${task}-secondary-${opt.value}`} value={opt.value}>

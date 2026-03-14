@@ -174,25 +174,25 @@ const CompetitionsTab = () => {
       case 'scheduled':
         return 'bg-blue-500';
       case 'completed':
-        return 'bg-gray-500';
+        return 'bg-zinc-9000';
       case 'draft':
         return 'bg-yellow-500';
       case 'paused':
         return 'bg-orange-500';
       default:
-        return 'bg-gray-400';
+        return 'bg-zinc-600';
     }
   };
 
   const getStatusBadge = (status) => {
     const colors = {
-      active: 'bg-green-100 text-green-800',
-      scheduled: 'bg-blue-100 text-blue-800',
-      completed: 'bg-gray-100 text-gray-800',
-      draft: 'bg-yellow-100 text-yellow-800',
+      active: 'bg-green-500/20 text-green-400',
+      scheduled: 'bg-blue-500/20 text-blue-400',
+      completed: 'bg-zinc-900 text-zinc-200',
+      draft: 'bg-yellow-500/20 text-yellow-400',
       paused: 'bg-orange-100 text-orange-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-zinc-900 text-zinc-200';
   };
 
   return (
@@ -350,7 +350,7 @@ const CompetitionsTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleStartCompetition(comp.id)}
-                        className="text-green-600 hover:text-green-700"
+                        className="text-green-600 hover:text-green-400"
                       >
                         <Play className="w-4 h-4 mr-1" />
                         Start
@@ -361,7 +361,7 @@ const CompetitionsTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleEndCompetition(comp.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-400"
                       >
                         <StopCircle className="w-4 h-4 mr-1" />
                         End
@@ -719,14 +719,14 @@ const TemplatesTab = () => {
 
   const getCategoryColor = (category) => {
     const colors = {
-      sprint: 'bg-green-100 text-green-800',
-      ladder: 'bg-purple-100 text-purple-800',
+      sprint: 'bg-green-500/20 text-green-400',
+      ladder: 'bg-purple-500/20 text-purple-400',
       threshold: 'bg-orange-100 text-orange-800',
-      team_battle: 'bg-red-100 text-red-800',
-      milestone: 'bg-blue-100 text-blue-800',
-      lottery: 'bg-pink-100 text-pink-800',
+      team_battle: 'bg-red-500/20 text-red-400',
+      milestone: 'bg-blue-500/20 text-blue-400',
+      lottery: 'bg-pink-500/20 text-pink-400',
     };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+    return colors[category] || 'bg-zinc-900 text-zinc-200';
   };
 
   const getCategoryIcon = (category) => {
@@ -746,7 +746,7 @@ const TemplatesTab = () => {
     const ruleType = ruleTypes.find((r) => r.value === rule.type);
 
     return (
-      <Card className="border-dashed bg-slate-50">
+      <Card className="border-dashed bg-zinc-900">
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -814,7 +814,7 @@ const TemplatesTab = () => {
                   return (
                     <div key={tier} className="flex items-center gap-1">
                       <span
-                        className={`text-sm capitalize ${tier === 'gold' ? 'text-yellow-600' : tier === 'silver' ? 'text-gray-500' : 'text-orange-700'}`}
+                        className={`text-sm capitalize ${tier === 'gold' ? 'text-yellow-600' : tier === 'silver' ? 'text-zinc-400' : 'text-orange-700'}`}
                       >
                         {tier === 'gold' ? '🥇' : tier === 'silver' ? '🥈' : '🥉'}
                       </span>
@@ -1407,7 +1407,7 @@ const TemplatesTab = () => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg">
               <div>
                 <Label>Auto-start when date arrives</Label>
                 <p className="text-xs text-muted-foreground">
@@ -1431,7 +1431,7 @@ const TemplatesTab = () => {
                   {usingTemplate.default_rules.map((rule, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded"
+                      className="flex items-center justify-between text-sm p-2 bg-zinc-900 rounded"
                     >
                       <span className="capitalize font-medium">{rule.type?.replace('_', ' ')}</span>
                       <span className="text-muted-foreground">
@@ -1603,11 +1603,11 @@ const SeasonsTab = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
-      active: 'bg-green-100 text-green-800',
-      upcoming: 'bg-blue-100 text-blue-800',
-      completed: 'bg-gray-100 text-gray-800',
+      active: 'bg-green-500/20 text-green-400',
+      upcoming: 'bg-blue-500/20 text-blue-400',
+      completed: 'bg-zinc-900 text-zinc-200',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-zinc-900 text-zinc-200';
   };
 
   const formatCurrency = (cents) => {
@@ -1892,7 +1892,7 @@ const SeasonsTab = () => {
           {seasons.map((season) => (
             <Card
               key={season.id}
-              className="hover:border-purple-200 transition-all overflow-hidden"
+              className="hover:border-purple-500/30 transition-all overflow-hidden"
             >
               {/* Season Banner */}
               <div
@@ -1959,7 +1959,7 @@ const SeasonsTab = () => {
                         {season.top_standings.slice(0, 3).map((standing, idx) => (
                           <div key={idx} className="flex items-center gap-1 text-sm">
                             <Medal
-                              className={`w-4 h-4 ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : 'text-orange-500'}`}
+                              className={`w-4 h-4 ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-zinc-500' : 'text-orange-500'}`}
                             />
                             <span className="text-muted-foreground truncate max-w-[100px]">
                               {standing.user_name}
@@ -1977,7 +1977,7 @@ const SeasonsTab = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-400"
                       onClick={() => handleDelete(season.id)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -2042,10 +2042,10 @@ const MetricsTab = () => {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {metrics.map((metric) => (
-            <Card key={metric.id} className="hover:border-blue-200 transition-colors">
+            <Card key={metric.id} className="hover:border-blue-500/30 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-xl">
                     {metric.icon}
                   </div>
                   <div className="flex-1">
@@ -2117,7 +2117,7 @@ const BadgesTab = () => {
     },
     common: {
       color: 'bg-gradient-to-r from-slate-400 to-slate-500',
-      ring: 'ring-slate-300',
+      ring: 'ring-zinc-700',
       label: 'Common',
     },
   };
@@ -2397,7 +2397,7 @@ const BadgesTab = () => {
           {badges.map((badge) => (
             <Card
               key={badge.id}
-              className={`hover:border-amber-200 transition-all ${!badge.is_active ? 'opacity-50' : ''}`}
+              className={`hover:border-amber-500/30 transition-all ${!badge.is_active ? 'opacity-50' : ''}`}
             >
               <CardContent className="p-4">
                 <div className="flex flex-col items-center text-center">
@@ -2432,7 +2432,7 @@ const BadgesTab = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-400"
                       onClick={() => handleDelete(badge.id)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -2812,7 +2812,7 @@ const RewardsTab = () => {
           {rewards.map((reward) => (
             <Card
               key={reward.id}
-              className={`hover:border-green-200 transition-all ${!reward.is_active ? 'opacity-50' : ''}`}
+              className={`hover:border-green-500/30 transition-all ${!reward.is_active ? 'opacity-50' : ''}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -2832,7 +2832,7 @@ const RewardsTab = () => {
                       <div>
                         <h3 className="font-semibold truncate">{reward.name}</h3>
                         {reward.is_featured && (
-                          <Badge className="bg-amber-100 text-amber-800 text-xs mt-1">
+                          <Badge className="bg-amber-500/20 text-amber-400 text-xs mt-1">
                             <Star className="w-3 h-3 mr-1" />
                             Featured
                           </Badge>

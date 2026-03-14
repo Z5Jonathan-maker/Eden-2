@@ -85,7 +85,7 @@ const LivePreviewPanel: React.FC<Props> = ({ formData, selectedTemplate, headsho
 
           {formData.tagline && <p className="mt-3 text-sm text-zinc-300 italic">"{formData.tagline}"</p>}
           <div className="mt-4 flex justify-center">
-            <div className="rounded-lg bg-white p-2 shadow-[0_0_18px_rgba(255,255,255,0.2)]">
+            <div className="rounded-lg bg-[#1a1a1a] p-2 shadow-[0_0_18px_rgba(255,255,255,0.2)]">
               <QRCodeSVG value={qrValue} size={128} />
             </div>
           </div>

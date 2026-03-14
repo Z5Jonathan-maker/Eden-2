@@ -107,7 +107,7 @@ export function MobileCard({
 }) {
   return (
     <div className={cn(
-      'bg-white rounded-lg border border-gray-200 shadow-sm',
+      'bg-[#1a1a1a] rounded-lg border border-zinc-700/50 shadow-sm',
       !noPadding && 'p-4 sm:p-6',
       className
     )}>
@@ -135,11 +135,11 @@ export function MobileHeader({
         <div className="flex items-center gap-3">
           {backButton}
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-zinc-200 truncate">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
+              <p className="text-sm sm:text-base text-zinc-400 mt-1 truncate">
                 {subtitle}
               </p>
             )}
@@ -166,8 +166,8 @@ export function MobileList({
 }) {
   return (
     <div className={cn(
-      'rounded-lg border border-gray-200 overflow-hidden',
-      dividers && 'divide-y divide-gray-100',
+      'rounded-lg border border-zinc-700/50 overflow-hidden',
+      dividers && 'divide-y divide-zinc-800',
       className
     )}>
       {children}
@@ -189,9 +189,9 @@ export function MobileListItem({
     <Component 
       onClick={onClick}
       className={cn(
-        'w-full bg-white p-3 sm:p-4',
+        'w-full bg-[#1a1a1a] p-3 sm:p-4',
         'text-left',
-        onClick && 'hover:bg-gray-50 transition-colors cursor-pointer',
+        onClick && 'hover:bg-zinc-800 transition-colors cursor-pointer',
         className
       )}
     >
@@ -224,13 +224,13 @@ export function MobileBottomSheet({
       {/* Sheet */}
       <div className={cn(
         'fixed bottom-0 left-0 right-0 z-50',
-        'bg-white rounded-t-2xl shadow-lg',
+        'bg-[#1a1a1a] rounded-t-2xl shadow-lg',
         'p-4 pb-safe',
         'md:hidden',
         className
       )}>
         {/* Handle */}
-        <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+        <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
         {children}
       </div>
     </>
@@ -249,7 +249,7 @@ export function MobileTabs({
   return (
     <div className={cn(
       'flex overflow-x-auto no-scrollbar',
-      'border-b border-gray-200',
+      'border-b border-zinc-700/50',
       '-mx-4 px-4 sm:mx-0 sm:px-0',
       className
     )}>
@@ -262,7 +262,7 @@ export function MobileTabs({
             'border-b-2 transition-colors',
             activeTab === tab.id
               ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              : 'border-transparent text-zinc-400 hover:text-zinc-300'
           )}
         >
           {tab.icon && <span className="mr-2">{tab.icon}</span>}

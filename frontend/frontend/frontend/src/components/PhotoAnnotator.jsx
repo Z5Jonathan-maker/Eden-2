@@ -352,7 +352,7 @@ const PhotoAnnotator = ({
                 key={t.id}
                 variant={tool === t.id ? 'default' : 'ghost'}
                 size="sm"
-                className={tool === t.id ? 'bg-orange-600' : 'text-gray-300 hover:text-gray-900'}
+                className={tool === t.id ? 'bg-orange-600' : 'text-gray-300 hover:text-zinc-200'}
                 onClick={() => setTool(t.id)}
                 title={t.name}
               >
@@ -386,7 +386,7 @@ const PhotoAnnotator = ({
             >
               <Minus className="w-4 h-4" />
             </Button>
-            <span className="text-gray-900 text-sm w-6 text-center">{strokeWidth}</span>
+            <span className="text-zinc-200 text-sm w-6 text-center">{strokeWidth}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -473,7 +473,7 @@ const PhotoAnnotator = ({
                 top: textPosition.y * scale - 30 
               }}
             >
-              <div className="flex items-center space-x-2 bg-white rounded shadow-lg p-2">
+              <div className="flex items-center space-x-2 bg-[#1a1a1a] rounded shadow-lg p-2">
                 <input
                   type="text"
                   value={textInput}
@@ -499,7 +499,7 @@ const PhotoAnnotator = ({
       </div>
 
       {/* Status Bar */}
-      <div className="bg-gray-900 border-t border-gray-700 px-4 py-2 flex justify-between text-sm text-gray-600">
+      <div className="bg-gray-900 border-t border-gray-700 px-4 py-2 flex justify-between text-sm text-zinc-400">
         <span>Tool: {TOOLS.find(t => t.id === tool)?.name}</span>
         <span>{annotations.length} annotation{annotations.length !== 1 ? 's' : ''}</span>
       </div>

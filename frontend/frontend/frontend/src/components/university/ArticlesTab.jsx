@@ -18,7 +18,7 @@ const ArticleCardItem = ({ article, onClick }) => {
     >
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
             <FileText className="w-5 h-5 text-amber-600" />
           </div>
           <Badge variant="outline" className="text-xs">
@@ -28,10 +28,10 @@ const ArticleCardItem = ({ article, onClick }) => {
         <h3 className="font-semibold text-lg text-zinc-100 mb-2">
           {article.title}
         </h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p className="text-zinc-400 text-sm mb-4 line-clamp-3">
           {article.description || article.content?.substring(0, 150) + '...'}
         </p>
-        <div className="flex items-center text-sm text-gray-500">
+        <div className="flex items-center text-sm text-zinc-400">
           <Clock className="w-4 h-4 mr-1" />
           {readTime}
         </div>
@@ -51,7 +51,7 @@ export const ArticlesTab = ({ articles, searchQuery, setSearchQuery, onArticleCl
   return (
     <div>
       <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -71,7 +71,7 @@ export const ArticlesTab = ({ articles, searchQuery, setSearchQuery, onArticleCl
       </div>
 
       {filteredArticles.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-zinc-400">
           {searchQuery ? 'No articles match your search.' : 'No articles available.'}
         </div>
       )}

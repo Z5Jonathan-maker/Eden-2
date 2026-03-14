@@ -33,11 +33,11 @@ const COMMS_PREFS_KEY = 'eden_comms_followup_prefs';
 
 // Status badge colors
 const STATUS_COLORS = {
-  queued: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-700',
-  delivered: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
-  received: 'bg-purple-100 text-purple-700',
+  queued: 'bg-zinc-900 text-zinc-300',
+  sent: 'bg-blue-500/20 text-blue-400',
+  delivered: 'bg-green-500/20 text-green-400',
+  failed: 'bg-red-500/20 text-red-400',
+  received: 'bg-purple-500/20 text-purple-400',
 };
 
 // Status icons
@@ -580,11 +580,11 @@ const ClaimCommsPanel = ({
     <div className="flex flex-col h-[400px] sm:h-[500px]">
       {/* SMS Status Banner */}
       {smsStatus && !smsStatus.configured && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-start gap-2">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium text-amber-800">Twilio Not Configured</p>
-            <p className="text-amber-700">
+            <p className="font-medium text-amber-400">Twilio Not Configured</p>
+            <p className="text-amber-400">
               {smsStatus.dry_run_mode
                 ? 'Running in dry-run mode. Messages will be logged but not sent.'
                 : 'Add Twilio credentials to send real SMS messages.'}
@@ -595,11 +595,11 @@ const ClaimCommsPanel = ({
 
       {/* Messages Container */}
       <div
-        className="flex-1 overflow-y-auto border rounded-lg bg-gray-50 p-4 space-y-4"
+        className="flex-1 overflow-y-auto border rounded-lg bg-zinc-900 p-4 space-y-4"
         data-testid="messages-container"
       >
         {Object.keys(groupedMessages).length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No messages yet</p>
             <p className="text-sm">Start a conversation by sending an SMS below</p>
@@ -609,7 +609,7 @@ const ClaimCommsPanel = ({
             <div key={date}>
               {/* Date Separator */}
               <div className="flex items-center justify-center my-4">
-                <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
+                <div className="bg-zinc-800 text-zinc-400 text-xs px-3 py-1 rounded-full">
                   {formatDate(msgs[0].created_at)}
                 </div>
               </div>
@@ -625,14 +625,14 @@ const ClaimCommsPanel = ({
                     className={`max-w-[80%] rounded-lg p-3 ${
                       msg.direction === 'outbound'
                         ? 'bg-orange-600 text-white'
-                        : 'bg-white border border-gray-200 text-gray-900'
+                        : 'bg-[#1a1a1a] border border-zinc-700/50 text-zinc-200'
                     }`}
                   >
                     {/* Sender info for inbound */}
                     {msg.direction === 'inbound' && (
                       <div className="flex items-center gap-2 mb-1">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500">{msg.from || 'Client'}</span>
+                        <Phone className="w-3 h-3 text-zinc-500" />
+                        <span className="text-xs text-zinc-400">{msg.from || 'Client'}</span>
                       </div>
                     )}
 
@@ -642,7 +642,7 @@ const ClaimCommsPanel = ({
                     {/* Footer: time + status */}
                     <div
                       className={`flex items-center justify-end gap-2 mt-2 text-xs ${
-                        msg.direction === 'outbound' ? 'text-orange-100' : 'text-gray-400'
+                        msg.direction === 'outbound' ? 'text-orange-100' : 'text-zinc-500'
                       }`}
                     >
                       <span>{formatTime(msg.created_at)}</span>
@@ -673,9 +673,9 @@ const ClaimCommsPanel = ({
       <div className="mt-4 space-y-3">
         {Array.isArray(claimReadiness?.missing_fields) &&
           claimReadiness.missing_fields.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5" />
-              <div className="text-xs text-red-700">
+              <div className="text-xs text-red-400">
                 <p className="font-semibold">Communication QA Gate Active</p>
                 <p>Complete missing claim fields before outbound SMS:</p>
                 <p className="mt-1">{claimReadiness.missing_fields.join(', ')}</p>
@@ -903,16 +903,16 @@ const ClaimCommsPanel = ({
             </Button>
 
             {showTemplates && (
-              <div className="absolute right-0 bottom-full mb-2 w-72 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+              <div className="absolute right-0 bottom-full mb-2 w-72 bg-[#1a1a1a] border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
                 {templates.map((template) => (
                   <button
                     key={template.key}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
+                    className="w-full text-left px-4 py-3 hover:bg-zinc-800 border-b last:border-b-0"
                     onClick={() => handleTemplateSelect(template)}
                     data-testid={`template-${template.key}`}
                   >
-                    <p className="font-medium text-sm text-gray-900">{template.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{template.template}</p>
+                    <p className="font-medium text-sm text-zinc-200">{template.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">{template.template}</p>
                   </button>
                 ))}
               </div>
@@ -967,7 +967,7 @@ const ClaimCommsPanel = ({
         </div>
 
         {/* Character count */}
-        <div className="text-xs text-gray-500 text-right">
+        <div className="text-xs text-zinc-400 text-right">
           {smsBody.length} / 1600 characters
           {smsBodyIsAIDraft && (
             <span className="ml-2 text-violet-600">AI draft (confirmation required)</span>

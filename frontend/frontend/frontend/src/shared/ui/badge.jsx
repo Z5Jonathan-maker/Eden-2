@@ -16,11 +16,11 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/80",
         outline: "text-foreground border-border",
         success:
-          "border-transparent bg-green-100 text-green-700 hover:bg-green-200",
+          "border-transparent bg-green-500/20 text-green-400 hover:bg-green-500/30",
         warning:
-          "border-transparent bg-amber-100 text-amber-700 hover:bg-amber-200",
+          "border-transparent bg-amber-500/20 text-amber-400 hover:bg-amber-500/30",
         info:
-          "border-transparent bg-blue-100 text-blue-700 hover:bg-blue-200",
+          "border-transparent bg-blue-500/20 text-blue-400 hover:bg-blue-500/30",
         // Tactical/Gaming Rarity Variants
         common:
           "bg-zinc-600/30 text-zinc-300 border-zinc-500/30",

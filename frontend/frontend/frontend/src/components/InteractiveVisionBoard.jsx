@@ -741,7 +741,7 @@ const InteractiveVisionBoard = () => {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-700/30">
                     <button onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}
                       className={`relative w-10 h-5 rounded-full transition-colors ${journalForm.is_shared ? 'bg-orange-500' : 'bg-zinc-700'}`}>
-                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${journalForm.is_shared ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#1a1a1a] transition-transform ${journalForm.is_shared ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
                     <label className="text-sm text-zinc-400 cursor-pointer" onClick={() => setJournalForm({...journalForm, is_shared: !journalForm.is_shared})}>
                       Share gratitude & wins with team

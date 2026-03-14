@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import {
   Calendar, FileText, PenTool, CreditCard,
   Check, X, Loader2, ExternalLink, RefreshCw,
-  Settings, Link2, Unlink, ChevronRight
+  Plug, Link2, Unlink, ChevronRight
 } from 'lucide-react';
 import { apiGet, apiDelete, API_URL } from '../lib/api';
 
@@ -34,10 +34,10 @@ const IntegrationCard = ({
   color = "blue"
 }) => {
   const colorClasses = {
-    blue: "bg-zinc-800/80 border-blue-500/30",
-    green: "bg-zinc-800/80 border-green-500/30",
-    purple: "bg-zinc-800/80 border-purple-500/30",
-    orange: "bg-zinc-800/80 border-orange-500/30"
+    blue: "bg-[#1a1a1a] border-blue-500/30",
+    green: "bg-[#1a1a1a] border-green-500/30",
+    purple: "bg-[#1a1a1a] border-purple-500/30",
+    orange: "bg-[#1a1a1a] border-orange-500/30"
   };
 
   const iconColorClasses = {
@@ -48,7 +48,7 @@ const IntegrationCard = ({
   };
 
   return (
-    <Card className={`${colorClasses[color]} border-2 transition-all hover:shadow-md`}>
+    <Card className={`${colorClasses[color]} border-2 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/5 hover:border-orange-500/20`}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -63,10 +63,10 @@ const IntegrationCard = ({
               {availableScopes.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {availableScopes.map(scope => (
-                    <Badge 
+                    <Badge
                       key={scope}
                       variant={scopes.includes(scope) ? "default" : "outline"}
-                      className={scopes.includes(scope) ? "bg-green-600" : "text-zinc-500 border-zinc-600"}
+                      className={scopes.includes(scope) ? "bg-green-600" : "text-zinc-500 border-zinc-700"}
                     >
                       {scope}
                     </Badge>
@@ -78,8 +78,8 @@ const IntegrationCard = ({
           
           <div className="flex flex-col items-end gap-2">
             {/* Status Badge */}
-            <Badge 
-              className={connected ? "bg-green-500" : "bg-zinc-600"}
+            <Badge
+              className={connected ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/35" : "bg-zinc-800/60 text-zinc-400 border border-zinc-700"}
             >
               {connected ? (
                 <><Check className="w-3 h-3 mr-1" /> Connected</>
@@ -106,7 +106,7 @@ const IntegrationCard = ({
                   size="sm"
                   onClick={onConnect}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-orange-600 hover:bg-orange-700"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4 mr-1" />}
                   Connect
@@ -189,31 +189,36 @@ const IntegrationsPage = () => {
     }
   };
 
+  const integrationCount = 4;
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Tactical Header */}
+      <div className="bg-[#1a1a1a] border-b border-orange-500/20 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <Settings className="w-5 h-5 text-orange-500" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-center justify-center">
+                <Plug className="w-6 h-6 text-orange-500" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Integrations</h1>
-                <p className="text-sm text-zinc-400">Connect external services</p>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight text-zinc-50">INTEGRATIONS</h1>
+                  <span className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-mono text-zinc-400">{integrationCount} SERVICES</span>
+                </div>
+                <p className="text-sm text-zinc-500 mt-0.5">External service connections &amp; OAuth management</p>
               </div>
             </div>
-            
-            <Button variant="outline" size="sm" onClick={fetchStatus}>
+
+            <Button variant="outline" size="sm" onClick={fetchStatus} className="border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:border-orange-500/40 hover:text-zinc-100">
               <RefreshCw className="w-4 h-4 mr-1" />
               Refresh
             </Button>
@@ -288,9 +293,9 @@ const IntegrationsPage = () => {
         </div>
 
         {/* Integration Info */}
-        <div className="mt-8 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-          <h3 className="font-semibold text-orange-400 mb-2">Integration Notes</h3>
-          <ul className="text-sm text-zinc-300 space-y-1">
+        <div className="mt-8 p-4 bg-[#1a1a1a] border border-orange-500/20 rounded-lg">
+          <h3 className="text-[10px] font-bold tracking-widest text-orange-500 uppercase mb-3">Integration Notes</h3>
+          <ul className="text-sm text-zinc-400 space-y-1">
             <li>• <strong>Google:</strong> Connects Calendar, Drive, and Slides with one OAuth flow</li>
             <li>• <strong>Gamma:</strong> Requires API key in server environment (GAMMA_API_KEY)</li>
             <li>• <strong>SignNow:</strong> OAuth connect requires SIGNNOW_CLIENT_ID and SIGNNOW_CLIENT_SECRET in server environment</li>

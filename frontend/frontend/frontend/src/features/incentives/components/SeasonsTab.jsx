@@ -258,7 +258,7 @@ export const SeasonsTab = () => {
                         {season.top_standings.slice(0, 3).map((standing, idx) => (
                           <div key={idx} className="flex items-center gap-1 text-sm">
                             <Medal
-                              className={`w-4 h-4 ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : 'text-orange-500'}`}
+                              className={`w-4 h-4 ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-zinc-500' : 'text-orange-500'}`}
                             />
                             <span className="text-muted-foreground truncate max-w-[100px]">
                               {standing.user_name}

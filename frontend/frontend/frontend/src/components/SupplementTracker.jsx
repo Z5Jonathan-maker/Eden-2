@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 var STATUS_COLORS = {
-  draft: 'bg-gray-500',
+  draft: 'bg-zinc-9000',
   submitted: 'bg-blue-500',
   under_review: 'bg-yellow-500',
   partial_approved: 'bg-orange-500',
@@ -192,14 +192,14 @@ function SupplementTracker() {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-8 bg-zinc-900 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-8 bg-zinc-900 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" onClick={function() { navigate('/claims/' + claimId); }} className="mb-4 min-h-[44px]">
@@ -210,7 +210,7 @@ function SupplementTracker() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-3xl font-tactical font-bold text-white tracking-wide text-glow-orange">SUPPLEMENT TRACKER</h1>
-            {claim && <p className="text-gray-600">Claim #{claim.claim_number} - {claim.client_name}</p>}
+            {claim && <p className="text-zinc-400">Claim #{claim.claim_number} - {claim.client_name}</p>}
           </div>
           <Button className="bg-orange-600 hover:bg-orange-700 min-h-[44px] w-full sm:w-auto" onClick={function() { setShowNewForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -221,28 +221,28 @@ function SupplementTracker() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-gray-900">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-zinc-200">
           <CardContent className="p-6">
             <p className="text-blue-100 text-sm">Total Requested</p>
             <p className="text-2xl font-bold">{formatCurrency(totals.total_requested)}</p>
             <p className="text-blue-200 text-xs mt-1">{totals.supplement_count || 0} supplements</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-gray-900">
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-zinc-200">
           <CardContent className="p-6">
             <p className="text-green-100 text-sm">Approved</p>
             <p className="text-2xl font-bold">{formatCurrency(totals.total_approved)}</p>
             <p className="text-green-200 text-xs mt-1">{totals.approved_count || 0} approved</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-gray-900">
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-zinc-200">
           <CardContent className="p-6">
             <p className="text-orange-100 text-sm">Outstanding</p>
             <p className="text-2xl font-bold">{formatCurrency(totals.total_outstanding)}</p>
             <p className="text-orange-200 text-xs mt-1">{totals.pending_count || 0} pending</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-gray-900">
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-zinc-200">
           <CardContent className="p-6">
             <p className="text-purple-100 text-sm">Recovery Rate</p>
             <p className="text-2xl font-bold">
@@ -313,7 +313,7 @@ function SupplementTracker() {
                           </tr>
                         );
                       })}
-                      <tr className="bg-gray-50 font-bold">
+                      <tr className="bg-zinc-900 font-bold">
                         <td colSpan="4" className="p-2 text-right">Total Requested:</td>
                         <td className="p-2 text-right">{formatCurrency(newSupplement.line_items.reduce(function(sum, i) { return sum + i.total; }, 0))}</td>
                         <td></td>
@@ -390,7 +390,7 @@ function SupplementTracker() {
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-zinc-100 mb-2">No Supplements Yet</h3>
-              <p className="text-gray-600 mb-4">Create your first supplement to start tracking additional claim amounts.</p>
+              <p className="text-zinc-400 mb-4">Create your first supplement to start tracking additional claim amounts.</p>
               <Button className="bg-orange-600 hover:bg-orange-700" onClick={function() { setShowNewForm(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Supplement
@@ -405,7 +405,7 @@ function SupplementTracker() {
                 <CardContent className="p-0">
                   {/* Header Row */}
                   <div
-                    className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-gray-50 min-h-[44px]"
+                    className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-zinc-800 min-h-[44px]"
                     onClick={function() { setExpandedSupplement(isExpanded ? null : supp.id); }}
                   >
                     <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
@@ -414,7 +414,7 @@ function SupplementTracker() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold truncate">{supp.title}</h3>
-                        <p className="text-sm text-gray-500">{supp.line_items ? supp.line_items.length : 0} line items</p>
+                        <p className="text-sm text-zinc-400">{supp.line_items ? supp.line_items.length : 0} line items</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 sm:space-x-4 flex-shrink-0">
@@ -431,7 +431,7 @@ function SupplementTracker() {
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="border-t p-4 bg-gray-50">
+                    <div className="border-t p-4 bg-zinc-900">
                       {/* Line Items Table */}
                       {supp.line_items && supp.line_items.length > 0 && (
                         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -477,18 +477,18 @@ function SupplementTracker() {
 
                       {/* AI Justification */}
                       {aiJustifications[supp.id] && (
-                        <div className="mb-4 rounded-lg border border-cyan-300/40 bg-cyan-50 p-3">
-                          <p className="text-xs uppercase tracking-wide text-cyan-700 mb-1">AI Justification</p>
+                        <div className="mb-4 rounded-lg border border-cyan-500/30/40 bg-cyan-500/10 p-3">
+                          <p className="text-xs uppercase tracking-wide text-cyan-400 mb-1">AI Justification</p>
                           <p className="text-sm text-zinc-100 mb-2">{aiJustifications[supp.id].executive_summary}</p>
                           {aiJustifications[supp.id].rebuttal_points && aiJustifications[supp.id].rebuttal_points.length > 0 && (
-                            <ul className="text-xs text-gray-700 space-y-1 mb-2">
+                            <ul className="text-xs text-zinc-300 space-y-1 mb-2">
                               {aiJustifications[supp.id].rebuttal_points.slice(0, 3).map(function(point, idx) {
                                 return <li key={supp.id + '-rebuttal-' + idx}>- {point}</li>;
                               })}
                             </ul>
                           )}
                           {aiJustifications[supp.id].line_items && aiJustifications[supp.id].line_items.length > 0 && (
-                            <div className="text-xs text-gray-600">
+                            <div className="text-xs text-zinc-400">
                               Top Delta: {aiJustifications[supp.id].line_items[0].line_item} (
                               {formatCurrency(aiJustifications[supp.id].line_items[0].delta)})
                             </div>
@@ -498,7 +498,7 @@ function SupplementTracker() {
 
                       {/* Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-zinc-400">
                           {supp.submitted_at && <span>Submitted: {new Date(supp.submitted_at).toLocaleDateString()}</span>}
                           {supp.carrier_response_date && <span className="ml-4">Response: {new Date(supp.carrier_response_date).toLocaleDateString()}</span>}
                         </div>

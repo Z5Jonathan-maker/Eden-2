@@ -83,7 +83,7 @@ export const FIELD_MODE_ZOOM = 19;
 
 // Badge rarity colors
 export const RARITY_COLORS = {
-  common: 'bg-gray-500',
+  common: 'bg-zinc-9000',
   uncommon: 'bg-green-500',
   rare: 'bg-blue-500',
   epic: 'bg-purple-500',

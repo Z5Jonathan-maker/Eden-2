@@ -23,7 +23,7 @@ const RARITY_STYLES = {
   epic: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   rare: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   uncommon: 'bg-green-500/20 text-green-400 border-green-500/30',
-  common: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+  common: 'bg-zinc-9000/20 text-zinc-400 border-gray-500/30',
 };
 
 const BadgesTab = ({ badges }) => {

@@ -299,7 +299,7 @@ const CreateCampaignModal = ({ onClose, onSuccess }) => {
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1">Goal Type</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-zinc-700 rounded-md"
                 value={formData.goal_type}
                 onChange={(e) => setFormData({ ...formData, goal_type: e.target.value })}
               >
@@ -534,7 +534,7 @@ const RewardsTab = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-xl flex items-center justify-center">
                     {reward.image_url ? (
                       <img
                         src={reward.image_url}
@@ -551,7 +551,7 @@ const RewardsTab = () => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-zinc-100">{reward.name}</h4>
                       {reward.is_featured && (
-                        <Badge className="bg-amber-100 text-amber-700">Featured</Badge>
+                        <Badge className="bg-amber-500/20 text-amber-400">Featured</Badge>
                       )}
                       {!reward.is_active && (
                         <Badge className="bg-zinc-700/40 text-zinc-500">Archived</Badge>
@@ -677,7 +677,7 @@ const CreateRewardModal = ({ onClose, onSuccess }) => {
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1">Category</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-zinc-700 rounded-md"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
@@ -864,7 +864,7 @@ const RedemptionsTab = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      className="border-red-500/30 text-red-600 hover:bg-red-500/10"
                       onClick={() => {
                         const reason = window.prompt('Denial reason:');
                         if (reason) processRedemption(redemption.id, 'deny', reason);
@@ -1046,7 +1046,7 @@ const TerritoriesTab = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-500 border-red-200 hover:bg-red-50"
+                    className="text-red-500 border-red-500/30 hover:bg-red-500/10"
                     onClick={() => deleteTerritory(territory.id)}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1084,7 +1084,7 @@ const TerritoriesTab = () => {
                     {territory.assigned_users.map((assignment) => (
                       <Badge
                         key={assignment.user_id}
-                        className="bg-blue-100 text-blue-700 border-0 flex items-center gap-1"
+                        className="bg-blue-500/20 text-blue-400 border-0 flex items-center gap-1"
                       >
                         <Users className="w-3 h-3" />
                         {assignment.user_name || assignment.user_id}
@@ -1222,13 +1222,13 @@ const CreateTerritoryModal = ({ onClose, onSuccess }) => {
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 cursor-pointer"
+                className="w-full h-10 rounded-md border border-zinc-700 cursor-pointer"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1">Priority</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-zinc-700 rounded-md"
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
               >
@@ -1294,7 +1294,7 @@ const AssignUsersModal = ({ territory, users, onClose, onAssign, onUnassign }) =
                 return (
                   <div
                     key={assignment.user_id}
-                    className="flex items-center justify-between p-2 bg-blue-50 rounded-lg"
+                    className="flex items-center justify-between p-2 bg-blue-500/10 rounded-lg"
                   >
                     <span className="text-sm font-medium">
                       {user?.full_name || assignment.user_name || 'Unknown'}

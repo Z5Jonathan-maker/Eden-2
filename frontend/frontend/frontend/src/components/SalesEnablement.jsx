@@ -456,7 +456,7 @@ const SalesEnablement = () => {
                   }`}
                 >
                   <Icon className={`w-8 h-8 mx-auto mb-2 ${
-                    isSelected ? `text-${flow.color}-400` : 'text-gray-600'
+                    isSelected ? `text-${flow.color}-400` : 'text-zinc-400'
                   }`} />
                   <p className={`font-medium ${isSelected ? 'text-zinc-100' : 'text-zinc-400'}`}>
                     {flow.name}

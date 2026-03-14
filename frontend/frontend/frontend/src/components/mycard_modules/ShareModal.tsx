@@ -41,7 +41,7 @@ const ShareModal: React.FC<Props> = ({ open, onClose, shareUrl, qrCode, onCopy, 
           </div>
 
           <div className="p-3 rounded-lg bg-zinc-800/60 border border-zinc-700/40 flex items-center gap-4">
-            <div className="bg-white p-2 rounded-lg">
+            <div className="bg-[#1a1a1a] p-2 rounded-lg">
               {qrCode ? (
                 <img src={`data:image/png;base64,${qrCode}`} alt="QR Code" width={96} height={96} className="w-24 h-24" />
               ) : (

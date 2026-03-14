@@ -15,7 +15,7 @@ export const TemplateCard = React.memo(({ template, onEdit, onDelete, onUse }) =
   const CategoryIcon = getCategoryIconComponent(template.category);
 
   return (
-    <Card className="hover:border-orange-200 hover:shadow-md transition-all">
+    <Card className="hover:border-orange-500/30 hover:shadow-md transition-all">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div

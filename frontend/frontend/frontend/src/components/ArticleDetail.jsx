@@ -44,7 +44,7 @@ function ArticleDetail() {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-8 bg-zinc-900 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
@@ -52,14 +52,14 @@ function ArticleDetail() {
 
   if (!article) {
     return (
-      <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-8 bg-zinc-900 min-h-screen">
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold">
               {error ? 'Failed to load article' : 'Article not found'}
             </h3>
-            {error && <p className="text-gray-500 text-sm mt-2">{error}</p>}
+            {error && <p className="text-zinc-400 text-sm mt-2">{error}</p>}
             <div className="flex gap-3 justify-center mt-4">
               <Button
                 variant="outline"
@@ -78,7 +78,7 @@ function ArticleDetail() {
   }
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-8 bg-zinc-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <Button
           variant="ghost"
@@ -99,9 +99,9 @@ function ArticleDetail() {
               </Badge>
 
               <h1 className="text-xl sm:text-3xl font-bold text-zinc-100 mb-4">{article.title}</h1>
-              <p className="text-lg text-gray-600 mb-4">{article.description}</p>
+              <p className="text-lg text-zinc-400 mb-4">{article.description}</p>
 
-              <div className="flex items-center space-x-6 text-sm text-gray-500">
+              <div className="flex items-center space-x-6 text-sm text-zinc-400">
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
                   {article.author}

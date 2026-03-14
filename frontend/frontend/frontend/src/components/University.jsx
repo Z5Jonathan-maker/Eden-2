@@ -299,7 +299,7 @@ function University() {
               <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
               {tab.label}
               {count > 0 && (
-                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${isActive ? 'bg-white/20 text-white' : 'bg-zinc-700 text-zinc-300'}`}>{count}</span>
+                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${isActive ? 'bg-[#1a1a1a]/20 text-white' : 'bg-zinc-700 text-zinc-300'}`}>{count}</span>
               )}
             </button>
           );

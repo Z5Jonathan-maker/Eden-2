@@ -262,7 +262,7 @@ const NotificationBell = () => {
       case 'claim_status_changed':
         return <RefreshCw className="w-4 h-4 text-orange-500" />;
       default:
-        return <Bell className="w-4 h-4 text-gray-500" />;
+        return <Bell className="w-4 h-4 text-zinc-400" />;
     }
   };
 
@@ -434,7 +434,7 @@ const NotificationBell = () => {
     <div className="relative flex items-center gap-2" ref={dropdownRef}>
       {/* Connection status indicator */}
       <div
-        className={`w-2 h-2 rounded-full ${(wsConnected || pollingActive) ? 'bg-green-500' : 'bg-gray-300'}`}
+        className={`w-2 h-2 rounded-full ${(wsConnected || pollingActive) ? 'bg-green-500' : 'bg-zinc-700'}`}
         title={(wsConnected || pollingActive) ? 'Connected' : 'Connecting...'}
       />
       

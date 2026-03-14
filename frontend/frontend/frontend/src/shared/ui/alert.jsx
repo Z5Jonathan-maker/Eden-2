@@ -10,13 +10,13 @@ const alertVariants = cva(
       variant: {
         default: "bg-background text-foreground border-border",
         destructive:
-          "border-red-200 bg-red-50 text-red-800 [&>svg]:text-red-500",
+          "border-red-500/30 bg-red-500/10 text-red-400 [&>svg]:text-red-500",
         success:
-          "border-green-200 bg-green-50 text-green-800 [&>svg]:text-green-500",
+          "border-green-500/30 bg-green-500/10 text-green-400 [&>svg]:text-green-500",
         warning:
-          "border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-500",
+          "border-amber-500/30 bg-amber-500/10 text-amber-400 [&>svg]:text-amber-500",
         info:
-          "border-blue-200 bg-blue-50 text-blue-800 [&>svg]:text-blue-500",
+          "border-blue-500/30 bg-blue-500/10 text-blue-400 [&>svg]:text-blue-500",
       },
     },
     defaultVariants: {

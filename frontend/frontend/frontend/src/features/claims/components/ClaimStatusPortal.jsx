@@ -60,7 +60,7 @@ const ClaimStatusPortal = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading claim status...</p>
+          <p className="text-zinc-400">Loading claim status...</p>
         </div>
       </div>
     );
@@ -69,13 +69,13 @@ const ClaimStatusPortal = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-[#1a1a1a] rounded-2xl shadow-xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Claim Not Found</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-zinc-200 mb-2">Claim Not Found</h1>
+          <p className="text-zinc-400 mb-6">{error}</p>
+          <p className="text-sm text-zinc-400">
             If you believe this is an error, please contact Care Claims at{' '}
             <a href="tel:+18448215610" className="text-orange-600 font-medium">
               (844) 821-5610
@@ -91,7 +91,7 @@ const ClaimStatusPortal = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-[#1a1a1a] shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -99,8 +99,8 @@ const ClaimStatusPortal = () => {
                 <span className="text-white font-bold text-lg">CC</span>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Care Claims</h1>
-                <p className="text-xs text-gray-500">Claim Status Portal</p>
+                <h1 className="text-lg sm:text-xl font-bold text-zinc-200">Care Claims</h1>
+                <p className="text-xs text-zinc-400">Claim Status Portal</p>
               </div>
             </div>
             <a
@@ -117,11 +117,11 @@ const ClaimStatusPortal = () => {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
         {/* Claim Header Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div>
-              <p className="text-sm text-gray-500 mb-1">Claim Number</p>
-              <h2 className="text-2xl font-bold text-gray-900">{claim?.claim_number}</h2>
+              <p className="text-sm text-zinc-400 mb-1">Claim Number</p>
+              <h2 className="text-2xl font-bold text-zinc-200">{claim?.claim_number}</h2>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full">
               <Clock className="w-4 h-4 text-orange-600" />
@@ -134,31 +134,31 @@ const ClaimStatusPortal = () => {
           {/* Client & Property Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <FileText className="w-4 h-4 text-gray-600" />
+              <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 text-zinc-400" />
               </div>
               <div>
-                <p className="text-gray-500">Client</p>
-                <p className="font-medium text-gray-900">{claim?.client_name}</p>
+                <p className="text-zinc-400">Client</p>
+                <p className="font-medium text-zinc-200">{claim?.client_name}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-4 h-4 text-gray-600" />
+              <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-4 h-4 text-zinc-400" />
               </div>
               <div>
-                <p className="text-gray-500">Property</p>
-                <p className="font-medium text-gray-900">{claim?.property_address}</p>
+                <p className="text-zinc-400">Property</p>
+                <p className="font-medium text-zinc-200">{claim?.property_address}</p>
               </div>
             </div>
             {claim?.claim_type && (
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-4 h-4 text-gray-600" />
+                <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-zinc-400" />
                 </div>
                 <div>
-                  <p className="text-gray-500">Claim Type</p>
-                  <p className="font-medium text-gray-900">{claim?.claim_type}</p>
+                  <p className="text-zinc-400">Claim Type</p>
+                  <p className="font-medium text-zinc-200">{claim?.claim_type}</p>
                 </div>
               </div>
             )}
@@ -166,14 +166,14 @@ const ClaimStatusPortal = () => {
         </div>
 
         {/* Progress Timeline */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Claim Progress</h3>
+        <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 mb-6">
+          <h3 className="text-lg font-bold text-zinc-200 mb-6">Claim Progress</h3>
 
           {/* Desktop Timeline */}
           <div className="hidden sm:block">
             <div className="relative">
               {/* Progress Line */}
-              <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 rounded">
+              <div className="absolute top-5 left-0 right-0 h-1 bg-zinc-800 rounded">
                 <div
                   className="h-full bg-orange-600 rounded transition-all duration-500"
                   style={{ width: `${(currentStageIndex / (STAGES.length - 1)) * 100}%` }}
@@ -195,7 +195,7 @@ const ClaimStatusPortal = () => {
                       <div
                         className={`
                         w-10 h-10 rounded-full flex items-center justify-center z-10
-                        ${isComplete ? 'bg-orange-600' : isCurrent ? 'bg-orange-600 ring-4 ring-orange-200' : 'bg-gray-200'}
+                        ${isComplete ? 'bg-orange-600' : isCurrent ? 'bg-orange-600 ring-4 ring-orange-200' : 'bg-zinc-800'}
                       `}
                       >
                         {isComplete ? (
@@ -203,15 +203,15 @@ const ClaimStatusPortal = () => {
                         ) : isCurrent ? (
                           <Circle className="w-6 h-6 text-white fill-white" />
                         ) : (
-                          <Circle className="w-6 h-6 text-gray-400" />
+                          <Circle className="w-6 h-6 text-zinc-500" />
                         )}
                       </div>
                       <p
-                        className={`mt-3 text-sm font-medium text-center ${isCurrent ? 'text-orange-600' : 'text-gray-600'}`}
+                        className={`mt-3 text-sm font-medium text-center ${isCurrent ? 'text-orange-600' : 'text-zinc-400'}`}
                       >
                         {stage.label}
                       </p>
-                      <p className="text-xs text-gray-500 text-center mt-1">{stage.description}</p>
+                      <p className="text-xs text-zinc-400 text-center mt-1">{stage.description}</p>
                     </div>
                   );
                 })}
@@ -230,7 +230,7 @@ const ClaimStatusPortal = () => {
                   <div
                     className={`
                     w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                    ${isComplete ? 'bg-orange-600' : isCurrent ? 'bg-orange-600 ring-2 ring-orange-200' : 'bg-gray-200'}
+                    ${isComplete ? 'bg-orange-600' : isCurrent ? 'bg-orange-600 ring-2 ring-orange-200' : 'bg-zinc-800'}
                   `}
                   >
                     {isComplete ? (
@@ -238,14 +238,14 @@ const ClaimStatusPortal = () => {
                     ) : isCurrent ? (
                       <Circle className="w-5 h-5 text-white fill-white" />
                     ) : (
-                      <Circle className="w-5 h-5 text-gray-400" />
+                      <Circle className="w-5 h-5 text-zinc-500" />
                     )}
                   </div>
-                  <div className="flex-1 pb-4 border-b border-gray-100">
-                    <p className={`font-medium ${isCurrent ? 'text-orange-600' : 'text-gray-900'}`}>
+                  <div className="flex-1 pb-4 border-b border-zinc-800">
+                    <p className={`font-medium ${isCurrent ? 'text-orange-600' : 'text-zinc-200'}`}>
                       {stage.label}
                     </p>
-                    <p className="text-sm text-gray-500">{stage.description}</p>
+                    <p className="text-sm text-zinc-400">{stage.description}</p>
                   </div>
                 </div>
               );
@@ -255,14 +255,14 @@ const ClaimStatusPortal = () => {
 
         {/* Next Steps */}
         {(claim?.next_actions_client || claim?.next_actions_firm) && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">What's Happening</h3>
+          <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 mb-6">
+            <h3 className="text-lg font-bold text-zinc-200 mb-4">What's Happening</h3>
 
             <div className="space-y-4">
               {claim?.next_actions_firm && (
-                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <p className="text-sm font-medium text-blue-800 mb-1">Our Team Is Working On:</p>
-                  <p className="text-blue-700">{claim.next_actions_firm}</p>
+                <div className="p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                  <p className="text-sm font-medium text-blue-400 mb-1">Our Team Is Working On:</p>
+                  <p className="text-blue-400">{claim.next_actions_firm}</p>
                 </div>
               )}
 
@@ -283,14 +283,14 @@ const ClaimStatusPortal = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <a
               href="tel:+18448215610"
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-orange-600 rounded-xl font-medium hover:bg-orange-50 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1a1a1a] text-orange-600 rounded-xl font-medium hover:bg-orange-50 transition-colors"
             >
               <Phone className="w-5 h-5" />
               Call Us
             </a>
             <a
               href="mailto:claims@careclaims.com"
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 text-white rounded-xl font-medium hover:bg-white/30 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1a1a1a]/20 text-white rounded-xl font-medium hover:bg-[#1a1a1a]/30 transition-colors"
             >
               <Mail className="w-5 h-5" />
               Email Us
@@ -300,10 +300,10 @@ const ClaimStatusPortal = () => {
 
         {/* Footer */}
         <footer className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-400">
             &copy; {new Date().getFullYear()} Care Claims, Inc. • Stewardship and Excellence
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Last updated:{' '}
             {claim?.last_client_update_at
               ? new Date(claim.last_client_update_at).toLocaleDateString()

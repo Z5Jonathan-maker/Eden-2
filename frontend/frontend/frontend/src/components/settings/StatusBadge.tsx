@@ -10,7 +10,7 @@ interface StatusBadgeProps {
 
 const STATUS_STYLES: Record<StatusVariant, string> = {
   connected: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/35",
-  not_connected: "bg-slate-700/40 text-slate-300 border border-slate-600/70",
+  not_connected: "bg-zinc-800/60 text-zinc-400 border border-zinc-700",
   warning: "bg-amber-500/15 text-amber-300 border border-amber-500/35",
   error: "bg-red-500/15 text-red-300 border border-red-500/35",
 };

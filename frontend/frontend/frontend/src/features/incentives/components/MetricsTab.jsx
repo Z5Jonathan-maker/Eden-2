@@ -50,10 +50,10 @@ export const MetricsTab = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {metrics.map((metric) => (
-            <Card key={metric.id} className="hover:border-blue-200 transition-colors">
+            <Card key={metric.id} className="hover:border-orange-500/30 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-xl">
                     {metric.icon}
                   </div>
                   <div className="flex-1">

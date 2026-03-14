@@ -41,8 +41,8 @@ const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
                   w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium
                   transition-all duration-200
                   ${isCompleted ? 'bg-green-500 text-white' : ''}
-                  ${isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-200' : ''}
-                  ${isUpcoming ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400' : ''}
+                  ${isCurrent ? 'bg-orange-500 text-white ring-4 ring-orange-500/30' : ''}
+                  ${isUpcoming ? 'bg-white/10 text-gray-500' : ''}
                   ${editable ? 'cursor-pointer hover:scale-110' : 'cursor-default'}
                 `}
                 data-testid={`stage-${stage.id}`}
@@ -52,7 +52,7 @@ const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
               <span
                 className={`
                 text-xs mt-1 whitespace-nowrap
-                ${isCurrent ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
+                ${isCurrent ? 'font-semibold text-orange-400' : 'text-gray-500'}
               `}
               >
                 {stage.label}
@@ -64,7 +64,7 @@ const StageProgressBar = ({ currentStage, onStageClick, editable = false }) => {
               <div
                 className={`
                 flex-1 h-0.5 mx-2
-                ${stage.order < currentOrder ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}
+                ${stage.order < currentOrder ? 'bg-green-500' : 'bg-zinc-800 dark:bg-gray-700'}
               `}
               />
             )}
@@ -105,22 +105,22 @@ const ClientUpdateModal = ({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
+        className="bg-[#1a1a1a] dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg">Client Update Generated</h3>
-            <p className="text-sm text-gray-500">Claim #{claimNumber}</p>
+            <p className="text-sm text-zinc-400">Claim #{claimNumber}</p>
           </div>
           <Badge variant="outline">{generatedUpdate.stage_label}</Badge>
         </div>
 
         <div className="p-4 overflow-y-auto max-h-[50vh]">
-          <div className="text-sm text-gray-500 mb-2">
+          <div className="text-sm text-zinc-400 mb-2">
             Subject: {generatedUpdate.suggested_subject}
           </div>
-          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg whitespace-pre-wrap text-sm">
+          <div className="bg-zinc-900 dark:bg-gray-900 p-4 rounded-lg whitespace-pre-wrap text-sm">
             {generatedUpdate.message}
           </div>
         </div>
@@ -260,20 +260,20 @@ export const ClientStatusPanel = ({ claimId, isClientView = false, compact = fal
         <CardContent className="space-y-4">
           <StageProgressBar currentStage={status.stage} editable={false} />
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <div className="bg-blue-500/10 dark:bg-blue-900/20 p-4 rounded-lg">
             <p className="text-sm">{status.status_text}</p>
           </div>
 
           {status.next_actions_firm && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 mb-1">What We're Doing</h4>
+              <h4 className="text-sm font-medium text-zinc-400 mb-1">What We're Doing</h4>
               <p className="text-sm">{status.next_actions_firm}</p>
             </div>
           )}
 
           {status.next_actions_client && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">
+            <div className="bg-amber-500/10 dark:bg-amber-900/20 p-3 rounded-lg">
+              <h4 className="text-sm font-medium text-amber-400 dark:text-amber-400 mb-1">
                 What We Need From You
               </h4>
               <p className="text-sm">{status.next_actions_client}</p>
@@ -281,7 +281,7 @@ export const ClientStatusPanel = ({ claimId, isClientView = false, compact = fal
           )}
 
           {status.last_client_update_at && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-zinc-500">
               Last updated: {new Date(status.last_client_update_at).toLocaleDateString()}
             </p>
           )}
@@ -308,14 +308,14 @@ export const ClientStatusPanel = ({ claimId, isClientView = false, compact = fal
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-              <h4 className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
+            <div className="bg-zinc-900 dark:bg-gray-800 p-3 rounded-lg">
+              <h4 className="text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">
                 What We're Doing
               </h4>
               <p className="text-sm">{status.next_actions_firm || 'Processing claim...'}</p>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+            <div className="bg-amber-500/10 dark:bg-amber-900/20 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1 uppercase tracking-wider">
                 What We Need From Client
               </h4>
@@ -324,7 +324,7 @@ export const ClientStatusPanel = ({ claimId, isClientView = false, compact = fal
           </div>
 
           {status.last_client_update_at && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-zinc-500">
               Last client update: {new Date(status.last_client_update_at).toLocaleString()}
             </p>
           )}
@@ -358,25 +358,25 @@ export const ClientStatusPanel = ({ claimId, isClientView = false, compact = fal
             </div>
 
             {toneDropdown && (
-              <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
-                <div className="p-2 text-xs text-gray-500 border-b dark:border-gray-700">
+              <div className="absolute right-0 mt-1 w-48 bg-[#1a1a1a] dark:bg-gray-800 border border-zinc-700/50 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
+                <div className="p-2 text-xs text-zinc-400 border-b dark:border-gray-700">
                   Select Tone
                 </div>
                 <button
                   onClick={() => handleGenerateUpdate('encouraging')}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 hover:bg-zinc-800"
                 >
                   😊 Encouraging
                 </button>
                 <button
                   onClick={() => handleGenerateUpdate('professional')}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 hover:bg-zinc-800"
                 >
                   📋 Professional
                 </button>
                 <button
                   onClick={() => handleGenerateUpdate('urgent')}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 hover:bg-zinc-800"
                 >
                   ⚡ Urgent
                 </button>

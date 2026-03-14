@@ -296,7 +296,7 @@ const PublicCard = () => {
             {/* QR Code */}
             {qrCode && (
               <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/30 flex items-center gap-4 mb-5">
-                <div className="bg-white p-2 rounded-xl shadow-lg">
+                <div className="bg-[#1a1a1a] p-2 rounded-xl shadow-lg">
                   <img src={`data:image/png;base64,${qrCode}`} alt="QR" width={96} height={96} className="w-24 h-24" />
                 </div>
                 <div className="flex-1">

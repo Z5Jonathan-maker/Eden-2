@@ -12,7 +12,7 @@ export const RuleEditor = React.memo(({ rule, index, rewards, onUpdate, onRemove
   const IconComponent = ruleType?.iconComponent;
 
   return (
-    <Card className="border-dashed bg-slate-50">
+    <Card className="border-dashed bg-zinc-900">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export const RuleEditor = React.memo(({ rule, index, rewards, onUpdate, onRemove
                 return (
                   <div key={tier} className="flex items-center gap-1">
                     <span
-                      className={`text-sm capitalize ${tier === 'gold' ? 'text-yellow-600' : tier === 'silver' ? 'text-gray-500' : 'text-orange-700'}`}
+                      className={`text-sm capitalize ${tier === 'gold' ? 'text-yellow-600' : tier === 'silver' ? 'text-zinc-400' : 'text-orange-700'}`}
                     >
                       {tier === 'gold' ? '\uD83E\uDD47' : tier === 'silver' ? '\uD83E\uDD48' : '\uD83E\uDD49'}
                     </span>

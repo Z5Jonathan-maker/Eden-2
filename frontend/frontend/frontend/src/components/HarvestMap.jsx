@@ -59,9 +59,9 @@ const PinPopup = ({ pin, onLogVisit, onClose, dispositions = DEFAULT_PIN_STATUSE
 
   return (
     <div className="min-w-[220px] p-1">
-      {pin.address && <div className="font-medium text-sm mb-2 text-gray-900">{pin.address}</div>}
+      {pin.address && <div className="font-medium text-sm mb-2 text-zinc-200">{pin.address}</div>}
 
-      <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+      <div className="flex items-center gap-2 mb-3 text-xs text-zinc-400">
         <span>Visits: {pin.visit_count || 0}</span>
         {pin.status && dispositions[pin.status] && (
           <Badge
@@ -98,10 +98,10 @@ const MapLegend = ({ dispositions, pins = [], expanded, onToggle }) => {
   const getCount = (code) => safePins.filter((p) => p.status === code).length;
 
   return (
-    <div className="absolute top-14 right-2 z-10 bg-white/95 backdrop-blur rounded-lg shadow-lg overflow-hidden max-w-[180px]">
+    <div className="absolute top-14 right-2 z-10 bg-[#1a1a1a]/95 backdrop-blur rounded-lg shadow-lg overflow-hidden max-w-[180px]">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
         data-testid="legend-toggle"
       >
         <span>Legend</span>
@@ -109,7 +109,7 @@ const MapLegend = ({ dispositions, pins = [], expanded, onToggle }) => {
       </button>
 
       {expanded && (
-        <div className="px-3 pb-2 space-y-1.5 border-t border-gray-100 pt-2">
+        <div className="px-3 pb-2 space-y-1.5 border-t border-zinc-800 pt-2">
           {Object.entries(dispositions).map(([code, info]) => (
             <div key={code} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-1.5">
@@ -117,14 +117,14 @@ const MapLegend = ({ dispositions, pins = [], expanded, onToggle }) => {
                   className="w-3 h-3 rounded-full shrink-0"
                   style={{ backgroundColor: info.color }}
                 />
-                <span className="text-gray-600 truncate">{info.label}</span>
+                <span className="text-zinc-400 truncate">{info.label}</span>
               </div>
-              <span className="font-medium text-gray-900 ml-2">{getCount(code)}</span>
+              <span className="font-medium text-zinc-200 ml-2">{getCount(code)}</span>
             </div>
           ))}
-          <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
-            <span className="text-gray-500">Total</span>
-            <span className="font-bold text-gray-900">{safePins.length}</span>
+          <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800">
+            <span className="text-zinc-400">Total</span>
+            <span className="font-bold text-zinc-200">{safePins.length}</span>
           </div>
         </div>
       )}
@@ -342,7 +342,7 @@ const HarvestMapInner = ({
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={handleCenterOnMe}
-          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all"
+          className="w-12 h-12 bg-[#1a1a1a] rounded-full shadow-lg flex items-center justify-center hover:bg-zinc-800 active:scale-95 transition-all"
           data-testid="center-on-me-btn"
         >
           <Navigation className="w-5 h-5 text-blue-600" />
@@ -352,7 +352,7 @@ const HarvestMapInner = ({
           onClick={handleDropAtMyLocation}
           disabled={!hasLocation || dropping}
           className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95 ${
-            hasLocation ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500'
+            hasLocation ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-zinc-700 text-zinc-400'
           }`}
           data-testid="drop-pin-btn"
         >
@@ -363,10 +363,10 @@ const HarvestMapInner = ({
       {/* Refresh button */}
       <button
         onClick={() => fetchPins()}
-        className="absolute bottom-4 left-4 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all"
+        className="absolute bottom-4 left-4 z-10 w-10 h-10 bg-[#1a1a1a] rounded-full shadow-lg flex items-center justify-center hover:bg-zinc-800 active:scale-95 transition-all"
         data-testid="refresh-pins-btn"
       >
-        <RefreshCw className="w-4 h-4 text-gray-600" />
+        <RefreshCw className="w-4 h-4 text-zinc-400" />
       </button>
 
       {/* Pin count pill */}

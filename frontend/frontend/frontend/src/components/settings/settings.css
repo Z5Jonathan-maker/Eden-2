@@ -1,9 +1,9 @@
 .settings-shell {
   min-height: 100vh;
-  background-color: #020617;
+  background-color: #0a0a0a;
   background-image:
-    linear-gradient(rgba(71, 85, 105, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(71, 85, 105, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(249, 115, 22, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.04) 1px, transparent 1px);
   background-size: 44px 44px;
 }
 
@@ -18,14 +18,16 @@
 }
 
 .settings-section-title {
-  font-size: 1rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #f97316;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .settings-divider {
   margin-top: 0.5rem;
-  border-top: 1px solid rgba(100, 116, 139, 0.35);
+  border-top: 1px solid rgba(249, 115, 22, 0.2);
 }
 
 .settings-grid {
@@ -42,21 +44,22 @@
 }
 
 .settings-card {
-  border: 1px solid rgba(71, 85, 105, 0.6);
+  border: 1px solid rgba(63, 63, 70, 0.6);
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.75);
-  box-shadow: 0 4px 18px rgba(2, 6, 23, 0.45);
+  background: #1a1a1a;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
   padding: 1.25rem;
-  transition: border-color 160ms ease;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .settings-card:hover {
-  border-color: rgba(100, 116, 139, 0.85);
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 24px rgba(249, 115, 22, 0.06);
 }
 
 .settings-field-label {
   font-size: 0.68rem;
-  color: #94a3b8;
+  color: #a1a1aa;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -64,13 +67,19 @@
 .settings-field-value {
   margin-top: 0.3rem;
   font-size: 0.95rem;
-  color: #e2e8f0;
+  color: #fafafa;
 }
 
 .settings-health-dot {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
+  animation: healthPulse 2s ease-in-out infinite;
+}
+
+@keyframes healthPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .settings-fade-in {

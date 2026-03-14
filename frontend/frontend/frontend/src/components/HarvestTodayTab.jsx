@@ -131,7 +131,7 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
           </div>
         </div>
         {multiplier > 1 && (
-          <div className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5">
+          <div className="bg-[#1a1a1a]/20 backdrop-blur-sm rounded-full px-3 py-1.5">
             <span className="text-sm font-bold">{multiplier}x</span>
             <span className="text-xs ml-1">multiplier</span>
           </div>
@@ -148,9 +148,9 @@ const StreakBanner = ({ streak, isAtRisk, isCritical, multiplier, doorsToday }) 
               {doorsToday || 0}/{streakGoal}
             </span>
           </div>
-          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-2 bg-[#1a1a1a]/20 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white rounded-full transition-all duration-500"
+              className="h-full bg-[#1a1a1a] rounded-full transition-all duration-500"
               style={{ width: `${Math.min(((doorsToday || 0) / streakGoal) * 100, 100)}%` }}
             />
           </div>

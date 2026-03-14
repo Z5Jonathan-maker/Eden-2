@@ -784,7 +784,7 @@ function CourseDetail() {
                                       <input type="radio" name={`q${qIndex}`} checked={isSelected} className="sr-only"
                                         onChange={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))} />
                                       <div className={`w-5 h-5 rounded-full border-2 mr-3 flex-shrink-0 flex items-center justify-center ${isSelected ? 'border-orange-500 bg-orange-500' : 'border-zinc-600'}`}>
-                                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                        {isSelected && <div className="w-2 h-2 rounded-full bg-[#1a1a1a]" />}
                                       </div>
                                       <span>{option}</span>
                                     </label>

@@ -551,9 +551,9 @@ const EveAI = () => {
             </div>
             <div className="overflow-y-auto max-h-[50vh] p-2">
               {loadingClaims ? (
-                <div className="text-center py-8 text-gray-500">Loading claims...</div>
+                <div className="text-center py-8 text-zinc-400">Loading claims...</div>
               ) : availableClaims.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-zinc-400">
                   {claimSearch ? 'No claims found matching your search' : 'No claims available'}
                 </div>
               ) : (

@@ -34,13 +34,13 @@ export const CLAIM_STATUS_LABELS = {
 };
 
 export const CLAIM_STATUS_COLORS = {
-  [CLAIM_STATUS.NEW]: 'bg-blue-100 text-blue-800',
-  [CLAIM_STATUS.IN_REVIEW]: 'bg-yellow-100 text-yellow-800',
-  [CLAIM_STATUS.SUBMITTED]: 'bg-purple-100 text-purple-800',
+  [CLAIM_STATUS.NEW]: 'bg-blue-500/20 text-blue-400',
+  [CLAIM_STATUS.IN_REVIEW]: 'bg-yellow-500/20 text-yellow-400',
+  [CLAIM_STATUS.SUBMITTED]: 'bg-purple-500/20 text-purple-400',
   [CLAIM_STATUS.NEGOTIATING]: 'bg-orange-100 text-orange-800',
-  [CLAIM_STATUS.SETTLED]: 'bg-green-100 text-green-800',
-  [CLAIM_STATUS.CLOSED]: 'bg-gray-100 text-gray-800',
-  [CLAIM_STATUS.ARCHIVED]: 'bg-gray-200 text-gray-600'
+  [CLAIM_STATUS.SETTLED]: 'bg-green-500/20 text-green-400',
+  [CLAIM_STATUS.CLOSED]: 'bg-zinc-900 text-zinc-200',
+  [CLAIM_STATUS.ARCHIVED]: 'bg-zinc-800 text-zinc-400'
 };
 
 // Unified claim type options — used by NewClaim, ClaimEditModal, and any filter UI

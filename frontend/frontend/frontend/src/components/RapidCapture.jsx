@@ -93,7 +93,7 @@ const ClaimContextBar = ({ claimData, claimId, photoCount, isRecording }) => {
         </span>
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
-        <Badge className="bg-white/20 text-white border-0">
+        <Badge className="bg-[#1a1a1a]/20 text-white border-0">
           <ImageIcon className="w-3 h-3 mr-1" /> {photoCount}
         </Badge>
         {isRecording && (
@@ -139,11 +139,11 @@ const PreCaptureGate = ({
             
             {/* Camera Error Display */}
             {(cameraError || isEnvironmentBlocked) && (
-              <div className="bg-red-50 border border-red-300 rounded-xl p-4">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-red-700 font-medium">Camera Error</h4>
+                    <h4 className="text-red-400 font-medium">Camera Error</h4>
                     <p className="text-red-600 text-sm mt-1">
                       {cameraError || environmentCheck?.message || 'Unable to access camera'}
                     </p>
@@ -204,7 +204,7 @@ const PreCaptureGate = ({
               {cameraError ? 'Retry Camera' : 'Start Rapid Capture'}
             </Button>
             
-            <p className="text-gray-400 text-center text-sm">
+            <p className="text-zinc-500 text-center text-sm">
               {cameraError 
                 ? 'Ensure camera permissions are enabled in your browser settings'
                 : 'Camera will activate when you tap start'}
@@ -219,7 +219,7 @@ const PreCaptureGate = ({
             
             <div>
               <h2 className="text-white text-xl font-bold mb-2">No Claim Selected</h2>
-              <p className="text-gray-400">
+              <p className="text-zinc-500">
                 You must select a claim before capturing inspection photos.
               </p>
             </div>
@@ -227,7 +227,7 @@ const PreCaptureGate = ({
             <Button 
               onClick={onClose}
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Go Back & Select Claim
@@ -796,11 +796,11 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
           <h2 className="text-white text-xl font-bold mb-2">Uploading to Claim</h2>
-          <p className="text-gray-400 text-sm mb-6">Uploading {photos.length} photos...</p>
+          <p className="text-zinc-500 text-sm mb-6">Uploading {photos.length} photos...</p>
           <div className="w-64">
             <Progress value={inspectionPhotos.uploadProgress} className="h-2" />
           </div>
-          <p className="text-gray-500 text-xs mt-2">{Math.round(inspectionPhotos.uploadProgress)}%</p>
+          <p className="text-zinc-400 text-xs mt-2">{Math.round(inspectionPhotos.uploadProgress)}%</p>
         </div>
       </div>
     );
@@ -819,7 +819,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
           <h2 className="text-white text-xl font-bold mb-2">Processing Voice Notes</h2>
-          <p className="text-gray-400 text-sm">Transcribing and matching to photos...</p>
+          <p className="text-zinc-500 text-sm">Transcribing and matching to photos...</p>
         </div>
       </div>
     );
@@ -916,7 +916,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
               <p className="text-orange-300 text-xs flex items-center gap-1">
                 <Wand2 className="w-3 h-3" /> AI Transcription:
               </p>
-              <p className="text-gray-300 text-sm mt-1">{currentPhoto.aiAnnotation}</p>
+              <p className="text-zinc-300 text-sm mt-1">{currentPhoto.aiAnnotation}</p>
             </div>
           )}
           
@@ -965,8 +965,8 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         <div className="flex-1 overflow-auto p-4">
           {photos.length === 0 ? (
             <div className="text-center py-12">
-              <ImageIcon className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-400">No photos captured yet</p>
+              <ImageIcon className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
+              <p className="text-zinc-500">No photos captured yet</p>
               <Button 
                 onClick={() => setStep('capture')} 
                 className="mt-4 bg-orange-600 hover:bg-orange-700"
@@ -977,7 +977,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
           ) : (
             <>
               <div className="bg-gray-800 rounded-lg p-3 mb-4 text-center">
-                <p className="text-gray-300 text-sm">
+                <p className="text-zinc-300 text-sm">
                   Tap any photo to <strong className="text-orange-400">review and edit</strong>
                 </p>
               </div>
@@ -1070,7 +1070,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
         
         {/* Flash effect */}
         {showFlash && (
-          <div className="absolute inset-0 bg-white/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-[#1a1a1a]/40 pointer-events-none" />
         )}
         
         {/* Camera Error */}
@@ -1079,7 +1079,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
             <div className="text-center p-6">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
               <p className="text-white font-medium mb-2">Camera Error</p>
-              <p className="text-gray-400 text-sm mb-4">{cameraError}</p>
+              <p className="text-zinc-500 text-sm mb-4">{cameraError}</p>
               <Button onClick={startCamera} className="bg-orange-600 hover:bg-orange-700">
                 Retry
               </Button>
@@ -1155,14 +1155,14 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
             }`}
             data-testid="voice-toggle-btn"
           >
-            {isRecording ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-gray-400" />}
+            {isRecording ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-zinc-500" />}
           </button>
           
           {/* Capture */}
           <button
             onClick={handleCapture}
             disabled={!cameraReady}
-            className="w-20 h-20 rounded-full bg-white flex items-center justify-center active:scale-95 disabled:opacity-50"
+            className="w-20 h-20 rounded-full bg-[#1a1a1a] flex items-center justify-center active:scale-95 disabled:opacity-50"
             data-testid="capture-btn"
           >
             <div className="w-16 h-16 rounded-full border-4 border-gray-900" />
@@ -1181,7 +1181,7 @@ const RapidCapture = ({ claimId, claimInfo, onClose, onComplete }) => {
           </button>
         </div>
         
-        <p className="text-center text-gray-500 text-xs mt-4">
+        <p className="text-center text-zinc-400 text-xs mt-4">
           {photos.length === 0 
             ? 'Tap to capture • Voice notes optional' 
             : `${photos.length} captured • Tap ✓ to review & edit`}

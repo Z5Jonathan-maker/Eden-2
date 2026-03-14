@@ -159,11 +159,11 @@ function UserManagement() {
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                <div className="text-xs sm:text-sm text-gray-600">Logged in as:</div>
+                <div className="text-xs sm:text-sm text-zinc-400">Logged in as:</div>
                 <div className="font-medium text-sm sm:text-base truncate">{currentUserInfo.email}</div>
                 <Badge className={ROLE_COLORS[currentUserInfo.role]}>{currentUserInfo.role}</Badge>
               </div>
-              <div className="text-xs sm:text-sm text-gray-500">
+              <div className="text-xs sm:text-sm text-zinc-400">
                 Permissions: {currentUserInfo.permissions ? currentUserInfo.permissions.length : 0}
               </div>
             </div>
@@ -346,7 +346,7 @@ function UserManagement() {
                     <RoleIcon className="w-5 h-5" />
                     <span className="font-medium capitalize">{role}</span>
                   </div>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-sm text-zinc-400 space-y-1">
                     {role === 'admin' && (
                       <div>
                         <li>• Full system access</li>

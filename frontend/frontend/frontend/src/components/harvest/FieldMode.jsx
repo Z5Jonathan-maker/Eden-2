@@ -307,7 +307,7 @@ const FieldModeInner = ({
         <button
           onClick={handleCenterOnMe}
           className={`absolute bottom-32 right-4 z-10 w-12 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all ${
-            followGps ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'
+            followGps ? 'bg-blue-600 text-white' : 'bg-[#1a1a1a] text-blue-600'
           }`}
         >
           {followGps ? <Locate className="w-5 h-5" /> : <Navigation className="w-5 h-5" />}

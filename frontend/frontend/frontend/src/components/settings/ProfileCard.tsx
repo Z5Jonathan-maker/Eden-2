@@ -22,7 +22,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ name, role, email, phone, onE
     <section className="settings-card settings-fade-in">
       <div className="grid gap-5 md:grid-cols-[auto,1fr]">
         <div className="flex items-center justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-slate-600 bg-slate-800 text-xl font-semibold text-slate-100">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-orange-500/30 bg-zinc-800 text-xl font-semibold text-orange-400">
             {initialsFrom(name)}
           </div>
         </div>
@@ -50,7 +50,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ name, role, email, phone, onE
         <Button
           onClick={onEditProfile}
           variant="outline"
-          className="border-slate-600 bg-slate-800/50 text-slate-100 hover:border-slate-500 hover:bg-slate-800"
+          className="border-zinc-700 bg-zinc-800/60 text-zinc-100 hover:border-orange-500/40 hover:bg-zinc-800"
         >
           <UserRound className="h-4 w-4" />
           Edit Profile

@@ -17,21 +17,21 @@ export const ArticleCard = ({ article, onClick }) => {
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className="p-3 rounded-xl bg-amber-100">
+          <div className="p-3 rounded-xl bg-amber-500/20">
             <FileText className="w-6 h-6 text-amber-600" />
           </div>
-          <Badge variant="outline" className="dark:border-gray-300">
+          <Badge variant="outline" className="dark:border-zinc-700">
             {article.category || 'Article'}
           </Badge>
         </div>
         
         <h3 className="font-bold text-lg mb-2 line-clamp-2">{article.title}</h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p className="text-zinc-400 text-sm mb-4 line-clamp-3">
           {article.description || article.excerpt || article.content?.substring(0, 150) + '...'}
         </p>
         
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm text-gray-500">
+          <div className="flex items-center gap-3 text-sm text-zinc-400">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               {readTime}

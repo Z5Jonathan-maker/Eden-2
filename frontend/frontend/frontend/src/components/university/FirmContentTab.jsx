@@ -24,11 +24,11 @@ const ContentCard = ({ item, type, onTogglePublish, onDelete }) => (
               </Badge>
             )}
             {item.is_published ? (
-              <Badge className="bg-green-100 text-green-700 text-xs">
+              <Badge className="bg-green-500/20 text-green-400 text-xs">
                 Published
               </Badge>
             ) : (
-              <Badge className="bg-yellow-100 text-yellow-700 text-xs">
+              <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
                 Draft
               </Badge>
             )}

@@ -52,28 +52,28 @@ const BookCard = ({ book, onUpdateProgress, onMarkComplete, onGenerateWorkbook, 
                 {formatFileType(book.file_name, book.file_format)}
               </Badge>
               {book.is_mandatory && (
-                <Badge className="bg-red-100 text-red-700 text-xs">
+                <Badge className="bg-red-500/20 text-red-400 text-xs">
                   Mandatory
                 </Badge>
               )}
               {isCompleted && (
-                <Badge className="bg-green-100 text-green-700 text-xs">
+                <Badge className="bg-green-500/20 text-green-400 text-xs">
                   Completed
                 </Badge>
               )}
             </div>
             <CardTitle className="text-lg text-zinc-100">{book.title}</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{book.description}</p>
+            <p className="text-sm text-zinc-400 mt-1">{book.description}</p>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         {book.author && (
-          <p className="text-xs text-gray-500 mb-3">Author: {book.author}</p>
+          <p className="text-xs text-zinc-400 mb-3">Author: {book.author}</p>
         )}
         <div className="space-y-3">
           <Progress value={book.progress_percent || 0} className="h-2" />
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-zinc-400">
             <span>{book.progress_percent || 0}% complete</span>
             <button
               onClick={handleOpen}
@@ -220,7 +220,7 @@ export const BooksTab = ({
                 accept=".pdf,.epub,.mobi,.azw,.azw3"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-              <div className="flex items-center gap-3 text-sm text-gray-600">
+              <div className="flex items-center gap-3 text-sm text-zinc-400">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -246,7 +246,7 @@ export const BooksTab = ({
             >
               {uploading ? 'Uploading...' : 'Add Book'}
             </Button>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
+            <p className="text-xs text-zinc-400 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               Upload DRM-free PDF, EPUB, or MOBI files only.
             </p>
@@ -256,7 +256,7 @@ export const BooksTab = ({
 
       {books.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-gray-500">
+          <CardContent className="py-10 text-center text-zinc-400">
             No books in the library yet.
           </CardContent>
         </Card>

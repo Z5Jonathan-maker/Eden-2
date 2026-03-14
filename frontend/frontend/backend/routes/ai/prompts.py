@@ -69,6 +69,279 @@ Eden Claims Platform Knowledge Base:
 - Citizens: Focus on scope disputes, use appraisal for valuation
 - State Farm: Document delays for potential bad faith
 - Travelers: Detailed rebuttals to depreciation
+
+## Carrier Playbooks (Expanded)
+
+### Citizens Property Insurance
+- State-run insurer of last resort, largest in FL
+- Tactics: Scope disputes, lowball initial offers, slow supplement review
+- Counter: Detailed scope with Xactimate line items, request re-inspection, invoke appraisal early
+- Key: Citizens must follow same 627.70131 timelines as private carriers
+
+### Universal Property & Casualty
+- Tactics: Heavy depreciation, deny matching requirements, aggressive on ACV
+- Counter: Document matching necessity with photos + manufacturer specs, cite FL statute on matching
+- Key: Often responsive to well-documented supplements
+
+### Heritage Property & Casualty
+- Tactics: Quick lowball offers hoping for acceptance, deny hidden damage
+- Counter: Never accept first offer, always request detailed scope breakdown
+- Key: Destructive testing documentation is critical
+
+### Tower Hill Insurance
+- Tactics: Strict policy language interpretation, deny wear/tear vs storm damage
+- Counter: Clear pre-loss vs post-loss documentation, expert reports
+- Key: Appraisal process often favorable for PAs
+
+### FedNat Insurance
+- Tactics: Delay tactics, reassign adjusters, lose documentation
+- Counter: Document every communication with dates/times, send everything certified
+- Key: Bad faith potential when delays exceed statutory timelines
+
+### Security First Insurance
+- Tactics: Aggressive scope reduction, deny consequential damage
+- Counter: Engineering reports, moisture mapping documentation
+- Key: Often settles at mediation
+
+### Slide Insurance
+- Tactics: Digital-first carrier, automated denials, minimal field inspection
+- Counter: Demand in-person re-inspection, detailed photo documentation
+- Key: Newer carrier, less litigation history to reference
+
+### American Integrity Insurance
+- Tactics: Reasonable initial handling but aggressive on supplements
+- Counter: Front-load documentation on initial claim, make supplements bulletproof
+- Key: Generally professional, respond well to organized submissions
+
+## Xactimate Category Codes Reference
+
+### Roofing (RFG)
+- RFG TEAR — Tear off existing roofing
+- RFG FELT — Felt/underlayment
+- RFG COMP — Composition shingles
+- RFG TILE — Tile roofing
+- RFG METAL — Metal roofing
+- RFG FLASH — Flashing
+- RFG RIDGE — Ridge cap
+- RFG VENT — Roof ventilation
+- RFG DECK — Roof decking/sheathing
+
+### Drywall/Plaster (DRY)
+- DRY HANG — Hang drywall
+- DRY FINISH — Tape/float/texture
+- DRY DEMO — Demolition of drywall
+
+### Painting (PNT)
+- PNT SEAL — Seal/prime
+- PNT 2CT — Two coat repaint
+- PNT MATCH — Color match (critical for supplements)
+
+### Plumbing (PLM)
+- PLM LEAK — Leak detection
+- PLM PIPE — Pipe repair/replacement
+
+### Flooring (FLR)
+- FLR DEMO — Remove flooring
+- FLR TILE — Tile installation
+- FLR HARDWD — Hardwood
+- FLR CARPET — Carpet installation
+- FLR LAMIN — Laminate
+
+### Water Mitigation (WTR)
+- WTR EXTRACT — Water extraction
+- WTR DRY — Structural drying
+- WTR DEMO — Wet material demolition
+- WTR ANTIMICRO — Antimicrobial treatment
+
+### General (GEN)
+- GEN DEMO — General demolition
+- GEN HAUL — Debris haul-off
+- GEN CLEAN — Cleaning
+- GEN PERMIT — Building permits
+- O&P — Overhead & Profit (typically 20% total: 10% overhead + 10% profit)
+
+## Common Supplement Justifications
+
+### Matching (Florida)
+- FL has implied warranty of workmanship — repairs must match existing
+- If carrier denies matching, cite: "Repair must restore property to pre-loss condition"
+- Document: manufacturer discontinuation, color variation, weathering differences
+- Take comparison photos showing why partial replacement won't match
+
+### Overhead & Profit (O&P)
+- Justified when: job requires coordination of 3+ trades
+- Standard: 10% overhead + 10% profit = 20% total
+- Carrier often excludes O&P on initial estimate — always supplement for it
+- Document: number of trades involved, project complexity, coordination required
+
+### Code Upgrades
+- Florida Building Code changes trigger upgrade requirements
+- Common: hurricane straps, impact-resistant roofing, electrical panel upgrades
+- Always check: local municipality requirements, permit requirements
+- Carrier must pay for code-required upgrades per policy terms
+
+### Hidden Damage
+- Discovered during repairs, not visible during initial inspection
+- Process: Stop work → document → notify carrier → request re-inspection
+- Key: Never repair hidden damage without carrier acknowledgment
+- Photo everything BEFORE and AFTER opening walls/ceilings
+
+## IICRC Standards (Expanded)
+
+### S500 — Water Damage Restoration
+- Category 1 (Clean): Supply line, rainwater
+- Category 2 (Gray): Dishwasher, washing machine, toilet overflow (no feces)
+- Category 3 (Black): Sewage, flooding, prolonged standing water
+- Class 1-4 based on evaporation rate and material porosity
+- Drying standards: dehumidifiers + air movers, monitor daily with moisture meters
+- Document: moisture readings, equipment placement, daily logs
+
+### S520 — Mold Remediation
+- Condition 1 (Normal): Background levels, no remediation needed
+- Condition 2 (Settled Spores): Elevated settled spores, cleaning required
+- Condition 3 (Active Growth): Active mold growth, full remediation required
+- Protocol: containment → HEPA filtration → removal → treatment → clearance testing
+- Key: Always get pre-remediation AND post-remediation air samples
+
+### S540 — Fire/Smoke Damage
+- Protein fires (kitchen): invisible residue, worst odor
+- Complex fires: synthetic materials, toxic residue
+- Document: char depth, smoke patterns, affected materials
+- Thermal fogging vs hydroxyl generators for odor
+
+## Negotiation Tactics
+
+### Appraisal Process (F.S. 627.7015)
+- Each party selects appraiser, appraisers select umpire
+- Binding on amount, not coverage
+- Cost: split umpire fees 50/50
+- When to invoke: valuation dispute > $5K, carrier won't budge on scope
+- Timeline: no statutory deadline, but carriers often delay — push for 30-day resolution
+
+### Mediation
+- Pre-suit requirement in many FL policies
+- Cost: typically $500-1,500 per session
+- When to use: coverage disputes, bad faith potential
+- Prepare: demand package with all documentation, comparable settlements
+
+### Bad Faith Indicators (Document These)
+- Failure to acknowledge claim within 7 days
+- Failure to pay/deny within 60 days
+- Unreasonable delay in investigation
+- Lowball offer without reasonable basis
+- Failure to explain denial reasons
+- Ignoring submitted documentation
+- Repeated reassignment of adjusters
+
+## CRITICAL UPDATES — Post-SB 2A Landscape (2023-2026)
+
+### SB 2A (December 2022) — What Changed
+- ELIMINATED one-way attorney fees for property insurance claims (policies written Jan 1, 2023+)
+- PROHIBITED assignment of benefits (AOB) for residential/commercial property policies
+- Impact: FL insurance lawsuits dropped 24% between Q3 2023 and 2024
+- Impact: Average requested rate hikes dropped from 21% (2023) to 0.2% (2025)
+- PA Strategy Shift: Without attorney fee leverage, documentation quality is now THE differentiator
+- CRITICAL: PAs must now build cases so strong that carriers settle without litigation
+
+### HB 837 (March 2023) — Extended Reforms
+- Extended elimination of one-way attorney fees beyond property insurance
+- Reduced statute of limitations for negligence claims from 4 years to 2 years
+- Modified comparative fault system
+- Impact on PAs: Tighter timelines, must act faster on claims
+
+### Current Fee Structure (F.S. 626.854(11)(b) — 2025)
+- Non-emergency claims: 20% maximum of claim payments/settlements
+- Emergency-declared claims: 10% maximum (for 1 year after Governor's declaration)
+- Supplemental/reopened claims: 20% maximum of supplemental payment
+- NO sliding scale — simple two-tier structure
+
+### Contract Requirements (F.S. 626.8796 — 2025)
+- Percentage of compensation must be in MINIMUM 18-POINT BOLD TYPE before signature line
+- Must state claim type: emergency, non-emergency, or supplemental
+- Named insured must initial EVERY page without their signature
+- Must include: PA full name, business address, license number, phone, email, firm name
+- Must include: insured's full name, street address, phone, email
+- Rescission: Insured may rescind if PA hasn't submitted written estimate within 60 days
+- NEW (July 1, 2026): Vulnerable adults/those lacking capacity may rescind at ANY time
+
+### Insurer Obligations (F.S. 627.70131 — 2025)
+- 7 calendar days: Acknowledge receipt of claim communication
+- 7 days after proof-of-loss: Begin investigation
+- 60 days after notice: Pay or deny — after this, interest accrues per F.S. 55.03
+- Interest runs from date insurer RECEIVED notice (not date of loss)
+- Acknowledgment must be "responsive" and include claim forms + instructions + phone number
+
+### Pending 2026 Legislation
+- SB 202: REQUIRES human review of all claim denials — prohibits AI-only denials (effective 7/1/2026)
+- SB 266: Vulnerable adult protection — rescission of PA contracts at any time
+- SB 30 (proposed): Would cap annual rate increases at 10-15%
+- Anti-PA endorsements: 6+ carriers trying to discourage PA use via policy endorsements — FAPIA/NAPIA suing
+
+## Anti-Public Adjuster Tactics (2025 — WATCH FOR THESE)
+- Velocity Risk and others adding endorsements that threaten to NOT investigate until PA is dismissed
+- FAPIA and NAPIA have filed suit challenging these endorsements
+- If a client shows you an anti-PA endorsement: document it, contact FAPIA, it may be unenforceable
+
+## Deep Dive: Industry Mentors & Methods
+
+### John Senac — CAR Method (Compatibility, Availability, Repairability)
+- President of NTS Identification Services (Name That Shingle)
+- CAR stands for: Compatibility, Availability, Repairability
+- Philosophy: "Show ALL concerns on the roof, not just the damage"
+- Key technique: Strong initial inspection that pre-empts carrier defenses
+- Specializes in: discontinued shingles/materials identification
+- Teaching: Present findings methodically to project confidence
+- When carrier says "we can repair": Use CAR to prove why repair isn't possible
+- Discontinued materials = full replacement, not repair (carrier can't match what doesn't exist)
+
+### Chip Merlin — Bad Faith & Litigation Authority
+- Founded Merlin Law Group (1985) — largest policyholder-side insurance firm
+- Key insight: "Document every communication. Bad faith requires showing insurer KNEW claim was valid"
+- Blog: propertyinsurancecoveragelaw.com — essential reading for current case law
+- Focus areas: First-party bad faith, coverage disputes, delayed claims
+- Post-SB 2A strategy: Build such overwhelming documentation that carriers settle before litigation
+- 2025 fight: Challenging anti-PA policy endorsements in court
+
+### Winning PA Methods (Research-Verified 2024-2025)
+
+#### Documentation That Wins
+- Geo-tagged site surveys (proves you were there, when)
+- Drone footage (aerial perspective carriers can't dispute)
+- City weather service data from day of storm (proves weather event occurred)
+- Hyper-local comparable estimates (same zip code — carriers can't argue market rates)
+- Pre-loss vs post-loss comparison photos (Google Street View for pre-loss)
+
+#### The 747% Difference
+- Citizens Property Insurance study: Claims WITH PA averaged $17,187 payment
+- Claims WITHOUT PA averaged $2,029 payment
+- That's a 747% increase — use this stat in marketing and client conversations
+
+#### Post-SB 2A Strategy Shift
+- Without one-way attorney fees, PAs must build cases SO strong carriers settle voluntarily
+- Focus on: exhaustive documentation, carrier-specific tactics, appraisal expertise
+- Collaboration with attorneys still valuable but economics changed
+- Appraisal process (627.7015) is now the PRIMARY dispute resolution tool
+- Mediation before litigation for coverage disputes
+
+## Florida Insurance Market (2025-2026)
+
+### Top Carriers by Policy Count
+1. State Farm Florida (~646,000 policies)
+2. Universal Property & Casualty (~561,000 policies)
+3. Citizens Property Insurance (~385,000 policies, down 73% from Oct 2023 peak of 1.42M)
+4. Heritage Property & Casualty (resumed writing new policies Aug 2024)
+5. Tower Hill Insurance
+6. American Integrity Insurance
+7. Florida Peninsula Insurance
+8. Security First Insurance
+9. Slide Insurance (digital-first, newer carrier)
+10. FedNat Insurance
+
+### Market Trends
+- 17 new carriers entered FL market since SB 2A reforms
+- Citizens depopulating rapidly — policies moving to private market
+- Average rate increases stabilizing (0.2% in 2025 vs 21% in 2023)
+- Surplus lines carriers increasingly used — less regulated, watch for anti-PA endorsements
 """
 
 # ---------------------------------------------------------------------------

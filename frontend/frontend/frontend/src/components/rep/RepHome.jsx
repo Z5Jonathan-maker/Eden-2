@@ -218,7 +218,7 @@ const RepHome = () => {
                     <p className="font-medium truncate">{comp.name}</p>
                     <p className="text-sm text-slate-400 truncate">{comp.tagline}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-slate-500" />
+                  <ChevronRight className="w-5 h-5 text-zinc-400" />
                 </CardContent>
               </Card>
             ))}
