@@ -366,12 +366,9 @@ ROLE_HIERARCHY = {
 }
 
 
-def get_role_level(role: str) -> int:
-    """Get numeric level for a role"""
-    try:
-        return ROLE_HIERARCHY.get(UserRole(role), 0)
-    except ValueError:
-        return 0
+# CANONICAL get_role_level lives in models.py (10/50/75/100 scale).
+# Import from there to avoid duplicate definitions.
+from models import get_role_level  # noqa: E402
 
 
 def has_min_role(user_role: str, required_role: str) -> bool:

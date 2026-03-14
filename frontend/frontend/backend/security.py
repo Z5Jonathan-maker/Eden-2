@@ -15,7 +15,8 @@ import time
 from collections import defaultdict
 
 from fastapi import HTTPException, Request, Depends
-from core import UserRole, get_role_level, has_min_role
+from core import UserRole, has_min_role
+from models import get_role_level
 
 # ============================================
 # PERMISSION DEFINITIONS
@@ -101,7 +102,13 @@ def check_permission(user: dict, permission: str) -> bool:
 def require_permission(permission: str):
     """
     Dependency factory that checks for a specific permission.
-    
+
+    DEPRECATED: Use dependencies.require_permission instead.
+    This version uses colon-separated permissions (e.g. "claims:create")
+    while dependencies.py uses dot-separated (e.g. "claims.create").
+    Routes import from dependencies.py — this copy is kept only for
+    backward compatibility and should not be used in new code.
+
     Usage:
         @router.post("/claims/")
         async def create_claim(
