@@ -1,0 +1,141 @@
+"""
+Agent Orchestrator for ClaimPilot.
+
+Routes domain events to registered agents, manages the agent lifecycle,
+and submits actions requiring approval through the ApprovalGate.
+"""
+
+import logging
+from typing import Optional
+
+from models import AgentResult, PendingAction
+from services.claimpilot.agent_context import AgentContextBuilder
+from services.claimpilot.approval_gate import ApprovalGate
+from services.claimpilot.base_agent import BaseAgent
+
+logger = logging.getLogger(__name__)
+
+# Default event-to-agent mappings
+DEFAULT_EVENT_MAPPINGS = {
+    "claim.created": ["claim_monitor"],
+    "claim.updated": ["claim_monitor"],
+    "claim.status_changed": ["claim_monitor"],
+    "document.uploaded": ["claim_monitor"],
+    "note.added": ["claim_monitor"],
+}
+
+
+class AgentOrchestrator:
+    """Central router that dispatches domain events to registered agents."""
+
+    def __init__(self, db) -> None:
+        self._db = db
+        self.agents: dict[str, BaseAgent] = {}
+        self.event_map: dict[str, list[str]] = {}
+        self.context_builder = AgentContextBuilder(db)
+        self._approval_gate = ApprovalGate(db)
+
+    def register(self, name: str, agent: BaseAgent) -> None:
+        """Register an agent instance by name."""
+        self.agents[name] = agent
+        logger.info("orchestrator | registered agent=%s", name)
+
+    def add_event_mapping(self, event_type: str, agent_names: list[str]) -> None:
+        """Map a domain event type to a list of agent names."""
+        self.event_map[event_type] = agent_names
+
+    async def handle_event(
+        self,
+        event_type: str,
+        claim_id: str,
+        details: Optional[dict] = None,
+    ) -> list[AgentResult]:
+        """Route a domain event to all mapped agents.
+
+        Returns a list of AgentResult objects (one per agent that produced output).
+        """
+        agent_names = self.event_map.get(event_type)
+        if not agent_names:
+            logger.debug("orchestrator | no agents mapped for event=%s", event_type)
+            return []
+
+        try:
+            context = await self.context_builder.build(claim_id)
+        except ValueError:
+            logger.warning(
+                "orchestrator | claim not found claim_id=%s event=%s",
+                claim_id,
+                event_type,
+            )
+            return []
+
+        results: list[AgentResult] = []
+        for name in agent_names:
+            agent = self.agents.get(name)
+            if agent is None:
+                logger.warning("orchestrator | agent not registered name=%s", name)
+                continue
+
+            result = await agent.run(context)
+            if result is None:
+                continue
+
+            # Submit actions requiring approval through the gate
+            if agent.requires_approval and result.suggested_actions:
+                for action_desc in result.suggested_actions:
+                    pending = PendingAction(
+                        agent_name=agent.agent_name,
+                        claim_id=claim_id,
+                        action_type=action_desc,
+                        confidence=result.confidence,
+                        reasoning=result.summary,
+                    )
+                    await self._approval_gate.submit(pending)
+
+            results.append(result)
+
+        return results
+
+    async def run_agent(self, agent_name: str, claim_id: str) -> Optional[AgentResult]:
+        """Manually trigger a specific agent by name.
+
+        Raises:
+            ValueError: If agent_name is not registered.
+        """
+        agent = self.agents.get(agent_name)
+        if agent is None:
+            raise ValueError(f"Agent not registered: {agent_name}")
+
+        context = await self.context_builder.build(claim_id)
+        return await agent.run(context)
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton
+# ---------------------------------------------------------------------------
+
+_orchestrator: Optional[AgentOrchestrator] = None
+
+
+def init_orchestrator(db) -> AgentOrchestrator:
+    """Create and configure the global AgentOrchestrator singleton."""
+    global _orchestrator  # noqa: PLW0603
+    _orchestrator = AgentOrchestrator(db)
+
+    # Register default event mappings
+    for event_type, agent_names in DEFAULT_EVENT_MAPPINGS.items():
+        _orchestrator.add_event_mapping(event_type, agent_names)
+
+    logger.info("orchestrator | initialized with %d event mappings", len(DEFAULT_EVENT_MAPPINGS))
+    return _orchestrator
+
+
+def get_orchestrator() -> AgentOrchestrator:
+    """Return the global orchestrator instance.
+
+    Raises:
+        RuntimeError: If init_orchestrator() has not been called.
+    """
+    if _orchestrator is None:
+        raise RuntimeError("Orchestrator not initialized — call init_orchestrator(db) first")
+    return _orchestrator
