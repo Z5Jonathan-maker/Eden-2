@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 
 # Default event-to-agent mappings
 DEFAULT_EVENT_MAPPINGS = {
-    "claim.created": ["claim_monitor"],
-    "claim.updated": ["claim_monitor"],
-    "claim.status_changed": ["claim_monitor"],
-    "document.uploaded": ["claim_monitor"],
-    "note.added": ["claim_monitor"],
+    "ClaimCreated": ["claim_monitor", "intake_parser", "evidence_scorer"],
+    "ClaimUpdated": ["claim_monitor", "evidence_scorer"],
+    "ClaimArchived": [],
+    "ClaimRestored": ["claim_monitor"],
+    "PhotoUploaded": ["vision_analyzer", "evidence_scorer"],
+    "EvidenceIngested": ["evidence_scorer"],
 }
 
 
@@ -122,11 +123,26 @@ def init_orchestrator(db) -> AgentOrchestrator:
     global _orchestrator  # noqa: PLW0603
     _orchestrator = AgentOrchestrator(db)
 
+    # Register agents
+    from services.claimpilot.agents.claim_monitor import ClaimMonitorAgent
+    from services.claimpilot.agents.vision_analyzer import VisionAnalyzerAgent
+    from services.claimpilot.agents.intake_parser import IntakeParserAgent
+    from services.claimpilot.agents.evidence_scorer import EvidenceScorerAgent
+
+    _orchestrator.register("claim_monitor", ClaimMonitorAgent(db))
+    _orchestrator.register("vision_analyzer", VisionAnalyzerAgent(db))
+    _orchestrator.register("intake_parser", IntakeParserAgent(db))
+    _orchestrator.register("evidence_scorer", EvidenceScorerAgent(db))
+
     # Register default event mappings
     for event_type, agent_names in DEFAULT_EVENT_MAPPINGS.items():
         _orchestrator.add_event_mapping(event_type, agent_names)
 
-    logger.info("orchestrator | initialized with %d event mappings", len(DEFAULT_EVENT_MAPPINGS))
+    logger.info(
+        "orchestrator | initialized with %d agents, %d event mappings",
+        len(_orchestrator.agents),
+        len(DEFAULT_EVENT_MAPPINGS),
+    )
     return _orchestrator
 
 

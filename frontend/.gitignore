@@ -1,31 +1,73 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 
 # testing
 /coverage
+test-output.json
+test-results/
+*/test-results/
+test_reports/
+**/test_reports/
+test_result.md
 
 # production
 /build
+dist/
 
-# misc
-.DS_Store
+# environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env*.production
+**/.env.production
 backend/.env
-*/\.env
+**/.env
 
-# test outputs
-test-output.json
-test-results/
-*/test-results/
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+**/.pytest_cache/
 
+# IDE / editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+*.code-workspace
+
+# AI tools
+.aider*
+.emergent/
+.trae/
+
+# Build tools
+.vercel/
+.devserver.pid
+
+# Temp files
+*.tmp
+nul
+tmp*.png
+tile_*.png
+wbtile_*.png
+
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Uploads (local only)
+backend/uploads/
+**/uploads/
