@@ -181,6 +181,13 @@ async def refresh_token(request: Request, response: Response):
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
+    # Check refresh token against blacklist (CRIT-01)
+    jti = payload.get("jti")
+    if jti:
+        blacklisted = await db.token_blacklist.find_one({"jti": jti})
+        if blacklisted:
+            raise HTTPException(status_code=401, detail="Token has been revoked")
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -189,6 +196,16 @@ async def refresh_token(request: Request, response: Response):
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    # Blacklist old refresh token before rotation (CRIT-05)
+    old_jti = payload.get("jti")
+    if old_jti:
+        await db.token_blacklist.insert_one({
+            "jti": old_jti,
+            "user_id": user_id,
+            "blacklisted_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "token_rotation"
+        })
 
     # Issue new access token + rotate refresh token
     new_access = create_access_token(data={"sub": user_id})
@@ -241,6 +258,22 @@ async def logout(request: Request, response: Response, current_user: dict = Depe
                 })
     except Exception as e:
         logger.warning(f"Token blacklist on logout failed (non-fatal): {e}")
+
+    # Blacklist refresh token so it can't be reused after logout (CRIT-01)
+    try:
+        refresh = request.cookies.get("eden_refresh")
+        if refresh:
+            refresh_payload = decode_access_token(refresh)
+            if refresh_payload and refresh_payload.get("jti"):
+                await db.token_blacklist.insert_one({
+                    "jti": refresh_payload["jti"],
+                    "user_id": refresh_payload.get("sub"),
+                    "exp": refresh_payload.get("exp"),
+                    "blacklisted_at": datetime.now(timezone.utc).isoformat(),
+                    "reason": "logout"
+                })
+    except Exception as e:
+        logger.warning(f"Refresh token blacklist on logout failed (non-fatal): {e}")
 
     # Clear both cookies
     response.delete_cookie(

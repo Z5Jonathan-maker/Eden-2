@@ -157,10 +157,17 @@ async def get_user_from_token_param(token: str = None):
     payload = decode_access_token(token)
     if payload is None:
         return None
-    
+
+    # Check token against blacklist (CRIT-03)
+    jti = payload.get("jti")
+    if jti:
+        blacklisted = await db.token_blacklist.find_one({"jti": jti})
+        if blacklisted:
+            return None
+
     user_id = payload.get("sub")
     if user_id is None:
         return None
-    
+
     user = await db.users.find_one({"id": user_id})
     return user
