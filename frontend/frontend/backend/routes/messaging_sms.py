@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query, Form
 from pydantic import BaseModel
 
 from dependencies import db, get_current_active_user
+from utils.claim_access import can_access_claim
 from services.sms_twilio import (
     send_sms,
     is_configured,
@@ -180,9 +181,11 @@ async def issue_ai_sms_confirm_token(
     Issue a short-lived one-time token required to send AI-generated outbound SMS.
     Keeps irreversible outbound messaging explicitly user-confirmed.
     """
-    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0, "id": 1})
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
+    if not can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied to this claim")
 
     token_doc = await _issue_ai_sms_confirmation_token(claim_id, current_user)
     return AIGeneratedSMSConfirmResponse(
@@ -217,6 +220,8 @@ async def send_claim_sms(
     claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
+    if not can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied to this claim")
 
     # 1.5 Outbound QA gate for claim-critical identifiers
     required_fields = [
@@ -369,11 +374,13 @@ async def get_claim_messages(
     Get message history for a claim.
     Returns messages ordered by created_at ascending (chronological).
     """
-    # Verify claim exists
-    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0, "id": 1})
+    # Verify claim exists and user has access
+    claim = await db.claims.find_one({"id": claim_id}, {"_id": 0})
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
-    
+    if not can_access_claim(current_user, claim):
+        raise HTTPException(status_code=403, detail="Access denied to this claim")
+
     # Build query
     query = {"claim_id": claim_id}
     if channel:
