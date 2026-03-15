@@ -40,9 +40,9 @@ fs = AsyncIOMotorGridFSBucket(db)
 # Constants
 # ---------------------------------------------------------------------------
 
-MAX_PAGES_PER_PDF = 2  # Reduced for Render free tier memory
-PAGE_DPI = 100  # Lower DPI for faster processing + smaller images
-GEMINI_RPM_DELAY = 5.0  # seconds between calls (12 RPM, conservative)
+MAX_PAGES_PER_PDF = 5  # First 5 pages capture all financial summaries
+PAGE_DPI = 200  # Full resolution for accurate OCR
+GEMINI_RPM_DELAY = 4.0  # 15 RPM Gemini limit
 EXTRACTABLE_DOC_TYPES = frozenset({
     "estimate",
     "settlement_letter",
@@ -776,6 +776,28 @@ async def auto_extract_all(
 # ---------------------------------------------------------------------------
 # 4. Extraction Status & History
 # ---------------------------------------------------------------------------
+
+@router.post("/reset-errors")
+async def reset_extraction_errors(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Reset all error statuses so documents can be retried with fixed code."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    result = await db.documents.update_many(
+        {"pdf_extraction_status": "error"},
+        {"$unset": {"pdf_extraction_status": "", "pdf_extraction_id": "", "pdf_extracted_at": ""}},
+    )
+    # Also clear extraction log entries for failed runs
+    cleared = await db.pdf_extractions.delete_many({"status": "error"})
+
+    return {
+        "documents_reset": result.modified_count,
+        "extraction_logs_cleared": cleared.deleted_count,
+        "message": f"Reset {result.modified_count} documents for retry",
+    }
+
 
 @router.get("/status")
 async def extraction_status(
