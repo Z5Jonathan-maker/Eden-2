@@ -482,6 +482,86 @@ async def seed_demo(current_user: dict = Depends(require_admin_user)):
     return result
 
 
+@app.post("/api/ops/seed-eve-knowledge")
+async def seed_eve_knowledge_endpoint(request: Request):
+    """One-time Eve knowledge seeder — token-protected, no auth required."""
+    token = request.headers.get("X-Ops-Token", "")
+    expected = os.environ.get("OPS_SEED_TOKEN", "eve-seed-2026")
+    if token != expected:
+        raise HTTPException(status_code=403, detail="Invalid ops token")
+
+    from scripts.seed_eve_knowledge import (
+        KNOWLEDGE_SOURCES, _split_into_sections, _content_hash, _extract_keywords,
+    )
+    from datetime import datetime, timezone
+
+    collection = db["eve_knowledge_base"]
+    total_docs = 0
+    total_sections = 0
+    skipped_files = []
+
+    for source_info in KNOWLEDGE_SOURCES:
+        filepath = source_info["file"]
+        if not filepath.exists():
+            skipped_files.append(filepath.name)
+            continue
+
+        content = filepath.read_text(encoding="utf-8")
+        sections = _split_into_sections(content)
+
+        for section in sections:
+            doc_hash = _content_hash(section["content"])
+            existing = await collection.find_one({"content_hash": doc_hash})
+            if existing:
+                continue
+
+            keywords = _extract_keywords(section["content"])
+            doc = {
+                "title": section["title"],
+                "content": section["content"],
+                "content_hash": doc_hash,
+                "category": source_info["category"],
+                "source": source_info["source"],
+                "source_file": filepath.name,
+                "description": source_info["description"],
+                "keywords": keywords,
+                "word_count": len(section["content"].split()),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await collection.insert_one(doc)
+            total_sections += 1
+
+        total_docs += 1
+
+    # Create indexes
+    existing_indexes = await collection.index_information()
+    indexes_created = []
+    if "knowledge_text_search" not in existing_indexes:
+        await collection.create_index(
+            [("title", "text"), ("content", "text"), ("keywords", "text")],
+            name="knowledge_text_search",
+            weights={"title": 10, "keywords": 5, "content": 1},
+        )
+        indexes_created.append("knowledge_text_search")
+    if "category_1" not in existing_indexes:
+        await collection.create_index("category", name="category_1")
+        indexes_created.append("category_1")
+    if "content_hash_1" not in existing_indexes:
+        await collection.create_index("content_hash", unique=True, name="content_hash_1")
+        indexes_created.append("content_hash_1")
+
+    total_in_db = await collection.count_documents({})
+    return {
+        "status": "success",
+        "files_processed": total_docs,
+        "sections_inserted": total_sections,
+        "total_in_db": total_in_db,
+        "skipped_files": skipped_files,
+        "indexes_created": indexes_created,
+    }
+
+
 @app.delete("/api/demo/clear")
 async def clear_demo(current_user: dict = Depends(require_admin_user)):
     """Clear demo data"""

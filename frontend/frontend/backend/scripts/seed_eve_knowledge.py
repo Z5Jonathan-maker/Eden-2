@@ -195,7 +195,7 @@ async def seed_knowledge_base():
         file_size_kb = len(content) / 1024
 
         sections = _split_into_sections(content)
-        print(f"  {filepath.name} ({file_size_kb:.1f} KB) → {len(sections)} sections")
+        print(f"  {filepath.name} ({file_size_kb:.1f} KB) -> {len(sections)} sections")
 
         for section in sections:
             doc_hash = _content_hash(section["content"])
