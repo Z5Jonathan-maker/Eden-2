@@ -40,9 +40,9 @@ fs = AsyncIOMotorGridFSBucket(db)
 # Constants
 # ---------------------------------------------------------------------------
 
-MAX_PAGES_PER_PDF = 5  # First 5 pages capture all financial summaries
-PAGE_DPI = 200  # Full resolution for accurate OCR
-GEMINI_RPM_DELAY = 4.0  # 15 RPM Gemini limit
+MAX_PAGES_PER_PDF = 3  # First 3 pages — financial summaries are always on page 1-2
+PAGE_DPI = 200  # Full quality — Standard plan has 2GB RAM
+GEMINI_RPM_DELAY = 4.2  # 14 RPM, safe margin
 EXTRACTABLE_DOC_TYPES = frozenset({
     "estimate",
     "settlement_letter",
@@ -601,6 +601,10 @@ async def batch_analyze(
                 "pdf_extracted_at": _now_iso(),
             }},
         )
+
+        # Free memory between documents
+        import gc
+        gc.collect()
 
         # Update claim if requested
         if data.update_claims and result["status"] == "success":
