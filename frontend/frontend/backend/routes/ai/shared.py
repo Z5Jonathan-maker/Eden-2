@@ -293,6 +293,68 @@ def get_florida_law_context_fallback(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Deep knowledge base query (MongoDB eve_knowledge_base)
+# ---------------------------------------------------------------------------
+
+async def get_deep_knowledge_context(query: str, max_results: int = 3) -> str:
+    """
+    Query the eve_knowledge_base MongoDB collection for deep expert knowledge.
+
+    Returns relevant sections from the full 280KB+ knowledge base when the
+    condensed system prompt needs supplemental detail (specific case law,
+    expert quotes, detailed carrier tactics, technical standards).
+    """
+    query_lower = query.lower()
+
+    # Only query for topics that benefit from deeper context
+    deep_topic_triggers = [
+        "case law", "case", "ruling", "court", "decision", "precedent",
+        "merlin", "zalma", "senac", "voelpel", "perri", "quinn", "gurczak",
+        "specific", "detail", "explain", "how to", "step by step",
+        "appraisal process", "umpire", "supplement", "xactimate",
+        "bad faith", "crn", "civil remedy", "euo",
+        "iicrc", "s500", "s520", "s700", "building code", "25% rule",
+        "wind mitigation", "depreciation", "rcv", "acv",
+        "ho-3", "ho-6", "dp-3", "policy form",
+        "carrier tactic", "delay", "deny", "underpay",
+        "negotiate", "negotiation", "strategy",
+        "constructive total loss", "valued policy",
+        "matching", "o&p", "overhead", "code upgrade",
+        "doah", "arbitration",
+    ]
+
+    if not any(trigger in query_lower for trigger in deep_topic_triggers):
+        return ""
+
+    try:
+        results = await db.eve_knowledge_base.find(
+            {"$text": {"$search": query}},
+            {"score": {"$meta": "textScore"}, "_id": 0, "title": 1, "content": 1, "source": 1, "category": 1},
+        ).sort([("score", {"$meta": "textScore"})]).limit(max_results).to_list(max_results)
+
+        if not results:
+            return ""
+
+        context_parts = ["\n--- DEEP KNOWLEDGE BASE CONTEXT ---"]
+        for result in results:
+            title = result.get("title", "Untitled")
+            source = result.get("source", "Unknown")
+            content = result.get("content", "")
+            # Truncate very long sections to keep context manageable
+            if len(content) > 2000:
+                content = content[:2000] + "\n[... truncated, ask for more detail ...]"
+            context_parts.append(f"\n**{title}** (Source: {source})")
+            context_parts.append(content)
+
+        context_parts.append("--- END DEEP KNOWLEDGE ---\n")
+        return "\n".join(context_parts)
+
+    except Exception as e:
+        logger.warning("Deep knowledge query failed (collection may not exist yet): %s", e)
+        return ""
+
+
+# ---------------------------------------------------------------------------
 # Claims data access for Eve
 # ---------------------------------------------------------------------------
 

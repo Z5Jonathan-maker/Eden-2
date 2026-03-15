@@ -29,6 +29,7 @@ from routes.ai.shared import (
     format_claim_context_for_prompt,
     get_relevant_expert_insights,
     get_florida_statute_context,
+    get_deep_knowledge_context,
     _send_via_ai_gateway,
 )
 
@@ -116,6 +117,9 @@ async def chat_with_eve(
         # Get relevant Florida statute context from database (async)
         florida_law_context = await get_florida_statute_context(request.message)
 
+        # Get deep knowledge context from eve_knowledge_base (async)
+        deep_knowledge = await get_deep_knowledge_context(request.message)
+
         # Build the full prompt with history
         full_prompt = ""
         if history_context:
@@ -125,6 +129,8 @@ async def chat_with_eve(
             full_prompt += expert_context
         if florida_law_context:
             full_prompt += florida_law_context
+        if deep_knowledge:
+            full_prompt += deep_knowledge
         if claim_context_str:
             full_prompt += claim_context_str
         full_prompt += f"User's current question: {request.message}"

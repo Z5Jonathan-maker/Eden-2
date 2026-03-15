@@ -314,14 +314,16 @@ async def _execute_follow_up(claim: dict, options: dict, dry_run: bool) -> dict:
             f"Carrier adjuster: {claim.get('carrier_adjuster_name', 'Unknown')}\n"
             f"Property: {claim.get('property_address', 'On file')}\n\n"
             "Write a firm but professional letter requesting a status update and "
-            "timeline for resolution. Reference Florida statute 627.70131 if "
-            "applicable. Keep it under 250 words."
+            "timeline for resolution. Reference Florida statute 627.70131 (7-day "
+            "acknowledgment, 60-day pay/deny deadline, interest accrues per F.S. 55.03). "
+            "If over 60 days, note the carrier is in violation of statutory timelines. "
+            "Keep it under 250 words."
         )
 
         llm = LLMRouter()
         letter_text = await llm.generate(
             prompt=prompt,
-            system_prompt="You are a senior public adjuster drafting carrier correspondence.",
+            system_prompt="You are a senior Florida public adjuster with expert knowledge of FL insurance law (F.S. 626/627), carrier tactics, and claims negotiation. Draft carrier correspondence that is firm, professional, and cites specific statutes. You are NOT an attorney and do NOT provide legal advice.",
             task_type="text_generation",
             max_tokens=1000,
         )
@@ -501,14 +503,17 @@ async def _execute_draft_letter(claim: dict, options: dict, dry_run: bool) -> di
             f"Replacement Cost Value: ${rcv:,.2f}\n"
             f"Date of Loss: {claim.get('date_of_loss', 'On file')}\n\n"
             "Write a professional demand letter citing the RCV, requesting full "
-            "payment, and referencing Florida statute 627.70131 (90-day decision "
-            "window). Be firm but professional. Under 400 words."
+            "payment, and referencing Florida statute 627.70131 (60-day pay/deny "
+            "deadline, interest accrues per F.S. 55.03 from date insurer received notice). "
+            "Note the insured's right to invoke appraisal (F.S. 627.7015) if the carrier "
+            "does not respond adequately. Be firm but professional. Under 400 words. "
+            "Do NOT provide legal advice or draft a Civil Remedy Notice."
         )
 
         llm = LLMRouter()
         letter_text = await llm.generate(
             prompt=prompt,
-            system_prompt="You are a senior public adjuster drafting insurance demand letters.",
+            system_prompt="You are a senior Florida public adjuster with expert knowledge of FL insurance law (F.S. 626/627), carrier tactics, and claims negotiation. Draft demand letters that are firm, professional, cite specific statutes, and maximize the policyholder's position. You are NOT an attorney and do NOT provide legal advice or draft CRNs.",
             task_type="text_generation",
             max_tokens=1500,
         )

@@ -23,383 +23,420 @@ EMERGENT_LLM_KEY = (
 )
 
 # ---------------------------------------------------------------------------
-# FIRM CONTEXT — Static knowledge base (Gamma DISABLED)
+# FIRM CONTEXT — Condensed Expert Knowledge Base
+# Compiled from: Zalma, Merlin, UP, FAPIA, FL Statutes, PA Playbook,
+# Institutional Knowledge, Technical Knowledge, PA Industry Knowledge
+# Full documents stored in MongoDB eve_knowledge_base collection
 # ---------------------------------------------------------------------------
 FIRM_CONTEXT = """
-Eden Claims Platform Knowledge Base:
+# EDEN CLAIMS EXPERT KNOWLEDGE BASE (Condensed)
 
-## Florida Statutes (Verbatim from leg.state.fl.us)
-- F.S. 626.854 - Public adjuster definitions and prohibitions
-- F.S. 626.865 - Licensing requirements, $50,000 surety bond, CE requirements
-- F.S. 626.8651 - Apprentice public adjuster supervision
-- F.S. 626.8795 - Conflict of interest with contractors
-- F.S. 626.8796 - Contract requirements, 10-day rescission (with emergency extension), fraud penalties
-- F.S. 627.70131 - Insurer duty: 7-day acknowledgment, 60-day pay/deny
-- F.S. 627.7015 - Alternative dispute resolution, appraisal process
+## 1. FLORIDA LAW — CRITICAL DEADLINES & NUMBERS
 
-## Key Numbers (Florida)
-- Max PA fee (standard): 20%
-- Max PA fee (emergency declared): 10%
-- Surety bond required: $50,000
-- Claim acknowledgment: 7 days
-- Claim pay/deny deadline: 60 days
-- Contract rescission period: 10 days (30 days after date of loss for certain emergency claims, or 10 days after execution, whichever is longer)
+### Insurer Deadlines (F.S. 627.70131 — the 7-7-30-60 framework)
+- 7 days: Acknowledge claim receipt
+- 7 days after proof-of-loss: Begin investigation
+- 30 days after proof-of-loss: Physical inspection of property
+- 7 days after estimate generated: Send adjuster estimate to policyholder
+- 60 days after notice: Pay or deny claim (interest accrues after per F.S. 55.03)
+- 14 days: Send Homeowner Claims Bill of Rights (F.S. 627.7142)
 
-## Industry Experts Knowledge
-- **John Senac (C.A.R.)**: Roof damage documentation expert. Key insight: "99% of roofs I inspect show signs of wind or hail damage. Document everything with the C.A.R. method - Comprehensive, Accurate, Repeatable."
-- **Chip Merlin**: Bad faith litigation authority. Key insight: "When carriers delay, document every communication. Bad faith claims require showing insurer knew claim was valid."
-- **Matthew Mulholland**: Policy language expert. Focus on burden of proof and exclusion interpretation.
-- **Vince Perri**: Florida commercial claims specialist. Metrics-driven approach to PA business.
-- **John Voelpel**: Appraisal process expert. Windstorm damage assessment specialist.
+### Policyholder Filing Deadlines (F.S. 627.70132 — post-SB 2A)
+- 1 year from date of loss: File new/reopened claim
+- 18 months from date of loss: File supplemental claim
+- 5 years from date of loss: Breach of contract lawsuit (F.S. 95.11)
 
-## Leadership & Mentors
-- Simon Sinek (Start With Why)
-- Jocko Willink (Extreme Ownership)
-- Dr. Rodney Howard-Browne (Faith Leadership)
-- Alex Burgos (Industry Innovation)
-- Miguel Delgado (Field Operations)
+### PA Fee Caps (F.S. 626.854(11))
+- Emergency-declared claims (1st year): 10% max
+- Non-emergency / after 1st year: 20% max
+- Claims paid at policy limits within 14 days: 1% max
+- Pre-contract payments: 0% (cannot charge)
+- Supplemental/reopened: 20% of NEW additional payments only
+- Deductibles CANNOT form compensation base
 
-## Claim Playbooks
-- Hurricane claims: Document wind damage patterns, require detailed scope
-- Roof damage: Use C.A.R. method, photograph every elevation
-- Water damage: Follow IICRC S500/S520 standards
-- Supplement strategy: Compare line-by-line with Xactimate pricing
+### PA Contract Requirements (F.S. 626.8796)
+- Written, min 12-point type, titled "Public Adjuster Contract"
+- Compensation % in 18-point bold before signature line
+- Fraud warning in 18-point bold before signature
+- Insured initials on each unsigned page
+- Copy to insured at execution; to insurer within 7 days
+- Written estimate to insurer within 60 days of contract execution
+- Records retained 5 years
 
-## Carrier Tactics & Responses
-- Citizens: Focus on scope disputes, use appraisal for valuation
-- State Farm: Document delays for potential bad faith
-- Travelers: Detailed rebuttals to depreciation
+### PA Cancellation Rights (F.S. 626.854(7))
+- Standard: 10 days after execution
+- Emergency declaration: 30 days from loss OR 10 days from execution (whichever longer)
+- If PA fails 60-day estimate deadline: Contract voidable any time
+- Vulnerable adults (eff. July 1, 2026): May rescind at ANY time
 
-## Carrier Playbooks (Expanded)
+### Key Statutes Quick Reference
+- 626.854: PA definitions, prohibitions, fee caps, solicitation (Mon-Sat 8am-8pm)
+- 626.865: Licensing ($50K bond, 6-month experience, exam)
+- 626.8651: Apprentice PA (max 4 per firm, 1 per supervisor, cannot execute contracts)
+- 626.8695: Primary adjuster (90-day replacement or license auto-expires)
+- 626.8795: Conflict of interest (cannot participate in repair/restoration)
+- 626.8796: Contract requirements, disclosure, fraud statement
+- 626.8698: Disciplinary guidelines (fines up to $5K/act)
+- 626.9541: Unfair insurance trade practices
+- 627.70131: Insurer claims handling timelines
+- 627.70132: Claim filing deadlines
+- 627.7015: Mediation and appraisal
+- 627.7142: Homeowner Claims Bill of Rights
+- 624.155: Civil remedy / bad faith actions (60-day CRN prerequisite)
+
+## 2. PA LEGAL COMPLIANCE (CRITICAL)
+
+### What PAs CAN Do
+- Draft demand letters, follow-ups, supplements
+- Recommend appraisal (3rd party appraiser, NOT attorney)
+- Attend and strategize for mediation
+- Negotiate claim settlements with carriers
+- Prepare/file insurance claims for compensation
+- All contracts at 20% fee (non-emergency)
+
+### What PAs CANNOT Do
+- Draft Civil Remedy Notices (attorney/insured only)
+- Give legal advice (esp. bodily injury, death, noneconomic damages)
+- Provide loans/advances to clients
+- Give gifts >$25 to induce contracts
+- Solicit outside Mon-Sat 8am-8pm
+- Participate in property repair/restoration
+- Have financial interest in salvage/repair businesses
+- Kickbacks or split-fees with non-PAs
+- Restrict insurer access to insured or property
+- Execute contracts as an apprentice
+- Charge fees on pre-contract payments
+- Offer roof inspection inducements (rebates, gift cards, deductible waivers)
+- Fines: up to $10K/act ($20K during emergencies) for roof inducement violations
+
+## 3. BAD FAITH INDICATORS (Document All of These)
+
+### Carrier Bad Faith Patterns (Merlin/Zalma)
+1. Lowball offers: Scottsdale offered $420.64 on claim later appraised at $34,545.66
+2. Form denial letters not addressing specific claim circumstances
+3. Desk adjuster dismissals without investigation
+4. Denying physically impossible exclusions (e.g., flood on 3rd-floor condo)
+5. Zero-payment patterns: 14 FL insurers closed >50% of claims with $0 in 2024
+6. Post-payment clawbacks: QBE tried recouping $300K+ (dismissed with prejudice)
+7. Withholding estimates from policyholders (TSI Adjusters memo)
+8. AI-driven denials without human review
+9. Suppressing Xactimate estimates (violates FL Emergency Rule 69BER24-4)
+10. Repeated adjuster rotation causing restart delays
+11. Missing statutory deadlines (7-day ack, 30-day inspect, 60-day pay/deny)
+
+### Civil Remedy Notice (F.S. 624.155) Requirements
+- Must use official DFS Form DFS-10-363 (filed electronically)
+- State SPECIFIC statutory provision violated with exact language
+- Describe facts, name individuals, reference policy language
+- Wait full 60-day cure period before filing suit
+- If DFS returns for lack of specificity, revise and refile (clock restarts)
+- Post-2023: Must obtain court-ordered breach finding BEFORE bad faith suit
+- Insurer safe harbor: tender policy limits within 90 days of claim notice
+
+### Post-SB 2A Bad Faith Standards (HB 837)
+- Court-ordered breach finding required before bad faith suit
+- Must prove intentional conduct (not mere negligence)
+- Mutual good faith: insured/PA conduct also considered by jury
+- Appraisal awards alone may NOT satisfy Section 624.1551 prerequisite
+
+## 4. CARRIER TACTICS & COUNTER-STRATEGIES
+
+### Delay Tactics
+| Tactic | Counter |
+|--------|---------|
+| Repeated document requests | Certified mail with delivery confirmation; reference prior submissions |
+| Adjuster rotation | Demand continuity in writing; send complete file to new adjuster |
+| Inspection scheduling delays | Written demand after 30 days citing F.S. 627.70131 |
+| "Pending further review" | Written demand for specific timeline |
+| Low-ball then stall | Accept partial under reservation of rights; file supplement immediately |
+
+### Deny Tactics
+| Tactic | Counter |
+|--------|---------|
+| Pre-existing damage claim | Maintenance records, expert opinions, date-stamped photos |
+| Wrong peril attribution (wind called "flood") | Engineering report, meteorological data |
+| Policy exclusion overreach | Exact policy language analysis; FL interprets ambiguities for insured |
+| Cosmetic damage only | Independent engineering report, building dept documentation |
+| Failure to mitigate claim | Document all mitigation with photos, receipts, timeline |
+
+### Underpay Tactics
+| Tactic | Counter |
+|--------|---------|
+| Scope reduction | Joint re-inspection, photo documentation of every area |
+| Material downgrade | Photos of existing materials, manufacturer specs, matching requirements |
+| Labor rate suppression | Local contractor bids, Xactimate regional pricing |
+| O&P denial | Document 3+ trades, cite Xactimate = subcontractor pricing |
+| Excessive depreciation | Actual condition docs, cite Trinidad v. FL Peninsula (labor NOT depreciable) |
+| Code upgrade denial | Building dept requirements, Ordinance or Law coverage in policy |
+
+### Structural/Systemic Tactics
+- Anti-PA endorsements: Velocity Risk added endorsements prohibiting PA hiring (FAPIA/NAPIA sued)
+- DOAH arbitration abuse: Citizens routed disputes to DOAH (court halted as likely unconstitutional)
+- AI as silent adjuster: Allstate acknowledged AI composes claims emails, adjusters merely review
+- Xactimate manipulation: Federal judge ordered native file production after witnessing tampering
+
+## 5. KEY CARRIER PLAYBOOKS
 
 ### Citizens Property Insurance
-- State-run insurer of last resort, largest in FL
-- Tactics: Scope disputes, lowball initial offers, slow supplement review
-- Counter: Detailed scope with Xactimate line items, request re-inspection, invoke appraisal early
-- Key: Citizens must follow same 627.70131 timelines as private carriers
+- Tactics: Scope disputes, lowball offers, slow supplements
+- Counter: Detailed Xactimate scope, request re-inspection, invoke appraisal early
+- Cannot be sued for bad faith (Citizens v. Perdido Sun, FL Supreme Court 2015)
 
-### Universal Property & Casualty
-- Tactics: Heavy depreciation, deny matching requirements, aggressive on ACV
-- Counter: Document matching necessity with photos + manufacturer specs, cite FL statute on matching
-- Key: Often responsive to well-documented supplements
+### Universal Property & Casualty (~561K policies, most DFS complaints)
+- Tactics: Heavy depreciation, deny matching, aggressive ACV
+- Counter: Matching photos + manufacturer specs, contemporaneous ACV challenge
 
-### Heritage Property & Casualty
-- Tactics: Quick lowball offers hoping for acceptance, deny hidden damage
-- Counter: Never accept first offer, always request detailed scope breakdown
-- Key: Destructive testing documentation is critical
+### Heritage/Tower Hill/Security First/FedNat
+- Heritage: Quick lowballs; counter with destructive testing documentation
+- Tower Hill: Strict policy interpretation; appraisal often favorable for PAs
+- Security First: Scope reduction; often settles at mediation
+- FedNat: Delay/adjuster rotation; bad faith potential when exceeding timelines
 
-### Tower Hill Insurance
-- Tactics: Strict policy language interpretation, deny wear/tear vs storm damage
-- Counter: Clear pre-loss vs post-loss documentation, expert reports
-- Key: Appraisal process often favorable for PAs
+## 6. NEGOTIATION FRAMEWORK
 
-### FedNat Insurance
-- Tactics: Delay tactics, reassign adjusters, lose documentation
-- Counter: Document every communication with dates/times, send everything certified
-- Key: Bad faith potential when delays exceed statutory timelines
+### Documentation-First Approach (Every claim, Day 1)
+1. Date-stamped photos/video (wide + close-ups) of ALL damage
+2. Moisture readings with calibrated equipment (document serial numbers)
+3. NOAA weather data confirming the peril
+4. Pre-loss vs post-loss comparison (Google Street View)
+5. Professional corroborative statements (engineers, contractors)
+6. Detailed Xactimate estimate with justification notes per line item
 
-### Security First Insurance
-- Tactics: Aggressive scope reduction, deny consequential damage
-- Counter: Engineering reports, moisture mapping documentation
-- Key: Often settles at mediation
+### Negotiation Escalation Path
+Full Demand Package → [14-30 days] → Carrier Counter → Targeted Rebuttal →
+[14 days] → Re-Inspection → [14 days] → Supervisor Escalation →
+DECISION: Amount dispute = Appraisal | Coverage dispute = Attorney | Bad faith = CRN
 
-### Slide Insurance
-- Tactics: Digital-first carrier, automated denials, minimal field inspection
-- Counter: Demand in-person re-inspection, detailed photo documentation
-- Key: Newer carrier, less litigation history to reference
+### Key Negotiation Rules
+- Never reduce estimate without carrier's written line-by-line counter
+- Every carrier concession documented in writing
+- Verbal promises = written confirmation follow-up
+- Communication log: date, time, person, content, outcome
+- PA involvement = 747% average increase (Citizens study: $2,029 without vs $17,187 with PA)
 
-### American Integrity Insurance
-- Tactics: Reasonable initial handling but aggressive on supplements
-- Counter: Front-load documentation on initial claim, make supplements bulletproof
-- Key: Generally professional, respond well to organized submissions
+## 7. APPRAISAL STRATEGY (F.S. 627.7015)
 
-## Xactimate Category Codes Reference
+### When to Invoke
+- Dispute is amount of loss (NOT coverage)
+- Negotiation impasse after documented good-faith efforts
+- Gap exceeds 30-40% of claim value
+- ROI: gap exceeds 2-3x appraisal cost
 
-### Roofing (RFG)
-- RFG TEAR — Tear off existing roofing
-- RFG FELT — Felt/underlayment
-- RFG COMP — Composition shingles
-- RFG TILE — Tile roofing
-- RFG METAL — Metal roofing
-- RFG FLASH — Flashing
-- RFG RIDGE — Ridge cap
-- RFG VENT — Roof ventilation
-- RFG DECK — Roof decking/sheathing
+### Process
+- Each party selects appraiser; appraisers select umpire
+- Agreement by any 2 of 3 = final and binding
+- Only overturned for fraud/collusion
+- Carrier must offer mediation BEFORE demanding appraisal
+- Insurer cannot demand line-item appraisals absent policy language (Great Lakes v. Ming & Kwang)
 
-### Drywall/Plaster (DRY)
-- DRY HANG — Hang drywall
-- DRY FINISH — Tape/float/texture
-- DRY DEMO — Demolition of drywall
+### Umpire Selection (CRITICAL)
+- Vet background, work history, potential bias
+- Challenge umpires with disproportionate carrier appointments
+- Get signed agreement before proceeding
+- Umpire rates: $250-$450/hour typical
 
-### Painting (PNT)
-- PNT SEAL — Seal/prime
-- PNT 2CT — Two coat repaint
-- PNT MATCH — Color match (critical for supplements)
+### Key Case Law
+- Allstate v. Suarez (FL Supreme Court 2002): Appraisal is NOT arbitration
+- American Coastal v. San Marco Villas (FL Supreme Court 2024): Courts have discretion to order appraisal before coverage resolution
+- Heritage v. Wellington Place HOA: Supplemental claims = part of initial claim for appraisal
 
-### Plumbing (PLM)
-- PLM LEAK — Leak detection
-- PLM PIPE — Pipe repair/replacement
+## 8. POLICY INTERPRETATION
 
-### Flooring (FLR)
-- FLR DEMO — Remove flooring
-- FLR TILE — Tile installation
-- FLR HARDWD — Hardwood
-- FLR CARPET — Carpet installation
-- FLR LAMIN — Laminate
+### Replacement Cost Value (RCV)
+- Insurers cannot cap at ACV after wrongful denial (Universal v. Rodriguez, 6th DCA)
+- Homeowners can claim RCV without completing repairs when insurer denies coverage (Brito v. Citizens)
+- Loss-settlement clause is timing mechanism, not coverage gate (Weston v. Universal)
 
-### Water Mitigation (WTR)
-- WTR EXTRACT — Water extraction
-- WTR DRY — Structural drying
-- WTR DEMO — Wet material demolition
-- WTR ANTIMICRO — Antimicrobial treatment
+### Actual Cash Value (ACV)
+- Glens Falls doctrine (1949 FL Supreme Court): Depreciation excluded from partial-loss repairs
+- Broad Evidence Rule: Any evidence supporting reasonable valuation is admissible
+- Matching costs MUST be included in ACV (NAIC Model Act)
+- Labor is NOT depreciable in FL (Trinidad v. FL Peninsula, 121 So.3d 433, 2013)
+- "As determined by us" shifts depreciation burden to insurer (SFR Services v. Tower Hill)
 
-### General (GEN)
-- GEN DEMO — General demolition
-- GEN HAUL — Debris haul-off
-- GEN CLEAN — Cleaning
-- GEN PERMIT — Building permits
-- O&P — Overhead & Profit (typically 20% total: 10% overhead + 10% profit)
+### Wind-Driven Rain
+- Must prove wind caused physical breach in building envelope
+- Building-specific proof required (not industry shorthand)
+- Wind-driven rain penetrates ~1 inch per 10 mph of wind speed
 
-## Common Supplement Justifications
+### Constructive Total Loss
+- Loss-of-Identity test: lost essential character
+- Usable-Remnant test: no reasonable owner would repurpose remaining materials
+- Code upgrade prohibitions can establish total loss (Citizens v. Barnes)
+- F.S. 627.702 (Valued Policy Law): total loss from covered peril = face-value recovery
 
-### Matching (Florida)
-- FL has implied warranty of workmanship — repairs must match existing
-- If carrier denies matching, cite: "Repair must restore property to pre-loss condition"
-- Document: manufacturer discontinuation, color variation, weathering differences
-- Take comparison photos showing why partial replacement won't match
+## 9. SUPPLEMENT & XACTIMATE STRATEGY
 
-### Overhead & Profit (O&P)
-- Justified when: job requires coordination of 3+ trades
-- Standard: 10% overhead + 10% profit = 20% total
-- Carrier often excludes O&P on initial estimate — always supplement for it
-- Document: number of trades involved, project complexity, coordination required
+### Supplement Deadlines
+- Initial/Reopened: 1 year from date of loss
+- Supplemental: 18 months from date of loss
 
-### Code Upgrades
-- Florida Building Code changes trigger upgrade requirements
-- Common: hurricane straps, impact-resistant roofing, electrical panel upgrades
-- Always check: local municipality requirements, permit requirements
-- Carrier must pay for code-required upgrades per policy terms
+### Common Supplement Justifications
+- Matching: FL implied warranty; restoration to pre-loss condition required
+- O&P: 10% overhead + 10% profit = 20%; Xactimate = subcontractor pricing
+- Code upgrades: FL Building Code (25% rule triggers full reroof per FBC 708.1.1)
+- Hidden damage: Stop work, document in place, notify carrier, request re-inspection
 
-### Hidden Damage
-- Discovered during repairs, not visible during initial inspection
-- Process: Stop work → document → notify carrier → request re-inspection
-- Key: Never repair hidden damage without carrier acknowledgment
-- Photo everything BEFORE and AFTER opening walls/ceilings
+### Xactimate Accuracy Checks
+- Room dimension errors: 1ft/wall = 16% area error (cascading to all trades)
+- Waste factors: carpet min 5%, roofing varies by complexity
+- Regional pricing: FL-specific, compare against actual contractor bids
+- Xactimate admits 50% variation low-to-high in any market, 100% "not uncommon"
+- FL insurers may underpay by 30%+ based on Xactimate pricing alone
 
-## IICRC Standards (Expanded)
+### FL Building Code (Roofing — FBC 708.1.1)
+- 25% Rule: If >25% of roof repaired in 12-month period, entire system to current code
+- Pre-2007 roofs: entire system must meet current code when 25% threshold crossed
+- Two layers underlayment required (8th Edition FBC): asphalt shingles, metal, slate
+- Permits required BEFORE work; unpermitted = fines, denied claims, stop-work orders
+
+## 10. IICRC STANDARDS
 
 ### S500 — Water Damage Restoration
-- Category 1 (Clean): Supply line, rainwater
-- Category 2 (Gray): Dishwasher, washing machine, toilet overflow (no feces)
-- Category 3 (Black): Sewage, flooding, prolonged standing water
-- Class 1-4 based on evaporation rate and material porosity
-- Drying standards: dehumidifiers + air movers, monitor daily with moisture meters
-- Document: moisture readings, equipment placement, daily logs
+- Cat 1 (Clean): Supply lines, tub/sink, rainwater | Cat 2 (Grey): Dishwasher, washing machine, toilet (no feces) | Cat 3 (Black): Sewage, flood, standing water
+- Class 1 (limited) to Class 4 (bound/trapped water requiring specialty equipment)
+- Clean water degrades to Cat 2 within 24-48hrs if untreated
+- Document: baseline moisture, equipment placement, daily readings, completion verification
 
 ### S520 — Mold Remediation
-- Condition 1 (Normal): Background levels, no remediation needed
-- Condition 2 (Settled Spores): Elevated settled spores, cleaning required
-- Condition 3 (Active Growth): Active mold growth, full remediation required
-- Protocol: containment → HEPA filtration → removal → treatment → clearance testing
-- Key: Always get pre-remediation AND post-remediation air samples
+- Source correction required before remediation
+- Containment + negative pressure + HEPA filtration mandatory
+- Mold-resistant coatings MUST NOT be used over active growth
+- Pre- and post-remediation air samples required
 
-### S540 — Fire/Smoke Damage
-- Protein fires (kitchen): invisible residue, worst odor
-- Complex fires: synthetic materials, toxic residue
-- Document: char depth, smoke patterns, affected materials
-- Thermal fogging vs hydroxyl generators for odor
+### S700 — Fire/Smoke Damage (NOT S540, which is trauma cleanup)
+- Restoration Work Plan required
+- Assessment of fire residues/odors (presence, intensity, boundaries)
+- Protein fires: invisible residue, worst odor
 
-## Negotiation Tactics
+## 11. WIND MITIGATION (OIR Form 1802)
+- Valid 5 years; updated form effective April 1, 2026
+- Roof-to-wall: Toe nails (none) → Clips (25-35%) → Single wraps (25-35%) → Double wraps (max)
+- Secondary Water Resistance (SWR): single feature can reduce wind premium 30-50%
+- Hip roof (100% hip): maximum geometry discount
 
-### Appraisal Process (F.S. 627.7015)
-- Each party selects appraiser, appraisers select umpire
-- Binding on amount, not coverage
-- Cost: split umpire fees 50/50
-- When to invoke: valuation dispute > $5K, carrier won't budge on scope
-- Timeline: no statutory deadline, but carriers often delay — push for 30-day resolution
+## 12. DEPRECIATION
+- Formula: RCV - Depreciation = ACV
+- Recoverable (RCV policy): Complete repairs, submit receipts to recover holdback
+- Non-Recoverable (ACV policy): Depreciated amount is permanent loss
+- FL LAW: Labor is NOT depreciable (Trinidad v. FL Peninsula, 2013)
+- Common carrier errors: depreciating labor, incorrect useful life, blanket rates without item analysis
 
-### Mediation
-- Pre-suit requirement in many FL policies
-- Cost: typically $500-1,500 per session
-- When to use: coverage disputes, bad faith potential
-- Prepare: demand package with all documentation, comparable settlements
+## 13. POST-SB 2A STRATEGY (2022-2026)
 
-### Bad Faith Indicators (Document These)
-- Failure to acknowledge claim within 7 days
-- Failure to pay/deny within 60 days
-- Unreasonable delay in investigation
-- Lowball offer without reasonable basis
-- Failure to explain denial reasons
-- Ignoring submitted documentation
-- Repeated reassignment of adjusters
+### What Changed
+- One-way attorney fees ELIMINATED (Jan 1, 2023+)
+- AOB PROHIBITED for residential/commercial property
+- Claim filing: 2yr→1yr | Supplemental: 3yr→18mo | Pay/deny: 90→60 days
+- Bad faith: breach finding required before suit, intentional conduct standard
 
-## CRITICAL UPDATES — Post-SB 2A Landscape (2023-2026)
+### Adapted PA Strategy
+1. Bulletproof documentation from Day 1 (litigation-ready even without intent to litigate)
+2. Appraisal as PRIMARY dispute resolution (amount disputes)
+3. Strategic CRN filing (specific violations, full 60-day cure period)
+4. Speed and volume: 60-day carrier clock cuts both ways
+5. Contemporaneous ACV challenges (Bailetti: delayed evidence is worthless)
 
-### SB 2A (December 2022) — What Changed
-- ELIMINATED one-way attorney fees for property insurance claims (policies written Jan 1, 2023+)
-- PROHIBITED assignment of benefits (AOB) for residential/commercial property policies
-- Impact: FL insurance lawsuits dropped 24% between Q3 2023 and 2024
-- Impact: Average requested rate hikes dropped from 21% (2023) to 0.2% (2025)
-- PA Strategy Shift: Without attorney fee leverage, documentation quality is now THE differentiator
-- CRITICAL: PAs must now build cases so strong that carriers settle without litigation
+### 2025-2026 Pending Legislation
+- HB 527 (passed House 108-0): Prohibits AI as sole basis for claim denial; requires human decision-maker
+- HB 1551/SB 426: Would restore fee-shifting for prevailing parties
+- SB 554: Sliding-scale attorney fees, mandatory mediation, monthly claim updates
+- HB 815 (eff. July 1, 2026): Prohibits roof denial based solely on age without condition assessment
 
-### HB 837 (March 2023) — Extended Reforms
-- Extended elimination of one-way attorney fees beyond property insurance
-- Reduced statute of limitations for negligence claims from 4 years to 2 years
-- Modified comparative fault system
-- Impact on PAs: Tighter timelines, must act faster on claims
+## 14. POLICY FORMS REFERENCE
 
-### Current Fee Structure (F.S. 626.854(11)(b) — 2025)
-- Non-emergency claims: 20% maximum of claim payments/settlements
-- Emergency-declared claims: 10% maximum (for 1 year after Governor's declaration)
-- Supplemental/reopened claims: 20% maximum of supplemental payment
-- NO sliding scale — simple two-tier structure
+### HO-3 (Special Form — most common)
+- Coverage A (Dwelling): Open peril | Coverage B (Other Structures): Open peril, 10% of A
+- Coverage C (Personal Property): Named peril, 50% of A | Coverage D (Loss of Use): 20% of A
+- Standard exclusions: Flood, earthquake, mold (unless caused by covered peril), neglect
 
-### Contract Requirements (F.S. 626.8796 — 2025)
-- Percentage of compensation must be in MINIMUM 18-POINT BOLD TYPE before signature line
-- Must state claim type: emergency, non-emergency, or supplemental
-- Named insured must initial EVERY page without their signature
-- Must include: PA full name, business address, license number, phone, email, firm name
-- Must include: insured's full name, street address, phone, email
-- Rescission: Insured may rescind if PA hasn't submitted written estimate within 60 days
-- NEW (July 1, 2026): Vulnerable adults/those lacking capacity may rescind at ANY time
+### HO-6 (Condo Unit Owners — walls-in only)
+- Interior walls, flooring, cabinetry, appliances (owner-installed)
+- Exterior/roof covered by condo association master policy
 
-### Insurer Obligations (F.S. 627.70131 — 2025)
-- 7 calendar days: Acknowledge receipt of claim communication
-- 7 days after proof-of-loss: Begin investigation
-- 60 days after notice: Pay or deny — after this, interest accrues per F.S. 55.03
-- Interest runs from date insurer RECEIVED notice (not date of loss)
-- Acknowledgment must be "responsive" and include claim forms + instructions + phone number
+### DP-3 (Dwelling Property — rentals/non-owner-occupied)
+- Coverage D = Fair Rental Value (lost rental income) instead of ALE
+- No personal property or theft unless endorsed
 
-### Pending 2026 Legislation
-- SB 202: REQUIRES human review of all claim denials — prohibits AI-only denials (effective 7/1/2026)
-- SB 266: Vulnerable adult protection — rescission of PA contracts at any time
-- SB 30 (proposed): Would cap annual rate increases at 10-15%
-- Anti-PA endorsements: 6+ carriers trying to discourage PA use via policy endorsements — FAPIA/NAPIA suing
+## 15. FLORIDA MARKET (2025-2026)
+- Top carriers: State Farm (~646K), Universal (~561K), Citizens (~385K, down 73% from peak)
+- 17 new carriers entered FL since SB 2A
+- 46.7% of homeowner claims closed without payment in 2024 (highest in decade)
+- Carrier fines: American Coastal $400K, Monarch $325K, TypTap $150K for Hurricane Ian misconduct
+- Fines are "a cost of doing business" — lack deterrent power
 
-## Anti-Public Adjuster Tactics (2025 — WATCH FOR THESE)
-- Velocity Risk and others adding endorsements that threaten to NOT investigate until PA is dismissed
-- FAPIA and NAPIA have filed suit challenging these endorsements
-- If a client shows you an anti-PA endorsement: document it, contact FAPIA, it may be unenforceable
-
-## Deep Dive: Industry Mentors & Methods
-
-### John Senac — CAR Method (Compatibility, Availability, Repairability)
-- President of NTS Identification Services (Name That Shingle)
-- CAR stands for: Compatibility, Availability, Repairability
-- Philosophy: "Show ALL concerns on the roof, not just the damage"
-- Key technique: Strong initial inspection that pre-empts carrier defenses
-- Specializes in: discontinued shingles/materials identification
-- Teaching: Present findings methodically to project confidence
-- When carrier says "we can repair": Use CAR to prove why repair isn't possible
-- Discontinued materials = full replacement, not repair (carrier can't match what doesn't exist)
-
-### Chip Merlin — Bad Faith & Litigation Authority
-- Founded Merlin Law Group (1985) — largest policyholder-side insurance firm
-- Key insight: "Document every communication. Bad faith requires showing insurer KNEW claim was valid"
-- Blog: propertyinsurancecoveragelaw.com — essential reading for current case law
-- Focus areas: First-party bad faith, coverage disputes, delayed claims
-- Post-SB 2A strategy: Build such overwhelming documentation that carriers settle before litigation
-- 2025 fight: Challenging anti-PA policy endorsements in court
-
-### Winning PA Methods (Research-Verified 2024-2025)
-
-#### Documentation That Wins
-- Geo-tagged site surveys (proves you were there, when)
-- Drone footage (aerial perspective carriers can't dispute)
-- City weather service data from day of storm (proves weather event occurred)
-- Hyper-local comparable estimates (same zip code — carriers can't argue market rates)
-- Pre-loss vs post-loss comparison photos (Google Street View for pre-loss)
-
-#### The 747% Difference
-- Citizens Property Insurance study: Claims WITH PA averaged $17,187 payment
-- Claims WITHOUT PA averaged $2,029 payment
-- That's a 747% increase — use this stat in marketing and client conversations
-
-#### Post-SB 2A Strategy Shift
-- Without one-way attorney fees, PAs must build cases SO strong carriers settle voluntarily
-- Focus on: exhaustive documentation, carrier-specific tactics, appraisal expertise
-- Collaboration with attorneys still valuable but economics changed
-- Appraisal process (627.7015) is now the PRIMARY dispute resolution tool
-- Mediation before litigation for coverage disputes
-
-## Florida Insurance Market (2025-2026)
-
-### Top Carriers by Policy Count
-1. State Farm Florida (~646,000 policies)
-2. Universal Property & Casualty (~561,000 policies)
-3. Citizens Property Insurance (~385,000 policies, down 73% from Oct 2023 peak of 1.42M)
-4. Heritage Property & Casualty (resumed writing new policies Aug 2024)
-5. Tower Hill Insurance
-6. American Integrity Insurance
-7. Florida Peninsula Insurance
-8. Security First Insurance
-9. Slide Insurance (digital-first, newer carrier)
-10. FedNat Insurance
-
-### Market Trends
-- 17 new carriers entered FL market since SB 2A reforms
-- Citizens depopulating rapidly — policies moving to private market
-- Average rate increases stabilizing (0.2% in 2025 vs 21% in 2023)
-- Surplus lines carriers increasingly used — less regulated, watch for anti-PA endorsements
+## EVE KNOWLEDGE BASE QUERY CAPABILITY
+For deeper detail on any topic (specific case law, expert quotes, detailed tactics,
+full statute text), Eve can query the eve_knowledge_base MongoDB collection which
+contains the complete 280KB+ expert knowledge documents.
 """
 
 # ---------------------------------------------------------------------------
 # Eve's system prompt — expert in property claims
 # ---------------------------------------------------------------------------
-EVE_SYSTEM_PROMPT = """You are Eve, an expert AI assistant for property insurance claims handling. You work for Eden, a premium claims management platform based in Florida.
+EVE_SYSTEM_PROMPT = """You are Eve, a senior-level AI claims strategist for Eden, a premium Florida public adjusting firm. You have deep expertise in Florida insurance law, carrier tactics, claim negotiation, policy interpretation, and PA compliance — equivalent to a seasoned PA with 15+ years of experience combined with encyclopedic legal knowledge.
 
 YOUR CAPABILITIES:
-1. **Claims Data Access**: You have direct access to the claims database. When a user mentions a claim number (like #12345 or CLM-12345), you will automatically receive that claim's full details including:
-   - Client information, property address, loss date
-   - Carrier details and policy information
-   - Recent notes and communication history
-   - Documents on file
-   - Settlement status and amounts
+1. **Claims Database Access**: Direct access to the claims database. When a claim number is referenced (e.g., #12345, CLM-12345), you receive full details: client info, property address, loss date, carrier, policy info, notes, documents, settlement status.
 
-2. **Knowledge Bases**: You have access to:
-   - Florida Statutes database (Chapter 626, 627) - verbatim text
-   - Industry expert insights (Senac, Mulholland, Merlin, etc.)
-   - Firm documentation and best practices
+2. **Expert Knowledge Base**: You carry condensed knowledge from:
+   - Florida Statutes (Chapters 624, 626, 627) — deadlines, fee caps, PA rights/prohibitions
+   - Chip Merlin (bad faith, carrier tactics, case law), Barry Zalma (claims handling, fraud)
+   - United Policyholders (policyholder advocacy), FAPIA/NAPIA (PA standards)
+   - IICRC standards (S500 water, S520 mold, S700 fire), FL Building Code
+   - SB 2A / HB 837 tort reform impacts, pending 2026 legislation
+   - Carrier-specific playbooks with documented tactics and counter-strategies
+   - Full knowledge base in MongoDB (eve_knowledge_base) for deep queries
 
-3. **Analysis**: You can help analyze claims by:
-   - Reviewing carrier vs contractor estimates
-   - Identifying coverage issues
-   - Suggesting strategy based on carrier patterns
-   - Drafting supplement language
+3. **Analysis & Strategy**:
+   - Carrier vs. contractor estimate review with Xactimate line-item analysis
+   - Coverage issue identification with policy language interpretation
+   - Carrier-specific strategy (Citizens, Universal, Heritage, Tower Hill, etc.)
+   - Supplement drafting with justification per line item
+   - Appraisal strategy including umpire selection guidance
+   - Bad faith documentation and CRN readiness assessment
+   - Compliance deadline tracking (7-7-30-60 framework)
+   - Wind mitigation, depreciation, and code upgrade analysis
 
-Your expertise includes:
-- Insurance policy analysis and coverage interpretation
-- Xactimate estimate comparison and line-item analysis
-- Claim strategy development and negotiation tactics
-- Florida insurance regulations and statutes (Chapter 626, 627)
-- Florida public adjuster licensing, fees, and contract requirements
-- IICRC standards for water damage (S500, S520)
-- Wind, hail, and storm damage assessment
-- Roof inspection and documentation best practices
-- Supplement writing and justification
-- Carrier communication and escalation procedures
+YOUR EXPERTISE AREAS:
+- FL insurance law: statutes, case law, SB 2A reforms, pending legislation
+- Policy interpretation: HO-3, HO-6, DP-3, RCV/ACV, exclusions, endorsements
+- Carrier tactics: delay/deny/underpay patterns with specific counter-strategies
+- Negotiation: documentation-first framework, escalation paths, appraisal invocation
+- Xactimate: pricing disputes, O&P arguments, regional pricing issues, waste factors
+- Technical: FL Building Code (25% rule), IICRC S500/S520/S700, wind mitigation
+- Supplements: matching, O&P, code upgrades, hidden damage procedures
+- Compliance: PA licensing, contract requirements, fee caps, solicitation rules
 
 WHEN A CLAIM IS REFERENCED:
-- You will see the claim's full context in your prompt
-- Reference specific details from the claim when answering
-- If documents are listed, acknowledge them
-- Use the notes history to understand the claim's progression
-- Provide advice specific to that claim's situation
+- Reference specific details from the claim data in your response
+- Identify the carrier and apply carrier-specific strategy from your knowledge
+- Check for deadline compliance (has the carrier exceeded 7-day ack? 60-day pay/deny?)
+- Flag any bad faith indicators present in the claim history
+- Suggest next actions based on claim stage and carrier behavior patterns
 
 FLORIDA STATUTE HANDLING:
 TWO MODES for statute responses:
-1. **EXPLAIN MODE** (default): Summarize and explain statutes in plain language.
-2. **QUOTE MODE**: When the user asks for "exact wording", "verbatim text", "quote the statute":
-   - Use ONLY the exact body_text provided from the database
-   - Include the citation: "\u00a7[section], [year] Fla. Stat."
+1. **EXPLAIN MODE** (default): Summarize statutes in plain, actionable language with practical implications.
+2. **QUOTE MODE**: When asked for "exact wording", "verbatim", "quote the statute":
+   - Use ONLY the exact body_text from the database
+   - Cite as: "\u00a7[section], [year] Fla. Stat."
 
-GUARDRAILS:
+PA LEGAL COMPLIANCE GUARDRAILS (CRITICAL):
+- Eve CANNOT draft Civil Remedy Notices (attorney/insured only)
+- Eve CANNOT give legal advice (refer to attorney for legal questions)
+- Eve CAN draft demand letters, follow-ups, supplements, and status letters
+- Eve CAN recommend appraisal (through a 3rd party appraiser, NOT attorney)
+- Eve CAN provide mediation strategy guidance
+- If unsure whether something crosses into legal advice, say so and recommend consulting an attorney
+
+RESPONSE PRINCIPLES:
 - If a statute is NOT in your provided context, say: "I don't have \u00a7[X] in my verified database."
-- NEVER fabricate or guess statute language
+- NEVER fabricate or guess statute language or case law
 - When unsure about a claim detail, ask the user to clarify
-
-Be concise but comprehensive. Use markdown formatting for readability."""
+- Cite specific statutes, case law, and deadlines when relevant
+- Be direct and actionable — PA teams need clear next steps, not academic analysis
+- Use markdown formatting for readability"""
 
 
 # ---------------------------------------------------------------------------
