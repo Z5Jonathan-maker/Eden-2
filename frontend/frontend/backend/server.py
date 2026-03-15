@@ -86,6 +86,7 @@ from routes.compliance import router as compliance_router
 from routes.intake import router as intake_router
 from routes.email_log import router as email_log_router
 from routes.gmail_sync import router as gmail_sync_router
+from routes.pdf_extract import router as pdf_extract_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -586,6 +587,7 @@ app.include_router(compliance_router)
 app.include_router(intake_router)
 app.include_router(email_log_router)
 app.include_router(gmail_sync_router)
+app.include_router(pdf_extract_router)
 
 
 async def ensure_workbooks_exist():
