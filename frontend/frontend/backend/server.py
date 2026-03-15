@@ -335,12 +335,12 @@ async def rate_limit_middleware(request: Request, call_next):
     else:
         client_ip = direct_ip
     
-    # Check rate limit (120 requests/minute with 300s block after exceeding)
+    # Check rate limit (600 requests/minute with 60s block after exceeding)
     is_limited, remaining, reset_time = rate_limiter.is_rate_limited(
         key=client_ip,
-        limit=120,
+        limit=600,
         window=60,
-        block_duration=300
+        block_duration=60
     )
     
     if is_limited:
