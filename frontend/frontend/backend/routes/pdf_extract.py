@@ -156,25 +156,39 @@ def _get_user_id(current_user: dict) -> str:
 
 async def _fetch_pdf_bytes_from_gridfs(doc_record: dict) -> bytes:
     """Download a PDF from GridFS using the document record metadata."""
+    from bson import ObjectId
+
     grid_id = doc_record.get("grid_id")
     storage_filename = doc_record.get("storage_filename")
+    doc_id = doc_record.get("id", "unknown")
 
+    # Try grid_id first (with robust ObjectId handling)
     if grid_id:
-        from bson import ObjectId
+        try:
+            stream = io.BytesIO()
+            oid = ObjectId(grid_id) if not isinstance(grid_id, ObjectId) else grid_id
+            await fs.download_to_stream(oid, stream)
+            stream.seek(0)
+            data = stream.read()
+            if data:
+                return data
+        except Exception as e:
+            logger.warning("GridFS download by grid_id failed for doc %s (grid_id=%s): %s", doc_id, grid_id, e)
 
-        stream = io.BytesIO()
-        await fs.download_to_stream(ObjectId(grid_id), stream)
-        stream.seek(0)
-        return stream.read()
-
+    # Fallback to storage_filename
     if storage_filename:
-        stream = io.BytesIO()
-        await fs.download_to_stream_by_name(storage_filename, stream)
-        stream.seek(0)
-        return stream.read()
+        try:
+            stream = io.BytesIO()
+            await fs.download_to_stream_by_name(storage_filename, stream)
+            stream.seek(0)
+            data = stream.read()
+            if data:
+                return data
+        except Exception as e:
+            logger.warning("GridFS download by filename failed for doc %s (filename=%s): %s", doc_id, storage_filename, e)
 
     raise ValueError(
-        f"Document {doc_record.get('id')} has no grid_id or storage_filename"
+        f"Document {doc_id} could not be downloaded (grid_id={grid_id}, filename={storage_filename})"
     )
 
 
@@ -242,11 +256,10 @@ async def _extract_from_document(
         "pages_analyzed": 0,
     }
 
-    # Only process PDFs (accept octet-stream since many carriers send PDFs as that)
+    # Only process actual PDFs — require .pdf extension or application/pdf mime
     filename = doc_record.get("name", "") or doc_record.get("filename", "") or ""
     is_pdf = (
         "pdf" in mime_type.lower()
-        or mime_type == "application/octet-stream"
         or filename.lower().endswith(".pdf")
     )
     if not is_pdf:
@@ -290,6 +303,7 @@ async def _extract_from_document(
             parsed = _parse_json_from_llm(raw_response)
             all_page_results.append(parsed)
         except Exception as exc:
+            last_vision_error = str(exc)
             logger.warning(
                 "Gemini vision failed on page %d of doc %s: %s",
                 idx + 1, doc_id, exc,
@@ -298,7 +312,7 @@ async def _extract_from_document(
 
     if not all_page_results:
         result["status"] = "error"
-        result["error"] = "All page extractions failed"
+        result["error"] = f"All {len(page_images)} page extractions failed. Last error: {last_vision_error if 'last_vision_error' in dir() else 'unknown'}"
         return result
 
     # Merge page results — last non-null value wins (later pages often have totals)
