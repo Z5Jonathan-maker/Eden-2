@@ -525,7 +525,6 @@ async def batch_analyze(
             {
                 "claim_id": data.claim_id,
                 "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-                "mime_type": "application/pdf",
             },
             {"_id": 0},
         ).to_list(200)
@@ -639,7 +638,6 @@ async def auto_extract_all(
     # Find all extractable PDFs that haven't been processed yet
     query = {
         "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-        "mime_type": "application/pdf",
         "pdf_extraction_status": {"$nin": ["success"]},
     }
     docs = await db.documents.find(query, {"_id": 0}).to_list(5000)
@@ -648,8 +646,7 @@ async def auto_extract_all(
         # Also check for docs without the field at all
         query_no_field = {
             "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-            "mime_type": "application/pdf",
-            "pdf_extraction_status": {"$exists": False},
+                "pdf_extraction_status": {"$exists": False},
         }
         docs = await db.documents.find(query_no_field, {"_id": 0}).to_list(5000)
 
@@ -784,7 +781,6 @@ async def extraction_status(
     # Remaining unprocessed documents
     unprocessed = await db.documents.count_documents({
         "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-        "mime_type": "application/pdf",
         "$or": [
             {"pdf_extraction_status": {"$exists": False}},
             {"pdf_extraction_status": {"$nin": ["success"]}},
