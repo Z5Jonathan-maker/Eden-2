@@ -279,17 +279,34 @@ async def _extract_from_document(
         result["error"] = f"PDF too small or empty ({len(pdf_bytes) if pdf_bytes else 0} bytes)"
         return result
 
-    result["pages_analyzed"] = 1  # Direct PDF upload processes all pages at once
+    # Extract text from PDF using PyMuPDF (fast, no API calls)
+    try:
+        import fitz
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        text_parts = []
+        for page_num in range(min(len(doc), 5)):
+            text_parts.append(doc[page_num].get_text())
+        doc.close()
+        pdf_text = "\n\n".join(text_parts).strip()
+    except Exception as exc:
+        result["status"] = "error"
+        result["error"] = f"PDF text extraction failed: {exc}"
+        return result
 
-    # Select prompt based on document type
+    if not pdf_text or len(pdf_text) < 20:
+        result["status"] = "error"
+        result["error"] = f"No text extracted from PDF ({len(pdf_text)} chars)"
+        return result
+
+    result["pages_analyzed"] = min(len(text_parts), 5)
+
+    # Send extracted text to Gemini for structured data parsing (regular text API, not vision)
     prompt = PROMPTS.get(doc_type, DEFAULT_PROMPT)
+    full_prompt = f"{prompt}\n\nDOCUMENT TEXT:\n{pdf_text[:15000]}"
 
-    # Use Gemini File API — upload PDF first, then reference by URI
-    # This avoids inline size limits and HTTP timeouts
     try:
         import google.generativeai as genai
         import asyncio
-        import tempfile
 
         gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
         if not gemini_key:
@@ -300,47 +317,9 @@ async def _extract_from_document(
         genai.configure(api_key=gemini_key)
         model = genai.GenerativeModel("gemini-2.5-flash")
 
-        # Write PDF to temp file for upload
-        safe_name = (filename or f"doc_{doc_id}").replace(" ", "_")[:50]
-        if not safe_name.endswith(".pdf"):
-            safe_name += ".pdf"
-
-        def _upload_and_extract():
-            # Write to temp file
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                tmp.write(pdf_bytes)
-                tmp_path = tmp.name
-
-            try:
-                # Upload via File API (free, persists 48h)
-                uploaded = genai.upload_file(tmp_path, mime_type="application/pdf", display_name=safe_name)
-
-                # Wait for processing
-                import time
-                for _ in range(30):  # max 30s wait
-                    uploaded = genai.get_file(uploaded.name)
-                    if uploaded.state.name == "ACTIVE":
-                        break
-                    time.sleep(1)
-
-                # Generate with file reference (no inline data = no size limit)
-                response = model.generate_content([prompt, uploaded])
-
-                # Clean up uploaded file
-                try:
-                    genai.delete_file(uploaded.name)
-                except Exception:
-                    pass
-
-                return response.text
-            finally:
-                import os as _os
-                try:
-                    _os.unlink(tmp_path)
-                except Exception:
-                    pass
-
-        raw_response = await asyncio.to_thread(_upload_and_extract)
+        raw_response = await asyncio.to_thread(
+            lambda: model.generate_content(full_prompt).text
+        )
 
         parsed = _parse_json_from_llm(raw_response)
         if parsed:
