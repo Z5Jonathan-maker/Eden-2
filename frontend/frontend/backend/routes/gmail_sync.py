@@ -627,20 +627,25 @@ async def sync_status(
 # ---------------------------------------------------------------------------
 
 FILENAME_TYPE_RULES = [
-    (["estimate", "est_", "scope", "xactimate"], "estimate"),
+    (["estimate", "est_", "scope", "xactimate", "statement_of_loss", "statement of loss"], "estimate"),
     (["settlement", "payment letter", "payment_letter", "stlmnt"], "settlement_letter"),
-    (["policy", "certified", "non-certified", "dec_page", "declarations"], "policy"),
-    (["coverage determination", "coverage_determination", "coverage decision"], "coverage_determination"),
-    (["lor", "letter of representation", "letter_of_representation", "representation"], "lor"),
+    (["policy", "certified", "non-certified", "dec_page", "declarations", "cop_"], "policy"),
+    (["coverage determination", "coverage_determination", "coverage decision",
+      "coverage_letter", "pd_coverage", "reservation of rights", "reservation_of_rights",
+      "ror"], "coverage_determination"),
+    (["lor", "letter of representation", "letter_of_representation",
+      "acknowledgement", "acknowledgment", "pa_acknowledgement"], "lor"),
     (["supplement"], "supplement"),
     (["invoice"], "invoice"),
     (["release", "global_release"], "release"),
     (["denial", "denied"], "denial_letter"),
-    (["inspection", "report bundle", "report_bundle"], "inspection_report"),
+    (["inspection", "report bundle", "report_bundle", "audit"], "inspection_report"),
     (["mediation", "brochure"], "mediation"),
     (["bid", "proposal"], "contractor_bid"),
     (["photo", "img_", "img-", "image", ".jpg", ".jpeg", ".png", ".heic"], "photo"),
-    (["contract", "agreement"], "contract"),
+    (["contract", "agreement", "care_claims_contract"], "contract"),
+    (["w9", "w-9", "attestation"], "tax_form"),
+    (["variation"], "variation_report"),
 ]
 
 
