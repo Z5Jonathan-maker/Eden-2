@@ -87,6 +87,8 @@ from routes.intake import router as intake_router
 from routes.email_log import router as email_log_router
 from routes.gmail_sync import router as gmail_sync_router
 from routes.pdf_extract import router as pdf_extract_router
+from routes.adjuster_intel import router as adjuster_intel_router
+from routes.eve_orchestrator import router as eve_orchestrator_router
 from feature_flags import feature_flags_router
 from websocket_manager import manager
 from auth import decode_access_token, get_password_hash
@@ -188,6 +190,14 @@ async def ensure_database_indexes():
         await db.intake_submissions.create_index("submission_token", unique=True, background=True)
         await db.intake_submissions.create_index([("status", 1), ("submitted_at", -1)], background=True)
         await db.intake_submissions.create_index([("how_did_you_hear", 1)], background=True)
+        # Adjuster Intel indexes
+        await db.adjuster_profiles.create_index("name", unique=True, background=True)
+        await db.adjuster_profiles.create_index([("carrier", 1), ("behavior_score", 1)], background=True)
+        # Eve Orchestrator indexes
+        await db.eve_orchestrator_runs.create_index([("created_at", -1)], background=True)
+        await db.eve_orchestrator_runs.create_index([("user_id", 1), ("created_at", -1)], background=True)
+        await db.eve_orchestrator_drafts.create_index([("claim_id", 1), ("type", 1)], background=True)
+        await db.eve_orchestrator_reports.create_index([("claim_id", 1), ("created_at", -1)], background=True)
         logging.info("Database indexes ensured successfully")
     except Exception as e:
         logging.warning(f"Could not create database indexes: {e}")
@@ -588,6 +598,8 @@ app.include_router(intake_router)
 app.include_router(email_log_router)
 app.include_router(gmail_sync_router)
 app.include_router(pdf_extract_router)
+app.include_router(adjuster_intel_router)
+app.include_router(eve_orchestrator_router)
 
 
 async def ensure_workbooks_exist():
