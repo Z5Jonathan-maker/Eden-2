@@ -719,26 +719,35 @@ async def auto_extract_all(
             },
         }
 
+    import asyncio as _asyncio
+    import traceback as _tb
+
     run_id = str(uuid.uuid4())
-    llm = LLMRouter()
+    try:
+        llm = LLMRouter()
+    except Exception as exc:
+        return {"error": f"LLMRouter init failed: {exc}", "traceback": _tb.format_exc()[:500], "documents_processed": 0, "success_count": 0, "error_count": 0, "results": []}
+
     results: List[Dict[str, Any]] = []
     claims_updated = 0
     success_count = 0
     error_count = 0
     skipped_count = 0
 
-    # Group by doc_type for the summary
     type_counts: Dict[str, int] = {}
 
     for idx, doc in enumerate(docs):
         doc_type = doc.get("type", "unknown")
         type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
 
-        # Rate limiting
         if idx > 0:
-            await asyncio.sleep(GEMINI_RPM_DELAY)
+            await _asyncio.sleep(GEMINI_RPM_DELAY)
 
-        result = await _extract_from_document(doc, llm)
+        try:
+            result = await _extract_from_document(doc, llm)
+        except Exception as exc:
+            result = {"document_id": doc.get("id"), "document_name": doc.get("name"), "status": "error", "error": f"Crash: {exc}", "extracted_data": None, "pages_analyzed": 0}
+            logger.exception("Extract crash on doc %s: %s", doc.get("id"), exc)
         results.append(result)
 
         if result["status"] == "success":
