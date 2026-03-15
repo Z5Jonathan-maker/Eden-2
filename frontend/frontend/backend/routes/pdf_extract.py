@@ -874,3 +874,44 @@ async def extraction_status(
         "by_type": by_type,
         "recent_runs": recent_runs,
     }
+
+
+@router.get("/debug-docs")
+async def debug_documents(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Debug: show what's actually in the documents collection."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from collections import Counter
+
+    # Count by type
+    pipeline_type = [{"$group": {"_id": "$type", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}]
+    type_counts = await db.documents.aggregate(pipeline_type).to_list(50)
+
+    # Count by extraction status
+    pipeline_status = [{"$group": {"_id": "$pdf_extraction_status", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}]
+    status_counts = await db.documents.aggregate(pipeline_status).to_list(10)
+
+    # Count by source
+    pipeline_source = [{"$group": {"_id": "$source", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}]
+    source_counts = await db.documents.aggregate(pipeline_source).to_list(10)
+
+    # Get 3 sample estimate docs
+    samples = await db.documents.find(
+        {"type": "estimate"},
+        {"_id": 0, "id": 1, "name": 1, "type": 1, "mime_type": 1, "claim_id": 1,
+         "grid_id": 1, "storage_filename": 1, "pdf_extraction_status": 1, "source": 1}
+    ).limit(3).to_list(3)
+
+    # Total
+    total = await db.documents.count_documents({})
+
+    return {
+        "total_documents": total,
+        "by_type": type_counts,
+        "by_extraction_status": status_counts,
+        "by_source": source_counts,
+        "sample_estimates": samples,
+    }
