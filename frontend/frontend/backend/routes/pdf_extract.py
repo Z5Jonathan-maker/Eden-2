@@ -279,47 +279,47 @@ async def _extract_from_document(
         result["error"] = f"PDF too small or empty ({len(pdf_bytes) if pdf_bytes else 0} bytes)"
         return result
 
-    # Extract text from PDF using PyMuPDF (fast, no API calls)
+    import google.generativeai as genai
+    import asyncio
+
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
+    if not gemini_key:
+        result["status"] = "error"
+        result["error"] = "GEMINI_API_KEY not configured"
+        return result
+
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    prompt = PROMPTS.get(doc_type, DEFAULT_PROMPT)
+
+    # Strategy 1: Try text extraction with PyMuPDF (works for digital PDFs)
+    pdf_text = ""
     try:
         import fitz
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        text_parts = []
-        for page_num in range(min(len(doc), 5)):
-            text_parts.append(doc[page_num].get_text())
+        text_parts = [doc[i].get_text() for i in range(min(len(doc), 5))]
         doc.close()
         pdf_text = "\n\n".join(text_parts).strip()
-    except Exception as exc:
-        result["status"] = "error"
-        result["error"] = f"PDF text extraction failed: {exc}"
-        return result
-
-    if not pdf_text or len(pdf_text) < 20:
-        result["status"] = "error"
-        result["error"] = f"No text extracted from PDF ({len(pdf_text)} chars)"
-        return result
-
-    result["pages_analyzed"] = min(len(text_parts), 5)
-
-    # Send extracted text to Gemini for structured data parsing (regular text API, not vision)
-    prompt = PROMPTS.get(doc_type, DEFAULT_PROMPT)
-    full_prompt = f"{prompt}\n\nDOCUMENT TEXT:\n{pdf_text[:15000]}"
+        result["pages_analyzed"] = len(text_parts)
+    except Exception:
+        pass
 
     try:
-        import google.generativeai as genai
-        import asyncio
-
-        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
-        if not gemini_key:
-            result["status"] = "error"
-            result["error"] = "GEMINI_API_KEY not configured"
-            return result
-
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
-
-        raw_response = await asyncio.to_thread(
-            lambda: model.generate_content(full_prompt).text
-        )
+        if pdf_text and len(pdf_text) > 50:
+            # Digital PDF — send text to Gemini text API
+            full_prompt = f"{prompt}\n\nDOCUMENT TEXT:\n{pdf_text[:15000]}"
+            raw_response = await asyncio.to_thread(
+                lambda: model.generate_content(full_prompt).text
+            )
+        else:
+            # Scanned PDF — send raw bytes to Gemini (it uses vision internally)
+            result["pages_analyzed"] = 1
+            raw_response = await asyncio.to_thread(
+                lambda: model.generate_content([
+                    prompt,
+                    {"mime_type": "application/pdf", "data": pdf_bytes},
+                ]).text
+            )
 
         parsed = _parse_json_from_llm(raw_response)
         if parsed:
