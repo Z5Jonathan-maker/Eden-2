@@ -40,9 +40,9 @@ fs = AsyncIOMotorGridFSBucket(db)
 # Constants
 # ---------------------------------------------------------------------------
 
-MAX_PAGES_PER_PDF = 3
-PAGE_DPI = 200  # Resolution for PDF-to-image conversion
-GEMINI_RPM_DELAY = 4.2  # seconds between calls (≈14 RPM, safe under 15 RPM cap)
+MAX_PAGES_PER_PDF = 2  # Reduced for Render free tier memory
+PAGE_DPI = 100  # Lower DPI for faster processing + smaller images
+GEMINI_RPM_DELAY = 5.0  # seconds between calls (12 RPM, conservative)
 EXTRACTABLE_DOC_TYPES = frozenset({
     "estimate",
     "settlement_letter",
