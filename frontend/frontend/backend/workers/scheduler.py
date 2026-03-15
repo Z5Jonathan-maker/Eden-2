@@ -8,6 +8,7 @@ Jobs:
 - Claims Ops hourly check: Every hour at :45
 - Claims Ops nightly summary: Daily at 9 PM UTC
 - Comms Bot periodic check: Every 2 hours
+- Gmail Sync pipeline: Every 6 hours (sync + categorize + PDF extract)
 """
 import asyncio
 import logging
@@ -35,12 +36,14 @@ def init_scheduler(db):
     from workers.comms_bot import init_comms_bot
     from workers.evidence_sync import init_evidence_sync
     from workers.drive_mirror_worker import init_drive_mirror
+    from workers.gmail_sync_worker import init_gmail_sync_worker
 
     init_harvest_coach(db)
     init_claims_ops_bot(db)
     init_comms_bot(db)
     init_evidence_sync(db)
     init_drive_mirror(db)
+    init_gmail_sync_worker(db)
 
     from workers.claimpilot_monitor import init_claimpilot_monitor
     init_claimpilot_monitor(db)
@@ -57,6 +60,7 @@ def init_scheduler(db):
     _add_claimpilot_monitor_jobs()
     _add_legal_feed_jobs()
     _add_initial_run_job()
+    _add_gmail_sync_jobs()
 
     logger.info("Background scheduler initialized with all bots")
 
@@ -245,6 +249,22 @@ def _add_legal_feed_jobs():
     logger.info(
         "Legal feed jobs added: weekly sync Sun 02:00 UTC, staleness check daily 06:00 UTC"
     )
+
+
+def _add_gmail_sync_jobs():
+    """Add Gmail auto-sync pipeline job — every 6 hours."""
+    from workers.gmail_sync_worker import run_gmail_sync_pipeline
+
+    scheduler.add_job(
+        _run_async_job,
+        IntervalTrigger(hours=6),
+        args=[run_gmail_sync_pipeline],
+        id="gmail_auto_sync",
+        name="Gmail Sync - Auto Pipeline (sync + categorize + extract)",
+        replace_existing=True,
+        misfire_grace_time=3600,  # Allow 1 hour late execution
+    )
+    logger.info("Gmail sync job added: every 6 hours")
 
 
 def _add_initial_run_job():
