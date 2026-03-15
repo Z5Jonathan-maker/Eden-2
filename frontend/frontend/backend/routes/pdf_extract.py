@@ -242,10 +242,16 @@ async def _extract_from_document(
         "pages_analyzed": 0,
     }
 
-    # Only process PDFs
-    if "pdf" not in mime_type.lower():
+    # Only process PDFs (accept octet-stream since many carriers send PDFs as that)
+    filename = doc_record.get("name", "") or doc_record.get("filename", "") or ""
+    is_pdf = (
+        "pdf" in mime_type.lower()
+        or mime_type == "application/octet-stream"
+        or filename.lower().endswith(".pdf")
+    )
+    if not is_pdf:
         result["status"] = "skipped"
-        result["error"] = f"Not a PDF (mime: {mime_type})"
+        result["error"] = f"Not a PDF (mime: {mime_type}, file: {filename})"
         return result
 
     try:
