@@ -45,6 +45,7 @@ DEFAULT_MAX_TOKENS = 2000
 GEMINI_MODEL = "gemini-2.5-flash"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 LLM_CALL_TIMEOUT_SECONDS = 30
+LLM_VISION_TIMEOUT_SECONDS = 60
 
 
 class LLMRouter:
@@ -110,10 +111,14 @@ class LLMRouter:
         image_bytes: bytes,
         mime_type: str = "image/jpeg",
     ) -> str:
-        """Analyse an image via Gemini vision."""
+        """Analyse an image via Gemini vision.
+
+        Uses a longer timeout than text calls because PDF page images
+        can be large and Gemini vision needs more processing time.
+        """
         return await asyncio.wait_for(
             self._call_gemini_vision(prompt, image_bytes, mime_type),
-            timeout=LLM_CALL_TIMEOUT_SECONDS,
+            timeout=LLM_VISION_TIMEOUT_SECONDS,
         )
 
     # ------------------------------------------------------------------
@@ -245,12 +250,19 @@ class LLMRouter:
         image_bytes: bytes,
         mime_type: str,
     ) -> str:
-        """Gemini multimodal (vision) call (async)."""
+        """Gemini multimodal (vision) call (async).
+
+        Uses PIL.Image for reliable image handling — the raw dict format
+        is not reliably supported by all google-generativeai SDK versions.
+        """
+        import io
+
         import google.generativeai as genai
+        import PIL.Image
 
         self._ensure_gemini_configured()
         model = genai.GenerativeModel(GEMINI_MODEL)
 
-        image_part = {"mime_type": mime_type, "data": image_bytes}
-        response = await model.generate_content_async([prompt, image_part])
+        image = PIL.Image.open(io.BytesIO(image_bytes))
+        response = await model.generate_content_async([prompt, image])
         return response.text
