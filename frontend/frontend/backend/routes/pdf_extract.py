@@ -674,19 +674,49 @@ async def auto_extract_all(
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    # Find all extractable PDFs not yet successfully processed
+    # Diagnostic counts — isolate which filter is the problem
+    base_count = await db.documents.count_documents({})
+    type_count = await db.documents.count_documents({
+        "type": {"$in": list(EXTRACTABLE_DOC_TYPES)}
+    })
+    status_ne_count = await db.documents.count_documents({
+        "pdf_extraction_status": {"$ne": "success"}
+    })
+    combined_count = await db.documents.count_documents({
+        "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
+        "pdf_extraction_status": {"$ne": "success"}
+    })
+    logger.info(
+        "auto-extract-all counts: base=%d type_match=%d status_ne=%d combined=%d",
+        base_count, type_count, status_ne_count, combined_count,
+    )
+
+    # Query with explicit null handling
     query = {
         "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
         "pdf_extraction_status": {"$ne": "success"},
     }
     docs = await db.documents.find(query, {"_id": 0}).to_list(100)
-    logger.info("auto-extract-all: query=%s found %d docs", query, len(docs))
+    logger.info("auto-extract-all: found %d docs", len(docs))
 
     if not docs:
+        # Return diagnostic info so we can see what's happening
+        sample = await db.documents.find(
+            {}, {"_id": 0, "type": 1, "pdf_extraction_status": 1, "name": 1}
+        ).limit(5).to_list(5)
         return {
             "message": "No unprocessed extractable documents found",
             "total": 0,
             "results": [],
+            "diagnostics": {
+                "base_count": base_count,
+                "type_match": type_count,
+                "status_ne_success": status_ne_count,
+                "combined": combined_count,
+                "sample_docs": sample,
+                "collection": "documents",
+                "db_name": db.name,
+            },
         }
 
     run_id = str(uuid.uuid4())
