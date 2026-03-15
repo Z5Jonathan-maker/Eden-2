@@ -274,51 +274,52 @@ async def _extract_from_document(
         result["error"] = f"GridFS download failed: {exc}"
         return result
 
-    try:
-        page_images = _pdf_pages_to_images(pdf_bytes)
-    except Exception as exc:
+    if not pdf_bytes or len(pdf_bytes) < 100:
         result["status"] = "error"
-        result["error"] = f"PDF-to-image conversion failed: {exc}"
+        result["error"] = f"PDF too small or empty ({len(pdf_bytes) if pdf_bytes else 0} bytes)"
         return result
 
-    if not page_images:
-        result["status"] = "error"
-        result["error"] = "PDF has zero pages"
-        return result
-
-    result["pages_analyzed"] = len(page_images)
+    result["pages_analyzed"] = 1  # Direct PDF upload processes all pages at once
 
     # Select prompt based on document type
     prompt = PROMPTS.get(doc_type, DEFAULT_PROMPT)
 
-    # Send each page image to Gemini and combine results
-    all_page_results: List[dict] = []
-    for idx, (img_bytes, img_mime) in enumerate(page_images):
-        try:
-            raw_response = await llm.generate_vision(
-                prompt=prompt,
-                image_bytes=img_bytes,
-                mime_type=img_mime,
-            )
-            parsed = _parse_json_from_llm(raw_response)
-            all_page_results.append(parsed)
-        except Exception as exc:
-            last_vision_error = str(exc)
-            logger.warning(
-                "Gemini vision failed on page %d of doc %s: %s",
-                idx + 1, doc_id, exc,
-            )
-            # Continue with other pages
+    # Upload PDF directly to Gemini — no image conversion needed
+    # Gemini natively reads PDFs including tables, charts, and financial data
+    try:
+        import google.generativeai as genai
+        import asyncio
 
-    if not all_page_results:
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
+        if not gemini_key:
+            result["status"] = "error"
+            result["error"] = "GEMINI_API_KEY not configured"
+            return result
+
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
+        # Upload PDF directly (no image conversion — Gemini handles PDF natively)
+        raw_response = await asyncio.to_thread(
+            lambda: model.generate_content([
+                prompt,
+                {"mime_type": "application/pdf", "data": pdf_bytes},
+            ]).text
+        )
+
+        parsed = _parse_json_from_llm(raw_response)
+        if parsed:
+            result["extracted_data"] = parsed
+            result["status"] = "success"
+        else:
+            result["status"] = "error"
+            result["error"] = f"Could not parse JSON from Gemini response: {raw_response[:200]}"
+
+    except Exception as exc:
         result["status"] = "error"
-        result["error"] = f"All {len(page_images)} page extractions failed. Last error: {last_vision_error if 'last_vision_error' in dir() else 'unknown'}"
-        return result
+        result["error"] = f"Gemini PDF extraction failed: {str(exc)[:200]}"
+        logger.warning("PDF extraction failed for doc %s: %s", doc_id, exc)
 
-    # Merge page results — last non-null value wins (later pages often have totals)
-    merged = _merge_page_results(all_page_results)
-    result["extracted_data"] = merged
-    result["status"] = "success"
     return result
 
 
