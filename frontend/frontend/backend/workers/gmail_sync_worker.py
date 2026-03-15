@@ -325,6 +325,8 @@ async def _run_gmail_auto_sync(
                     "grid_id": str(grid_id),
                     "storage": "gridfs",
                     "storage_filename": storage_filename,
+                    "gmail_subject": subject,
+                    "gmail_sender": headers.get("from", ""),
                 }
                 await _db.documents.insert_one(doc_record)
 
@@ -356,17 +358,20 @@ async def _run_gmail_auto_sync(
 # ---------------------------------------------------------------------------
 
 async def _run_categorize() -> Dict[str, Any]:
-    """Categorize all gmail_attachment documents by filename pattern.
+    """Categorize all gmail_attachment documents using filename + email context.
 
-    Mirrors routes/gmail_sync.py categorize_synced_documents logic.
+    Uses enhanced _categorize_document that checks subject/sender in addition
+    to filename patterns, catching policy docs from Universal, State Farm,
+    Griston, People's Trust, and other carriers.
     """
-    from routes.gmail_sync import _categorize_filename
+    from routes.gmail_sync import _categorize_document
 
     summary = {"total_docs": 0, "updated": 0, "claims_affected": 0}
 
     docs = await _db.documents.find(
         {"type": "gmail_attachment"},
-        {"_id": 0, "id": 1, "claim_id": 1, "name": 1},
+        {"_id": 0, "id": 1, "claim_id": 1, "name": 1,
+         "gmail_subject": 1, "gmail_sender": 1},
     ).to_list(5000)
 
     if not docs:
@@ -376,7 +381,11 @@ async def _run_categorize() -> Dict[str, Any]:
     claim_summaries: Dict[str, Dict[str, int]] = {}
 
     for doc in docs:
-        new_type = _categorize_filename(doc["name"])
+        new_type = _categorize_document(
+            doc["name"],
+            subject=doc.get("gmail_subject", ""),
+            sender=doc.get("gmail_sender", ""),
+        )
         cid = doc["claim_id"]
         if cid not in claim_summaries:
             claim_summaries[cid] = {}

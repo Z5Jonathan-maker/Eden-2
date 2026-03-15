@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "trailingSlash": false,
   "buildCommand": "cd frontend && npm run build && ls -la build/ && cp -r build/. ../build/ && ls -la ../build/",
   "outputDirectory": "build",
   "framework": null,
@@ -8,6 +9,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://eden-2.onrender.com/api/:path*"
+    },
+    {
+      "source": "/api/:path*/",
+      "destination": "https://eden-2.onrender.com/api/:path*/"
     },
     {
       "source": "/health",

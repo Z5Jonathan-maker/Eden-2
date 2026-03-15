@@ -263,7 +263,7 @@ async def create_claim_commission(
         structure = await db.fee_structures.find_one({"id": fee_structure_id}, {"_id": 0})
         if not structure:
             raise HTTPException(status_code=404, detail="Fee structure not found")
-        fee_pct = structure.get("fee_percentage", 10.0)
+        fee_pct = structure.get("fee_percentage", 20.0)
         if body.referral_fee_percentage is None:
             referral_pct = structure.get("referral_fee_percentage", 0.0)
 
@@ -271,7 +271,7 @@ async def create_claim_commission(
         # Fall back to default fee structure
         default_structure = await db.fee_structures.find_one({"is_default": True}, {"_id": 0})
         if default_structure:
-            fee_pct = default_structure.get("fee_percentage", 10.0)
+            fee_pct = default_structure.get("fee_percentage", 20.0)
             fee_structure_id = default_structure.get("id")
             if body.referral_fee_percentage is None:
                 referral_pct = default_structure.get("referral_fee_percentage", 0.0)
@@ -367,7 +367,7 @@ async def update_claim_commission(
 
     # Merge with existing for recalculation
     settlement = updates.get("settlement_amount", existing.get("settlement_amount", 0))
-    fee_pct = updates.get("fee_percentage", existing.get("fee_percentage", 10.0))
+    fee_pct = updates.get("fee_percentage", existing.get("fee_percentage", 20.0))
     referral_pct = updates.get("referral_fee_percentage", existing.get("referral_fee_percentage", 0.0))
     referral_flat = updates.get("referral_fee_flat", existing.get("referral_fee_flat"))
 

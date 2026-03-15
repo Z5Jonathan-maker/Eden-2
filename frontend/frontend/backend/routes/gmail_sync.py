@@ -182,6 +182,8 @@ async def _download_and_store_attachment(
     att_meta: dict,
     claim_id: str,
     uploaded_by: str,
+    email_subject: str = "",
+    email_sender: str = "",
 ) -> dict:
     """Download a single attachment from Gmail, store in GridFS, create document record."""
     attachment_id = att_meta["attachment_id"]
@@ -265,6 +267,8 @@ async def _download_and_store_attachment(
         "grid_id": str(grid_id),
         "storage": "gridfs",
         "storage_filename": storage_filename,
+        "gmail_subject": email_subject,
+        "gmail_sender": email_sender,
     }
     await db.documents.insert_one(doc_record)
 
@@ -357,10 +361,15 @@ async def sync_attachments(
             })
             continue
 
+        msg_subject = headers.get("subject", "")
+        msg_sender = headers.get("from", "")
+
         msg_results: List[dict] = []
         for att_meta in attachment_metas:
             result = await _download_and_store_attachment(
                 user_id, msg_id, att_meta, data.claim_id, uploaded_by,
+                email_subject=msg_subject,
+                email_sender=msg_sender,
             )
             msg_results.append(result)
             if result["status"] == "synced":
@@ -372,8 +381,8 @@ async def sync_attachments(
 
         results.append({
             "message_id": msg_id,
-            "subject": headers.get("subject", ""),
-            "from": headers.get("from", ""),
+            "subject": msg_subject,
+            "from": msg_sender,
             "date": headers.get("date", ""),
             "attachments": msg_results,
         })
@@ -523,10 +532,14 @@ async def auto_sync(
             if not attachment_metas:
                 continue
 
+            msg_sender = headers.get("from", "")
+
             msg_results: List[dict] = []
             for att_meta in attachment_metas:
                 result = await _download_and_store_attachment(
                     user_id, msg_id, att_meta, claim_id, uploaded_by,
+                    email_subject=subject,
+                    email_sender=msg_sender,
                 )
                 msg_results.append(result)
                 if result["status"] == "synced":
@@ -539,7 +552,7 @@ async def auto_sync(
             all_results.append({
                 "message_id": msg_id,
                 "subject": subject,
-                "from": headers.get("from", ""),
+                "from": msg_sender,
                 "date": headers.get("date", ""),
                 "claim_id": claim_id,
                 "claim_number": matched_claim.get("claim_number"),
@@ -623,13 +636,15 @@ async def sync_status(
 
 
 # ---------------------------------------------------------------------------
-# 4. Categorize All Synced Documents by Filename Pattern
+# 4. Categorize All Synced Documents by Filename + Email Context
 # ---------------------------------------------------------------------------
 
+# --- Filename-based rules (original, checked first) ---
 FILENAME_TYPE_RULES = [
     (["estimate", "est_", "scope", "xactimate", "statement_of_loss", "statement of loss"], "estimate"),
     (["settlement", "payment letter", "payment_letter", "stlmnt"], "settlement_letter"),
-    (["policy", "certified", "non-certified", "dec_page", "declarations", "cop_"], "policy"),
+    (["policy", "certified", "non-certified", "dec_page", "declarations", "cop_",
+      "dec page", "declaration page", "policy_copy", "copy of policy"], "policy"),
     (["coverage determination", "coverage_determination", "coverage decision",
       "coverage_letter", "pd_coverage", "reservation of rights", "reservation_of_rights",
       "ror"], "coverage_determination"),
@@ -648,14 +663,155 @@ FILENAME_TYPE_RULES = [
     (["variation"], "variation_report"),
 ]
 
+# --- Subject-line patterns that indicate a policy document ---
+SUBJECT_POLICY_PATTERNS = [
+    "policy",
+    "certified copy",
+    "non-certified copy",
+    "declaration",
+    "dec page",
+    "declarations page",
+    "insurance policy",
+    "copy of policy",
+    "requested documents",
+    "policy documents",
+    "policy enclosed",
+    "your policy",
+    "homeowner policy",
+    "homeowners policy",
+    "dwelling policy",
+    "ho3 policy",
+    "ho-3 policy",
+    "dp3 policy",
+    "dp-3 policy",
+]
+
+# --- Carrier-specific sender + subject combos that indicate policies ---
+# Each entry: (sender_contains, subject_contains, doc_type)
+CARRIER_SPECIFIC_RULES = [
+    # Universal Property: "Requested Documents" emails contain policies
+    ("universal", "requested documents", "policy"),
+    ("universal property", "requested documents", "policy"),
+    ("universalproperty", "requested documents", "policy"),
+    # State Farm: multi-part policy copies
+    ("state farm", "copy of policy", "policy"),
+    ("statefarm", "copy of policy", "policy"),
+    ("state farm", "policy documents", "policy"),
+    # Griston: LOR responses often bundle policy docs
+    ("griston", "lor", "policy"),
+    ("griston", "letter of representation", "policy"),
+    ("griston", "response", "policy"),
+    # People's Trust: DoNotReply with policy attachments
+    ("peoples trust", "donotreply", "policy"),
+    ("peoplestrust", "", "policy"),
+    ("donotreply@peoplestrust", "", "policy"),
+    ("noreply@peoplestrust", "", "policy"),
+    # Citizens Property Insurance
+    ("citizens", "policy", "policy"),
+    ("citizenspropertyinsurance", "", "policy"),
+    # Heritage Property & Casualty
+    ("heritage", "policy", "policy"),
+    # FedNat / Monarch National
+    ("fednat", "policy", "policy"),
+    ("monarch", "policy", "policy"),
+    # American Integrity
+    ("american integrity", "policy", "policy"),
+    # Security First
+    ("security first", "policy", "policy"),
+    ("securityfirstflorida", "policy", "policy"),
+]
+
+# --- Filename patterns that indicate policies when found in carrier emails ---
+POLICY_ATTACHMENT_FILENAME_HINTS = [
+    "dec",
+    "declaration",
+    "certified",
+    "non-certified",
+    "cop_",
+    "cop-",
+    "copy_of_policy",
+    "policy_copy",
+    "ho3",
+    "ho-3",
+    "dp3",
+    "dp-3",
+    "dwelling",
+    "homeowner",
+    "endorsement",
+    "renewal",
+    "binder",
+]
+
 
 def _categorize_filename(filename: str) -> str:
+    """Categorize by filename only (legacy, used when no email context available)."""
     fn = filename.lower()
     for patterns, doc_type in FILENAME_TYPE_RULES:
         if any(p in fn for p in patterns):
             return doc_type
     if "report" in fn and "photo" not in fn:
         return "inspection_report"
+    return "carrier_correspondence"
+
+
+def _categorize_document(
+    filename: str,
+    subject: str = "",
+    sender: str = "",
+) -> str:
+    """Categorize a document using filename, email subject, and sender.
+
+    Priority:
+      1. Filename match (most specific)
+      2. Carrier-specific sender+subject combo
+      3. Subject-line policy patterns
+      4. Fallback to carrier_correspondence
+    """
+    fn_lower = filename.lower()
+    subject_lower = subject.lower()
+    sender_lower = sender.lower()
+
+    # 1. Filename match (existing logic — catches explicit names)
+    for patterns, doc_type in FILENAME_TYPE_RULES:
+        if any(p in fn_lower for p in patterns):
+            return doc_type
+    if "report" in fn_lower and "photo" not in fn_lower:
+        return "inspection_report"
+
+    # 2. Carrier-specific rules (sender + subject combos)
+    for sender_pattern, subject_pattern, doc_type in CARRIER_SPECIFIC_RULES:
+        sender_match = sender_pattern in sender_lower if sender_pattern else True
+        subject_match = subject_pattern in subject_lower if subject_pattern else True
+        if sender_match and subject_match:
+            # Extra check: does the filename look like a policy attachment?
+            has_policy_hint = any(hint in fn_lower for hint in POLICY_ATTACHMENT_FILENAME_HINTS)
+            # If sender+subject match AND filename has a hint, definitely policy
+            if has_policy_hint:
+                return doc_type
+            # If sender+subject match strongly (both non-empty), trust it
+            if sender_pattern and subject_pattern:
+                return doc_type
+
+    # 3. Subject-line policy patterns (broad catch)
+    if any(pattern in subject_lower for pattern in SUBJECT_POLICY_PATTERNS):
+        # Confirm with filename hint to avoid false positives on non-policy attachments
+        has_policy_hint = any(hint in fn_lower for hint in POLICY_ATTACHMENT_FILENAME_HINTS)
+        if has_policy_hint:
+            return "policy"
+        # Strong subject signals — trust without filename confirmation
+        strong_subject_signals = [
+            "copy of policy",
+            "certified copy",
+            "non-certified copy",
+            "dec page",
+            "declarations page",
+            "insurance policy",
+            "requested documents",
+        ]
+        if any(signal in subject_lower for signal in strong_subject_signals):
+            return "policy"
+
+    # 4. Fallback
     return "carrier_correspondence"
 
 
@@ -675,7 +831,8 @@ async def categorize_synced_documents(
 
     cursor = db.documents.find(
         {"type": "gmail_attachment"},
-        {"_id": 0, "id": 1, "claim_id": 1, "name": 1, "type": 1},
+        {"_id": 0, "id": 1, "claim_id": 1, "name": 1, "type": 1,
+         "gmail_subject": 1, "gmail_sender": 1},
     )
     docs = await cursor.to_list(5000)
     if not docs:
@@ -686,7 +843,11 @@ async def categorize_synced_documents(
     claim_summaries: dict = {}
 
     for doc in docs:
-        new_type = _categorize_filename(doc["name"])
+        new_type = _categorize_document(
+            doc["name"],
+            subject=doc.get("gmail_subject", ""),
+            sender=doc.get("gmail_sender", ""),
+        )
         category_counts[new_type] = category_counts.get(new_type, 0) + 1
 
         cid = doc["claim_id"]
@@ -728,4 +889,234 @@ async def categorize_synced_documents(
         "claims_affected": len(claim_summaries),
         "notes_added": notes_added,
         "category_breakdown": dict(sorted(category_counts.items(), key=lambda x: -x[1])),
+    }
+
+
+# ---------------------------------------------------------------------------
+# 5. Re-categorize carrier_correspondence documents (catch missed policies)
+# ---------------------------------------------------------------------------
+
+class RecategorizeRequest(BaseModel):
+    dry_run: bool = Field(default=True, description="Preview changes without applying")
+    source_types: List[str] = Field(
+        default=["carrier_correspondence"],
+        description="Document types to re-evaluate",
+    )
+
+
+@router.post("/recategorize-documents")
+async def recategorize_documents(
+    data: RecategorizeRequest = RecategorizeRequest(),
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Re-evaluate existing documents (default: carrier_correspondence) using
+    the enhanced categorization that checks email subject + sender + filename.
+
+    Catches policy documents that were originally miscategorized because
+    the filename-only logic missed them.
+
+    Set dry_run=false to apply changes.
+    """
+    if current_user.get("role") not in ("admin", "manager"):
+        raise HTTPException(status_code=403, detail="Admin or manager access required")
+
+    cursor = db.documents.find(
+        {
+            "type": {"$in": data.source_types},
+            "source": "gmail_sync",
+        },
+        {
+            "_id": 0, "id": 1, "claim_id": 1, "name": 1, "type": 1,
+            "gmail_subject": 1, "gmail_sender": 1, "gmail_message_id": 1,
+        },
+    )
+    docs = await cursor.to_list(5000)
+    if not docs:
+        return {
+            "message": "No documents found matching source types",
+            "total_evaluated": 0,
+            "would_change": 0,
+            "dry_run": data.dry_run,
+        }
+
+    changes: List[dict] = []
+    unchanged = 0
+    category_counts: dict = {}
+    claim_summaries: dict = {}
+
+    for doc in docs:
+        old_type = doc["type"]
+        new_type = _categorize_document(
+            doc["name"],
+            subject=doc.get("gmail_subject", ""),
+            sender=doc.get("gmail_sender", ""),
+        )
+
+        if new_type == old_type:
+            unchanged += 1
+            continue
+
+        changes.append({
+            "document_id": doc["id"],
+            "claim_id": doc["claim_id"],
+            "filename": doc["name"],
+            "old_type": old_type,
+            "new_type": new_type,
+            "gmail_subject": doc.get("gmail_subject", ""),
+            "gmail_sender": doc.get("gmail_sender", ""),
+        })
+
+        category_counts[new_type] = category_counts.get(new_type, 0) + 1
+        cid = doc["claim_id"]
+        if cid not in claim_summaries:
+            claim_summaries[cid] = {"reclassified": []}
+        claim_summaries[cid]["reclassified"].append({
+            "filename": doc["name"],
+            "old": old_type,
+            "new": new_type,
+        })
+
+    applied = 0
+    notes_added = 0
+
+    if not data.dry_run and changes:
+        for change in changes:
+            result = await db.documents.update_one(
+                {"id": change["document_id"]},
+                {"$set": {
+                    "type": change["new_type"],
+                    "recategorized_at": _now_iso(),
+                    "recategorized_from": change["old_type"],
+                }},
+            )
+            if result.modified_count > 0:
+                applied += 1
+
+        # Add notes to affected claims
+        for cid, summary in claim_summaries.items():
+            reclassified = summary["reclassified"]
+            lines = [
+                f"[Re-categorization] {len(reclassified)} document(s) reclassified:"
+            ]
+            for item in reclassified:
+                lines.append(
+                    f"  - \"{item['filename']}\": {item['old']} -> {item['new']}"
+                )
+
+            note_record = {
+                "id": str(uuid.uuid4()),
+                "claim_id": cid,
+                "content": "\n".join(lines),
+                "tags": ["document_inventory", "recategorized", "policy_recovery"],
+                "author_id": current_user.get("id", "system"),
+                "author_name": current_user.get("full_name", "System"),
+                "created_at": _now_iso(),
+            }
+            await db.notes.insert_one(note_record)
+            notes_added += 1
+
+    return {
+        "message": (
+            f"{'[DRY RUN] ' if data.dry_run else ''}Re-categorization: "
+            f"{len(changes)} changes across {len(claim_summaries)} claims"
+        ),
+        "dry_run": data.dry_run,
+        "total_evaluated": len(docs),
+        "would_change": len(changes),
+        "unchanged": unchanged,
+        "applied": applied,
+        "notes_added": notes_added,
+        "category_breakdown": dict(sorted(category_counts.items(), key=lambda x: -x[1])),
+        "changes": changes[:100],  # Cap preview to first 100 for response size
+    }
+
+
+# ---------------------------------------------------------------------------
+# 6. Backfill email metadata on existing documents (one-time migration)
+# ---------------------------------------------------------------------------
+
+@router.post("/backfill-email-metadata")
+async def backfill_email_metadata(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Backfill gmail_subject and gmail_sender on existing synced documents
+    that are missing this metadata. Fetches from Gmail API using stored
+    gmail_message_id.
+
+    Required before re-categorization can work on old documents.
+    Admin only.
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    user_id = _get_user_id(current_user)
+
+    # Find documents with gmail_message_id but no gmail_subject
+    cursor = db.documents.find(
+        {
+            "source": "gmail_sync",
+            "gmail_message_id": {"$exists": True, "$ne": ""},
+            "$or": [
+                {"gmail_subject": {"$exists": False}},
+                {"gmail_subject": ""},
+                {"gmail_subject": None},
+            ],
+        },
+        {"_id": 0, "id": 1, "gmail_message_id": 1},
+    )
+    docs = await cursor.to_list(5000)
+    if not docs:
+        return {"message": "All synced documents already have email metadata", "updated": 0}
+
+    # Deduplicate message IDs to minimize API calls
+    msg_id_to_doc_ids: dict = {}
+    for doc in docs:
+        mid = doc["gmail_message_id"]
+        if mid not in msg_id_to_doc_ids:
+            msg_id_to_doc_ids[mid] = []
+        msg_id_to_doc_ids[mid].append(doc["id"])
+
+    updated = 0
+    errors = 0
+
+    for msg_id, doc_ids in msg_id_to_doc_ids.items():
+        try:
+            msg_resp = await _gmail_request(
+                user_id, "GET",
+                f"{GMAIL_API}/messages/{msg_id}",
+                params={"format": "metadata", "metadataHeaders": "From,Subject"},
+            )
+        except Exception as exc:
+            logger.warning("backfill: failed to fetch message %s: %s", msg_id, exc)
+            errors += 1
+            continue
+
+        if msg_resp.status_code != 200:
+            errors += 1
+            continue
+
+        msg_data = msg_resp.json()
+        headers = _parse_gmail_headers(msg_data.get("payload", {}).get("headers", []))
+        subject = headers.get("subject", "")
+        sender = headers.get("from", "")
+
+        for doc_id in doc_ids:
+            result = await db.documents.update_one(
+                {"id": doc_id},
+                {"$set": {
+                    "gmail_subject": subject,
+                    "gmail_sender": sender,
+                }},
+            )
+            if result.modified_count > 0:
+                updated += 1
+
+    return {
+        "message": f"Backfilled email metadata on {updated} documents",
+        "total_documents": len(docs),
+        "unique_messages": len(msg_id_to_doc_ids),
+        "updated": updated,
+        "errors": errors,
     }
