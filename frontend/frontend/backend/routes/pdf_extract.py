@@ -674,19 +674,16 @@ async def auto_extract_all(
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    # Find all extractable PDFs that haven't been processed yet
+    # Find all extractable PDFs that haven't been successfully processed
+    # Use $or to catch both missing field AND non-success values
     query = {
         "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-        "pdf_extraction_status": {"$nin": ["success"]},
+        "$or": [
+            {"pdf_extraction_status": {"$exists": False}},
+            {"pdf_extraction_status": {"$ne": "success"}},
+        ],
     }
-    docs = await db.documents.find(query, {"_id": 0}).to_list(batch_size)
-
-    if not docs:
-        query_no_field = {
-            "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
-                "pdf_extraction_status": {"$exists": False},
-        }
-        docs = await db.documents.find(query_no_field, {"_id": 0}).to_list(batch_size)
+    docs = await db.documents.find(query, {"_id": 0}).to_list(100)
 
     if not docs:
         return {
