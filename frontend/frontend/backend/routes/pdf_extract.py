@@ -96,6 +96,47 @@ PROMPTS: Dict[str, str] = {
         '  "policy_provisions_cited": [string]\n'
         "}"
     ),
+    "policy": (
+        "Extract all policy language, coverages, limits, deductibles, endorsements, "
+        "and exclusions from this insurance policy document. "
+        "Return ONLY valid JSON with no markdown fences:\n"
+        "{\n"
+        '  "carrier_name": string or null,\n'
+        '  "policy_number": string or null,\n'
+        '  "policy_type": string or null (e.g. "HO-3", "HO-6", "DP-3", "HO-A"),\n'
+        '  "effective_date": string or null,\n'
+        '  "expiration_date": string or null,\n'
+        '  "insured_name": string or null,\n'
+        '  "property_address": string or null,\n'
+        '  "coverage_a_dwelling": number or null,\n'
+        '  "coverage_b_other_structures": number or null,\n'
+        '  "coverage_c_personal_property": number or null,\n'
+        '  "coverage_d_loss_of_use": number or null,\n'
+        '  "coverage_e_personal_liability": number or null,\n'
+        '  "coverage_f_medical_payments": number or null,\n'
+        '  "deductible_all_other_perils": number or null,\n'
+        '  "deductible_hurricane_wind": string or null (e.g. "2%" or "$5000"),\n'
+        '  "deductible_hurricane_percentage": number or null,\n'
+        '  "loss_settlement": string or null (e.g. "RCV", "ACV", "RSPS"),\n'
+        '  "roof_payment_schedule": string or null (describe any RSPS or roof age schedule),\n'
+        '  "endorsements": [{"name": string, "description": string}],\n'
+        '  "exclusions": [{"name": string, "description": string}],\n'
+        '  "anti_concurrent_causation": boolean or null,\n'
+        '  "water_damage_exclusions": string or null,\n'
+        '  "water_damage_sublimit": number or null,\n'
+        '  "matching_provisions": string or null,\n'
+        '  "proof_of_loss_deadline_days": number or null,\n'
+        '  "proof_of_loss_language": string or null,\n'
+        '  "appraisal_clause": string or null,\n'
+        '  "duties_after_loss": [string],\n'
+        '  "ordinance_or_law_coverage": string or null,\n'
+        '  "mold_coverage": string or null,\n'
+        '  "flood_exclusion": boolean or null,\n'
+        '  "earth_movement_exclusion": boolean or null,\n'
+        '  "wear_tear_exclusion": boolean or null,\n'
+        '  "key_provisions_verbatim": [{"provision_name": string, "exact_language": string}]\n'
+        "}"
+    ),
 }
 
 # Fallback prompt for unknown types
