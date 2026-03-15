@@ -620,3 +620,107 @@ async def sync_status(
             for d in docs_by_claim
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# 4. Categorize All Synced Documents by Filename Pattern
+# ---------------------------------------------------------------------------
+
+FILENAME_TYPE_RULES = [
+    (["estimate", "est_", "scope", "xactimate"], "estimate"),
+    (["settlement", "payment letter", "payment_letter", "stlmnt"], "settlement_letter"),
+    (["policy", "certified", "non-certified", "dec_page", "declarations"], "policy"),
+    (["coverage determination", "coverage_determination", "coverage decision"], "coverage_determination"),
+    (["lor", "letter of representation", "letter_of_representation", "representation"], "lor"),
+    (["supplement"], "supplement"),
+    (["invoice"], "invoice"),
+    (["release", "global_release"], "release"),
+    (["denial", "denied"], "denial_letter"),
+    (["inspection", "report bundle", "report_bundle"], "inspection_report"),
+    (["mediation", "brochure"], "mediation"),
+    (["bid", "proposal"], "contractor_bid"),
+    (["photo", "img_", "img-", "image", ".jpg", ".jpeg", ".png", ".heic"], "photo"),
+    (["contract", "agreement"], "contract"),
+]
+
+
+def _categorize_filename(filename: str) -> str:
+    fn = filename.lower()
+    for patterns, doc_type in FILENAME_TYPE_RULES:
+        if any(p in fn for p in patterns):
+            return doc_type
+    if "report" in fn and "photo" not in fn:
+        return "inspection_report"
+    return "carrier_correspondence"
+
+
+@router.post("/categorize-documents")
+async def categorize_synced_documents(
+    current_user: dict = Depends(get_current_active_user),
+):
+    """
+    Batch-categorize all gmail_attachment documents by filename pattern.
+
+    Updates document type from 'gmail_attachment' to a proper category
+    (estimate, policy, lor, photo, contract, etc.) and adds a document
+    inventory note to each affected claim.
+    """
+    if current_user.get("role") not in ("admin", "manager"):
+        raise HTTPException(status_code=403, detail="Admin or manager access required")
+
+    cursor = db.documents.find(
+        {"type": "gmail_attachment"},
+        {"_id": 0, "id": 1, "claim_id": 1, "name": 1, "type": 1},
+    )
+    docs = await cursor.to_list(5000)
+    if not docs:
+        return {"message": "No uncategorized gmail_attachment documents found", "updated": 0}
+
+    category_counts: dict = {}
+    updated = 0
+    claim_summaries: dict = {}
+
+    for doc in docs:
+        new_type = _categorize_filename(doc["name"])
+        category_counts[new_type] = category_counts.get(new_type, 0) + 1
+
+        cid = doc["claim_id"]
+        if cid not in claim_summaries:
+            claim_summaries[cid] = {}
+        claim_summaries[cid][new_type] = claim_summaries[cid].get(new_type, 0) + 1
+
+        result = await db.documents.update_one(
+            {"id": doc["id"]},
+            {"$set": {"type": new_type, "source": "gmail_sync"}},
+        )
+        if result.modified_count > 0:
+            updated += 1
+
+    # Add document inventory note to each affected claim
+    notes_added = 0
+    for cid, cats in claim_summaries.items():
+        total_docs = sum(cats.values())
+        lines = [f"[Document Inventory] Auto-categorized from Gmail ({total_docs} docs):"]
+        for cat_name, count in sorted(cats.items(), key=lambda x: -x[1]):
+            lines.append(f"  - {cat_name}: {count}")
+
+        note_record = {
+            "id": str(uuid.uuid4()),
+            "claim_id": cid,
+            "content": "\n".join(lines),
+            "tags": ["document_inventory", "deep_scrub", "auto_categorized"],
+            "author_id": current_user.get("id", "system"),
+            "author_name": current_user.get("full_name", "System"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notes.insert_one(note_record)
+        notes_added += 1
+
+    return {
+        "message": f"Categorized {updated} documents across {len(claim_summaries)} claims",
+        "total_docs": len(docs),
+        "updated": updated,
+        "claims_affected": len(claim_summaries),
+        "notes_added": notes_added,
+        "category_breakdown": dict(sorted(category_counts.items(), key=lambda x: -x[1])),
+    }
