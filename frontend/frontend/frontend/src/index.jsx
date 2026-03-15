@@ -25,6 +25,13 @@ document.documentElement.style.colorScheme = 'light';
 localStorage.removeItem('eden_theme');
 localStorage.removeItem('theme');
 
+// Force unregister any lingering service workers that cached stale API responses
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(reg => reg.unregister());
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>

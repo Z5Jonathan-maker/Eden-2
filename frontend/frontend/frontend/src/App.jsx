@@ -1,5 +1,5 @@
 import './App.css';
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -328,6 +328,15 @@ function AppRoutes() {
 }
 
 function App() {
+  // Clear stale caches from old service worker on app load
+  useEffect(() => {
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+    }
+  }, []);
+
   return (
     <div className="App">
       <QueryClientProvider client={queryClient}>
