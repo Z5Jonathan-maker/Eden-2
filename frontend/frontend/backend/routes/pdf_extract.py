@@ -648,14 +648,14 @@ async def batch_analyze(
 async def auto_extract_all(
     data: AutoExtractRequest = AutoExtractRequest(),
     current_user: dict = Depends(get_current_active_user),
+    batch_size: int = 5,
 ):
     """
-    Push-button endpoint: find ALL estimate, settlement_letter, and
-    coverage_determination PDFs, extract financial data from each,
-    and update linked claims automatically.
+    Push-button endpoint: extract financial data from PDFs.
+    Processes batch_size docs per call (default 5) to avoid HTTP timeout.
+    Call repeatedly until remaining=0.
 
-    Admin only. Rate-limited for Gemini free tier.
-    Skips documents that have already been successfully extracted.
+    Admin only.
     """
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -665,15 +665,14 @@ async def auto_extract_all(
         "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
         "pdf_extraction_status": {"$nin": ["success"]},
     }
-    docs = await db.documents.find(query, {"_id": 0}).to_list(5000)
+    docs = await db.documents.find(query, {"_id": 0}).to_list(batch_size)
 
     if not docs:
-        # Also check for docs without the field at all
         query_no_field = {
             "type": {"$in": list(EXTRACTABLE_DOC_TYPES)},
                 "pdf_extraction_status": {"$exists": False},
         }
-        docs = await db.documents.find(query_no_field, {"_id": 0}).to_list(5000)
+        docs = await db.documents.find(query_no_field, {"_id": 0}).to_list(batch_size)
 
     if not docs:
         return {
